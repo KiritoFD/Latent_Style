@@ -7,6 +7,7 @@ import torch.nn.functional as F
 
 from blocks620 import SpatialBridgeBlock620, sinusoidal_time_embedding_620
 from config_schema import BridgeConfig, ModelConfig
+from fiber_moe620 import FiberMoE
 from style_encoder620 import StyleConditioner620
 
 
@@ -86,6 +87,8 @@ class SpatialBridge620(nn.Module):
         self.endpoint_lowpass_kernel = max(1, int(getattr(model_cfg, "endpoint_lowpass_kernel", 5)))
         if self.endpoint_lowpass_kernel % 2 == 0:
             self.endpoint_lowpass_kernel += 1
+        # D2: 训练路径 _lowpass() 也支持 lowpass_mode, 与推理路径 lp() 行为一致
+        self.lowpass_mode = str(getattr(model_cfg, "lowpass_mode", "avg_pool")).lower().strip()
         self.endpoint_high_scale = float(getattr(model_cfg, "endpoint_high_scale", 1.0))
         self.endpoint_velocity_floor = max(1e-3, float(getattr(model_cfg, "endpoint_velocity_floor", 0.05)))
         self.endpoint_style_hidden_dim = max(8, int(getattr(model_cfg, "endpoint_style_hidden_dim", 128)))
@@ -184,6 +187,8 @@ class SpatialBridge620(nn.Module):
         attn_topk = int(getattr(model_cfg, "style_attn_topk", 0))
         gate_warmup_steps = int(getattr(model_cfg, "style_gate_warmup_steps", 0))
         body_norm_type = str(getattr(model_cfg, "body_norm_type", "group_norm"))
+        # Block-level style_film init std (0.0=zero-init, 0.02=small random, 0.1+=strong break)
+        style_film_init_std = float(getattr(model_cfg, "style_film_init_std", 0.02))
 
         self.blocks = nn.ModuleList(
             [
@@ -204,6 +209,7 @@ class SpatialBridge620(nn.Module):
                     num_layers=depth,
                     dino_dim=self.dino_dim,
                     film_enabled=self.style_film_enabled,
+                    film_init_std=style_film_init_std,
                     attn_mode=self.style_attn_mode,
                     attn_temperature=self.style_attn_temperature,
                     gate_warmup_steps=gate_warmup_steps,
@@ -279,8 +285,51 @@ class SpatialBridge620(nn.Module):
                 )
         self.last_debug: dict[str, torch.Tensor] = {}
 
+        # === FC-SB Phase 3 W3: Style Discriminative Head ===
+        # 从 bridge_cfg 读取 w_style_disc（与 losses620.py 读取来源一致），
+        # 确保 model.style_disc_head 在 W3 启用时被创建。
+        _w_style_disc_cfg = float(getattr(bridge_cfg, "w_style_disc", 0.0) if bridge_cfg is not None else 0.0)
+        self.style_disc_enabled = bool(_w_style_disc_cfg > 0)
+        self.style_disc_dim = max(8, int(getattr(bridge_cfg, "style_disc_dim", 128) if bridge_cfg is not None else 128))
+        if self.style_disc_enabled:
+            self.style_disc_head = nn.Sequential(
+                nn.LayerNorm(self.latent_channels),
+                nn.Linear(self.latent_channels, self.style_disc_dim),
+                nn.SiLU(),
+                nn.Linear(self.style_disc_dim, self.num_styles),
+            )
+        else:
+            self.style_disc_head = None
+
+        # === FC-SB Phase 4 B4: Fiber-MoE Adapters ===
+        # 理论: 在 N1 块 α-blend 前对 ep_fiber_matched 做 MoE 路由, 按 style 选择 expert
+        self.fiber_moe_enabled = bool(getattr(model_cfg, "fiber_moe_enabled", False))
+        if self.fiber_moe_enabled:
+            self.fiber_moe = FiberMoE(
+                dim=self.dim,
+                num_experts=int(getattr(model_cfg, "fiber_moe_num_experts", 4)),
+                router_hidden_dim=int(getattr(model_cfg, "fiber_moe_router_hidden_dim", 128)),
+                expert_hidden_dim=int(getattr(model_cfg, "fiber_moe_expert_hidden_dim", 256)),
+                router_input=str(getattr(model_cfg, "fiber_moe_router_input", "style_global")),
+            )
+            # style_latent (latent_channels) -> style_global (dim) 投影层
+            self.style_latent_to_dim = nn.Linear(self.latent_channels, self.dim)
+        else:
+            self.fiber_moe = None
+            self.style_latent_to_dim = None
+
     def _lowpass(self, x: torch.Tensor) -> torch.Tensor:
-        return torch.nn.functional.avg_pool2d(
+        # D2: 训练路径低通滤波, 支持 avg_pool / wavelet / dwt_haar 三种模式
+        # 与推理路径 integrate_transport.lp() 行为一致, 保证训练/推理频带分离对齐
+        if self.lowpass_mode == "dwt_haar":
+            from spectral620 import dwt2_haar, idwt2_haar
+            ll, lh, hl, hh = dwt2_haar(x.float())
+            zero = torch.zeros_like(ll)
+            return idwt2_haar(ll, zero, zero, zero).to(dtype=x.dtype)
+        if self.lowpass_mode == "wavelet":
+            down = F.avg_pool2d(x.float(), kernel_size=2, stride=2, ceil_mode=False)
+            return F.interpolate(down, size=x.shape[-2:], mode="bilinear", align_corners=False).to(dtype=x.dtype)
+        return F.avg_pool2d(
             x.float(),
             kernel_size=self.endpoint_lowpass_kernel,
             stride=1,
@@ -388,6 +437,12 @@ class SpatialBridge620(nn.Module):
         # 放大 style_global 让 FiLM/cross-attn/gate 都获得更强风格方向.
         if self.style_embed_scale != 1.0:
             style_global = style_global * self.style_embed_scale
+        # D4: 训练侧 style_extrap_alpha (与推理路径 L751-752 一致)
+        # 理论: 推理路径对 style_fiber 做 (1+α) 外推, 训练时对 style_global 做等价缩放,
+        # 让模型学会在外推后的 style 信号下工作, 训练/推理分布对齐.
+        style_extrap_alpha_train = float(getattr(self.model_cfg, "style_extrap_alpha", 0.0))
+        if style_extrap_alpha_train > 0.0:
+            style_global = style_global * (1.0 + style_extrap_alpha_train)
         time_emb = self.time_proj(sinusoidal_time_embedding_620(t_tensor, self.time_dim).to(device=x.device, dtype=x.dtype))
         h = self.input_proj(x)
         debug_vals: dict[str, list[torch.Tensor]] = {}
@@ -543,6 +598,7 @@ class SpatialBridge620(nn.Module):
         style_text_tokens: torch.Tensor | None = None,
         style_latent: torch.Tensor | None = None,
         target_style_latent: torch.Tensor | None = None,
+        source_style_latent: torch.Tensor | None = None,
         **_: object,
     ) -> torch.Tensor:
         if style_latent is None and target_style_latent is not None and not isinstance(target_style_latent, dict):
@@ -601,9 +657,34 @@ class SpatialBridge620(nn.Module):
         endpoint_adain_scale = float(_cfg_get('endpoint_adain_scale', 0.0))
         endpoint_adain_mode = str(_cfg_get('endpoint_adain_mode', 'full')).lower().strip()
         # "full" = 同时匹配 mean+std; "mean_only" = 只匹配 color; "std_only" = 只匹配 contrast
+        # === FC-SB Phase 3: U/T/V 正交增强 (R=K1 已在上方 fiber_cfg_scale 实现) ===
+        # U: Style Latent Extrapolation - 外推 style_fiber 到更极端
+        style_extrap_alpha = float(_cfg_get('style_extrap_alpha', 0.0))
+        # T: Multi-band Per-frequency AdaIN - Haar 分解后 Mid/HH 各自独立匹配
+        multiband_adain_mode = str(_cfg_get('multiband_adain_mode', 'single')).lower().strip()
+        mid_adain_scale = float(_cfg_get('mid_adain_scale', 0.3))
+        hh_adain_scale = float(_cfg_get('hh_adain_scale', 0.3))
+        # V: Spatial Patch AdaIN - 空间分块 per-patch 统计匹配
+        patch_adain_kernel = int(_cfg_get('patch_adain_kernel', 0))
+        # === FC-SB Phase 4 A1: Time-Frequency Coupled Scheduling ===
+        tf_schedule_enabled = bool(_cfg_get('tf_schedule_enabled', False))
+        tf_hh_ramp_start = float(_cfg_get('tf_hh_ramp_start', 0.5))
+        tf_hh_ramp_end = float(_cfg_get('tf_hh_ramp_end', 1.0))
+        tf_hh_max_scale = float(_cfg_get('tf_hh_max_scale', 1.5))
+        tf_mid_lock_threshold = float(_cfg_get('tf_mid_lock_threshold', 0.5))
+        tf_mid_max_scale = float(_cfg_get('tf_mid_max_scale', 1.0))
 
         def lp(y, k=fiber_kernel):
-            """Lowpass: 支持 avg_pool 和 wavelet 两种模式"""
+            """Lowpass: 支持 avg_pool / wavelet / dwt_haar 三种模式.
+
+            dwt_haar: 真正正交 Haar DWT, LL 子带 IDWT 重建 (LH/HL/HH 置零).
+            比 avg_pool 更干净的低频分离, 锁死 LL 保 LPIPS 更刚性.
+            """
+            if lowpass_mode == 'dwt_haar':
+                from spectral620 import dwt2_haar, idwt2_haar
+                ll, lh, hl, hh = dwt2_haar(y.float())
+                zero = torch.zeros_like(ll)
+                return idwt2_haar(ll, zero, zero, zero).to(dtype=y.dtype)
             if lowpass_mode == 'wavelet':
                 down = F.avg_pool2d(y.float(), kernel_size=2, stride=2, ceil_mode=False)
                 return F.interpolate(down, size=y.shape[-2:], mode='bilinear', align_corners=False).to(dtype=y.dtype)
@@ -615,6 +696,24 @@ class SpatialBridge620(nn.Module):
             t_curr = horizon * (idx / float(steps))
             t_next = horizon * ((idx + 1) / float(steps))
             t_batch = torch.full((h.shape[0],), t_curr, device=h.device, dtype=h.dtype)
+            # === FC-SB Phase 4 A1: 动态时频调度 ===
+            # mid: t < threshold 时锁死（0），t >= threshold 时线性升到 max
+            # hh: t < ramp_start 时保持原值，t >= ramp_start 时指数爆发
+            if tf_schedule_enabled:
+                if t_curr < tf_mid_lock_threshold:
+                    mid_scale_dyn = 0.0
+                else:
+                    mid_progress = (t_curr - tf_mid_lock_threshold) / max(1e-6, (1.0 - tf_mid_lock_threshold))
+                    mid_scale_dyn = tf_mid_max_scale * min(1.0, mid_progress)
+                if t_curr < tf_hh_ramp_start:
+                    hh_scale_dyn = hh_adain_scale
+                else:
+                    ramp_progress = (t_curr - tf_hh_ramp_start) / max(1e-6, (tf_hh_ramp_end - tf_hh_ramp_start))
+                    ramp_progress = min(1.0, ramp_progress)
+                    hh_scale_dyn = hh_adain_scale * (1.0 + (tf_hh_max_scale - 1.0) * (ramp_progress ** 2))
+            else:
+                mid_scale_dyn = mid_adain_scale
+                hh_scale_dyn = hh_adain_scale
             # Step 1: 模型预测 Endpoint
             endpoint = self.predict_endpoint(
                 h,
@@ -636,32 +735,236 @@ class SpatialBridge620(nn.Module):
             # 理论: FC-SB 要求 fiber "狂热扩散"且携带风格方向.
             # 当前 fiber 是无方向布朗运动 → 直接用目标风格 fiber 统计量替换.
             # 关键: 只动 fiber, base 锁死 → 保 LPIPS; fiber 获得风格统计 → 提 clip.
+            #
+            # 模式:
+            #   full       - 一阶统计匹配 (per-channel mean+std), 1-Wasserstein 对角闭式
+            #   mean_only  - 只匹配 color (mean)
+            #   std_only   - 只匹配 contrast (std)
+            #   wct        - Whitening & Coloring Transform (二阶统计, 匹配协方差矩阵)
+            #                f' = Σ_s^{1/2} Σ_f^{-1/2} (f - μ_f) + μ_s
+            #                捕捉 channel 间相关性 = 纹理信息, 突破 CLIP 瓶颈
+            #   wct_diag   - WCT 但协方差对角化 (退化到 full, 用于验证)
             if endpoint_adain_scale > 0.0 and style_latent is not None and isinstance(style_latent, torch.Tensor):
+                self.last_debug["n1_adain_executed"] = 1.0
+                # 🆕 T 方向 hh 可观测性默认值 (Phase 3 Task 1.2)
+                # 非 two_level 分支保持 0.0, two_level 分支内会覆盖为实际值
+                self.last_debug["n1_hh_input_abs"] = 0.0
+                self.last_debug["n1_hh_matched_abs"] = 0.0
+                self.last_debug["n1_hh_final_abs"] = 0.0
+                self.last_debug["n1_mid_input_abs"] = 0.0
+                self.last_debug["n1_mid_matched_abs"] = 0.0
+                self.last_debug["n1_mid_final_abs"] = 0.0
+                self.last_debug["n1_hh_contribution_ratio"] = 0.0
+                self.last_debug["n1_hh_adain_scale"] = float(hh_adain_scale)
+                self.last_debug["n1_mid_adain_scale"] = float(mid_adain_scale)
                 ep_base = lp(endpoint)
                 ep_fiber_curr = endpoint - ep_base
                 # 从 style_latent 提取目标 fiber 统计 (per-channel)
                 style_fiber = style_latent.to(dtype=endpoint.dtype) - lp(style_latent.to(dtype=endpoint.dtype))
-                if style_fiber.shape[0] == 1 and ep_fiber_curr.shape[0] > 1:
-                    # 单参考图 → 广播到 batch
-                    target_mean = style_fiber.mean(dim=[2, 3], keepdim=True).expand(ep_fiber_curr.shape[0], -1, 1, 1)
-                    target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6).expand(ep_fiber_curr.shape[0], -1, 1, 1)
+
+                # 🆕 U: Style Latent Extrapolation (Phase 3 方向 U)
+                # 理论: StyleGAN truncation trick 的反向应用 - 推向更极端风格.
+                # fiber 是高通分量 (已减去 lowpass), 均值接近 0,
+                # 故 style_latent - μ_dataset ≈ style_latent, 外推退化为简单缩放.
+                if style_extrap_alpha > 0.0:
+                    style_fiber = style_fiber * (1.0 + style_extrap_alpha)
+
+                if endpoint_adain_mode in ('wct', 'wct_diag'):
+                    # 🆕 Q1: WCT (Whitening & Coloring Transform)
+                    # 数学: 匹配 channel 协方差矩阵 Σ ∈ R^{C×C}
+                    # 白化: f_white = Σ_f^{-1/2} (f - μ_f), 去除 content 的 channel 相关性
+                    # 着色: f' = Σ_s^{1/2} f_white + μ_s, 应用 style 的 channel 相关性
+                    # 闭式解通过 eigh (对称矩阵特征分解, 数值稳定)
+                    B_c, C_c, H_c, W_c = ep_fiber_curr.shape
+                    # 广播 style_fiber 到 batch
+                    if style_fiber.shape[0] == 1 and B_c > 1:
+                        style_fiber_b = style_fiber.expand(B_c, -1, -1, -1)
+                    else:
+                        style_fiber_b = style_fiber
+                    # Reshape: (B, C, HW) - 把空间维度展平
+                    f_flat = ep_fiber_curr.reshape(B_c, C_c, H_c * W_c).float()
+                    s_flat = style_fiber_b.reshape(B_c, C_c, H_c * W_c).float()
+                    # Content 统计
+                    mu_f = f_flat.mean(dim=2, keepdim=True)  # (B, C, 1)
+                    f_centered = f_flat - mu_f
+                    if endpoint_adain_mode == 'wct':
+                        # 全协方差矩阵 (B, C, C)
+                        cov_f = torch.bmm(f_centered, f_centered.transpose(1, 2)) / (H_c * W_c)
+                        # 白化矩阵: cov_f^{-1/2} via eigh
+                        eigval_f, eigvec_f = torch.linalg.eigh(cov_f)
+                        eigval_f = eigval_f.clamp_min(1e-5)
+                        # Σ^{-1/2} = V diag(λ^{-1/2}) V^T
+                        whitening = eigvec_f @ torch.diag_embed(eigval_f ** -0.5) @ eigvec_f.transpose(1, 2)
+                        f_white = torch.bmm(whitening, f_centered)  # (B, C, HW)
+                        # Style 统计 + 着色
+                        mu_s = s_flat.mean(dim=2, keepdim=True)
+                        s_centered = s_flat - mu_s
+                        cov_s = torch.bmm(s_centered, s_centered.transpose(1, 2)) / (H_c * W_c)
+                        eigval_s, eigvec_s = torch.linalg.eigh(cov_s)
+                        eigval_s = eigval_s.clamp_min(1e-5)
+                        # Σ^{1/2} = V diag(λ^{1/2}) V^T
+                        coloring = eigvec_s @ torch.diag_embed(eigval_s ** 0.5) @ eigvec_s.transpose(1, 2)
+                        f_matched = torch.bmm(coloring, f_white) + mu_s
+                    else:  # wct_diag - 对角协方差 (等价 full mode, 验证用)
+                        std_f = f_flat.std(dim=2, keepdim=True).clamp_min(1e-6)
+                        f_white = (f_flat - mu_f) / std_f
+                        mu_s = s_flat.mean(dim=2, keepdim=True)
+                        std_s = s_flat.std(dim=2, keepdim=True).clamp_min(1e-6)
+                        f_matched = f_white * std_s + mu_s
+                    ep_fiber_matched = f_matched.reshape(B_c, C_c, H_c, W_c).to(dtype=endpoint.dtype)
+                elif multiband_adain_mode == 'two_level':
+                    # 🆕 T: Multi-band Per-frequency AdaIN (Phase 3 方向 T)
+                    # 理论: Haar 一级分解 fiber → LL(应≈0,丢弃) + Mid(LH+HL,粗纹理) + HH(细纹理)
+                    # Mid/HH 各自独立 AdaIN, 捕捉多尺度纹理 → 突破 CLIP 瓶颈.
+                    # 退化: mid_scale=hh_scale 时 ≈ 单 band AdaIN (LL≈0 保证).
+                    B_c, C_c, H_c, W_c = ep_fiber_curr.shape
+                    # 广播 style_fiber 到 batch
+                    if style_fiber.shape[0] == 1 and B_c > 1:
+                        style_fiber_b = style_fiber.expand(B_c, -1, -1, -1)
+                    else:
+                        style_fiber_b = style_fiber
+
+                    def haar_fwd(x):
+                        # 一级 Haar 正变换 (非标准归一化, 保持幅度)
+                        ll = (x[..., 0::2, 0::2] + x[..., 0::2, 1::2] + x[..., 1::2, 0::2] + x[..., 1::2, 1::2]) / 2.0
+                        lh = (x[..., 0::2, 0::2] + x[..., 0::2, 1::2] - x[..., 1::2, 0::2] - x[..., 1::2, 1::2]) / 2.0
+                        hl = (x[..., 0::2, 0::2] - x[..., 0::2, 1::2] + x[..., 1::2, 0::2] - x[..., 1::2, 1::2]) / 2.0
+                        hh = (x[..., 0::2, 0::2] - x[..., 0::2, 1::2] - x[..., 1::2, 0::2] + x[..., 1::2, 1::2]) / 2.0
+                        return ll, lh, hl, hh
+
+                    def haar_inv(ll, lh, hl, hh, target_size):
+                        # 逆变换: nearest 上采样回原尺寸后求和 (近似 IDWT)
+                        H, W = target_size
+                        ll_up = F.interpolate(ll, size=(H, W), mode='nearest')
+                        lh_up = F.interpolate(lh, size=(H, W), mode='nearest')
+                        hl_up = F.interpolate(hl, size=(H, W), mode='nearest')
+                        hh_up = F.interpolate(hh, size=(H, W), mode='nearest')
+                        return ll_up + lh_up + hl_up + hh_up
+
+                    def adain_match_band(pred, target):
+                        p_mean = pred.mean(dim=[2, 3], keepdim=True)
+                        p_std = pred.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+                        t_mean = target.mean(dim=[2, 3], keepdim=True)
+                        t_std = target.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+                        return (pred - p_mean) / p_std * t_std + t_mean
+
+                    # 分解 content fiber 与 style fiber
+                    f_ll, f_lh, f_hl, f_hh = haar_fwd(ep_fiber_curr.float())
+                    _, s_lh, s_hl, s_hh = haar_fwd(style_fiber_b.float())  # 丢弃 s_ll (fiber LL 应≈0)
+                    # LL 丢弃 (base locking), Mid = LH+HL (粗纹理), HH = HH (细纹理)
+                    f_mid = f_lh + f_hl
+                    s_mid = s_lh + s_hl
+                    f_hh_band = f_hh
+                    s_hh_band = s_hh
+                    # per-band AdaIN + α-blend (A1: 用动态 mid_scale_dyn/hh_scale_dyn 替代静态值)
+                    mid_matched = adain_match_band(f_mid, s_mid)
+                    hh_matched = adain_match_band(f_hh_band, s_hh_band)
+                    mid_final = mid_scale_dyn * mid_matched + (1.0 - mid_scale_dyn) * f_mid
+                    hh_final = hh_scale_dyn * hh_matched + (1.0 - hh_scale_dyn) * f_hh_band
+                    # 🆕 T 方向 hh 可观测性 (Phase 3 Task 1.2)
+                    # 追踪 hh_adain_scale 是否真正影响 hh_final, 以及 hh 在 ep_fiber_matched 中的能量占比
+                    _hh_in_abs = f_hh_band.detach().float().abs().mean().item()
+                    _hh_match_abs = hh_matched.detach().float().abs().mean().item()
+                    _hh_fin_abs = hh_final.detach().float().abs().mean().item()
+                    _mid_fin_abs = mid_final.detach().float().abs().mean().item()
+                    self.last_debug["n1_hh_input_abs"] = _hh_in_abs
+                    self.last_debug["n1_hh_matched_abs"] = _hh_match_abs
+                    self.last_debug["n1_hh_final_abs"] = _hh_fin_abs
+                    self.last_debug["n1_mid_input_abs"] = f_mid.detach().float().abs().mean().item()
+                    self.last_debug["n1_mid_matched_abs"] = mid_matched.detach().float().abs().mean().item()
+                    self.last_debug["n1_mid_final_abs"] = _mid_fin_abs
+                    _band_total = _mid_fin_abs + _hh_fin_abs + 1e-8
+                    self.last_debug["n1_hh_contribution_ratio"] = _hh_fin_abs / _band_total
+                    # === FC-SB Phase 4 A1: 时频调度 probe ===
+                    self.last_debug["tf_mid_scale_dyn"] = float(mid_scale_dyn)
+                    self.last_debug["tf_hh_scale_dyn"] = float(hh_scale_dyn)
+                    self.last_debug["tf_t_curr"] = float(t_curr)
+                    # 重构 (LL=0, mid 均分回 lh+hl)
+                    mid_lh = mid_final * 0.5
+                    mid_hl = mid_final * 0.5
+                    ep_fiber_matched = haar_inv(
+                        torch.zeros_like(f_ll), mid_lh, mid_hl, hh_final, (H_c, W_c)
+                    ).to(dtype=endpoint.dtype)
+                elif patch_adain_kernel > 0:
+                    # 🆕 V: Spatial Patch AdaIN (Phase 3 方向 V)
+                    # 理论: CLIP 是 ViT, 在 patch 级别提取特征.
+                    # 全局 AdaIN 使空间分布均匀化 → 丢失局部笔触方向.
+                    # Patch AdaIN 保留空间局部风格特征 → 提 clip.
+                    B_c, C_c, H_c, W_c = ep_fiber_curr.shape
+                    k = min(patch_adain_kernel, H_c, W_c)
+                    # 广播 style_fiber 到 batch
+                    if style_fiber.shape[0] == 1 and B_c > 1:
+                        style_fiber_b = style_fiber.expand(B_c, -1, -1, -1)
+                    else:
+                        style_fiber_b = style_fiber
+                    # unfold: (B, C*k*k, num_patches)
+                    f_patches = F.unfold(ep_fiber_curr.float(), kernel_size=k, stride=k)
+                    s_patches = F.unfold(style_fiber_b.float(), kernel_size=k, stride=k)
+                    num_patches = f_patches.shape[-1]
+                    f_patches = f_patches.reshape(B_c, C_c, k * k, num_patches)
+                    # style 空间尺寸匹配时做 per-patch AdaIN, 否则退化为全局
+                    if s_patches.shape[-1] == num_patches:
+                        s_patches = s_patches.reshape(B_c, C_c, k * k, num_patches)
+                        p_mean = f_patches.mean(dim=2, keepdim=True)
+                        p_std = f_patches.std(dim=2, keepdim=True).clamp_min(1e-6)
+                        t_mean = s_patches.mean(dim=2, keepdim=True)
+                        t_std = s_patches.std(dim=2, keepdim=True).clamp_min(1e-6)
+                        matched = (f_patches - p_mean) / p_std * t_std + t_mean
+                        matched = matched.reshape(B_c, C_c * k * k, num_patches)
+                        ep_fiber_matched = F.fold(
+                            matched, output_size=(H_c, W_c), kernel_size=k, stride=k
+                        ).to(dtype=endpoint.dtype)
+                    else:
+                        # style 尺寸不匹配, 退化为全局一阶统计匹配
+                        if style_fiber.shape[0] == 1 and B_c > 1:
+                            target_mean = style_fiber.mean(dim=[2, 3], keepdim=True).expand(B_c, -1, 1, 1)
+                            target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6).expand(B_c, -1, 1, 1)
+                        else:
+                            target_mean = style_fiber.mean(dim=[2, 3], keepdim=True)
+                            target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+                        pred_mean = ep_fiber_curr.mean(dim=[2, 3], keepdim=True)
+                        pred_std = ep_fiber_curr.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+                        ep_fiber_matched = (ep_fiber_curr - pred_mean) / pred_std * target_std + target_mean
                 else:
-                    target_mean = style_fiber.mean(dim=[2, 3], keepdim=True)
-                    target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
-                pred_mean = ep_fiber_curr.mean(dim=[2, 3], keepdim=True)
-                pred_std = ep_fiber_curr.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
-                # AdaIN: normalize then denormalize with target stats
-                ep_fiber_norm = (ep_fiber_curr - pred_mean) / pred_std
-                if endpoint_adain_mode == 'mean_only':
-                    # 只匹配 color (mean), 保留预测的 contrast (std)
-                    ep_fiber_matched = ep_fiber_norm * pred_std + target_mean
-                elif endpoint_adain_mode == 'std_only':
-                    # 只匹配 contrast (std), 保留预测的 color (mean)
-                    ep_fiber_matched = ep_fiber_norm * target_std + pred_mean
-                else:  # "full"
-                    ep_fiber_matched = ep_fiber_norm * target_std + target_mean
+                    # 一阶统计匹配 (原 N1 逻辑)
+                    if style_fiber.shape[0] == 1 and ep_fiber_curr.shape[0] > 1:
+                        # 单参考图 → 广播到 batch
+                        target_mean = style_fiber.mean(dim=[2, 3], keepdim=True).expand(ep_fiber_curr.shape[0], -1, 1, 1)
+                        target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6).expand(ep_fiber_curr.shape[0], -1, 1, 1)
+                    else:
+                        target_mean = style_fiber.mean(dim=[2, 3], keepdim=True)
+                        target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+                    pred_mean = ep_fiber_curr.mean(dim=[2, 3], keepdim=True)
+                    pred_std = ep_fiber_curr.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+                    # AdaIN: normalize then denormalize with target stats
+                    ep_fiber_norm = (ep_fiber_curr - pred_mean) / pred_std
+                    if endpoint_adain_mode == 'mean_only':
+                        ep_fiber_matched = ep_fiber_norm * pred_std + target_mean
+                    elif endpoint_adain_mode == 'std_only':
+                        ep_fiber_matched = ep_fiber_norm * target_std + pred_mean
+                    else:  # "full"
+                        ep_fiber_matched = ep_fiber_norm * target_std + target_mean
+                # === FC-SB Phase 4 B4: Fiber-MoE Adapters ===
+                # 在 α-blend 前对 ep_fiber_matched 做 MoE 路由, 按 style 选择 expert
+                if self.fiber_moe is not None and isinstance(style_latent, torch.Tensor):
+                    # style_latent (B, latent_channels, H, W) -> pool -> (B, latent_channels) -> proj -> (B, dim)
+                    _style_global = style_latent.float().mean(dim=[2, 3]).to(dtype=style_latent.dtype)
+                    _style_global_proj = self.style_latent_to_dim(_style_global)
+                    ep_fiber_matched, _moe_router_probs = self.fiber_moe(ep_fiber_matched, _style_global_proj)
+                    self.last_debug["b4_moe_router_probs"] = _moe_router_probs.detach()
+                    self.last_debug["b4_moe_router_entropy"] = float(-(_moe_router_probs * (_moe_router_probs + 1e-8).log()).sum(dim=-1).mean().item())
+                    self.last_debug["b4_moe_router_max_prob"] = float(_moe_router_probs.max(dim=-1).values.mean().item())
                 # α-blend: 原始 fiber 与统计匹配 fiber 的混合
                 endpoint = ep_base + (1.0 - endpoint_adain_scale) * ep_fiber_curr + endpoint_adain_scale * ep_fiber_matched
+                self.last_debug["n1_ep_fiber_abs"] = ep_fiber_matched.detach().float().abs().mean().item()
+            else:
+                self.last_debug["n1_adain_executed"] = 0.0
+                if endpoint_adain_scale <= 0.0:
+                    self.last_debug["n1_skip_reason"] = "scale_zero"
+                elif style_latent is None:
+                    self.last_debug["n1_skip_reason"] = "style_latent_none"
+                else:
+                    self.last_debug["n1_skip_reason"] = "style_latent_not_tensor"
 
             # Step 2: 计算速度场并剥离低频 (Fiber Velocity Projection)
             denom = max(1e-6, 1.0 - t_curr)
@@ -683,6 +986,35 @@ class SpatialBridge620(nn.Module):
                 v_null = (ep_null - h) / denom
                 v_null_fiber = v_null - lp(v_null) if fiber_proj_ep else v_null
                 v_fiber = v_fiber + fiber_cfg_scale * (v_fiber - v_null_fiber)
+
+            # 🆕 A2 Step2: Fiber-Space Source-Repulsion
+            # 理论: 用原内容图风格 latent 在 fiber 空间反向排斥, 打破保守吸引子
+            # v_source = (ep_source - h) / denom; v_fiber -= ω * (v_source_fiber - v_null_fiber)
+            fiber_source_repulse_scale = float(_cfg_get('fiber_source_repulse_scale', 0.0))
+            if fiber_source_repulse_scale > 0.0 and source_style_latent is not None:
+                # 复用 K1 的 v_null_fiber（若 K1 启用），否则单独计算 ep_null
+                if fiber_cfg_scale <= 0.0:
+                    ep_null_sr = self.predict_endpoint(
+                        h, t=t_batch, style_id=style_id,
+                        style_dino_patches=None, style_dino_cls=None,
+                        style_text_tokens=None, style_latent=None,
+                    )
+                    v_null_sr = (ep_null_sr - h) / denom
+                    v_null_fiber_sr = v_null_sr - lp(v_null_sr) if fiber_proj_ep else v_null_sr
+                else:
+                    v_null_fiber_sr = v_null_fiber  # 复用 K1 计算结果
+                # 用 source_style_latent 预测 source 方向速度
+                ep_source = self.predict_endpoint(
+                    h, t=t_batch, style_id=style_id,
+                    style_dino_patches=None, style_dino_cls=None,
+                    style_text_tokens=None, style_latent=source_style_latent,
+                )
+                v_source = (ep_source - h) / denom
+                v_source_fiber = v_source - lp(v_source) if fiber_proj_ep else v_source
+                # 反向排斥：减去 source 与 null 的偏差
+                _sr_delta = fiber_source_repulse_scale * (v_source_fiber - v_null_fiber_sr)
+                v_fiber = v_fiber - _sr_delta
+                self.last_debug["a2_source_repulse_delta"] = float(_sr_delta.abs().mean().item())
 
             # 🆕 K0: Fiber Velocity Amplification (FVA)
             # 理论: 放大 fiber 速度模长, 突破均值陷阱, base 不变
@@ -785,7 +1117,7 @@ class SpatialBridge620(nn.Module):
                 style_text_tokens=style_text_tokens,
                 style_latent=style_latent,
             )
-            ep_null = self.predict_endpoint(h, t=t_batch, style_id=style_id, style_latent=style_latent)
+            ep_null = self.predict_endpoint(h, t=t_batch, style_id=style_id, style_dino_patches=None, style_dino_cls=None, style_text_tokens=None, style_latent=None)
 
             if cfg_repulse_scale > 0.0 and idt_dino_patches is not None:
                 ep_idt = self.predict_endpoint(

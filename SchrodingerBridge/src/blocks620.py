@@ -8,6 +8,34 @@ import torch.nn.functional as F
 from torch import nn
 
 
+class RMSNorm(nn.Module):
+    """Root Mean Square Normalization — preserves mean (unlike GroupNorm).
+
+    GroupNorm normalizes both mean→0 and variance→1, which destroys
+    style statistics (brightness = mean, contrast = std).
+    RMSNorm only normalizes by RMS (≈std), keeping the mean intact.
+    This is critical for style transfer where color/brightness carry style identity.
+    """
+    def __init__(self, num_features: int, eps: float = 1e-6):
+        super().__init__()
+        self.eps = eps
+        self.weight = nn.Parameter(torch.ones(num_features))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: [B, C, H, W] or [B, L, C]
+        rms = torch.sqrt(x.float().pow(2).mean(dim=-1, keepdim=True) + self.eps)
+        x_norm = (x.float() / rms).to(x.dtype)
+        return x_norm * self.weight[None, ...] if x.dim() == 3 else x_norm * self.weight[None, :, None, None]
+
+
+def _make_norm(norm_type: str, dim: int) -> nn.Module:
+    """Factory: create normalization layer."""
+    if norm_type == "rms_norm":
+        return RMSNorm(dim)
+    else:
+        return nn.GroupNorm(1, dim, affine=False)
+
+
 def _sparsemax(logits: torch.Tensor, dim: int = -1) -> torch.Tensor:
     """Sparsemax: exact sparse version of softmax.
 
@@ -52,7 +80,7 @@ class SpatialBridgeBlock620(nn.Module):
         *,
         dim: int,
         num_heads: int,
-        style_gate_init: float = 0.05,
+        style_gate_init: float = 0.5,
         style_gate_mode: str = "tanh_gate",
         style_moe_enabled: bool = False,
         style_moe_num_experts: int = 4,
@@ -66,9 +94,11 @@ class SpatialBridgeBlock620(nn.Module):
         num_layers: int = 4,
         dino_dim: int = 384,
         film_enabled: bool = False,
+        film_init_std: float = 0.02,
         attn_mode: str = "softmax",
         attn_temperature: float = 1.0,
         gate_warmup_steps: int = 0,
+        norm_type: str = "group_norm",  # "group_norm" | "rms_norm" — RMSNorm preserves mean (style brightness/color)
     ) -> None:
         super().__init__()
         self.layer_idx = int(layer_idx)
@@ -100,7 +130,8 @@ class SpatialBridgeBlock620(nn.Module):
         self.style_moe_enabled = bool(style_moe_enabled)
         self.style_moe_num_experts = max(1, int(style_moe_num_experts))
         self.style_kv_moe_content_routed = bool(style_kv_moe_content_routed)
-        self.norm1 = nn.GroupNorm(1, self.dim, affine=False)
+        self.norm_type = norm_type
+        self.norm1 = _make_norm(norm_type, self.dim)
         self.time_adaln = nn.Sequential(nn.SiLU(), nn.Linear(self.dim, self.dim * 3))
         # Self-attention: content Q/K/V
         self.sa_qkv = nn.Linear(self.dim, self.dim * 3)
@@ -124,9 +155,9 @@ class SpatialBridgeBlock620(nn.Module):
             self.k_proj = nn.Linear(self.dim, self.dim)
             self.v_proj = nn.Linear(self.dim, self.dim)
         self.out_proj = nn.Linear(self.dim, self.dim)
-        self.norm2 = nn.GroupNorm(1, self.dim, affine=False)
+        self.norm2 = _make_norm(norm_type, self.dim)
         self.ffn = nn.Sequential(
-            nn.GroupNorm(1, self.dim),
+            _make_norm(norm_type, self.dim),
             nn.Conv2d(self.dim, self.dim * 4, kernel_size=1),  # 4x expansion (was 2x)
             nn.SiLU(),
             nn.Conv2d(self.dim * 4, self.dim, kernel_size=1),
@@ -137,33 +168,67 @@ class SpatialBridgeBlock620(nn.Module):
         self.film_enabled = bool(film_enabled)
         self.attn_mode = str(attn_mode).strip().lower()
         self.attn_temperature = float(attn_temperature)
-        self.film_init_std = float(getattr(self, "film_init_std", 0.02))
+        # film_init_std controls the init std of block-level style_film_proj / film_q_proj / style_bias_proj.
+        # Theoretical analysis (FiLM: x' = (1+γ(s))·x + β(s), γ=W_γ@s, β=W_β@s):
+        #   std=0.0 (zero-init): γ=β=0 at start -> FiLM=identity. Gradient dL/dW_γ = (dL/dx')·s is
+        #       still non-zero (chain rule), so model CAN learn. But initial style signal magnitude is 0,
+        #       so all styles produce identical x' at step 0 -> model sees no style difference ->
+        #       weak learning signal -> slow start, may converge to "ignore style" attractor.
+        #   std=0.02 (small random): γ(s_1)≠γ(s_2) at start -> model immediately sees style difference.
+        #       Breaks the "conditional expectation collapse" equilibrium. Current default.
+        #   std=0.1+ (strong random): larger initial style signal, but may add noise that hurts content.
+        self.film_init_std = float(film_init_std)
         if self.film_enabled:
-            # Post-cross-attention FiLM: modulates features after style injection
-            # Non-zero init: gamma starts small but style-dependent, breaking the
-            # "model ignores style" equilibrium that zero-init causes.
-            self.film_proj = nn.Sequential(
-                nn.LayerNorm(self.dim),
-                nn.Linear(self.dim, self.dim * 2),
-            )
-            nn.init.normal_(self.film_proj[-1].weight, mean=0.0, std=self.film_init_std)
-            nn.init.zeros_(self.film_proj[-1].bias)
-            # Pre-cross-attention FiLM: makes Q style-dependent
-            self.film_q_proj = nn.Sequential(
-                nn.LayerNorm(self.dim),
-                nn.Linear(self.dim, self.dim * 2),
-            )
-            nn.init.normal_(self.film_q_proj[-1].weight, mean=0.0, std=self.film_init_std)
-            nn.init.zeros_(self.film_q_proj[-1].bias)
-            # Style-conditioned attention bias: directly adds per-token bias to
-            # attention logits before softmax. This bypasses the Q@K^T bottleneck
-            # and provides a strong, direct style signal that the softmax can't average away.
-            self.style_bias_proj = nn.Sequential(
-                nn.LayerNorm(self.dim),
-                nn.Linear(self.dim, 256),  # one bias per style token
-            )
-            nn.init.normal_(self.style_bias_proj[-1].weight, mean=0.0, std=self.film_init_std)
-            nn.init.zeros_(self.style_bias_proj[-1].bias)
+            # Post-cross-attention FiLM: modulates features after style injection.
+            # Init policy depends on film_init_std:
+            #   std=0.0: zero-init (FiLM=identity, slow learning, may collapse to "ignore style")
+            #   std>0.0: small random init (breaks "model ignores style" equilibrium)
+            if self.film_init_std > 0.0:
+                self.film_proj = nn.Sequential(
+                    nn.LayerNorm(self.dim),
+                    nn.Linear(self.dim, self.dim * 2),
+                )
+                nn.init.normal_(self.film_proj[-1].weight, mean=0.0, std=self.film_init_std)
+                nn.init.zeros_(self.film_proj[-1].bias)
+                # Pre-cross-attention FiLM: makes Q style-dependent
+                self.film_q_proj = nn.Sequential(
+                    nn.LayerNorm(self.dim),
+                    nn.Linear(self.dim, self.dim * 2),
+                )
+                nn.init.normal_(self.film_q_proj[-1].weight, mean=0.0, std=self.film_init_std)
+                nn.init.zeros_(self.film_q_proj[-1].bias)
+                # Style-conditioned attention bias: directly adds per-token bias to
+                # attention logits before softmax. This bypasses the Q@K^T bottleneck
+                # and provides a strong, direct style signal that the softmax can't average away.
+                self.style_bias_proj = nn.Sequential(
+                    nn.LayerNorm(self.dim),
+                    nn.Linear(self.dim, 256),  # one bias per style token
+                )
+                nn.init.normal_(self.style_bias_proj[-1].weight, mean=0.0, std=self.film_init_std)
+                nn.init.zeros_(self.style_bias_proj[-1].bias)
+            else:
+                # Zero-init branch: FiLM = identity at start (gamma=0, beta=0).
+                # NOTE: gradient dL/dW = (dL/dx')·s is non-zero (chain rule), so model CAN learn.
+                # But initial style signal magnitude is 0 -> all styles produce identical x' at step 0.
+                # This is the "0-init" baseline: theoretically learnable but slow, risks "ignore style" attractor.
+                self.film_proj = nn.Sequential(
+                    nn.LayerNorm(self.dim),
+                    nn.Linear(self.dim, self.dim * 2),
+                )
+                nn.init.zeros_(self.film_proj[-1].weight)
+                nn.init.zeros_(self.film_proj[-1].bias)
+                self.film_q_proj = nn.Sequential(
+                    nn.LayerNorm(self.dim),
+                    nn.Linear(self.dim, self.dim * 2),
+                )
+                nn.init.zeros_(self.film_q_proj[-1].weight)
+                nn.init.zeros_(self.film_q_proj[-1].bias)
+                self.style_bias_proj = nn.Sequential(
+                    nn.LayerNorm(self.dim),
+                    nn.Linear(self.dim, 256),
+                )
+                nn.init.zeros_(self.style_bias_proj[-1].weight)
+                nn.init.zeros_(self.style_bias_proj[-1].bias)
         else:
             self.film_proj = None
             self.film_q_proj = None
@@ -315,6 +380,12 @@ class SpatialBridgeBlock620(nn.Module):
                 logits = torch.matmul(q, k.transpose(-2, -1)) * scale
                 if style_bias is not None:
                     logits = logits + style_bias
+                # --- Top-K truncation before normalization ---
+                if self.style_attn_topk > 0:
+                    topk_values, topk_indices = logits.topk(self.style_attn_topk, dim=-1)
+                    mask = torch.full_like(logits, float('-inf'))
+                    mask.scatter_(-1, topk_indices, 0.0)
+                    logits = logits + mask
                 gates = torch.sigmoid(logits / temp)
                 attended = torch.matmul(gates, v)
                 # Renormalize by sum of gates for stable output scale
@@ -333,6 +404,12 @@ class SpatialBridgeBlock620(nn.Module):
                 logits = torch.matmul(q, k.transpose(-2, -1)) * scale
                 if style_bias is not None:
                     logits = logits + style_bias
+                # --- Top-K truncation before normalization ---
+                if self.style_attn_topk > 0:
+                    topk_values, topk_indices = logits.topk(self.style_attn_topk, dim=-1)
+                    mask = torch.full_like(logits, float('-inf'))
+                    mask.scatter_(-1, topk_indices, 0.0)
+                    logits = logits + mask
                 gates = torch.sigmoid(logits / temp)
                 attended = torch.matmul(gates, v)
                 with torch.no_grad():
@@ -346,6 +423,12 @@ class SpatialBridgeBlock620(nn.Module):
                 logits = torch.matmul(q, k.transpose(-2, -1)) * scale / temp
                 if style_bias is not None:
                     logits = logits + style_bias
+                # --- Top-K truncation before normalization ---
+                if self.style_attn_topk > 0:
+                    topk_values, topk_indices = logits.topk(self.style_attn_topk, dim=-1)
+                    mask = torch.full_like(logits, float('-inf'))
+                    mask.scatter_(-1, topk_indices, 0.0)
+                    logits = logits + mask
                 gates = torch.relu(logits) ** 2
                 attended = torch.matmul(gates, v)
                 with torch.no_grad():
@@ -359,6 +442,12 @@ class SpatialBridgeBlock620(nn.Module):
                 logits = torch.matmul(q, k.transpose(-2, -1)) * scale / temp
                 if style_bias is not None:
                     logits = logits + style_bias
+                # --- Top-K truncation before normalization ---
+                if self.style_attn_topk > 0:
+                    topk_values, topk_indices = logits.topk(self.style_attn_topk, dim=-1)
+                    mask = torch.full_like(logits, float('-inf'))
+                    mask.scatter_(-1, topk_indices, 0.0)
+                    logits = logits + mask
                 # Top-k selection per query (k=16 by default, ~6% of 256 tokens)
                 select_k = min(16, logits.shape[-1])
                 topk_val, topk_idx = torch.topk(logits, k=select_k, dim=-1)
@@ -375,6 +464,12 @@ class SpatialBridgeBlock620(nn.Module):
                 logits = torch.matmul(q, k.transpose(-2, -1)) * scale / temp
                 if style_bias is not None:
                     logits = logits + style_bias
+                # --- Top-K truncation before normalization ---
+                if self.style_attn_topk > 0:
+                    topk_values, topk_indices = logits.topk(self.style_attn_topk, dim=-1)
+                    mask = torch.full_like(logits, float('-inf'))
+                    mask.scatter_(-1, topk_indices, 0.0)
+                    logits = logits + mask
                 attn = _sparsemax(logits, dim=-1)
                 attended = torch.matmul(attn, v)
                 with torch.no_grad():
@@ -396,11 +491,27 @@ class SpatialBridgeBlock620(nn.Module):
                 logits = torch.matmul(q, k.transpose(-2, -1)) * scale / temp
                 if style_bias is not None:
                     logits = logits + style_bias
+                # --- Top-K truncation before normalization ---
+                if self.style_attn_topk > 0:
+                    topk_values, topk_indices = logits.topk(self.style_attn_topk, dim=-1)
+                    mask = torch.full_like(logits, float('-inf'))
+                    mask.scatter_(-1, topk_indices, 0.0)
+                    logits = logits + mask
                 attn = torch.softmax(logits, dim=-1)
                 attended = torch.matmul(attn, v)
             else:
-                # Default: fast sdpa path (no bias, no temperature)
-                attended = F.scaled_dot_product_attention(q, k, v, dropout_p=0.0, is_causal=False)
+                # Default: fast sdpa path (no bias, no temperature, no topk)
+                if self.style_attn_topk > 0:
+                    # Top-k requires explicit computation, cannot use SDPA
+                    logits = torch.matmul(q, k.transpose(-2, -1)) * scale
+                    topk_values, topk_indices = logits.topk(self.style_attn_topk, dim=-1)
+                    mask = torch.full_like(logits, float('-inf'))
+                    mask.scatter_(-1, topk_indices, 0.0)
+                    logits = logits + mask
+                    attn = torch.softmax(logits, dim=-1)
+                    attended = torch.matmul(attn, v)
+                else:
+                    attended = F.scaled_dot_product_attention(q, k, v, dropout_p=0.0, is_causal=False)
             attended = attended.transpose(1, 2).reshape(b, h * w, c)
             ca_input_std = ca_in.detach().float().std()
             ca_output_std = attended.detach().float().std()

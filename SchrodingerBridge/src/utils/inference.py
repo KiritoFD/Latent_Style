@@ -285,7 +285,7 @@ class LGTInference:
         self.objective_mode = str(bridge_cfg.objective_mode).strip().lower()
         if self.objective_mode in {"i2sb", "i2sb_endpoint", "bridge_endpoint"}:
             self.objective_mode = "i2sb_endpoint"
-        if contract_family != "620_spatial_bridge":
+        if contract_family not in ("620_spatial_bridge", "620_spectral_ode"):
             validate_i2sb_contract(
                 solver_family=str(getattr(config.model, "solver_family", "euler_legacy")),
                 transport_prediction_mode=str(getattr(config.model, "transport_prediction_mode", "velocity")),
@@ -517,7 +517,7 @@ class LGTInference:
         )
 
     @torch.no_grad()
-    def generation_with_target_latent(self, x0, target_style_id, num_steps=None, target_style_latent=None):
+    def generation_with_target_latent(self, x0, target_style_id, num_steps=None, target_style_latent=None, source_style_latent=None):
         if num_steps is None:
             num_steps = self.num_steps
         b = x0.shape[0]
@@ -545,8 +545,20 @@ class LGTInference:
                 integrate_kwargs["style_dino_cls"] = target_style_latent.get("style_dino_cls")
             if target_style_latent.get("style_text_tokens") is not None:
                 integrate_kwargs["style_text_tokens"] = target_style_latent.get("style_text_tokens")
+            # FC-SB Phase 3 deepfix: 传递 style_latent_tensor 让 N1 endpoint AdaIN 块能执行
+            _style_latent_tensor = target_style_latent.get("style_latent_tensor")
+            if _style_latent_tensor is not None:
+                integrate_kwargs["target_style_latent"] = _style_latent_tensor
         else:
             integrate_kwargs["target_style_latent"] = target_style_latent
+        # FC-SB Phase 4 A2 Step2: 传递 source_style_latent 让 fiber 空间 source-repulsion 能执行
+        if source_style_latent is not None:
+            if isinstance(source_style_latent, dict):
+                _src_tensor = source_style_latent.get("style_latent_tensor")
+                if _src_tensor is not None:
+                    integrate_kwargs["source_style_latent"] = _src_tensor
+            else:
+                integrate_kwargs["source_style_latent"] = source_style_latent
         return self.model.integrate(
             x0,
             style_id=target_style_id,

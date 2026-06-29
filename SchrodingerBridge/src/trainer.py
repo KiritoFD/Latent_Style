@@ -234,9 +234,15 @@ class SBTrainer:
             )
 
         contract_family = str(getattr(config.model, "contract_family", "legacy") or "legacy").strip().lower()
-        if contract_family == "620_spatial_bridge" and self.distill_enabled:
-            raise ValueError("620_spatial_bridge does not support legacy distillation; disable training.distill.enabled.")
-        self.loss_fn = SpatialBridgeObjective620(config) if contract_family == "620_spatial_bridge" else OTFlowMatchingObjective(config)
+        if contract_family in ("620_spatial_bridge", "620_spectral_ode") and self.distill_enabled:
+            raise ValueError(f"{contract_family} does not support legacy distillation; disable training.distill.enabled.")
+        if contract_family == "620_spatial_bridge":
+            self.loss_fn = SpatialBridgeObjective620(config)
+        elif contract_family == "620_spectral_ode":
+            from spectral_losses620 import SpectralODEObjective620
+            self.loss_fn = SpectralODEObjective620(config)
+        else:
+            self.loss_fn = OTFlowMatchingObjective(config)
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
         self.log_interval = max(0, int(train_cfg.get("log_interval", 20)))
@@ -1229,14 +1235,16 @@ class SBTrainer:
         setattr(self.model, "total_epochs", int(self.num_epochs))
         self.model.train()
         if hasattr(self.loss_fn, "update_weights_for_epoch") and callable(getattr(self.loss_fn, "update_weights_for_epoch")):
-            weight_info = self.loss_fn.update_weights_for_epoch(epoch)
+            weight_info = self.loss_fn.update_weights_for_epoch(epoch, self.num_epochs)
+            sigma_str = f" sigma={weight_info.get('bridge_sigma', 0.0):.4f}" if 'bridge_sigma' in weight_info else ""
             logger.info(
-                "Epoch %d weight schedule: stage=%s w_content=%.4f w_style=%.4f w_style_strength_reg=%.4f",
+                "Epoch %d weight schedule: stage=%s w_content=%.4f w_style=%.4f w_style_strength_reg=%.4f%s",
                 epoch,
                 weight_info.get("stage", 0),
                 weight_info.get("w_endpoint_content", 0.0),
                 weight_info.get("w_endpoint_style", 0.0),
                 weight_info.get("w_style_strength_reg", 0.0),
+                sigma_str,
             )
         if self.device.type == "cuda":
             torch.cuda.reset_peak_memory_stats(self.device)

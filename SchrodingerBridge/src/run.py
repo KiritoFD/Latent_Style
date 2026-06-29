@@ -320,6 +320,10 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
         cmd.append("--eval_enable_kid")
     else:
         cmd.append("--no-eval_enable_kid")
+    # P4: 支持 config_override, 用于推理消融时覆盖 model/bridge 参数
+    config_override = str(getattr(train_cfg, 'full_eval_config_override', '') or '').strip()
+    if config_override:
+        cmd += ['--config_override', config_override]
 
     logger.info("Running full eval for %s -> %s", checkpoint_path, out_dir)
     start = time.perf_counter()
@@ -446,7 +450,7 @@ def main() -> None:
     logger.info("Seed: %d", seed)
 
     contract_family = str(getattr(config.model, "contract_family", "legacy") or "legacy").strip().lower()
-    if contract_family != "620_spatial_bridge":
+    if contract_family not in ("620_spatial_bridge", "620_spectral_ode"):
         validate_i2sb_contract(
             solver_family=str(getattr(config.model, "solver_family", "euler_legacy")),
             transport_prediction_mode=str(getattr(config.model, "transport_prediction_mode", "velocity")),
@@ -463,7 +467,7 @@ def main() -> None:
         )
 
     data_cfg = config.data
-    needs_dino_runtime = contract_family == "620_spatial_bridge" or runtime_conditioning_requires_dino(
+    needs_dino_runtime = contract_family in ("620_spatial_bridge", "620_spectral_ode") or runtime_conditioning_requires_dino(
         tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
         semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
     )
@@ -670,35 +674,35 @@ def main() -> None:
         )
         if epoch % trainer.save_interval == 0 or epoch == trainer.num_epochs or trainer.requested_stop:
             ckpt_path = trainer.save_checkpoint(epoch, metrics)
-            if bool(train_cfg.full_eval_each_epoch):
-                if hasattr(trainer, "wait_for_pending_checkpoints"):
-                    trainer.wait_for_pending_checkpoints()
-                if bool(getattr(train_cfg, "full_eval_defer_until_training_end", False)):
-                    deferred_eval_checkpoints.append(ckpt_path)
-                else:
-                    eval_offloaded = False
-                    convergence_payload = None
-                    if hasattr(trainer, "offload_for_full_eval"):
-                        trainer.offload_for_full_eval()
-                        eval_offloaded = True
-                    try:
-                        convergence_payload = _run_full_eval_for_checkpoint(config, ckpt_path)
-                    finally:
-                        if eval_offloaded and hasattr(trainer, "restore_after_full_eval"):
-                            trainer.restore_after_full_eval()
-                    if _eval_convergence_requests_stop(train_cfg, convergence_payload, epoch=epoch):
-                        trainer.requested_stop = True
-                        logger.info(
-                            "Early stop requested by eval convergence at epoch %d: best=%s latest=%s since_last_pareto=%s objective_best=%s objective_since_best=%s stop_reason=%s patience=%s",
-                            epoch,
-                            convergence_payload.get("best_epoch"),
-                            convergence_payload.get("newest_epoch"),
-                            convergence_payload.get("since_last_pareto"),
-                            convergence_payload.get("objective_best_epoch"),
-                            convergence_payload.get("objective_epochs_since_best"),
-                            convergence_payload.get("stop_reason"),
-                            convergence_payload.get("patience"),
-                        )
+            if hasattr(trainer, "wait_for_pending_checkpoints"):
+                trainer.wait_for_pending_checkpoints()
+            if bool(getattr(train_cfg, "full_eval_defer_until_training_end", False)):
+                # Defer all saved checkpoints to a single batch at the end of training.
+                deferred_eval_checkpoints.append(ckpt_path)
+            elif bool(train_cfg.full_eval_each_epoch):
+                eval_offloaded = False
+                convergence_payload = None
+                if hasattr(trainer, "offload_for_full_eval"):
+                    trainer.offload_for_full_eval()
+                    eval_offloaded = True
+                try:
+                    convergence_payload = _run_full_eval_for_checkpoint(config, ckpt_path)
+                finally:
+                    if eval_offloaded and hasattr(trainer, "restore_after_full_eval"):
+                        trainer.restore_after_full_eval()
+                if _eval_convergence_requests_stop(train_cfg, convergence_payload, epoch=epoch):
+                    trainer.requested_stop = True
+                    logger.info(
+                        "Early stop requested by eval convergence at epoch %d: best=%s latest=%s since_last_pareto=%s objective_best=%s objective_since_best=%s stop_reason=%s patience=%s",
+                        epoch,
+                        convergence_payload.get("best_epoch"),
+                        convergence_payload.get("newest_epoch"),
+                        convergence_payload.get("since_last_pareto"),
+                        convergence_payload.get("objective_best_epoch"),
+                        convergence_payload.get("objective_epochs_since_best"),
+                        convergence_payload.get("stop_reason"),
+                        convergence_payload.get("patience"),
+                    )
         if trainer.requested_stop:
             logger.info("Early stop requested; ending training loop after epoch %d.", epoch)
             break

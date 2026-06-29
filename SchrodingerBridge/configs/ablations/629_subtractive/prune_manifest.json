@@ -1,0 +1,211 @@
+{
+  "dead_loss": {
+    "bridge.w_endpoint_content": {
+      "baseline": 1.0,
+      "prune_to": 0,
+      "source": "L1"
+    },
+    "bridge.w_endpoint_style": {
+      "baseline": 8.0,
+      "prune_to": 0,
+      "source": "L2"
+    },
+    "bridge.terminal_swd_weight": {
+      "baseline": 0.1,
+      "prune_to": 0,
+      "source": "L3"
+    },
+    "bridge.single_step_swd_weight": {
+      "baseline": 8.0,
+      "prune_to": 0,
+      "source": "L4"
+    },
+    "bridge.single_step_edge_weight": {
+      "baseline": 0.1,
+      "prune_to": 0,
+      "source": "L5"
+    },
+    "bridge.w_kinetic": {
+      "baseline": 1.0,
+      "prune_to": 0,
+      "source": "L6"
+    },
+    "bridge.spectral_w_hh": {
+      "baseline": 1.5,
+      "prune_to": 0,
+      "source": "L8"
+    },
+    "bridge.swd_use_high_freq": {
+      "baseline": true,
+      "prune_to": false,
+      "source": "L11"
+    },
+    "bridge.coupling_structure_cost_weight": {
+      "baseline": 1.0,
+      "prune_to": 0,
+      "source": "L12"
+    },
+    "bridge.coupling_structure_edge_weight": {
+      "baseline": 1.0,
+      "prune_to": 0,
+      "source": "L14"
+    },
+    "bridge.coupling_structure_hybrid_stats_weight": {
+      "baseline": 0.5,
+      "prune_to": 0,
+      "source": "L15"
+    },
+    "bridge.source_endpoint_aux_weight": {
+      "baseline": 0.0,
+      "prune_to": 0,
+      "source": "L16"
+    },
+    "bridge.endpoint_energy_band_weight": {
+      "baseline": 0.0,
+      "prune_to": 0,
+      "source": "L16"
+    }
+  },
+  "harmful_loss": {
+    "bridge.spectral_w_lh": {
+      "baseline": 1.0,
+      "prune_to": 0,
+      "source": "L9"
+    },
+    "bridge.spectral_w_hl": {
+      "baseline": 1.0,
+      "prune_to": 0,
+      "source": "L9"
+    }
+  },
+  "decorative_arch": {
+    "model.lowpass_mode": {
+      "baseline": "dwt_haar",
+      "prune_to": "avg_pool",
+      "source": "D4"
+    },
+    "model.ablation_skip_clean": {
+      "baseline": true,
+      "prune_to": false,
+      "source": "D5"
+    },
+    "model.ablation_skip_blur": {
+      "baseline": true,
+      "prune_to": false,
+      "source": "D6"
+    },
+    "model.ablation_decoder_highpass": {
+      "baseline": true,
+      "prune_to": false,
+      "source": "D7"
+    },
+    "model.residual_gain": {
+      "baseline": 1.0,
+      "prune_to": 0,
+      "source": "D8"
+    },
+    "model.ablation_no_residual": {
+      "baseline": false,
+      "prune_to": true,
+      "source": "D9"
+    },
+    "model.style_gate_mode": {
+      "baseline": "tanh_gate",
+      "prune_to": "film_only",
+      "source": "D10"
+    },
+    "model.affine_connection_gamma_scale": {
+      "baseline": 0.5,
+      "prune_to": 0,
+      "source": "D11"
+    },
+    "model.affine_connection_beta_scale": {
+      "baseline": 1.0,
+      "prune_to": 0,
+      "source": "D12"
+    },
+    "model.tokenizer_global_gate_scale": {
+      "baseline": 1.0,
+      "prune_to": 0,
+      "source": "D13"
+    },
+    "model.tokenizer_residual_gain": {
+      "baseline": 0.5,
+      "prune_to": 0,
+      "source": "D14"
+    },
+    "model.style_attn_sharpen_scale": {
+      "baseline": 2.5,
+      "prune_to": 0,
+      "source": "D15"
+    },
+    "model.endpoint_high_scale": {
+      "baseline": 1.0,
+      "prune_to": 0,
+      "source": "D16"
+    },
+    "model.skip_residual_weight": {
+      "baseline": 0.1,
+      "prune_to": 0,
+      "source": "D17"
+    },
+    "bridge.kinetic_penalty_mode": {
+      "baseline": "global_l2",
+      "prune_to": "off",
+      "source": "D18+D26"
+    },
+    "model.style_attn_mode": {
+      "baseline": "softmax",
+      "prune_to": "relu2",
+      "source": "D19+D20+D21+D22"
+    },
+    "model.endpoint_head_mode": {
+      "baseline": "velocity",
+      "prune_to": "endpoint_lowhigh",
+      "source": "D23"
+    },
+    "model.transport_prediction_mode": {
+      "baseline": "velocity",
+      "prune_to": "endpoint",
+      "source": "D24"
+    },
+    "bridge.training_target_projection_mode": {
+      "baseline": "legacy",
+      "prune_to": "dwt",
+      "source": "D25"
+    },
+    "bridge.terminal_swd_mode": {
+      "baseline": "standard",
+      "prune_to": "high_freq",
+      "source": "D27"
+    },
+    "bridge.bridge_path_mode": {
+      "baseline": "vertical",
+      "prune_to": "tri_band",
+      "source": "D28"
+    },
+    "bridge.swd_distance_mode": {
+      "baseline": "cdf",
+      "prune_to": "squared",
+      "source": "D29"
+    },
+    "bridge.t_sampling_mode": {
+      "baseline": "uniform_power",
+      "prune_to": "logit_normal",
+      "source": "D30"
+    }
+  },
+  "core_keep": [
+    "model.contract_family",
+    "model.endpoint_adain_scale",
+    "model.style_extrap_alpha",
+    "bridge.spectral_w_ll"
+  ],
+  "notes": {
+    "L13_w_flow_excluded": "bridge.w_flow is the core flow matching loss weight (fm_weight in losses620.py:53). Excluded from dead_loss per instruction. The _628_gen_clean_base.py:69 also explicitly notes 'w_flow -- KEEP! this is core'.",
+    "L16_baseline_already_zero": "bridge.source_endpoint_aux_weight and bridge.endpoint_energy_band_weight are already 0.0 in T5 baseline (these losses were never active). Listed for completeness.",
+    "decorative_arch_key_collisions": "D19-D22 all ablate model.style_attn_mode (4 alternatives: gated_raw/relu2/style_select/sparsemax); chose relu2 as cheapest non-softmax variant. D18 (off) and D26 (per_band) both ablate bridge.kinetic_penalty_mode; chose 'off' as the true disabled state. 27 D-ablations collapse to 23 unique keys.",
+    "D1_actual_key": "D1 ablation modifies model.contract_family ('620_spectral_ode' -> '620_spatial_bridge'), NOT model.spectral_ode_enabled (which is dead code per 628_gen_destructive_configs.py:8). core_keep uses the actual modified key.",
+    "dead_loss_count": "13 keys from 12 ablations (L1-L6, L8, L11-L12, L14-L16). L13 excluded as core FM. L16 contributes 2 keys. L7 in core_keep. L9 in harmful_loss. L10 (combined) omitted as redundant."
+  }
+}
