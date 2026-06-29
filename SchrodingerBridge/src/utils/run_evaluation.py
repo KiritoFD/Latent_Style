@@ -49,6 +49,7 @@ from utils.artfid_metric import (
     load_artfid_lpips,
 )
 from utils.targetwise_artfid_summary import write_targetwise_artfid_summary
+from utils.wfi import compute_wfi
 from utils.introstyle_eval import (
     IntroStyleFeatureExtractor,
     introstyle_style_vector,
@@ -1214,6 +1215,75 @@ def _save_summary_grid_png(rows, out_dir: Path, style_order: list[str] | None = 
         print(f"  {src_style}: {Path(src_img).stem if src_img else '(none)'}")
     return out_path
 
+
+def _compute_appearance_deltas(rows, images_dir: Path, test_dir: Path | str) -> dict | None:
+    """Compute per-image WFI and deltas between generated, source, and target images.
+
+    Returns a dict with:
+      - per_image: list of delta records
+      - aggregate: mean/std/count for each delta metric
+    """
+    if not rows:
+        return None
+    images_dir = Path(images_dir)
+    test_dir = Path(test_dir)
+    deltas: list[dict] = []
+    for row in rows:
+        gen_path = images_dir / Path(row.get("gen_image", "")).name
+        src_style = str(row.get("src_style", ""))
+        tgt_style = str(row.get("tgt_style", ""))
+        src_image = str(row.get("src_image", ""))
+        if not src_style or not tgt_style or not src_image:
+            continue
+        src_path = test_dir / src_style / src_image
+        tgt_dir = test_dir / tgt_style
+        tgt_paths = sorted(tgt_dir.glob("*.jpg")) + sorted(tgt_dir.glob("*.png"))
+        tgt_path = tgt_paths[0] if tgt_paths else None
+        if not gen_path.exists() or not src_path.exists() or tgt_path is None:
+            continue
+        try:
+            gen_wfi = compute_wfi(Image.open(gen_path).convert("RGB"))
+            src_wfi = compute_wfi(Image.open(src_path).convert("RGB"))
+            tgt_wfi = compute_wfi(Image.open(tgt_path).convert("RGB"))
+            deltas.append(
+                {
+                    "src_style": src_style,
+                    "tgt_style": tgt_style,
+                    "gen_image": str(gen_path.name),
+                    "brightness_mean_delta_to_source": gen_wfi["brightness_mean"] - src_wfi["brightness_mean"],
+                    "brightness_mean_delta_to_target": gen_wfi["brightness_mean"] - tgt_wfi["brightness_mean"],
+                    "contrast_ratio_delta_to_source": gen_wfi["contrast_ratio"] - src_wfi["contrast_ratio"],
+                    "contrast_ratio_delta_to_target": gen_wfi["contrast_ratio"] - tgt_wfi["contrast_ratio"],
+                    "dynamic_range_delta_to_source": gen_wfi["dynamic_range"] - src_wfi["dynamic_range"],
+                    "dynamic_range_delta_to_target": gen_wfi["dynamic_range"] - tgt_wfi["dynamic_range"],
+                    "saturation_mean_delta_to_source": gen_wfi["saturation_mean"] - src_wfi["saturation_mean"],
+                    "saturation_mean_delta_to_target": gen_wfi["saturation_mean"] - tgt_wfi["saturation_mean"],
+                    "hist_entropy_delta_to_source": gen_wfi["hist_entropy"] - src_wfi["hist_entropy"],
+                    "hist_entropy_delta_to_target": gen_wfi["hist_entropy"] - tgt_wfi["hist_entropy"],
+                    "wfi_score_delta_to_source": gen_wfi["wfi_score"] - src_wfi["wfi_score"],
+                    "wfi_score_delta_to_target": gen_wfi["wfi_score"] - tgt_wfi["wfi_score"],
+                    "gen_wfi_score": gen_wfi["wfi_score"],
+                    "src_wfi_score": src_wfi["wfi_score"],
+                    "tgt_wfi_score": tgt_wfi["wfi_score"],
+                }
+            )
+        except Exception:
+            continue
+    if not deltas:
+        return None
+    aggregate: dict[str, dict[str, float]] = {}
+    for key in deltas[0].keys():
+        if key in ("src_style", "tgt_style", "gen_image"):
+            continue
+        vals = [d[key] for d in deltas]
+        aggregate[key] = {
+            "mean": float(np.mean(vals)),
+            "std": float(np.std(vals)),
+            "count": len(vals),
+        }
+    return {"per_image": deltas, "aggregate": aggregate}
+
+
 def _extract_clip_embeddings(output):
     """
     Robust extraction logic for CLIP. 
@@ -2005,6 +2075,8 @@ def _auto_run_missing_full_eval(args) -> None:
             cmd += ["--no-eval_only_lpips_clip_style"]
         if bool(getattr(args, "transfer_only", False)):
             cmd += ["--transfer_only"]
+        lpips_net_val = str(getattr(args, "eval_lpips_net", "alex"))
+        cmd += ["--eval_lpips_net", lpips_net_val]
         if bool(args.eval_enable_introstyle):
             cmd += ["--eval_enable_introstyle"]
         else:
@@ -2172,6 +2244,13 @@ def main(argv: list[str] | None = None):
         help="If CLIP cannot be loaded, continue with clip_* = 0 (default: fail to avoid silent zeros).",
     )
     parser.add_argument('--eval_disable_lpips', action='store_true', help="Skip LPIPS metrics (keep CLIP)")
+    parser.add_argument(
+        '--eval_lpips_net',
+        type=str,
+        default='alex',
+        choices=['alex', 'vgg'],
+        help="LPIPS backbone network: 'alex' (standard for style transfer, lower values) or 'vgg' (higher values). Default: alex.",
+    )
     parser.add_argument(
         '--eval_only_lpips_clip_style',
         action=argparse.BooleanOptionalAction,
@@ -3101,6 +3180,38 @@ def main(argv: list[str] | None = None):
                         repeated_latents = torch.cat(pair_latents, dim=0)
                         tgt_ids = torch.tensor(pair_tgt_ids, device=device, dtype=torch.long)
                         target_style_latent = None
+                        # FC-SB Phase 3 deepfix: 构造 style_latent_tensor (目标风格参考图 VAE latent)
+                        # 让 model620.integrate_transport 的 N1 endpoint AdaIN 块 (T/U/V 方向) 能执行
+                        # 训练时 target_style_for_model 是 (B,4,H,W) tensor; 推理时需从参考图重新 encode
+                        _target_style_latent_cache: dict[int, torch.Tensor] = {}
+                        _style_latent_tensors: list[torch.Tensor] = []
+                        if vae is None:
+                            print("  WARNING: vae is None, skipping style_latent_tensor (N1 endpoint AdaIN will be skipped)")
+                        else:
+                            for _src_item, _tgt_name, tgt_id, _out_name in meta:
+                                tgt_id_int = int(tgt_id)
+                                if tgt_id_int not in _target_style_latent_cache:
+                                    _tgt_entry = test_images.get(tgt_id_int)
+                                    _tgt_paths = _tgt_entry[1] if _tgt_entry else None
+                                    if not _tgt_paths:
+                                        print(f"  WARNING: no reference images for target style id={tgt_id_int}")
+                                        _target_style_latent_cache[tgt_id_int] = None
+                                    else:
+                                        try:
+                                            _ref_img = _load_eval_image_tensor(_tgt_paths[0]).unsqueeze(0).to(device)
+                                            _ref_latent = encode_image(vae, _ref_img, device)
+                                            if abs(scale_in - 1.0) > 1e-4:
+                                                _ref_latent = _ref_latent * scale_in
+                                            _target_style_latent_cache[tgt_id_int] = _ref_latent.detach()
+                                        except Exception as _exc:
+                                            print(f"  WARNING: VAE encode failed for target style id={tgt_id_int}: {_exc}")
+                                            _target_style_latent_cache[tgt_id_int] = None
+                                _cached_latent = _target_style_latent_cache.get(tgt_id_int)
+                                if _cached_latent is not None:
+                                    _style_latent_tensors.append(_cached_latent)
+                            if len(_style_latent_tensors) != len(meta):
+                                print(f"  WARNING: style_latent_tensor incomplete ({len(_style_latent_tensors)}/{len(meta)}), N1 AdaIN may be skipped")
+                                _style_latent_tensors = []
                         if target_dino_bank:
                             by_style = target_dino_bank.get("by_style", {})
                             missing_tgt = [sid for sid in pair_tgt_ids if int(sid) not in by_style]
@@ -3135,11 +3246,21 @@ def main(argv: list[str] | None = None):
                                     target_style_latent["style_text_tokens"] = torch.stack(
                                         text_tokens_for_batch, dim=0
                                     ).to(device=device, dtype=repeated_latents.dtype)
+                        # FC-SB Phase 3 deepfix: 注入 style_latent_tensor 到 target_style_latent dict
+                        if _style_latent_tensors:
+                            _style_latent_tensor = torch.cat(_style_latent_tensors, dim=0).to(
+                                device=device, dtype=repeated_latents.dtype
+                            )
+                            if target_style_latent is None:
+                                target_style_latent = {"style_latent_tensor": _style_latent_tensor}
+                            else:
+                                target_style_latent["style_latent_tensor"] = _style_latent_tensor
                         t0 = time.perf_counter()
                         latents_gen = lgt.generation_with_target_latent(
                             repeated_latents,
                             tgt_ids,
                             target_style_latent=target_style_latent,
+                            source_style_latent=repeated_latents,  # FC-SB Phase 4 A2 Step2: 源内容 VAE latent, 供 fiber 空间反向排斥
                         )
                         chunk_runtime_observability = _runtime_observability_from_model(getattr(lgt, "model", None))
                         latent_post_debug = None
@@ -3306,17 +3427,18 @@ def main(argv: list[str] | None = None):
             print("  WARNING: lpips module not available. Install with: pip install lpips")
         else:
             try:
-                cache_key = ("lpips", "vgg", str(device))
+                lpips_net = str(getattr(args, "eval_lpips_net", "alex"))
+                cache_key = ("lpips", lpips_net, str(device))
                 cached = _runtime_cache_get(cache_key) if bool(args.runtime_model_cache) else None
                 if cached is not None:
                     loss_fn = cached
-                    print("  LPIPS Loaded (runtime cache)")
+                    print(f"  LPIPS Loaded ({lpips_net}, runtime cache)")
                 else:
-                    loss_fn = lpips.LPIPS(net='vgg', verbose=False).to(device)
+                    loss_fn = lpips.LPIPS(net=lpips_net, verbose=False).to(device)
                     loss_fn.eval()
                     if bool(args.runtime_model_cache):
                         _runtime_cache_put(cache_key, loss_fn)
-                    print("  LPIPS Loaded")
+                    print(f"  LPIPS Loaded ({lpips_net})")
             except Exception as e:
                 print(f"  WARNING: Failed to load LPIPS: {e}")
 
@@ -4190,6 +4312,7 @@ def main(argv: list[str] | None = None):
             "profile_timing": bool(args.profile_timing),
             "save_summary_grid": bool(args.save_summary_grid),
             "only_lpips_clip_style": bool(args.eval_only_lpips_clip_style),
+            "lpips_net": str(getattr(args, "eval_lpips_net", "alex")),
             "postprocess_mode": str(args.postprocess_mode),
             "postprocess_strength": float(args.postprocess_strength),
             "postprocess_mean_strength": float(args.postprocess_mean_strength),
@@ -4222,6 +4345,8 @@ def main(argv: list[str] | None = None):
         introstyle_result=introstyle_result,
         runtime_observability_rows=runtime_observability_rows,
         idt_baselines=idt_baselines,
+        save_generated_images=bool(args.save_generated_images),
+        test_dir=test_dir,
     )
 
 def generate_summary_json(
@@ -4249,6 +4374,8 @@ def generate_summary_json(
     introstyle_result: dict[str, object] | None = None,
     runtime_observability_rows: list[dict[str, object]] | None = None,
     idt_baselines: dict[str, object] | None = None,
+    save_generated_images: bool = False,
+    test_dir: str | Path | None = None,
 ):
     print("\n妫ｅ啯鎯?Generating Summary...")
     rows = []
@@ -4581,6 +4708,22 @@ def generate_summary_json(
             if target_intro is not None:
                 bucket['introstyle_delta_idt'] = float(target_intro) - float(identity_intro)
 
+    # Appearance / whitening deltas between generated, source, and target images.
+    appearance_deltas = None
+    if save_generated_images and rows:
+        try:
+            appearance_deltas = _compute_appearance_deltas(
+                rows,
+                images_dir=out_dir / "images",
+                test_dir=test_dir,
+            )
+            if appearance_deltas is not None:
+                print(
+                    f"  Appearance deltas computed for {appearance_deltas['aggregate'].get('gen_wfi_score', {}).get('count', 0)} images"
+                )
+        except Exception as exc:
+            print(f"  WARNING: appearance delta computation failed: {exc}")
+
     summary = {
         'checkpoint': str(ckpt_path),
         'timestamp': time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -4632,6 +4775,9 @@ def generate_summary_json(
         }
     if isinstance(introstyle_analysis, dict):
         summary['introstyle_analysis_sidecar'] = introstyle_analysis
+
+    if appearance_deltas is not None:
+        summary['appearance_deltas'] = appearance_deltas
 
     if bool((settings or {}).get("save_summary_grid", True)):
         summary['summary_grid_pending'] = True
