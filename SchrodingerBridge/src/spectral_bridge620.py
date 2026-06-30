@@ -50,8 +50,11 @@ class SpectralODEBridge620(nn.Module):
 
         # Style conditioner (DINO patches -> bridge width)
         # 630 Phase 2: propagate mask config (The Blindfolded Tokenizer)
+        # 630 Phase 4B-1: propagate freq_lowpass config (Scheme C frequency masking)
         mask_ratio = float(getattr(model_cfg, "style_mask_ratio", 0.0))
         mask_mode = str(getattr(model_cfg, "style_mask_mode", "none"))
+        freq_lowpass_alpha = float(getattr(model_cfg, "style_freq_lowpass_alpha", 0.0))
+        freq_lowpass_kernel = int(getattr(model_cfg, "style_freq_lowpass_kernel", 5))
         self.style_conditioner = StyleConditioner620(
             dino_dim=self.dino_dim,
             model_dim=self.dim,
@@ -59,6 +62,8 @@ class SpectralODEBridge620(nn.Module):
             num_memory_tokens=256,
             mask_ratio=mask_ratio,
             mask_mode=mask_mode,
+            freq_lowpass_alpha=freq_lowpass_alpha,
+            freq_lowpass_kernel=freq_lowpass_kernel,
         )
 
         # Input projection: 4 subbands stacked -> dim channels

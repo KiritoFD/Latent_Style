@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase3_mask_random_50_10ep.json",
+  "model": {
+    "style_extrap_alpha": 0.0
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4a2_extrap_0",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4a2_extrap_0",
+    "axis": "subtractive_ablation",
+    "stage": "phase4a2",
+    "notes": "Phase 4A-2: style_extrap_alpha=0.0 (disable inference style extrapolation, baseline 0.1). 3-epoch quick check. If PASS, extrap path is removable."
+  }
+}

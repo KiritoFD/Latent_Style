@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 
@@ -11,6 +12,8 @@ class StyleConditioner620(nn.Module):
     630 清理: deprecated 兼容参数已连根拔起 (调用点同步精简).
     630 Phase 2: The Blindfolded Tokenizer — random dropout + spatial shuffle
     on style tokens to break Gate Collapse (docs/630/mask.md).
+    630 Phase 4B-1: Frequency Masking (Scheme C) — subtract low-freq DINO patches
+    to purify high-freq style residual, orthogonal to mask_mode.
     """
 
     def __init__(
@@ -22,6 +25,8 @@ class StyleConditioner620(nn.Module):
         num_memory_tokens: int = 256,
         mask_ratio: float = 0.0,
         mask_mode: str = "none",
+        freq_lowpass_alpha: float = 0.0,
+        freq_lowpass_kernel: int = 5,
     ) -> None:
         super().__init__()
         self.dino_dim = int(dino_dim)
@@ -46,10 +51,39 @@ class StyleConditioner620(nn.Module):
         self.mask_mode = str(mask_mode).strip().lower()
         if self.mask_mode not in {"none", "random", "shuffle"}:
             self.mask_mode = "none"
+        # 630 Phase 4B-1: Frequency Masking (Scheme C) — orthogonal to mask_mode
+        # alpha=0 → no-op; alpha=1 → pure high-freq residual (subtract full low-pass)
+        self.freq_lowpass_alpha = float(freq_lowpass_alpha)
+        self.freq_lowpass_kernel = max(3, int(freq_lowpass_kernel) | 1)  # force odd >= 3
+
+    def _apply_freq_lowpass(self, tokens: torch.Tensor) -> torch.Tensor:
+        """Scheme C: subtract low-frequency DINO patch component.
+
+        Tokens arrive as [B, N, C] with N = H*W (perfect square, e.g. 256=16x16).
+        We reshape to spatial [B, C, H, W], apply avg_pool2d (box low-pass) to get
+        the low-freq base, then return `tokens - alpha * low`. This purifies the
+        high-freq style residual (brushstroke / color covariance) and starves the
+        content (global topology) — see docs/630/mask.md §C.
+
+        If N is not a perfect square, fall back to no-op (cannot form spatial grid).
+        """
+        alpha = self.freq_lowpass_alpha
+        if alpha <= 0.0:
+            return tokens
+        b, n, c = tokens.shape
+        side = int(round(n ** 0.5))
+        if side * side != n or side < self.freq_lowpass_kernel:
+            return tokens  # not a perfect square or grid too small for kernel
+        x = tokens.reshape(b, side, side, c).permute(0, 3, 1, 2).contiguous()
+        pad = self.freq_lowpass_kernel // 2
+        low = F.avg_pool2d(x, kernel_size=self.freq_lowpass_kernel, stride=1, padding=pad)
+        out = x - alpha * low
+        return out.permute(0, 2, 3, 1).reshape(b, n, c).to(dtype=tokens.dtype)
 
     def _apply_mask(self, tokens: torch.Tensor) -> torch.Tensor:
-        """Apply Blindfolded Tokenizer masking.
+        """Apply Blindfolded Tokenizer masking (Phase 2) on top of freq lowpass.
 
+        Order: freq_lowpass (purify) -> random/shuffle (break topology).
         - random: drop mask_ratio fraction of tokens, keep (1-ratio). Breaks global topology.
         - shuffle: permute token order. Breaks spatial position info (no PE in downstream).
         - none: pass through.
@@ -114,6 +148,9 @@ class StyleConditioner620(nn.Module):
         if patches.shape[-1] != self.dino_dim:
             raise ValueError(f"style_dino_patches last dim must be {self.dino_dim}, got {patches.shape[-1]}")
 
+        # 630 Phase 4B-1: Apply Frequency Masking (Scheme C) on raw patches BEFORE patch_proj.
+        # Subtracting low-freq DINO component purifies high-freq style residual.
+        patches = self._apply_freq_lowpass(patches)
         img_tokens = self.patch_proj(patches.float()).to(dtype=dtype)
         # 630 Phase 2: Apply Blindfolded Tokenizer masking after projection
         img_tokens = self._apply_mask(img_tokens)
