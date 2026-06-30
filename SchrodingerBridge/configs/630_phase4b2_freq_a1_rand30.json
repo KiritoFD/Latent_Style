@@ -1,0 +1,24 @@
+{
+  "_base": "630_phase3_mask_random_50_10ep.json",
+  "model": {
+    "style_freq_lowpass_alpha": 1.0,
+    "style_freq_lowpass_kernel": 5,
+    "style_mask_ratio": 0.3,
+    "style_mask_mode": "random"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4b2_freq_a1_rand30",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4b2_freq_a1_rand30",
+    "axis": "mask_ratio_refinement",
+    "stage": "phase4b2",
+    "notes": "Phase 4B-2: freq_a1 + random_30. Lower mask_ratio to improve content preservation (lower lpips). Tests if less aggressive random dropout + freq masking gives better trade-off."
+  }
+}

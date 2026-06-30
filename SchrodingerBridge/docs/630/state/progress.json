@@ -1,10 +1,10 @@
 {
   "task": "630_cleanup_masking_exploration",
-  "iteration": 6,
-  "total_findings": 26,
-  "status": "PHASE4_SUBTRACTIVE_IN_PROGRESS",
+  "iteration": 9,
+  "total_findings": 34,
+  "status": "PHASE4B2_COMPLETED",
   "stale_count": 0,
-  "last_seen": "2026-07-01T09:00:00",
+  "last_seen": "2026-07-01T00:47:00",
   "baseline": {
     "clip_style": 0.7293,
     "content_lpips": 0.3203,
@@ -17,18 +17,50 @@
     "content_lpips": 0.3369,
     "verdict": "PASS"
   },
-  "phase4_plan": {
-    "stage_4a1_dead_code_removal": "删除 spectral_losses620.py placeholder metrics + compute_debug + loss_fn.last_debug",
-    "stage_4a2_hyperparam_ablation": [
-      "spectral_w_ll=0.3 vs 0.0",
-      "style_extrap_alpha=0.1 vs 0.0",
-      "endpoint_adain_scale=1.0 vs 0.0",
-      "style_attn_temperature=1.0 vs 0.5/2.0",
-      "style_shortcut_alpha=1.0 vs 0.5"
+  "phase4a1_results": {
+    "stage": "dead_code_removal",
+    "status": "completed",
+    "commit": "31fc94cac",
+    "deleted_items": ["spectral_brownian_noise_scale", "loss_type metric", "loss_fm alias", "loss_fm_total", "compute_debug", "loss_fn.last_debug"]
+  },
+  "phase4a2_results": {
+    "stage": "subtractive_ablation_3epoch",
+    "status": "completed",
+    "commit": "50adae4dc",
+    "ablations": [
+      {"config": "spectral_w_ll=0.0", "clip": 0.7117, "lpips": 0.3120, "verdict": "FAIL"},
+      {"config": "style_extrap_alpha=0.0", "clip": 0.7242, "lpips": 0.3333, "verdict": "FAIL"},
+      {"config": "endpoint_adain_scale=0.0", "clip": 0.7082, "lpips": 0.2994, "verdict": "FAIL"}
     ],
-    "stage_4b1_freq_mask": "频率掩码方案 C - 分频 tokenizer 低频减法",
-    "stage_4b2_mask_ratio": "0.6, 0.7 中间值细化",
-    "stage_4b3_gate_warmup": "gate warmup 训练技巧"
+    "conclusion": "All 3 components effective, none removable. Content Fidelity Pathway validated."
+  },
+  "phase4b1_results": {
+    "stage": "frequency_masking_scheme_c",
+    "status": "completed",
+    "commit": "d83a050e0",
+    "ablations": [
+      {"config": "freq_a1 (alpha=1.0, no random)", "clip": 0.7258, "lpips": 0.3357, "verdict": "PASS"},
+      {"config": "freq_a05 (alpha=0.5, no random)", "clip": 0.7252, "lpips": 0.3347, "verdict": "PASS"},
+      {"config": "freq_a1_rand50 (combined)", "clip": 0.7264, "lpips": 0.3354, "verdict": "PASS"}
+    ],
+    "conclusion": "Frequency masking valid. Can replace or complement random dropout."
+  },
+  "phase4b2_results": {
+    "stage": "long_train_and_mask_ratio_refinement",
+    "status": "completed",
+    "experiments": [
+      {"config": "freq_a1_rand50_10ep", "clip": 0.7277, "lpips": 0.3394, "v_ll_abs": 0.7255, "verdict": "PASS (parity with 10ep baseline)"},
+      {"config": "freq_a1_rand30 (3ep)", "clip": 0.7250, "lpips": 0.3252, "v_ll_abs": 0.6541, "verdict": "PASS (best lpips)"},
+      {"config": "freq_a1_rand70 (3ep)", "clip": 0.7245, "lpips": 0.3284, "v_ll_abs": 0.5636, "verdict": "PASS"}
+    ],
+    "conclusion": "Optimal: mask_ratio=0.5, train 5ep (content drift after 5ep). head_ll compensation universal (0.56-0.73)."
+  },
+  "phase4_plan": {
+    "stage_4a1_dead_code_removal": "completed",
+    "stage_4a2_subtractive_ablation": "completed - all 3 components retained",
+    "stage_4b1_freq_mask": "completed - 3 configs all PASS",
+    "stage_4b2_long_train_and_ratio": "completed - optimal mask_ratio=0.5, 5ep",
+    "stage_4b3_dwt_tokenizer": "pending"
   },
   "milestones": {
     "M1_audit": "completed",
@@ -37,8 +69,8 @@
     "M4_masking": "completed",
     "M5_exploration": "completed",
     "M6_documentation": "completed",
-    "M7_phase4_subtractive": "in_progress",
-    "M8_phase4_additive": "pending",
+    "M7_phase4_subtractive": "completed",
+    "M8_phase4_additive": "in_progress",
     "M9_phase4_validation": "pending"
   }
 }
