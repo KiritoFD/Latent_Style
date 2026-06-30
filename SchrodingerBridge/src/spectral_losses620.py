@@ -88,28 +88,25 @@ class SpectralODEObjective620:
         loss = self.w_ll * loss_ll + self.w_lh * loss_lh + self.w_hl * loss_hl
 
         zero = content.new_tensor(0.0)
-        # Minimal metrics: only actual losses + keys referenced by trainer.py logging.
-        # Placeholder keys removed: trainer.py uses _avg() with `if name not in metric_accum` guard,
-        # so missing keys safely return 0.0.
+        # 630 Phase 4A-1: removed dead placeholders (spectral_brownian_noise_scale,
+        # loss_type metric, loss_fm alias, loss_fm_total, compute_debug, last_debug).
+        # trainer.py _avg() guard + setdefault keep logging behavior identical.
+        # Kept: flow (LIVE tqdm/epoch log), terminal_swd/ot_cost/kinetic_energy/curvature
+        # (legacy log format compat), loss_fm_spectral_* (debug value).
         metrics: Dict[str, torch.Tensor] = {
             "loss": loss,
             "loss_fm_spectral_ll": loss_ll.detach(),
             "loss_fm_spectral_lh": loss_lh.detach(),
             "loss_fm_spectral_hl": loss_hl.detach(),
-            "loss_fm_total": loss.detach(),
             "t_mean": t.detach().float().mean(),
-            "spectral_brownian_noise_scale": zero,
-            "loss_type": content.new_tensor(1.0 if self.loss_type in ("huber", "smooth_l1", "smoothl1") else 0.0),
             # Aliases referenced by trainer.py logging (_avg calls)
             "flow": loss.detach(),
-            "loss_fm": loss.detach(),
             "terminal_swd": zero,
             "ot_cost": zero,
             "kinetic_energy": zero,
             "curvature": zero,
             "style_dino_active": content.new_tensor(1.0 if style_dino_patches is not None else 0.0),
         }
-        self.last_debug = {"x_t": x_t.detach(), "target": target.detach()}
         return metrics
 
     def update_weights_for_epoch(self, epoch: int, num_epochs: int = 3) -> dict:
@@ -117,6 +114,3 @@ class SpectralODEObjective620:
             "stage": 0, "bridge_sigma": 0.0,
             "w_endpoint_content": 0.0, "w_endpoint_style": 0.0, "w_style_strength_reg": 0.0,
         }
-
-    def compute_debug(self, model, **kwargs) -> Dict[str, Dict[str, torch.Tensor]]:
-        return {"metrics": self.compute(model, **kwargs), "components": {}, "state": dict(self.last_debug)}

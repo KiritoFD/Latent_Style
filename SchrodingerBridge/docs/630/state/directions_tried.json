@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "phase": "phase2",
+    "direction": "mask_random_50",
+    "verdict": "PASS (clip=0.7261, lpips=0.3296 @3ep)",
+    "timestamp": "2026-06-30T18:00:00"
+  },
+  {
+    "phase": "phase2",
+    "direction": "mask_random_75",
+    "verdict": "PASS (clip=0.7250, lpips=0.3278 @3ep)",
+    "timestamp": "2026-06-30T18:00:00"
+  },
+  {
+    "phase": "phase2",
+    "direction": "mask_shuffle_50",
+    "verdict": "FAIL (clip=0.7234 < 0.7243)",
+    "timestamp": "2026-06-30T18:00:00"
+  },
+  {
+    "phase": "phase2",
+    "direction": "mask_shuffle_75",
+    "verdict": "FAIL (clip=0.7232 < 0.7243)",
+    "timestamp": "2026-06-30T18:00:00"
+  },
+  {
+    "phase": "phase3",
+    "direction": "mask_random_50_10ep_full_train",
+    "verdict": "PASS (clip=0.7288, lpips=0.3369 @10ep)",
+    "timestamp": "2026-06-30T22:30:00"
+  },
+  {
+    "phase": "phase4a1",
+    "direction": "dead_code_removal_placeholders",
+    "verdict": "IN_PROGRESS (spectral_brownian_noise_scale, loss_type metric, loss_fm alias, loss_fm_total, compute_debug, loss_fn.last_debug)",
+    "timestamp": "2026-07-01T09:00:00"
+  }
+]
