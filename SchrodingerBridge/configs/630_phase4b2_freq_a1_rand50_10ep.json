@@ -1,0 +1,24 @@
+{
+  "_base": "630_phase3_mask_random_50_10ep.json",
+  "model": {
+    "style_freq_lowpass_alpha": 1.0,
+    "style_freq_lowpass_kernel": 5,
+    "style_mask_ratio": 0.5,
+    "style_mask_mode": "random"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4b2_freq_a1_rand50_10ep",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 10,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4b2_freq_a1_rand50_10ep",
+    "axis": "additive_frequency_masking_long_train",
+    "stage": "phase4b2",
+    "notes": "Phase 4B-2: 10-epoch long training of best Phase 4B-1 config (freq_a1_rand50). Verifies if marginal 3-epoch improvement (+0.0003 clip) stabilizes over longer training."
+  }
+}
