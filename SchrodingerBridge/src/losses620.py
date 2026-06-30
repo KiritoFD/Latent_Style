@@ -57,7 +57,7 @@ class SpatialBridgeObjective620:
         self.lowpass_kernel = int(getattr(self.bridge_cfg, "training_target_projection_kernel", 5))
         self.low_anchor = float(getattr(self.bridge_cfg, "training_target_projection_low_anchor", 1.0))
         self.training_target_projection_mode = str(
-            getattr(self.bridge_cfg, "training_target_projection_mode", "source_low_target_high")
+            getattr(self.bridge_cfg, "training_target_projection_mode", "tri_band_wavelet")
         ).strip().lower()
         if self.training_target_projection_mode not in {
             "legacy",
@@ -78,7 +78,7 @@ class SpatialBridgeObjective620:
         self.t_sampling_beta_a = max(0.0, float(getattr(self.bridge_cfg, "t_sampling_beta_a", 0.0)))
         self.t_sampling_beta_b = max(0.0, float(getattr(self.bridge_cfg, "t_sampling_beta_b", 0.0)))
         # === FC-SB Phase 4 A3: Logit-Normal 时间采样 ===
-        self.t_sampling_mode = str(getattr(self.bridge_cfg, "t_sampling_mode", "uniform_power")).strip().lower()
+        self.t_sampling_mode = str(getattr(self.bridge_cfg, "t_sampling_mode", "logit_normal")).strip().lower()
         self.t_sampling_logit_mean = float(getattr(self.bridge_cfg, "t_sampling_logit_mean", 0.0))  # 正值偏向 t→1
         self.t_sampling_logit_std = max(1e-3, float(getattr(self.bridge_cfg, "t_sampling_logit_std", 1.0)))  # 越小越集中
         self.source_endpoint_aux_weight = float(getattr(self.bridge_cfg, "source_endpoint_aux_weight", 0.0))
@@ -114,18 +114,7 @@ class SpatialBridgeObjective620:
         self._base_w_style_strength_reg = self.w_style_strength_reg
         self.last_debug: dict[str, torch.Tensor] = {}
         self._projection_cache: dict[tuple[int, str, torch.dtype], torch.Tensor] = {}
-        self.w_contrast_preserve = float(getattr(self.bridge_cfg, "w_contrast_preserve", 0.0))
-        self.contrast_preserve_threshold = max(0.01, min(1.0, float(getattr(self.bridge_cfg, "contrast_preserve_threshold", 0.8))))
-        self.w_channel_variance = float(getattr(self.bridge_cfg, "w_channel_variance", 0.0))
-        self.w_hf_energy = float(getattr(self.bridge_cfg, "w_hf_energy", 0.0))
-        self.hf_energy_threshold = max(0.01, min(1.0, float(getattr(self.bridge_cfg, "hf_energy_threshold", 0.5))))
-        self.w_velocity_magnitude = float(getattr(self.bridge_cfg, "w_velocity_magnitude", 0.0))
-        self.w_pixel_color_match = float(getattr(self.bridge_cfg, "w_pixel_color_match", 0.0))
-        self.w_hsv_saturation = float(getattr(self.bridge_cfg, "w_hsv_saturation", 0.0))
-        self.hsv_sat_threshold = max(0.01, min(1.0, float(getattr(self.bridge_cfg, "hsv_sat_threshold", 0.8))))
         self.w_flow_scale = max(0.01, min(2.0, float(getattr(self.bridge_cfg, "w_flow_scale", 1.0))))
-        self.w_directional_cosine = max(0.0, float(getattr(self.bridge_cfg, "w_directional_cosine", 0.0)))
-        self.w_freq_split_cosine = max(0.0, float(getattr(self.bridge_cfg, "w_freq_split_cosine", 0.0)))
         self.w_style_contrastive = float(getattr(self.bridge_cfg, "w_style_contrastive", 0.0))
         self.contrastive_margin = max(0.01, min(1.0, float(getattr(self.bridge_cfg, "contrastive_margin", 0.1))))
         self.contrastive_temperature = max(1e-4, float(getattr(self.bridge_cfg, "contrastive_temperature", 0.1)))
@@ -142,11 +131,10 @@ class SpatialBridgeObjective620:
         self.w_output_variance = float(getattr(self.bridge_cfg, "w_output_variance", 0.0))
         self.output_variance_band: str = str(getattr(self.bridge_cfg, "output_variance_band", "hh")).strip().lower()
         # "hh" = 仅匹配 HH 频带方差; "mid" = 仅匹配 Mid; "all" = 匹配全 fiber
-        # === FC-SB Phase 4 B4: Fiber-MoE Load Balancing ===
-        self.fiber_moe_load_balance_weight = float(getattr(self.bridge_cfg, "fiber_moe_load_balance_weight", 0.0))
-        self.bridge_path_mode = str(getattr(self.bridge_cfg, "bridge_path_mode", "linear")).strip().lower()
-        if self.bridge_path_mode not in {"linear", "spherical_vp"}:
-            self.bridge_path_mode = "linear"
+        # 629 D28: bridge_path_mode == "tri_band" confirmed effective (vertical/spherical_vp branches kept for legacy compat)
+        self.bridge_path_mode = str(getattr(self.bridge_cfg, "bridge_path_mode", "tri_band")).strip().lower()
+        if self.bridge_path_mode not in {"linear", "spherical_vp", "tri_band"}:
+            self.bridge_path_mode = "tri_band"
         # CFG dropout: replace style tokens with null tokens during training
         self.cfg_dropout_prob = max(0.0, min(1.0, float(getattr(self.bridge_cfg, "cfg_dropout_prob", 0.0))))
         self.cfg_null_token_init_std = max(1e-6, float(getattr(self.bridge_cfg, "cfg_null_token_init_std", 0.02)))
@@ -491,48 +479,6 @@ class SpatialBridgeObjective620:
             fm = (self.spectral_w_ll * loss_ll + self.spectral_w_lh * loss_lh
                   + self.spectral_w_hl * loss_hl + self.spectral_w_hh * loss_hh)
 
-        # Directional cosine loss with frequency split
-        dir_cosine_loss = content.new_tensor(0.0)
-        _clip_dir_val = 0.0
-        _clip_fm_low_val = 0.0
-        if self.w_directional_cosine > 0:
-            if self.w_freq_split_cosine > 0:
-                # === Frequency-split mode: low-freq MSE + high-freq Cosine ===
-                _lp_kernel = getattr(self, 'lowpass_kernel', 5)
-
-                def _lowpass_vel(x, k=_lp_kernel):
-                    return F.avg_pool2d(x.float(), k, stride=1, padding=k // 2) if x.dim() == 4 else x
-
-                v_pred_lp = _lowpass_vel(pred_velocity)
-                v_tgt_lp = _lowpass_vel(target_velocity)
-                v_pred_hp = pred_velocity.float() - v_pred_lp
-                v_tgt_hp = target_velocity.float() - v_tgt_lp
-
-                # Low-frequency: strict MSE (preserve structure)
-                fm_low_freq = F.mse_loss(v_pred_lp, v_tgt_lp)
-
-                # High-frequency: directional cosine (preserve style strokes)
-                v_pred_hp_flat = v_pred_hp.reshape(v_pred_hp.shape[0], -1)
-                v_tgt_hp_flat = v_tgt_hp.reshape(v_tgt_hp.shape[0], -1)
-                v_pred_hp_n = F.normalize(v_pred_hp_flat, dim=-1)
-                v_tgt_hp_n = F.normalize(v_tgt_hp_flat, dim=-1)
-                cos_sim_hp = (v_pred_hp_n * v_tgt_hp_n).sum(dim=-1).mean()
-                dir_loss_hp = (1.0 - cos_sim_hp).clamp(min=0.0)
-
-                # Combined: MSE dominant + high-freq direction as auxiliary constraint
-                dir_cosine_loss = fm_low_freq * 0.5 + dir_loss_hp
-                fm = fm + self.w_directional_cosine * dir_cosine_loss
-                _clip_dir_val = dir_loss_hp.item()
-                _clip_fm_low_val = fm_low_freq.item()
-            else:
-                # Original full-band cosine loss (E8 behavior)
-                v_pred_n = F.normalize(pred_velocity.float().reshape(pred_velocity.shape[0], -1), dim=-1)
-                v_tgt_n = F.normalize(target_velocity.float().reshape(target_velocity.shape[0], -1), dim=-1)
-                cos_sim = (v_pred_n * v_tgt_n).sum(dim=-1).mean()
-                dir_cosine_loss = (1.0 - cos_sim).clamp(min=0.0)
-                fm = fm + self.w_directional_cosine * dir_cosine_loss
-                _clip_dir_val = dir_cosine_loss.item()
-
         source_endpoint_aux = content.new_tensor(0.0)
         if self.source_endpoint_aux_weight > 0.0:
             source_endpoint = model.predict_endpoint(
@@ -570,90 +516,6 @@ class SpatialBridgeObjective620:
         alpha_den = (delta_target.float() * delta_target.float()).sum(dim=[1, 2, 3]).clamp_min(1e-6)
         style_strength_alpha = (alpha_num / alpha_den).mean()
         style_strength_loss = -self.w_style_strength_reg * style_strength_alpha
-
-        # ===== Anti-whitening losses =====
-        contrast_loss = content.new_tensor(0.0)
-        if self.w_contrast_preserve > 0:
-            gen_std = z_hat1.float().std(dim=[1, 2, 3]).mean()
-            tgt_std = projected_target.float().std(dim=[1, 2, 3]).mean()
-            contrast_loss = F.relu(
-                tgt_std * self.contrast_preserve_threshold - gen_std
-            )
-
-        ch_var_loss = content.new_tensor(0.0)
-        if self.w_channel_variance > 0:
-            gen_ch_var = z_hat1.float().var(dim=[2, 3])
-            ch_var_loss = -gen_ch_var.clamp_min(1e-8).log().mean()
-
-        hf_loss = content.new_tensor(0.0)
-        if self.w_hf_energy > 0:
-            gen_hf = z_hat1.float() - _lowpass(z_hat1.float())
-            tgt_hf = projected_target.float() - _lowpass(projected_target.float())
-            gen_hf_e = gen_hf.pow(2).mean()
-            tgt_hf_e = tgt_hf.pow(2).mean()
-            hf_loss = F.relu(tgt_hf_e * self.hf_energy_threshold - gen_hf_e)
-
-        anti_whiten_total = (
-            self.w_contrast_preserve * contrast_loss
-            + self.w_channel_variance * ch_var_loss
-            + self.w_hf_energy * hf_loss
-        )
-
-        # Velocity Magnitude Loss: 确保 v_pred 的幅度接近 v_target
-        vel_mag_loss = content.new_tensor(0.0)
-        v_pred_norm = content.new_tensor(0.0)
-        v_target_norm = content.new_tensor(0.0)
-        velocity_ratio = content.new_tensor(1.0)
-        if self.w_velocity_magnitude > 0:
-            v_pred_norm = pred_velocity.float().norm(p=2, dim=(1, 2, 3)).mean()
-            v_target_norm = target_velocity.float().norm(p=2, dim=(1, 2, 3)).mean()
-            # 归一化的幅度差异（相对于 target 的比例）
-            velocity_ratio = v_pred_norm / v_target_norm.clamp_min(1e-8)
-            # 惩罚偏离 1.0 的情况
-            vel_mag_loss = (velocity_ratio - 1.0).pow(2)
-
-        # Pixel-Space Color Preservation Loss (Per-Channel Matching)
-        # 在 latent 空间做细粒度的 per-channel mean/std 匹配
-        # 解决 R5 诊断：latent 全局统计量匹配好但解码后仍有雾化
-        pixel_color_loss = content.new_tensor(0.0)
-        gen_per_ch_mean = content.new_tensor(0.0)
-        tgt_per_ch_mean = content.new_tensor(0.0)
-        gen_per_ch_std = content.new_tensor(0.0)
-        tgt_per_ch_std = content.new_tensor(0.0)
-        if self.w_pixel_color_match > 0:
-            # Per-channel mean matching (B, C) - 更细粒度 than global mean
-            gen_per_ch_mean = z_hat1.float().mean(dim=[2, 3])  # (B, C)
-            tgt_per_ch_mean = projected_target.float().mean(dim=[2, 3])
-            ch_mean_loss = F.mse_loss(gen_per_ch_mean, tgt_per_ch_mean)
-
-            # Per-channel std matching (使用 log 空间避免数值问题)
-            gen_per_ch_std = z_hat1.float().std(dim=[2, 3])  # (B, C)
-            tgt_per_ch_std = projected_target.float().std(dim=[2, 3])
-            ch_std_loss = F.mse_loss(
-                gen_per_ch_std.clamp_min(1e-6).log(),
-                tgt_per_ch_std.clamp_min(1e-6).log()
-            )
-
-            # 组合：mean + std 匹配
-            pixel_color_loss = ch_mean_loss + ch_std_loss
-
-        # ===== Saturation Proxy Loss =====
-        sat_loss = content.new_tensor(0.0)
-        gen_ch_vars = content.new_tensor(0.0)
-        if self.w_hsv_saturation > 0:
-            # 各通道的空间方差 (B, C) — 代表每个"颜色维度"的活跃度
-            gen_ch_vars_raw = z_hat1.float().var(dim=[2, 3])  # (B, C)
-            tgt_ch_vars_raw = projected_target.float().var(dim=[2, 3])  # (B, C)
-
-            # 归一化为概率分布
-            gen_ch_var_sum = gen_ch_vars_raw.sum(dim=-1, keepdim=True).clamp_min(1e-8)
-            tgt_ch_var_sum = tgt_ch_vars_raw.sum(dim=-1, keepdim=True).clamp_min(1e-8)
-            gen_p = gen_ch_vars_raw / gen_ch_var_sum  # (B, C), sum to 1
-            tgt_p = tgt_ch_vars_raw / tgt_ch_var_sum
-
-            # 方向性 KL 散度：让生成的通道方差分布接近目标
-            sat_loss = F.kl_div(gen_p.clamp_min(1e-8).log(), tgt_p.clamp_min(1e-8), reduction='batchmean')
-            gen_ch_vars = gen_ch_vars_raw.detach()
 
         # ===== Style Contrastive Loss =====
         contrastive_loss = content.new_tensor(0.0)
@@ -811,10 +673,6 @@ class SpatialBridgeObjective620:
                 + self.source_endpoint_aux_weight * source_endpoint_aux
                 + self.endpoint_energy_band_weight * endpoint_energy_band
                 + style_strength_loss
-                + anti_whiten_total
-                + self.w_velocity_magnitude * vel_mag_loss
-                + self.w_pixel_color_match * pixel_color_loss
-                + self.w_hsv_saturation * sat_loss
                 + self.w_style_contrastive * contrastive_loss
                 + self.w_fiber_repulsion * fiber_repulsion_loss
                 + self.w_anti_input_style * anti_input_loss
@@ -830,10 +688,6 @@ class SpatialBridgeObjective620:
                 + self.source_endpoint_aux_weight * source_endpoint_aux
                 + self.endpoint_energy_band_weight * endpoint_energy_band
                 + style_strength_loss
-                + anti_whiten_total
-                + self.w_velocity_magnitude * vel_mag_loss
-                + self.w_pixel_color_match * pixel_color_loss
-                + self.w_hsv_saturation * sat_loss
                 + self.w_style_contrastive * contrastive_loss
                 + self.w_fiber_repulsion * fiber_repulsion_loss
                 + self.w_anti_input_style * anti_input_loss
@@ -845,18 +699,6 @@ class SpatialBridgeObjective620:
         if self.w_attn_entropy_reg > 0.0 and getattr(model, "last_cross_attn_entropy", None) is not None:
             entropy_loss = self.w_attn_entropy_reg * model.last_cross_attn_entropy
             loss = loss + entropy_loss
-        # === FC-SB Phase 4 B4: Fiber-MoE Load Balancing ===
-        # 理论: MoE router 需负载均衡以避免 expert 坍缩 (所有样本路由到同一 expert).
-        # aux_loss = -H(p) = sum(p_i * log(p_i)), 最大化熵 = 鼓励均匀分布.
-        # 注意: B4 MoE 当前位于 integrate_transport (推理路径), 训练时 probs 可能未设置.
-        #       此时 aux_loss = 0 (no-op). 未来将 MoE 移至训练路径后自动激活.
-        b4_moe_aux_loss = content.new_tensor(0.0)
-        b4_router_probs = getattr(model, "last_debug", {}).get("b4_moe_router_probs")
-        if b4_router_probs is not None and self.fiber_moe_load_balance_weight > 0.0:
-            avg_probs = b4_router_probs.mean(dim=0)  # (num_experts,)
-            # 熵: H(p) = -sum(p_i * log(p_i)); aux_loss = -H(p) (最小化 = 最大化熵)
-            b4_moe_aux_loss = (avg_probs * torch.log(avg_probs + 1e-8)).sum()
-            loss = loss + self.fiber_moe_load_balance_weight * b4_moe_aux_loss
         c_low = _lowpass(content, self.lowpass_kernel)
         t_low = _lowpass(projected_target, self.lowpass_kernel)
         z_low = _lowpass(z_hat1, self.lowpass_kernel)
@@ -922,25 +764,6 @@ class SpatialBridgeObjective620:
             "endpoint_high_abs_debug": debug.get("endpoint_high_abs", zero).detach() if torch.is_tensor(debug.get("endpoint_high_abs", None)) else zero,
             "endpoint_style_low_abs_debug": debug.get("endpoint_style_low_abs", zero).detach() if torch.is_tensor(debug.get("endpoint_style_low_abs", None)) else zero,
             "endpoint_style_high_abs_debug": debug.get("endpoint_style_high_abs", zero).detach() if torch.is_tensor(debug.get("endpoint_style_high_abs", None)) else zero,
-            "loss_contrast_preserve": contrast_loss.detach(),
-            "loss_channel_variance": ch_var_loss.detach(),
-            "loss_hf_energy": hf_loss.detach(),
-            "anti_whiten_total": anti_whiten_total.detach(),
-            "gen_global_std": z_hat1.float().std(dim=[1,2,3]).mean().detach(),
-            "target_global_std": projected_target.float().std(dim=[1,2,3]).mean().detach(),
-            "gen_hf_energy": (z_hat1.float() - _lowpass(z_hat1.float())).pow(2).mean().detach(),
-            "target_hf_energy": (projected_target.float() - _lowpass(projected_target.float())).pow(2).mean().detach(),
-            "loss_velocity_magnitude": vel_mag_loss.detach(),
-            "v_pred_norm": v_pred_norm.detach(),
-            "v_target_norm": v_target_norm.detach(),
-            "velocity_ratio": velocity_ratio.detach(),  # key metric: should approach 1.0
-            "loss_pixel_color_match": pixel_color_loss.detach(),
-            "gen_per_ch_mean": gen_per_ch_mean.detach().mean() if torch.is_tensor(gen_per_ch_mean) and gen_per_ch_mean.numel() > 1 else gen_per_ch_mean.detach(),
-            "tgt_per_ch_mean": tgt_per_ch_mean.detach().mean() if torch.is_tensor(tgt_per_ch_mean) and tgt_per_ch_mean.numel() > 1 else tgt_per_ch_mean.detach(),
-            "gen_per_ch_std": gen_per_ch_std.detach().mean() if torch.is_tensor(gen_per_ch_std) and gen_per_ch_std.numel() > 1 else gen_per_ch_std.detach(),
-            "tgt_per_ch_std": tgt_per_ch_std.detach().mean() if torch.is_tensor(tgt_per_ch_std) and tgt_per_ch_std.numel() > 1 else tgt_per_ch_std.detach(),
-            "loss_saturation_proxy": sat_loss.detach(),
-            "gen_ch_var_max_ratio": (gen_ch_vars.max(dim=-1)[0] / (gen_ch_vars.mean(dim=-1).clamp_min(1e-8))).detach().mean() if torch.is_tensor(gen_ch_vars) and gen_ch_vars.numel() > 1 else content.new_tensor(0.0),
             "flow_scaled_weight": content.new_tensor(self.fm_weight * self.w_flow_scale),
             "loss_style_contrastive": contrastive_loss.detach(),
             "loss_fiber_repulsion": fiber_repulsion_loss.detach() if isinstance(fiber_repulsion_loss, torch.Tensor) else fiber_repulsion_loss,
@@ -948,14 +771,8 @@ class SpatialBridgeObjective620:
             "loss_style_disc": style_disc_loss.detach() if isinstance(style_disc_loss, torch.Tensor) else style_disc_loss,
             "loss_output_variance": output_variance_loss.detach() if isinstance(output_variance_loss, torch.Tensor) else output_variance_loss,
             "style_cross_sim_mean": avg_cross_sim.detach(),
-            "loss_directional_cosine": dir_cosine_loss.detach(),
-            "clip_dir": content.new_tensor(_clip_dir_val),
-            "clip_fm_low": content.new_tensor(_clip_fm_low_val),
             "cfg_uncond_active": content.new_tensor(1.0 if use_uncond else 0.0),
             "cfg_dropout_prob": content.new_tensor(self.cfg_dropout_prob),
-            "loss_b4_moe_load_balance": b4_moe_aux_loss.detach() if torch.is_tensor(b4_moe_aux_loss) else content.new_tensor(float(b4_moe_aux_loss)),
-            "b4_moe_router_entropy": content.new_tensor(float(getattr(model, "last_debug", {}).get("b4_moe_router_entropy", 0.0))),
-            "b4_moe_router_max_prob": content.new_tensor(float(getattr(model, "last_debug", {}).get("b4_moe_router_max_prob", 0.0))),
             **{k: content.new_tensor(float(v)) for k, v in sde_noise_metrics.items()},
         }
         # Record actual loss_type used

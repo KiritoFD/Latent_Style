@@ -229,7 +229,7 @@ class ModelConfig:
     tokenizer_texture_dim: int = 32
     tokenizer_geometry_dim: int = 24
     tokenizer_projection_mode: str = "concat"
-    tokenizer_residual_gain: float = 0.5
+    tokenizer_residual_gain: float = 0
     tokenizer_init_std: float = 0.02
     tokenizer_num_atoms: int = 32
     tokenizer_num_prototypes: int = 4
@@ -264,7 +264,7 @@ class ModelConfig:
     affine_connection_lowpass_kernel: int = 5
     tokenizer_pe_temperature: float = 1.0
     tokenizer_global_gate_hidden_dim: int = 160
-    tokenizer_global_gate_scale: float = 1.0
+    tokenizer_global_gate_scale: float = 0
     tokenizer_prompt_dim: int = 256
     tokenizer_prompt_length: int = 8
     tokenizer_structured_temperature: float = 0.1
@@ -291,7 +291,7 @@ class ModelConfig:
     upsample_blur_kernel: str = "box3"
     style_attn_num_tokens: int = 128
     style_attn_num_heads: int = 4
-    style_attn_sharpen_scale: float = 2.5
+    style_attn_sharpen_scale: float = 0
     style_attn_temperature: float = 0.08
     style_cross_attn_gate_init: float = 0.05
     style_gate_mode: str = "tanh_gate"
@@ -313,12 +313,12 @@ class ModelConfig:
     style_image_null_token_init_std: float = 0.02
     style_film_enabled: bool = False
     style_film_init_std: float = 0.02  # init std for block-level style_film_proj/film_q_proj/style_bias_proj; 0.0 = zero-init (FiLM=identity, gradient=0 — lethal); 0.02 = small random (breaks symmetry); 0.1+ = strong break
-    style_attn_mode: str = "softmax"  # softmax | gated | gated_raw | relu2 | style_select | sparsemax
+    style_attn_mode: str = "relu2"  # softmax | gated | gated_raw | relu2 | style_select | sparsemax (629 D19-D22: relu2 confirmed effective)
     style_attn_temperature: float = 1.0  # <1 sharpens, >1 smooths
-    endpoint_head_mode: str = "velocity"
+    endpoint_head_mode: str = "endpoint_lowhigh"
     endpoint_style_hidden_dim: int = 128
     endpoint_lowpass_kernel: int = 5
-    endpoint_high_scale: float = 1.0
+    endpoint_high_scale: float = 0
     endpoint_velocity_floor: float = 0.05
     endpoint_film_enabled: bool = False
     endpoint_film_init_std: float = 0.0
@@ -348,7 +348,7 @@ class ModelConfig:
     semantic_gw_spatial_lambda: float = 0.25
     velocity_head_mode: str = "identity"
     velocity_tanh_limit: float = 20.0
-    transport_prediction_mode: str = "velocity"
+    transport_prediction_mode: str = "endpoint"
     transport_endpoint_scale: float = 4.0
     endpoint_parameterization: str = "absolute"
     endpoint_residual_blend: float = 0.0
@@ -361,7 +361,7 @@ class ModelConfig:
     skip_fusion_mode: str = "add_proj"
     skip_routing_mode: str = "none"
     skip_naive_gain: float = 1.0
-    skip_residual_weight: float = 0.1
+    skip_residual_weight: float = 0
     style_skip_content_retention_boost: float = 0.0
     input_anchor_noise_std: float = 0.0
     input_anchor_noise_eval: bool = False
@@ -471,20 +471,7 @@ class ModelConfig:
     solver_corrector_clamp: float = 0.0
     solver_tangent_projection_strength: float = 1.0
     solver_stochastic_noise_scale: float = 0.01
-    solver_fiber_aligned: bool = False
-    i2sb_fiber_aligned_noise: bool = False
-    i2sb_fiber_noise_rms_normalize: bool = True
-    i2sb_fiber_project_endpoint: bool = False
-    i2sb_fiber_project_noise: bool = False
-    i2sb_fiber_project_kernel: int = 5
-    i2sb_fiber_project_use_gate: bool = False
-    i2sb_fiber_project_noise_mode: str = "highpass"
-    i2sb_fiber_project_residual_power: float = 1.0
-    fiber_only_endpoint: bool = False          # FC.md 改造3: 仅预测 Fiber Endpoint
     lowpass_mode: str = "avg_pool"            # "avg_pool" | "wavelet" | "tri_band" — Base/Fiber 分割方式
-    # === FC-SB v2: Tri-band inference locking (Scheme A) ===
-    tri_band_inference_lock: bool = False      # Enable tri-band locking at inference
-    tri_band_edge_lock_alpha: float = 0.7      # Edge preservation strength at inference (0=free, 1=locked)
     # === FC-SB Phase 4 A1: Time-Frequency Coupled Scheduling ===
     tf_schedule_enabled: bool = False       # 总开关：让 mid/hh_adain_scale 成为时间 t 的函数
     tf_hh_ramp_start: float = 0.5           # hh 开始升温的 t 阈值（t < 此值保持静态 hh_adain_scale）
@@ -492,14 +479,6 @@ class ModelConfig:
     tf_hh_max_scale: float = 1.5            # hh 在 t=1.0 时的最大倍数（相对静态 hh_adain_scale）
     tf_mid_lock_threshold: float = 0.5      # mid 锁死阈值（t < 此值时 mid_scale=0）
     tf_mid_max_scale: float = 1.0           # mid 在 t=1.0 时的最大倍数（相对静态 mid_adain_scale）
-    # === FC-SB Phase 4 A2 Step2: Fiber-Space Source-Repulsion ===
-    fiber_source_repulse_scale: float = 0.0   # 推理期 fiber 空间 source-repulsion 强度（0=禁用，0.5-1.5 推荐范围）
-    # === FC-SB Phase 4 B4: Fiber-MoE Adapters ===
-    fiber_moe_enabled: bool = False              # 总开关：在 N1 块 α-blend 前插入 MoE 路由
-    fiber_moe_num_experts: int = 4               # expert 数量（4-8 推荐）
-    fiber_moe_router_hidden_dim: int = 128       # router MLP 隐藏维
-    fiber_moe_expert_hidden_dim: int = 256       # 每个 expert 的 FFN 隐藏维
-    fiber_moe_router_input: str = "style_global" # "style_global" | "fiber_stats" | "concat"
     # === FC-SB Phase 4 B2: Native Spectral ODE ===
     spectral_ode_enabled: bool = False          # 总开关: 启用原生频域 ODE bridge
     spectral_ode_levels: int = 1                # Haar DWT 级数 (POC 仅支持 1)
@@ -547,7 +526,7 @@ class BridgeConfig:
     t_sampling_beta_a: float = 0.0  # 0=uniform(default), 3=偏向后期
     t_sampling_beta_b: float = 0.0
     # === FC-SB Phase 4 A3: Logit-Normal 时间采样 ===
-    t_sampling_mode: str = "uniform_power"     # "uniform_power" | "beta" | "logit_normal"
+    t_sampling_mode: str = "logit_normal"     # "uniform_power" | "beta" | "logit_normal" (629 D30: logit_normal confirmed effective)
     t_sampling_logit_mean: float = 0.0          # Logit-Normal 的 μ（正值偏向 t→1，笔触生成关键期）
     t_sampling_logit_std: float = 1.0           # Logit-Normal 的 σ（越小越集中，0.5=70%样本集中在 μ±1）
     source_endpoint_aux_weight: float = 0.0
@@ -584,7 +563,7 @@ class BridgeConfig:
     bridge_noise_schedule: str = "auto"
     bridge_sigma_schedule: str = "constant"     # "constant" | "curriculum" | "linear_ramp" | "brownian_bridge"
     training_sde_noise_mode: str = "subtractive"  # "subtractive" | "additive"
-    bridge_path_mode: str = "linear"
+    bridge_path_mode: str = "tri_band"
     bridge_path_slerp_eps: float = 1e-4
     bridge_vertical_base_stride: int = 2
     i2sb_predictor_time_floor: float = 0.0
@@ -594,7 +573,7 @@ class BridgeConfig:
     bridge_style_noise_flat_gamma: float = 0.0
     i2sb_noise_family: str = "gaussian"
     i2sb_style_noise_amplitude_power: float = 1.0
-    training_target_projection_mode: str = "legacy"
+    training_target_projection_mode: str = "dwt"
     training_target_projection_kernel: int = 5
     training_target_projection_low_anchor: float = 1.0
     training_target_projection_low_mode: str = "all"
@@ -625,8 +604,6 @@ class BridgeConfig:
     # === FC-SB Phase 4 A4: Output Variance Matching (W 方向重生) ===
     w_output_variance: float = 0.0            # 输出 fiber 方差匹配 loss 权重（替代失效的 W2 hinge）
     output_variance_band: str = "hh"          # "hh" | "mid" | "all" — 匹配哪个频带的方差
-    # === FC-SB Phase 4 B4: Fiber-MoE Load Balancing ===
-    fiber_moe_load_balance_weight: float = 0.01  # MoE router 负载均衡 loss 权重（鼓励 expert 均匀使用）
     # === FC-SB Phase 4 B2: Spectral ODE per-subband FM weights ===
     spectral_w_ll: float = 0.0                  # 低频速度 loss 权重 (0=锁死低频保 LPIPS)
     spectral_w_lh: float = 1.0                  # 水平低/垂直高 频带权重
@@ -654,7 +631,7 @@ class BridgeConfig:
     anisotropic_edge_gate_quantile: float = 0.0
     anisotropic_edge_gate_power: float = 1.0
     w_stokes_viscous: float = 0.0
-    kinetic_penalty_mode: str = "global_l2"
+    kinetic_penalty_mode: str = "off"
     kinetic_lambda_low: float = 1.0
     kinetic_lambda_high: float = 0.02
     kinetic_lowpass_kernel: int = 5
@@ -672,13 +649,13 @@ class BridgeConfig:
     kinetic_mode: str = "endpoint"
     kinetic_gate_exponent: float = 1.0
     semantic_swd_num_projections: int = 64
-    terminal_swd_mode: str = "standard"
+    terminal_swd_mode: str = "high_freq"
     terminal_swd_axis_source: str = "semantic"
     spectral_swd_low_weight: float = 1.0
     spectral_swd_high_weight: float = 1.0
     spectral_swd_low_kernel: int = 5
     semantic_quotient_bins: int = 4
-    swd_distance_mode: str = "cdf"
+    swd_distance_mode: str = "squared"
     swd_use_high_freq: bool = True
     swd_patch_sizes: list[int] = field(default_factory=lambda: [1, 3, 5, 9])
     swd_num_projections: int = 64
@@ -722,18 +699,7 @@ class BridgeConfig:
     two_stage_s2_w_endpoint_content: float = 1.0
     two_stage_s2_w_endpoint_style: float = 8.0
     two_stage_s2_w_style_strength_reg: float = 0.5
-    w_contrast_preserve: float = 0.0
-    contrast_preserve_threshold: float = 0.8
-    w_channel_variance: float = 0.0
-    w_hf_energy: float = 0.0
-    hf_energy_threshold: float = 0.5
-    w_velocity_magnitude: float = 0.0
-    w_pixel_color_match: float = 0.0
-    w_hsv_saturation: float = 0.0
-    hsv_sat_threshold: float = 0.8
     w_flow_scale: float = 1.0   # FM loss 缩放因子，<1 降低 FM 主导
-    w_directional_cosine: float = 0.0  # 方向余弦损失权重
-    w_freq_split_cosine: float = 0.0  # >0 启用频段解耦模式(替代原始方向余弦)
     cfg_dropout_prob: float = 0.0  # 0=no dropout(default), >0=CFG unconditional training prob
     cfg_null_token_init_std: float = 0.02  # std for learnable null tokens
     extra: dict[str, Any] = field(default_factory=dict)
@@ -1010,7 +976,7 @@ class ExperimentConfig:
         if contract_family not in ("620_spatial_bridge", "620_spectral_ode"):
             validate_i2sb_contract(
                 solver_family=str(getattr(cfg.model, "solver_family", "euler_legacy")),
-                transport_prediction_mode=str(getattr(cfg.model, "transport_prediction_mode", "velocity")),
+                transport_prediction_mode=str(getattr(cfg.model, "transport_prediction_mode", "endpoint")),
                 objective_mode=str(getattr(cfg.bridge, "objective_mode", "")),
                 loss_type=str(getattr(cfg.bridge, "loss_type", "")),
                 bridge_noise_schedule=str(getattr(cfg.bridge, "bridge_noise_schedule", "auto")),
