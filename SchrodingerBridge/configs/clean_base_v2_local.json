@@ -568,9 +568,9 @@
     "full_eval_convergence_flat_eps_style": 0.005,
     "full_eval_convergence_flat_eps_lpips": 0.018,
     "full_eval_convergence_min_epochs": 0,
-    "test_image_dir": "I:\\wikiart_distinct5_samam_512_classview\\test",
-    "full_eval_cache_dir": "I:/Github/Latent_Style/eval_cache",
-    "full_eval_clip_hf_cache_dir": "I:/Github/Latent_Style/eval_cache/hf",
+    "test_image_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512/test",
+    "full_eval_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache/hf",
     "full_eval_clip_backend": "hf",
     "full_eval_hf_clip_skip_processor": false,
     "full_eval_disable_lpips": false,
@@ -581,10 +581,10 @@
     "numeric_debug_halt_on_nonfinite": true,
     "numeric_debug_dump_limit": 200,
     "distill": {},
-    "start_epoch": 8
+    "start_epoch": 0
   },
   "data": {
-    "data_root": "I:/wikiart_distinct5_samam_512_latents_ema/train",
+    "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train",
     "style_subdirs": [
       "Early_Renaissance",
       "Impressionism",
@@ -601,7 +601,7 @@
     "virtual_length_multiplier": 1.0,
     "content_style_sampling_weights": null,
     "target_style_sampling_weights": null,
-    "pairing_cache_path": "I:/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "pairing_cache_path": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
     "pairing_cache_topk": 8,
     "pairing_cache_active_topk": 8,
     "pairing_cache_sample_mode": "rank_stratified",
@@ -617,14 +617,14 @@
     "pairing_cache_cross_only": true,
     "style_caption_path": "",
     "latent_cache_mode": "packed",
-    "latent_cache_dir": "I:/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/packed",
+    "latent_cache_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train/.latent_cache/packed",
     "dino_cache_path": "",
     "dino_cache_required": false,
     "dino_bank_limit_per_style": 8
   },
   "checkpoint": {
-    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/clean_base_v2",
-    "resume_checkpoint": "I:/Github/Latent_Style/SchrodingerBridge/exp/p4_fusion_breakout/t5_b2v2_d2_d4/epoch_0007.pt"
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/clean_base_v2_local",
+    "resume_checkpoint": ""
   },
   "full_eval": {
     "vae_model": "ema",

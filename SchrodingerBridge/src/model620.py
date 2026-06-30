@@ -7,7 +7,6 @@ import torch.nn.functional as F
 
 from blocks620 import SpatialBridgeBlock620, sinusoidal_time_embedding_620
 from config_schema import BridgeConfig, ModelConfig
-from fiber_moe620 import FiberMoE
 from style_encoder620 import StyleConditioner620
 
 
@@ -80,16 +79,16 @@ class SpatialBridge620(nn.Module):
         self.time_dim = int(getattr(model_cfg, "time_dim", self.dim))
         self.dino_dim = int(getattr(model_cfg, "tokenizer_dino_dim", 384))
         self.solver_family = str(getattr(model_cfg, "solver_family", "solver_i2sb"))
-        self.transport_prediction_mode = str(getattr(model_cfg, "transport_prediction_mode", "velocity"))
-        self.endpoint_head_mode = str(getattr(model_cfg, "endpoint_head_mode", "velocity")).strip().lower()
+        self.transport_prediction_mode = str(getattr(model_cfg, "transport_prediction_mode", "endpoint"))
+        self.endpoint_head_mode = str(getattr(model_cfg, "endpoint_head_mode", "endpoint_lowhigh")).strip().lower()
         if self.endpoint_head_mode not in {"velocity", "endpoint_lowhigh"}:
-            self.endpoint_head_mode = "velocity"
+            self.endpoint_head_mode = "endpoint_lowhigh"
         self.endpoint_lowpass_kernel = max(1, int(getattr(model_cfg, "endpoint_lowpass_kernel", 5)))
         if self.endpoint_lowpass_kernel % 2 == 0:
             self.endpoint_lowpass_kernel += 1
         # D2: 训练路径 _lowpass() 也支持 lowpass_mode, 与推理路径 lp() 行为一致
         self.lowpass_mode = str(getattr(model_cfg, "lowpass_mode", "avg_pool")).lower().strip()
-        self.endpoint_high_scale = float(getattr(model_cfg, "endpoint_high_scale", 1.0))
+        self.endpoint_high_scale = float(getattr(model_cfg, "endpoint_high_scale", 0))
         self.endpoint_velocity_floor = max(1e-3, float(getattr(model_cfg, "endpoint_velocity_floor", 0.05)))
         self.endpoint_style_hidden_dim = max(8, int(getattr(model_cfg, "endpoint_style_hidden_dim", 128)))
         self.endpoint_film_enabled = bool(getattr(model_cfg, "endpoint_film_enabled", False))
@@ -111,7 +110,7 @@ class SpatialBridge620(nn.Module):
         self.style_text_dim = int(getattr(model_cfg, "style_text_dim", 768))
         self.style_film_enabled = bool(getattr(model_cfg, "style_film_enabled", False))
         self.style_gate_mode = str(getattr(model_cfg, "style_gate_mode", "tanh_gate"))
-        self.style_attn_mode = str(getattr(model_cfg, "style_attn_mode", "softmax"))
+        self.style_attn_mode = str(getattr(model_cfg, "style_attn_mode", "relu2"))
         self.style_attn_temperature = float(getattr(model_cfg, "style_attn_temperature", 1.0))
 
         # === FC-SB v2 Scheme M: Style Pathway Amplification ===
@@ -210,7 +209,7 @@ class SpatialBridge620(nn.Module):
                     dino_dim=self.dino_dim,
                     film_enabled=self.style_film_enabled,
                     film_init_std=style_film_init_std,
-                    attn_mode=self.style_attn_mode,
+                    attn_mode="relu2",  # 629 D19-D22: relu2 confirmed effective
                     attn_temperature=self.style_attn_temperature,
                     gate_warmup_steps=gate_warmup_steps,
                     norm_type=body_norm_type,
@@ -219,70 +218,50 @@ class SpatialBridge620(nn.Module):
             ]
         )
         self.last_cross_attn_entropy = torch.tensor(0.0)
-        if self.endpoint_head_mode == "endpoint_lowhigh":
-            self.endpoint_style_to_low = nn.Sequential(
-                nn.LayerNorm(self.dim),
-                nn.Linear(self.dim, self.endpoint_style_hidden_dim),
-                nn.SiLU(),
-                nn.Linear(self.endpoint_style_hidden_dim, self.latent_channels),
+        # 629 D23: endpoint_head_mode == "endpoint_lowhigh" confirmed effective (velocity branch removed)
+        self.endpoint_style_to_low = nn.Sequential(
+            nn.LayerNorm(self.dim),
+            nn.Linear(self.dim, self.endpoint_style_hidden_dim),
+            nn.SiLU(),
+            nn.Linear(self.endpoint_style_hidden_dim, self.latent_channels),
+        )
+        self.endpoint_style_to_high = nn.Sequential(
+            nn.LayerNorm(self.dim),
+            nn.Linear(self.dim, self.endpoint_style_hidden_dim),
+            nn.SiLU(),
+            nn.Linear(self.endpoint_style_hidden_dim, self.latent_channels),
+        )
+        if self.endpoint_film_enabled:
+            self.endpoint_film_low = FiLMEndpointHead(
+                self.dim, self.latent_channels, self.dim, self.endpoint_style_hidden_dim, self.endpoint_film_init_std, self.endpoint_film_use_norm, self.endpoint_film_use_rmsnorm,
             )
-            self.endpoint_style_to_high = nn.Sequential(
-                nn.LayerNorm(self.dim),
-                nn.Linear(self.dim, self.endpoint_style_hidden_dim),
-                nn.SiLU(),
-                nn.Linear(self.endpoint_style_hidden_dim, self.latent_channels),
+            self.endpoint_film_high = FiLMEndpointHead(
+                self.dim, self.latent_channels, self.dim, self.endpoint_style_hidden_dim, self.endpoint_film_init_std, self.endpoint_film_use_norm, self.endpoint_film_use_rmsnorm,
             )
-            if self.endpoint_film_enabled:
-                self.endpoint_film_low = FiLMEndpointHead(
-                    self.dim, self.latent_channels, self.dim, self.endpoint_style_hidden_dim, self.endpoint_film_init_std, self.endpoint_film_use_norm, self.endpoint_film_use_rmsnorm,
-                )
-                self.endpoint_film_high = FiLMEndpointHead(
-                    self.dim, self.latent_channels, self.dim, self.endpoint_style_hidden_dim, self.endpoint_film_init_std, self.endpoint_film_use_norm, self.endpoint_film_use_rmsnorm,
-                )
-                self.endpoint_low_head = None
-                self.endpoint_high_head = None
-            else:
-                self.endpoint_film_low = None
-                self.endpoint_film_high = None
-                self.endpoint_low_head = nn.Sequential(
-                    nn.GroupNorm(1, self.dim),
-                    nn.SiLU(),
-                    nn.Conv2d(self.dim, self.latent_channels, kernel_size=3, padding=1),
-                )
-                self.endpoint_high_head = nn.Sequential(
-                    nn.GroupNorm(1, self.dim),
-                    nn.SiLU(),
-                    nn.Conv2d(self.dim, self.latent_channels, kernel_size=3, padding=1),
-                )
-                nn.init.normal_(self.endpoint_low_head[-1].weight, mean=0.0, std=1e-3)
-                nn.init.zeros_(self.endpoint_low_head[-1].bias)
-                nn.init.normal_(self.endpoint_high_head[-1].weight, mean=0.0, std=1e-3)
-                nn.init.zeros_(self.endpoint_high_head[-1].bias)
-            nn.init.zeros_(self.endpoint_style_to_low[-1].weight)
-            nn.init.zeros_(self.endpoint_style_to_low[-1].bias)
-            nn.init.zeros_(self.endpoint_style_to_high[-1].weight)
-            nn.init.zeros_(self.endpoint_style_to_high[-1].bias)
-            self.out = None
+            self.endpoint_low_head = None
+            self.endpoint_high_head = None
         else:
-            # Larger endpoint head WITHOUT GroupNorm (avoids dynamic range compression)
-            self.out = nn.Sequential(
-                nn.Conv2d(self.dim, self.dim * 2, kernel_size=3, padding=1),
-                nn.SiLU(),
-                nn.Conv2d(self.dim * 2, self.dim, kernel_size=3, padding=1),
+            self.endpoint_film_low = None
+            self.endpoint_film_high = None
+            self.endpoint_low_head = nn.Sequential(
+                nn.GroupNorm(1, self.dim),
                 nn.SiLU(),
                 nn.Conv2d(self.dim, self.latent_channels, kernel_size=3, padding=1),
             )
-            # Non-zero init to avoid trivial solution at initialization
-            nn.init.normal_(self.out[0].weight, mean=0.0, std=0.02)
-            nn.init.zeros_(self.out[0].bias)
-            nn.init.normal_(self.out[2].weight, mean=0.0, std=0.02)
-            nn.init.zeros_(self.out[2].bias)
-            nn.init.normal_(self.out[4].weight, mean=0.0, std=0.02)
-            nn.init.zeros_(self.out[4].bias)
-            if self.velocity_hf_residual_enabled:
-                self.velocity_hf_residual_weight = nn.Parameter(
-                    torch.tensor(self.velocity_hf_residual_init, dtype=torch.float32)
-                )
+            self.endpoint_high_head = nn.Sequential(
+                nn.GroupNorm(1, self.dim),
+                nn.SiLU(),
+                nn.Conv2d(self.dim, self.latent_channels, kernel_size=3, padding=1),
+            )
+            nn.init.normal_(self.endpoint_low_head[-1].weight, mean=0.0, std=1e-3)
+            nn.init.zeros_(self.endpoint_low_head[-1].bias)
+            nn.init.normal_(self.endpoint_high_head[-1].weight, mean=0.0, std=1e-3)
+            nn.init.zeros_(self.endpoint_high_head[-1].bias)
+        nn.init.zeros_(self.endpoint_style_to_low[-1].weight)
+        nn.init.zeros_(self.endpoint_style_to_low[-1].bias)
+        nn.init.zeros_(self.endpoint_style_to_high[-1].weight)
+        nn.init.zeros_(self.endpoint_style_to_high[-1].bias)
+        self.out = None
         self.last_debug: dict[str, torch.Tensor] = {}
 
         # === FC-SB Phase 3 W3: Style Discriminative Head ===
@@ -300,23 +279,6 @@ class SpatialBridge620(nn.Module):
             )
         else:
             self.style_disc_head = None
-
-        # === FC-SB Phase 4 B4: Fiber-MoE Adapters ===
-        # 理论: 在 N1 块 α-blend 前对 ep_fiber_matched 做 MoE 路由, 按 style 选择 expert
-        self.fiber_moe_enabled = bool(getattr(model_cfg, "fiber_moe_enabled", False))
-        if self.fiber_moe_enabled:
-            self.fiber_moe = FiberMoE(
-                dim=self.dim,
-                num_experts=int(getattr(model_cfg, "fiber_moe_num_experts", 4)),
-                router_hidden_dim=int(getattr(model_cfg, "fiber_moe_router_hidden_dim", 128)),
-                expert_hidden_dim=int(getattr(model_cfg, "fiber_moe_expert_hidden_dim", 256)),
-                router_input=str(getattr(model_cfg, "fiber_moe_router_input", "style_global")),
-            )
-            # style_latent (latent_channels) -> style_global (dim) 投影层
-            self.style_latent_to_dim = nn.Linear(self.latent_channels, self.dim)
-        else:
-            self.fiber_moe = None
-            self.style_latent_to_dim = None
 
     def _lowpass(self, x: torch.Tensor) -> torch.Tensor:
         # D2: 训练路径低通滤波, 支持 avg_pool / wavelet / dwt_haar 三种模式
@@ -546,14 +508,14 @@ class SpatialBridge620(nn.Module):
             self.last_debug["endpoint_high_alpha"] = x.new_tensor(float("nan"))
 
         self.last_debug["velocity_abs"] = velocity.detach().float().abs().mean()
-        self.last_debug["endpoint_head_mode_lowhigh"] = x.new_tensor(1.0 if self.endpoint_head_mode == "endpoint_lowhigh" else 0.0)
+        self.last_debug["endpoint_head_mode_lowhigh"] = x.new_tensor(1.0)  # 629 D23: always endpoint_lowhigh
         self.last_debug["endpoint_film_enabled"] = x.new_tensor(1.0 if self.endpoint_film_enabled else 0.0)
         self.last_debug["endpoint_pred_abs"] = endpoint.detach().float().abs().mean()
         self.last_debug["endpoint_low_abs"] = endpoint_low.detach().float().abs().mean()
         self.last_debug["endpoint_high_abs"] = endpoint_high.detach().float().abs().mean()
-        if self.endpoint_head_mode == "endpoint_lowhigh":
-            self.last_debug["endpoint_style_low_abs"] = style_low.detach().float().abs().mean()
-            self.last_debug["endpoint_style_high_abs"] = style_high.detach().float().abs().mean()
+        # 629 D23: endpoint_head_mode == "endpoint_lowhigh" always true
+        self.last_debug["endpoint_style_low_abs"] = style_low.detach().float().abs().mean()
+        self.last_debug["endpoint_style_high_abs"] = style_high.detach().float().abs().mean()
         self.last_debug["style_dino_active"] = x.new_tensor(1.0 if style_dino_patches is not None else 0.0)
         # Keep a detached endpoint reference so external probes can compute alpha without re-running.
         self.last_debug["last_endpoint"] = endpoint.detach()
@@ -598,7 +560,6 @@ class SpatialBridge620(nn.Module):
         style_text_tokens: torch.Tensor | None = None,
         style_latent: torch.Tensor | None = None,
         target_style_latent: torch.Tensor | None = None,
-        source_style_latent: torch.Tensor | None = None,
         **_: object,
     ) -> torch.Tensor:
         if style_latent is None and target_style_latent is not None and not isinstance(target_style_latent, dict):
@@ -620,32 +581,12 @@ class SpatialBridge620(nn.Module):
             if bcfg is not None and hasattr(bcfg, key):
                 return getattr(bcfg, key)
             return default
-        fiber_proj_ep = bool(_cfg_get('i2sb_fiber_project_endpoint', False))
-        fiber_proj_noise = bool(_cfg_get('i2sb_fiber_project_noise', False))
-        fiber_kernel = max(1, int(_cfg_get('i2sb_fiber_project_kernel', 5)))
-        if fiber_kernel % 2 == 0:
-            fiber_kernel += 1
         bridge_path_mode = str(_cfg_get('bridge_path_mode', 'linear')).lower().strip()
         sigma_base = float(getattr(self, 'bridge_sigma', 0.02))
-        fiber_only_ep = bool(_cfg_get('fiber_only_endpoint', False))
         lowpass_mode = str(_cfg_get('lowpass_mode', 'avg_pool')).lower().strip()
         sigma_schedule = str(_cfg_get('bridge_sigma_schedule', 'constant')).lower().strip()
-        # === FC-SB v2 Scheme A: Tri-band inference locking ===
-        tri_band_lock = bool(_cfg_get('tri_band_inference_lock', False))
-        tri_band_edge_alpha = float(_cfg_get('tri_band_edge_lock_alpha', 0.7))
         tri_band_low_k = max(3, int(_cfg_get('tri_band_low_kernel', 11)))
         tri_band_mid_k = max(3, int(_cfg_get('tri_band_mid_kernel', 3)))
-        # === FC-SB v2 Scheme K0: Fiber Velocity Amplification (FVA) ===
-        # 理论(FC.md 改造2): 纤维空间狂热扩散. 在 fiber 速度上做幅度放大,
-        # 突破"保守吸引子"均值陷阱, 逼迫笔触更生猛.
-        # v_fiber_amplified = v_fiber * (1 + γ), γ>0 放大风格, base 不变保 LPIPS.
-        fiber_velocity_scale = float(_cfg_get('fiber_velocity_scale', 1.0))
-        # === FC-SB v2 Scheme K1: Fiber-CFG (Fiber-Space Classifier-Free Guidance) ===
-        # 理论(FC.md 改造3): 在 fiber 空间做 CFG 外推, 而非全空间.
-        # v_fiber_guided = v_fiber_target + α * (v_fiber_target - v_fiber_null)
-        # base 完全来自 target, 不受 CFG 影响 → 保 LPIPS; fiber 外推 → 提 clip_style.
-        fiber_cfg_scale = float(_cfg_get('fiber_cfg_scale', 0.0))
-        fiber_cfg_null_style_id = _cfg_get('fiber_cfg_null_style_id', None)
         # === FC-SB v2 Scheme N: Endpoint AdaIN (Fiber Statistics Matching) ===
         # 理论(FC.md 核心命题): fiber 需要携带明确风格方向, 但当前 fiber 是无方向布朗运动.
         # M/K 系列证明: 放大现有路径(M4)或 fiber 速度(K0)都会同时恶化 clip/lpips,
@@ -657,7 +598,7 @@ class SpatialBridge620(nn.Module):
         endpoint_adain_scale = float(_cfg_get('endpoint_adain_scale', 0.0))
         endpoint_adain_mode = str(_cfg_get('endpoint_adain_mode', 'full')).lower().strip()
         # "full" = 同时匹配 mean+std; "mean_only" = 只匹配 color; "std_only" = 只匹配 contrast
-        # === FC-SB Phase 3: U/T/V 正交增强 (R=K1 已在上方 fiber_cfg_scale 实现) ===
+        # === FC-SB Phase 3: U/T/V 正交增强 ===
         # U: Style Latent Extrapolation - 外推 style_fiber 到更极端
         style_extrap_alpha = float(_cfg_get('style_extrap_alpha', 0.0))
         # T: Multi-band Per-frequency AdaIN - Haar 分解后 Mid/HH 各自独立匹配
@@ -674,7 +615,7 @@ class SpatialBridge620(nn.Module):
         tf_mid_lock_threshold = float(_cfg_get('tf_mid_lock_threshold', 0.5))
         tf_mid_max_scale = float(_cfg_get('tf_mid_max_scale', 1.0))
 
-        def lp(y, k=fiber_kernel):
+        def lp(y, k=5):
             """Lowpass: 支持 avg_pool / wavelet / dwt_haar 三种模式.
 
             dwt_haar: 真正正交 Haar DWT, LL 子带 IDWT 重建 (LH/HL/HH 置零).
@@ -724,12 +665,6 @@ class SpatialBridge620(nn.Module):
                 style_text_tokens=style_text_tokens,
                 style_latent=style_latent,
             )
-
-            # Step 1.5: 🆕 Fiber-Only Endpoint Projection (FC.md 改造3)
-            if fiber_only_ep:
-                ep_fiber = endpoint - lp(endpoint)  # 仅保留预测的 fiber 差异
-                x_base_now = lp(h)  # 当前状态的 base（随 t 演化）
-                endpoint = x_base_now + ep_fiber  # 合成: 当前base + 预测的fiber
 
             # 🆕 N1: Endpoint AdaIN (Fiber Statistics Matching)
             # 理论: FC-SB 要求 fiber "狂热扩散"且携带风格方向.
@@ -944,16 +879,6 @@ class SpatialBridge620(nn.Module):
                         ep_fiber_matched = ep_fiber_norm * target_std + pred_mean
                     else:  # "full"
                         ep_fiber_matched = ep_fiber_norm * target_std + target_mean
-                # === FC-SB Phase 4 B4: Fiber-MoE Adapters ===
-                # 在 α-blend 前对 ep_fiber_matched 做 MoE 路由, 按 style 选择 expert
-                if self.fiber_moe is not None and isinstance(style_latent, torch.Tensor):
-                    # style_latent (B, latent_channels, H, W) -> pool -> (B, latent_channels) -> proj -> (B, dim)
-                    _style_global = style_latent.float().mean(dim=[2, 3]).to(dtype=style_latent.dtype)
-                    _style_global_proj = self.style_latent_to_dim(_style_global)
-                    ep_fiber_matched, _moe_router_probs = self.fiber_moe(ep_fiber_matched, _style_global_proj)
-                    self.last_debug["b4_moe_router_probs"] = _moe_router_probs.detach()
-                    self.last_debug["b4_moe_router_entropy"] = float(-(_moe_router_probs * (_moe_router_probs + 1e-8).log()).sum(dim=-1).mean().item())
-                    self.last_debug["b4_moe_router_max_prob"] = float(_moe_router_probs.max(dim=-1).values.mean().item())
                 # α-blend: 原始 fiber 与统计匹配 fiber 的混合
                 endpoint = ep_base + (1.0 - endpoint_adain_scale) * ep_fiber_curr + endpoint_adain_scale * ep_fiber_matched
                 self.last_debug["n1_ep_fiber_abs"] = ep_fiber_matched.detach().float().abs().mean().item()
@@ -970,56 +895,7 @@ class SpatialBridge620(nn.Module):
             denom = max(1e-6, 1.0 - t_curr)
             v_pred = (endpoint - h) / denom
 
-            if fiber_proj_ep:
-                v_fiber = v_pred - lp(v_pred)  # 只保留高频速度分量
-            else:
-                v_fiber = v_pred
-
-            # 🆕 K1: Fiber-CFG (Fiber-Space Classifier-Free Guidance)
-            # 理论: 在 fiber 空间做 CFG 外推, base 不受影响
-            if fiber_cfg_scale > 0.0:
-                ep_null = self.predict_endpoint(
-                    h, t=t_batch, style_id=fiber_cfg_null_style_id,
-                    style_dino_patches=None, style_dino_cls=None,
-                    style_text_tokens=None, style_latent=None,
-                )
-                v_null = (ep_null - h) / denom
-                v_null_fiber = v_null - lp(v_null) if fiber_proj_ep else v_null
-                v_fiber = v_fiber + fiber_cfg_scale * (v_fiber - v_null_fiber)
-
-            # 🆕 A2 Step2: Fiber-Space Source-Repulsion
-            # 理论: 用原内容图风格 latent 在 fiber 空间反向排斥, 打破保守吸引子
-            # v_source = (ep_source - h) / denom; v_fiber -= ω * (v_source_fiber - v_null_fiber)
-            fiber_source_repulse_scale = float(_cfg_get('fiber_source_repulse_scale', 0.0))
-            if fiber_source_repulse_scale > 0.0 and source_style_latent is not None:
-                # 复用 K1 的 v_null_fiber（若 K1 启用），否则单独计算 ep_null
-                if fiber_cfg_scale <= 0.0:
-                    ep_null_sr = self.predict_endpoint(
-                        h, t=t_batch, style_id=style_id,
-                        style_dino_patches=None, style_dino_cls=None,
-                        style_text_tokens=None, style_latent=None,
-                    )
-                    v_null_sr = (ep_null_sr - h) / denom
-                    v_null_fiber_sr = v_null_sr - lp(v_null_sr) if fiber_proj_ep else v_null_sr
-                else:
-                    v_null_fiber_sr = v_null_fiber  # 复用 K1 计算结果
-                # 用 source_style_latent 预测 source 方向速度
-                ep_source = self.predict_endpoint(
-                    h, t=t_batch, style_id=style_id,
-                    style_dino_patches=None, style_dino_cls=None,
-                    style_text_tokens=None, style_latent=source_style_latent,
-                )
-                v_source = (ep_source - h) / denom
-                v_source_fiber = v_source - lp(v_source) if fiber_proj_ep else v_source
-                # 反向排斥：减去 source 与 null 的偏差
-                _sr_delta = fiber_source_repulse_scale * (v_source_fiber - v_null_fiber_sr)
-                v_fiber = v_fiber - _sr_delta
-                self.last_debug["a2_source_repulse_delta"] = float(_sr_delta.abs().mean().item())
-
-            # 🆕 K0: Fiber Velocity Amplification (FVA)
-            # 理论: 放大 fiber 速度模长, 突破均值陷阱, base 不变
-            if fiber_velocity_scale != 1.0:
-                v_fiber = v_fiber * fiber_velocity_scale
+            v_fiber = v_pred
 
             # Step 3: Euler 步进（确定性漂移，仅 Fiber 分量）
             dt = t_next - t_curr
@@ -1047,28 +923,13 @@ class SpatialBridge620(nn.Module):
                 sigma_t = sigma_eff * math.sqrt(max(0.0, t_curr * (1.0 - t_curr))) * math.sqrt(abs(dt))
 
                 noise = torch.randn_like(h)
-                if fiber_proj_noise:
-                    noise_fiber = noise - lp(noise)  # 只保留高频噪声
-                else:
-                    noise_fiber = noise
+                noise_fiber = noise
 
                 h = h + sigma_t * noise_fiber
 
             # Step 5: 🚨🚨🚨 绝对刚性保护 (BASE LOCKING) 🚨🚨🚨
             if bridge_path_mode == "vertical":
-                if tri_band_lock:
-                    # FC-SB v2 Scheme A: Tri-band locking
-                    # LL (structure): locked to content's broad lowpass (x_base_lock)
-                    # Mid (edges): α-blend between content edges and current edges
-                    # HH (texture): fully free (current state)
-                    c_mid = lp(x, tri_band_mid_k) - x_base_lock  # content edge band
-                    h_mid_full = lp(h, tri_band_mid_k)
-                    h_mid = h_mid_full - lp(h, tri_band_low_k)   # current edge band
-                    h_hh = h - h_mid_full                         # current texture band
-                    blended_mid = tri_band_edge_alpha * c_mid + (1.0 - tri_band_edge_alpha) * h_mid
-                    h = x_base_lock + blended_mid + h_hh
-                else:
-                    h = x_base_lock + (h - lp(h))  # = Base(content) + Fiber(current)
+                h = x_base_lock + (h - lp(h))  # = Base(content) + Fiber(current)
         return h
 
     @torch.no_grad()

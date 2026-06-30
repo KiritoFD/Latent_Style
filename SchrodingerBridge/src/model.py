@@ -45,9 +45,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         )
         self.velocity_head_mode = str(bridge_config.velocity_head_mode).strip().lower()
         self.velocity_tanh_limit = max(1e-3, float(bridge_config.velocity_tanh_limit))
-        self.transport_prediction_mode = str(getattr(bridge_config, "transport_prediction_mode", "velocity")).strip().lower()
+        self.transport_prediction_mode = str(getattr(bridge_config, "transport_prediction_mode", "endpoint")).strip().lower()
         if self.transport_prediction_mode not in {"velocity", "endpoint"}:
-            self.transport_prediction_mode = "velocity"
+            self.transport_prediction_mode = "endpoint"
         self.endpoint_parameterization = str(getattr(bridge_config, "endpoint_parameterization", "absolute")).strip().lower()
         if self.endpoint_parameterization not in {"absolute", "residual", "blend", "orthogonal_lowhigh"}:
             self.endpoint_parameterization = "absolute"
@@ -74,7 +74,7 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             self.bridge_noise_schedule = "auto"
         validate_i2sb_contract(
             solver_family=self.solver_family,
-            transport_prediction_mode=self.transport_prediction_mode,
+            transport_prediction_mode="endpoint",  # 629 D24: always endpoint
             objective_mode=str(getattr(bridge_config, "objective_mode", "")),
             loss_type=str(getattr(bridge_config, "loss_type", "")),
             bridge_noise_schedule=self.bridge_noise_schedule,
@@ -109,27 +109,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.allow_style_overdrive = bool(getattr(bridge_config, "allow_style_overdrive", False))
         self.last_i2sb_transport_debug: dict[str, float] = {}
         self.solver_stochastic_noise_scale = max(0.0, float(getattr(bridge_config, "solver_stochastic_noise_scale", 0.0)))
-        self.solver_fiber_aligned = bool(getattr(bridge_config, "solver_fiber_aligned", False))
-        self.i2sb_fiber_aligned_noise = bool(getattr(bridge_config, "i2sb_fiber_aligned_noise", False))
-        self.i2sb_fiber_noise_rms_normalize = bool(getattr(bridge_config, "i2sb_fiber_noise_rms_normalize", True))
-        self.i2sb_fiber_project_endpoint = bool(getattr(bridge_config, "i2sb_fiber_project_endpoint", False))
-        self.i2sb_fiber_project_noise = bool(getattr(bridge_config, "i2sb_fiber_project_noise", False))
-        self.i2sb_fiber_project_kernel = max(1, int(getattr(bridge_config, "i2sb_fiber_project_kernel", 5)))
-        if self.i2sb_fiber_project_kernel % 2 == 0:
-            self.i2sb_fiber_project_kernel += 1
-        self.i2sb_fiber_project_use_gate = bool(getattr(bridge_config, "i2sb_fiber_project_use_gate", False))
-        self.i2sb_fiber_project_noise_mode = str(
-            getattr(bridge_config, "i2sb_fiber_project_noise_mode", "highpass")
-        ).strip().lower()
-        if self.i2sb_fiber_project_noise_mode not in {"highpass", "residual_envelope", "residual_direction"}:
-            self.i2sb_fiber_project_noise_mode = "highpass"
-        self.i2sb_fiber_project_residual_power = max(
-            0.0,
-            float(getattr(bridge_config, "i2sb_fiber_project_residual_power", 1.0)),
-        )
-        self.last_i2sb_fiber_noise_debug: dict[str, float] = {}
-        self.last_i2sb_fiber_project_debug: dict[str, float] = {}
-        self.last_solver_noise_debug: dict[str, float] = {}
         stats_shape = (max(1, int(self.num_styles)), int(self.latent_channels), 1, 1)
         self.register_buffer("_transport_style_stats_mean", torch.zeros(stats_shape, dtype=torch.float32), persistent=False)
         self.register_buffer("_transport_style_stats_std", torch.ones(stats_shape, dtype=torch.float32), persistent=False)
@@ -414,7 +393,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_base_endpoint: torch.Tensor | None = None
         self.last_final_endpoint: torch.Tensor | None = None
         self.last_proximal_clamp_scale: torch.Tensor | None = None
-        self.last_solver_noise_debug = {}
         self.current_epoch: int = 1
         self.total_epochs: int = 1
         self.runtime_conditioning: dict[str, Any] = {}
@@ -452,7 +430,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         self.last_proximal_clamp_scale = None
         self.last_output_appearance_debug = {}
         self.last_output_style_context = None
-        self.last_solver_noise_debug = {}
         self.last_transport_stats_debug = {}
         self.last_style_delta_debug = {}
         for module in self.modules():
@@ -683,106 +660,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         target_norm = ((target - ctx["target_mean"]) / ctx["target_std"]).to(dtype=target.dtype)
         return content_norm, target_norm, metrics
 
-    def _fiber_aligned_solver_noise(
-        self,
-        reference: torch.Tensor,
-        noise: torch.Tensor,
-        *,
-        noise_scale: float,
-    ) -> torch.Tensor:
-        debug: dict[str, float] = {
-            "fiber_gate_active": 0.0,
-            "fiber_gate_mean": 0.0,
-            "fiber_gate_rms": 0.0,
-            "noise_scale": float(noise_scale),
-            "isotropic_or_fiber": 1.0 if bool(getattr(self, "solver_fiber_aligned", False)) else 0.0,
-        }
-        if not bool(getattr(self, "solver_fiber_aligned", False)):
-            self.last_solver_noise_debug = debug
-            return noise
-        cached = getattr(self, "last_output_style_context", None)
-        style_maps = cached.get("style_maps") if isinstance(cached, dict) else None
-        gate = getattr(style_maps, "gate_16", None)
-        if not torch.is_tensor(gate):
-            self.last_solver_noise_debug = debug
-            return noise
-        gate = gate.to(device=reference.device).float()
-        gate = torch.sigmoid(gate).clamp(0.0, 1.0)
-        if gate.shape[-2:] != reference.shape[-2:]:
-            gate = F.interpolate(gate, size=reference.shape[-2:], mode="bilinear", align_corners=False)
-        if gate.shape[1] != reference.shape[1]:
-            if gate.shape[1] == 1:
-                gate = gate.expand(reference.shape[0], reference.shape[1], reference.shape[2], reference.shape[3])
-            else:
-                gate = gate.mean(dim=1, keepdim=True).expand(reference.shape[0], reference.shape[1], reference.shape[2], reference.shape[3])
-        gate_mean = gate.detach().float().mean()
-        debug.update(
-            {
-                "fiber_gate_active": 1.0,
-                "fiber_gate_mean": float(gate_mean.cpu().item()),
-                "fiber_gate_rms": float(gate.detach().float().square().mean().sqrt().cpu().item()),
-            }
-        )
-        self.last_solver_noise_debug = debug
-        return noise * gate.to(dtype=noise.dtype)
-
-    def _i2sb_fiber_aligned_noise(
-        self,
-        reference: torch.Tensor,
-        noise: torch.Tensor,
-        *,
-        noise_scale: float,
-    ) -> torch.Tensor:
-        debug: dict[str, float] = {
-            "fiber_noise_active": 0.0,
-            "fiber_gate_mean": 0.0,
-            "fiber_gate_rms": 0.0,
-            "fiber_noise_scale": float(noise_scale),
-            "fiber_noise_rms_normalize": float(bool(getattr(self, "i2sb_fiber_noise_rms_normalize", True))),
-        }
-        if not bool(getattr(self, "i2sb_fiber_aligned_noise", False)):
-            self.last_i2sb_transport_debug.update(debug)
-            self.last_i2sb_fiber_noise_debug = debug
-            return noise
-        cached = getattr(self, "last_output_style_context", None)
-        style_maps = cached.get("style_maps") if isinstance(cached, dict) else None
-        gate = getattr(style_maps, "gate_16", None)
-        if not torch.is_tensor(gate):
-            self.last_i2sb_transport_debug.update(debug)
-            self.last_i2sb_fiber_noise_debug = debug
-            return noise
-        gate = gate.to(device=reference.device).float()
-        gate = torch.sigmoid(gate).clamp(0.0, 1.0)
-        if gate.shape[-2:] != reference.shape[-2:]:
-            gate = F.interpolate(gate, size=reference.shape[-2:], mode="bilinear", align_corners=False)
-        if gate.shape[0] == 1 and reference.shape[0] > 1:
-            gate = gate.expand(reference.shape[0], -1, -1, -1)
-        if gate.shape[1] != reference.shape[1]:
-            gate = gate.mean(dim=1, keepdim=True).expand(reference.shape[0], reference.shape[1], reference.shape[2], reference.shape[3])
-        gate_rms = gate.detach().float().square().mean().sqrt().clamp_min(1e-6)
-        gate_weight = gate / gate_rms if bool(getattr(self, "i2sb_fiber_noise_rms_normalize", True)) else gate
-        debug.update(
-            {
-                "fiber_noise_active": 1.0,
-                "fiber_gate_mean": float(gate.detach().float().mean().cpu().item()),
-                "fiber_gate_rms": float(gate_rms.cpu().item()),
-            }
-        )
-        self.last_i2sb_transport_debug.update(debug)
-        self.last_i2sb_fiber_noise_debug = debug
-        return noise * gate_weight.to(dtype=noise.dtype)
-
-    def _i2sb_lowpass(self, tensor: torch.Tensor) -> torch.Tensor:
-        kernel = max(1, int(getattr(self, "i2sb_fiber_project_kernel", 5)))
-        if kernel <= 1:
-            return tensor.float()
-        if kernel % 2 == 0:
-            kernel += 1
-        return F.avg_pool2d(tensor.float(), kernel_size=kernel, stride=1, padding=kernel // 2)
-
-    def _i2sb_highpass(self, tensor: torch.Tensor) -> torch.Tensor:
-        return tensor.float() - self._i2sb_lowpass(tensor)
-
     def _i2sb_sample_transport_noise(
         self,
         reference: torch.Tensor,
@@ -839,143 +716,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         )
         self.last_i2sb_transport_debug.update(debug)
         return normalized.to(dtype=reference.dtype)
-
-    def _i2sb_fiber_project_gate(self, reference: torch.Tensor) -> torch.Tensor | None:
-        if not bool(getattr(self, "i2sb_fiber_project_use_gate", False)):
-            return None
-        cached = getattr(self, "last_output_style_context", None)
-        style_maps = cached.get("style_maps") if isinstance(cached, dict) else None
-        gate = getattr(style_maps, "gate_16", None)
-        if not torch.is_tensor(gate):
-            self.last_i2sb_transport_debug.update(
-                {
-                    "fiber_project_gate_active": 0.0,
-                    "fiber_project_gate_mean": 0.0,
-                    "fiber_project_gate_rms": 0.0,
-                }
-            )
-            return None
-        gate = gate.to(device=reference.device).float()
-        gate = torch.sigmoid(gate).clamp(0.0, 1.0)
-        if gate.shape[-2:] != reference.shape[-2:]:
-            gate = F.interpolate(gate, size=reference.shape[-2:], mode="bilinear", align_corners=False)
-        if gate.shape[0] == 1 and reference.shape[0] > 1:
-            gate = gate.expand(reference.shape[0], -1, -1, -1)
-        if gate.shape[1] != reference.shape[1]:
-            gate = gate.mean(dim=1, keepdim=True).expand(
-                reference.shape[0],
-                reference.shape[1],
-                reference.shape[2],
-                reference.shape[3],
-            )
-        gate_stats = gate.detach().float()
-        self.last_i2sb_transport_debug.update(
-            {
-                "fiber_project_gate_active": 1.0,
-                "fiber_project_gate_mean": float(gate_stats.mean().cpu().item()),
-                "fiber_project_gate_rms": float(gate_stats.square().mean().sqrt().cpu().item()),
-            }
-        )
-        return gate.to(dtype=reference.dtype)
-
-    def _i2sb_project_endpoint_to_fiber(
-        self,
-        endpoint: torch.Tensor,
-        source_latent: torch.Tensor | None,
-    ) -> torch.Tensor:
-        if not bool(getattr(self, "i2sb_fiber_project_endpoint", False)):
-            return endpoint
-        if source_latent is None:
-            raise ValueError("model.i2sb_fiber_project_endpoint requires source_latent during solver_i2sb inference.")
-        source = source_latent.to(device=endpoint.device)
-        if source.shape[-2:] != endpoint.shape[-2:]:
-            source = F.interpolate(source.float(), size=endpoint.shape[-2:], mode="bilinear", align_corners=False)
-        source_base = self._i2sb_lowpass(source)
-        endpoint_fiber = self._i2sb_highpass(endpoint)
-        projected = (source_base + endpoint_fiber).to(dtype=endpoint.dtype)
-        gate = self._i2sb_fiber_project_gate(endpoint)
-        if gate is None:
-            return projected
-        # Preserve the original endpoint in texture/fiber-active regions and
-        # apply the hard low-frequency source anchor mainly on structure regions.
-        return torch.lerp(projected, endpoint, gate)
-
-    def _i2sb_residual_fiber_direction(
-        self,
-        endpoint: torch.Tensor | None,
-        source_latent: torch.Tensor | None,
-        reference: torch.Tensor,
-    ) -> torch.Tensor | None:
-        if endpoint is None or source_latent is None:
-            return None
-        source = source_latent.to(device=reference.device)
-        if source.shape[-2:] != reference.shape[-2:]:
-            source = F.interpolate(source.float(), size=reference.shape[-2:], mode="bilinear", align_corners=False)
-        residual = endpoint.to(device=reference.device).float() - source.float()
-        residual = self._i2sb_highpass(residual)
-        rms = residual.detach().float().square().mean(dim=(1, 2, 3), keepdim=True).sqrt().clamp_min(1e-6)
-        residual = residual / rms
-        return residual.to(dtype=reference.dtype)
-
-    def _i2sb_project_noise_to_fiber(
-        self,
-        noise: torch.Tensor,
-        *,
-        endpoint: torch.Tensor | None = None,
-        source_latent: torch.Tensor | None = None,
-    ) -> torch.Tensor:
-        if not bool(getattr(self, "i2sb_fiber_project_noise", False)):
-            return noise
-        mode = str(getattr(self, "i2sb_fiber_project_noise_mode", "highpass")).strip().lower()
-        if mode not in {"highpass", "residual_envelope", "residual_direction"}:
-            mode = "highpass"
-        projected = self._i2sb_highpass(noise).to(dtype=noise.dtype)
-        residual_direction = self._i2sb_residual_fiber_direction(endpoint, source_latent, noise)
-        if mode == "residual_envelope" and residual_direction is not None:
-            envelope = residual_direction.detach().float().abs().mean(dim=1, keepdim=True)
-            power = float(getattr(self, "i2sb_fiber_project_residual_power", 1.0))
-            if abs(power - 1.0) > 1e-6:
-                envelope = envelope.clamp_min(1e-6).pow(power)
-            envelope_rms = envelope.square().mean(dim=(1, 2, 3), keepdim=True).sqrt().clamp_min(1e-6)
-            envelope = envelope / envelope_rms
-            projected = projected * envelope.to(device=projected.device, dtype=projected.dtype)
-            project_debug = {
-                "fiber_project_residual_active": 1.0,
-                "fiber_project_residual_mode_envelope": 1.0,
-                "fiber_project_residual_mode_direction": 0.0,
-                "fiber_project_residual_power": power,
-                "fiber_project_residual_rms": 1.0,
-            }
-            self.last_i2sb_transport_debug.update(project_debug)
-            self.last_i2sb_fiber_project_debug = project_debug
-        elif mode == "residual_direction" and residual_direction is not None:
-            scalar_noise = projected.float().mean(dim=1, keepdim=True)
-            scalar_rms = scalar_noise.detach().square().mean(dim=(1, 2, 3), keepdim=True).sqrt().clamp_min(1e-6)
-            scalar_noise = scalar_noise / scalar_rms
-            projected = residual_direction.to(dtype=projected.dtype) * scalar_noise.to(dtype=projected.dtype)
-            project_debug = {
-                "fiber_project_residual_active": 1.0,
-                "fiber_project_residual_mode_envelope": 0.0,
-                "fiber_project_residual_mode_direction": 1.0,
-                "fiber_project_residual_power": float(getattr(self, "i2sb_fiber_project_residual_power", 1.0)),
-                "fiber_project_residual_rms": 1.0,
-            }
-            self.last_i2sb_transport_debug.update(project_debug)
-            self.last_i2sb_fiber_project_debug = project_debug
-        else:
-            project_debug = {
-                "fiber_project_residual_active": 0.0,
-                "fiber_project_residual_mode_envelope": 0.0,
-                "fiber_project_residual_mode_direction": 0.0,
-                "fiber_project_residual_power": float(getattr(self, "i2sb_fiber_project_residual_power", 1.0)),
-                "fiber_project_residual_rms": 0.0,
-            }
-            self.last_i2sb_transport_debug.update(project_debug)
-            self.last_i2sb_fiber_project_debug = project_debug
-        gate = self._i2sb_fiber_project_gate(noise)
-        if gate is None:
-            return projected
-        return projected * gate
 
     @staticmethod
     def _make_style_injector(
@@ -1359,28 +1099,20 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 normal_leak=float(getattr(self, "diffeomorphic_normal_leak", 0.0)),
             )
             self._profile_end("diffeomorphic_stroke", t_profile, x)
-            if self.transport_prediction_mode == "endpoint":
-                if self.endpoint_parameterization == "residual":
-                    delta = stroked - x.float()
-                    delta = self._apply_style_delta_basis(delta, h, style_code)
-                    return self._apply_style_head_adapter(delta, h, style_code, style_maps)
-                endpoint = self._apply_style_delta_basis(stroked.float(), h, style_code)
-                return self._apply_style_head_adapter(endpoint, h, style_code, style_maps)
-            delta = stroked - x.float()
-            delta = self._apply_style_delta_basis(delta, h, style_code)
-            return self._apply_style_head_adapter(delta, h, style_code, style_maps)
-        if self.transport_prediction_mode == "endpoint":
-            bounded = torch.tanh(raw_delta / self.transport_endpoint_scale) * self.transport_endpoint_scale
+            # 629 D24: transport_prediction_mode == "endpoint" confirmed effective (velocity branch removed)
             if self.endpoint_parameterization == "residual":
-                bounded = self._apply_style_delta_basis(bounded, h, style_code)
-                return self._apply_style_head_adapter(bounded, h, style_code, style_maps)
+                delta = stroked - x.float()
+                delta = self._apply_style_delta_basis(delta, h, style_code)
+                return self._apply_style_head_adapter(delta, h, style_code, style_maps)
+            endpoint = self._apply_style_delta_basis(stroked.float(), h, style_code)
+            return self._apply_style_head_adapter(endpoint, h, style_code, style_maps)
+        # 629 D24: transport_prediction_mode == "endpoint" confirmed effective (velocity branch removed)
+        bounded = torch.tanh(raw_delta / self.transport_endpoint_scale) * self.transport_endpoint_scale
+        if self.endpoint_parameterization == "residual":
             bounded = self._apply_style_delta_basis(bounded, h, style_code)
             return self._apply_style_head_adapter(bounded, h, style_code, style_maps)
-        if self.velocity_head_mode == "tanh":
-            raw_delta = torch.tanh(raw_delta) * self.velocity_tanh_limit
-        delta = raw_delta * self.latent_scale_factor * self.residual_gain
-        delta = self._apply_style_delta_basis(delta, h, style_code)
-        return self._apply_style_head_adapter(delta, h, style_code, style_maps)
+        bounded = self._apply_style_delta_basis(bounded, h, style_code)
+        return self._apply_style_head_adapter(bounded, h, style_code, style_maps)
 
     def _endpoint_delta_from_raw(self, raw_transport: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
         raw = raw_transport.to(dtype=x.dtype)
@@ -1542,8 +1274,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         if self.i2sb_predictor_time_floor > 0.0 and predict_t < self.i2sb_predictor_time_floor:
             predict_t = min(max(predict_t, self.i2sb_predictor_time_floor), float(t_next))
         predict_t = min(max(predict_t, 0.0), 1.0 - 1e-6)
-        previous_fiber_noise_debug = getattr(self, "last_i2sb_fiber_noise_debug", {}) or {}
-        previous_fiber_project_debug = getattr(self, "last_i2sb_fiber_project_debug", {}) or {}
         self.last_i2sb_transport_debug = {
             "t_curr": float(t_curr),
             "predict_t": float(predict_t),
@@ -1556,40 +1286,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             "endpoint_orthogonal_low_anchor": float(getattr(self, "endpoint_orthogonal_low_anchor", 1.0)),
             "endpoint_orthogonal_low_mode_channel_mean": float(
                 str(getattr(self, "endpoint_orthogonal_low_mode", "all")).strip().lower() == "channel_mean"
-            ),
-            "fiber_noise_requested": float(bool(getattr(self, "i2sb_fiber_aligned_noise", False))),
-            "fiber_project_endpoint_active": float(bool(getattr(self, "i2sb_fiber_project_endpoint", False))),
-            "fiber_project_noise_active": float(bool(getattr(self, "i2sb_fiber_project_noise", False))),
-            "fiber_project_kernel": float(getattr(self, "i2sb_fiber_project_kernel", 1)),
-            "fiber_project_use_gate": float(bool(getattr(self, "i2sb_fiber_project_use_gate", False))),
-            "fiber_project_noise_mode_residual_envelope": float(
-                str(getattr(self, "i2sb_fiber_project_noise_mode", "highpass")).strip().lower() == "residual_envelope"
-            ),
-            "fiber_project_noise_mode_residual_direction": float(
-                str(getattr(self, "i2sb_fiber_project_noise_mode", "highpass")).strip().lower() == "residual_direction"
-            ),
-            "fiber_project_gate_active": 0.0,
-            "fiber_project_gate_mean": 0.0,
-            "fiber_project_gate_rms": 0.0,
-            "fiber_project_residual_active": float(previous_fiber_project_debug.get("fiber_project_residual_active", 0.0)),
-            "fiber_project_residual_mode_envelope": float(previous_fiber_project_debug.get("fiber_project_residual_mode_envelope", 0.0)),
-            "fiber_project_residual_mode_direction": float(previous_fiber_project_debug.get("fiber_project_residual_mode_direction", 0.0)),
-            "fiber_project_residual_power": float(
-                previous_fiber_project_debug.get(
-                    "fiber_project_residual_power",
-                    float(getattr(self, "i2sb_fiber_project_residual_power", 1.0)),
-                )
-            ),
-            "fiber_project_residual_rms": float(previous_fiber_project_debug.get("fiber_project_residual_rms", 0.0)),
-            "fiber_noise_active": float(previous_fiber_noise_debug.get("fiber_noise_active", 0.0)),
-            "fiber_gate_mean": float(previous_fiber_noise_debug.get("fiber_gate_mean", 0.0)),
-            "fiber_gate_rms": float(previous_fiber_noise_debug.get("fiber_gate_rms", 0.0)),
-            "fiber_noise_scale": float(previous_fiber_noise_debug.get("fiber_noise_scale", 0.0)),
-            "fiber_noise_rms_normalize": float(
-                previous_fiber_noise_debug.get(
-                    "fiber_noise_rms_normalize",
-                    float(bool(getattr(self, "i2sb_fiber_noise_rms_normalize", True))),
-                )
             ),
             "style_noise_family_style_covariant": float(self.i2sb_noise_family == "style_covariant"),
             "style_noise_family_gaussian": float(self.i2sb_noise_family == "gaussian"),
@@ -1607,7 +1303,6 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
             style_code_override=style_code_override,
             target_style_latent=target_style_latent,
         )
-        x_1_pred = self._i2sb_project_endpoint_to_fiber(x_1_pred, source_latent)
         denom = max(1.0 - float(t_curr), 1e-6)
         c_curr = (1.0 - float(t_next)) / denom
         c_target = (float(t_next) - float(t_curr)) / denom
@@ -1617,18 +1312,9 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         var = (self.bridge_sigma ** 2) * (float(t_next) - float(t_curr)) * (1.0 - float(t_next)) / denom
         if var <= 0.0:
             return mu
-        noise = self._i2sb_project_noise_to_fiber(
-            self._i2sb_sample_transport_noise(
-                h,
-                target_style_latent=target_style_latent,
-            ),
-            endpoint=x_1_pred,
-            source_latent=source_latent,
-        )
-        noise = self._i2sb_fiber_aligned_noise(
+        noise = self._i2sb_sample_transport_noise(
             h,
-            noise,
-            noise_scale=math.sqrt(var),
+            target_style_latent=target_style_latent,
         )
         return mu + math.sqrt(var) * noise
 
@@ -2195,13 +1881,11 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         )
         self._profile_end("backbone_forward", t_profile, x)
         t_profile = self._profile_start(x)
-        if self.transport_prediction_mode == "endpoint":
-            endpoint_delta = self._endpoint_delta_from_raw(delta, x)
-            out = self._apply_execution_budget(endpoint_delta.to(dtype=x.dtype), x, style_code)
-            denom = (1.0 - t_tensor).clamp_min(self.endpoint_velocity_time_floor).view(-1, 1, 1, 1)
-            out = out / denom
-        else:
-            out = self._apply_execution_budget(delta, x, style_code)
+        # 629 D24: transport_prediction_mode == "endpoint" confirmed effective (velocity branch removed)
+        endpoint_delta = self._endpoint_delta_from_raw(delta, x)
+        out = self._apply_execution_budget(endpoint_delta.to(dtype=x.dtype), x, style_code)
+        denom = (1.0 - t_tensor).clamp_min(self.endpoint_velocity_time_floor).view(-1, 1, 1, 1)
+        out = out / denom
         self._profile_end("execution_budget", t_profile, x)
         return out
 
@@ -2242,13 +1926,10 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         )
         self._profile_end("backbone_forward", t_profile, x)
         t_profile = self._profile_start(x)
-        if self.transport_prediction_mode == "endpoint":
-            endpoint_delta = self._endpoint_delta_from_raw(raw_transport, x)
-            budgeted_delta = self._apply_execution_budget(endpoint_delta, x, style_code)
-            z_base = x + budgeted_delta
-        else:
-            delta = self._apply_execution_budget(raw_transport.to(dtype=x.dtype), x, style_code)
-            z_base = x + delta
+        # 629 D24: transport_prediction_mode == "endpoint" confirmed effective (velocity branch removed)
+        endpoint_delta = self._endpoint_delta_from_raw(raw_transport, x)
+        budgeted_delta = self._apply_execution_budget(endpoint_delta, x, style_code)
+        z_base = x + budgeted_delta
         self._profile_end("execution_budget", t_profile, x)
         return z_base
 
@@ -2265,7 +1946,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
     ) -> torch.Tensor:
         if style_id is None:
             raise ValueError("style_id is required for bridge integration.")
-        if self.transport_prediction_mode == "endpoint" and self.solver_family != "solver_i2sb":
+        # 629 D24: transport_prediction_mode == "endpoint" always true; only check solver_family
+        if self.solver_family != "solver_i2sb":
             return self.predict_transport_base(
                 x,
                 t=1.0,
@@ -2281,13 +1963,12 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
         x, source_latent, _transport_stats_ctx = self._prepare_transport_stats_input(x, style_id=style_id)
         dt = horizon / float(steps)
         h = x
-        self.last_i2sb_fiber_noise_debug = {}
-        self.last_i2sb_fiber_project_debug = {}
         for idx in range(steps):
             t = horizon * ((idx + 0.5) / float(steps))
             t_curr = horizon * (idx / float(steps))
             t_next = horizon * ((idx + 1) / float(steps))
-            if self.solver_family == "solver_i2sb" and self.transport_prediction_mode == "endpoint":
+            # 629 D24: transport_prediction_mode == "endpoint" always true; only check solver_family
+            if self.solver_family == "solver_i2sb":
                 h = self._i2sb_transport_step(
                     h,
                     t_curr=t_curr,
@@ -2328,20 +2009,8 @@ class TimeConditionedLANCETBridge(LatentAdaCUT):
                 predictor = self._correct_transport_state(predictor, x, dt=dt * 0.5)
                 noise_scale = max(0.0, float(getattr(self, "solver_stochastic_noise_scale", 0.0)))
                 if noise_scale > 0.0:
-                    noise = self._fiber_aligned_solver_noise(
-                        predictor,
-                        torch.randn_like(predictor),
-                        noise_scale=noise_scale,
-                    )
+                    noise = torch.randn_like(predictor)
                     predictor = predictor + noise * noise_scale * math.sqrt(max(dt, 1e-8))
-                else:
-                    self.last_solver_noise_debug = {
-                        "fiber_gate_active": 0.0,
-                        "fiber_gate_mean": 0.0,
-                        "fiber_gate_rms": 0.0,
-                        "noise_scale": 0.0,
-                        "isotropic_or_fiber": 1.0 if bool(getattr(self, "solver_fiber_aligned", False)) else 0.0,
-                    }
                 h = predictor
             else:
                 velocity = self.forward(

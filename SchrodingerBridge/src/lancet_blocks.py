@@ -205,7 +205,7 @@ class ResBlock(nn.Module):
         num_groups: int = 8,
         style_attn_num_tokens: int = 16,
         style_attn_num_heads: int = 4,
-        style_attn_sharpen_scale: float = 2.0,
+        style_attn_sharpen_scale: float = 0.0,  # 629 D15: confirmed ineffective (baseline 2.0 → prune_to 0)
         style_attn_temperature: float = 0.5,
     ) -> None:
         super().__init__()
@@ -336,7 +336,7 @@ class AttentionBlock(nn.Module):
         num_groups: int = 8,
         style_attn_num_tokens: int = 16,
         style_attn_num_heads: int = 4,
-        style_attn_sharpen_scale: float = 2.0,
+        style_attn_sharpen_scale: float = 0.0,  # 629 D15: confirmed ineffective (baseline 2.0 → prune_to 0)
         feature_attn_num_heads: int = 4,
         style_attn_temperature: float = 0.5,
         attn_mode: str = "global_attn",

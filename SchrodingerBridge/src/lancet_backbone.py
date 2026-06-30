@@ -93,7 +93,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
         self.tokenizer_content_stopgrad = bool(getattr(cfg, "tokenizer_content_stopgrad", True))
         self.tokenizer_content_style_gate = bool(getattr(cfg, "tokenizer_content_style_gate", False))
         self.tokenizer_content_style_gate_max = max(1e-3, float(getattr(cfg, "tokenizer_content_style_gate_max", 2.0)))
-        self.style_attn_sharpen_scale = max(0.1, float(getattr(cfg, "style_attn_sharpen_scale", 2.5)))
+        self.style_attn_sharpen_scale = 0  # 629 D15: confirmed ineffective (baseline 2.5 → prune_to 0)
         self.style_attn_temperature = max(1e-3, float(getattr(cfg, "style_attn_temperature", 0.08)))
         self.hires_block_type = _normalize_feature_block_type(getattr(cfg, "hires_block_type", "conv"))
         self.body_block_type = _normalize_feature_block_type(getattr(cfg, "body_block_type", "global_attn"))
@@ -158,7 +158,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
             self.skip_routing_mode = "normalized"
         self.skip_disabled = self.skip_routing_mode == "none"
         self.skip_naive_gain = max(0.0, float(getattr(cfg, "skip_naive_gain", 1.0)))
-        self.skip_residual_weight = max(0.0, float(getattr(cfg, "skip_residual_weight", 0.1)))
+        self.skip_residual_weight = 0  # 629 D17: confirmed ineffective (baseline 0.1 → prune_to 0)
         self.style_skip_content_retention_boost = max(0.0, min(1.0, float(getattr(cfg, "style_skip_content_retention_boost", 0.0))))
         self.input_anchor_noise_std = max(0.0, float(getattr(cfg, "input_anchor_noise_std", 0.0)))
         self.input_anchor_noise_eval = bool(getattr(cfg, "input_anchor_noise_eval", False))
@@ -286,7 +286,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                 geometry_dim=int(getattr(cfg, "tokenizer_geometry_dim", 24)),
                 init_std=float(getattr(cfg, "tokenizer_init_std", 0.02)),
                 projection_mode=str(getattr(cfg, "tokenizer_projection_mode", "concat")),
-                residual_gain=float(getattr(cfg, "tokenizer_residual_gain", 0.5)),
+                residual_gain=0,  # 629 D14: confirmed ineffective (baseline 0.5 → prune_to 0)
                 num_atoms=tokenizer_num_atoms,
                 num_prototypes=int(getattr(cfg, "tokenizer_num_prototypes", 4)),
                 atom_temperature=float(getattr(cfg, "tokenizer_atom_temperature", 0.25)),
@@ -438,7 +438,7 @@ class LatentAdaCUT(LatentAdaCUTRuntimeMixin, nn.Module):
                     num_groups=num_groups,
                     style_attn_num_tokens=self.style_attn_num_tokens,
                     style_attn_num_heads=self.style_attn_num_heads,
-                    style_attn_sharpen_scale=self.style_attn_sharpen_scale,
+                    style_attn_sharpen_scale=0,  # 629 D15: confirmed ineffective
                     feature_attn_num_heads=self.feature_attn_num_heads,
                     style_attn_temperature=self.style_attn_temperature,
                     window_attn_window_size=self.window_attn_window_size,
