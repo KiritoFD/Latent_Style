@@ -329,7 +329,6 @@ class LGTInference:
             "solver_corrector_clamp",
             "solver_tangent_projection_strength",
             "solver_stochastic_noise_scale",
-            "solver_fiber_aligned",
         ):
             if hasattr(config.model, key):
                 setattr(self.model, key, getattr(config.model, key))
@@ -551,14 +550,6 @@ class LGTInference:
                 integrate_kwargs["target_style_latent"] = _style_latent_tensor
         else:
             integrate_kwargs["target_style_latent"] = target_style_latent
-        # FC-SB Phase 4 A2 Step2: 传递 source_style_latent 让 fiber 空间 source-repulsion 能执行
-        if source_style_latent is not None:
-            if isinstance(source_style_latent, dict):
-                _src_tensor = source_style_latent.get("style_latent_tensor")
-                if _src_tensor is not None:
-                    integrate_kwargs["source_style_latent"] = _src_tensor
-            else:
-                integrate_kwargs["source_style_latent"] = source_style_latent
         return self.model.integrate(
             x0,
             style_id=target_style_id,

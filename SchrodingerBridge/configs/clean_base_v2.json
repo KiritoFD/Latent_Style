@@ -374,7 +374,6 @@
     "spectral_w_ll": 0.3,
     "spectral_w_lh": 1.0,
     "spectral_w_hl": 1.0,
-    "spectral_w_hh": 1.5,
     "spectral_brownian_enabled": false,
     "spectral_brownian_sigma": 0.1,
     "style_contrastive_temperature": 0.08,
