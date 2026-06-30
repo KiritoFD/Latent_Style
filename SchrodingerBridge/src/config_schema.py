@@ -319,6 +319,11 @@ class ModelConfig:
     # mask_ratio = drop ratio (0.75 = keep 25%); mode = none|random|shuffle
     style_mask_ratio: float = 0.0
     style_mask_mode: str = "none"
+    # 630 Phase 4B-1: Frequency Masking (Scheme C, mask.md §C)
+    # alpha = low-freq subtraction strength (0=no-op, 1=pure high-freq residual)
+    # kernel = avg_pool2d kernel size for low-pass (odd, >=3)
+    style_freq_lowpass_alpha: float = 0.0
+    style_freq_lowpass_kernel: int = 5
     endpoint_head_mode: str = "endpoint_lowhigh"
     endpoint_style_hidden_dim: int = 128
     endpoint_lowpass_kernel: int = 5

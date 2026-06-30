@@ -1,0 +1,24 @@
+{
+  "_base": "630_phase3_mask_random_50_10ep.json",
+  "model": {
+    "style_freq_lowpass_alpha": 0.5,
+    "style_freq_lowpass_kernel": 5,
+    "style_mask_ratio": 0.0,
+    "style_mask_mode": "none"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4b1_freq_a05",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4b1_freq_a05",
+    "axis": "additive_frequency_masking",
+    "stage": "phase4b1",
+    "notes": "Phase 4B-1: partial frequency masking (alpha=0.5, no random dropout). Tests Scheme C with 50% low-freq subtraction. Softer than a1 - retains some content info."
+  }
+}
