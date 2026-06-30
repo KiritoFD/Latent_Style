@@ -18,8 +18,6 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from config_schema import ExperimentConfig, compact_runtime_config
-from losses import OTFlowMatchingObjective
-from losses620 import SpatialBridgeObjective620
 from model import build_model_from_config, count_parameters
 from style_families import prune_state_dict_for_tokenizer_family
 from utils.training import (
@@ -237,11 +235,13 @@ class SBTrainer:
         if contract_family in ("620_spatial_bridge", "620_spectral_ode") and self.distill_enabled:
             raise ValueError(f"{contract_family} does not support legacy distillation; disable training.distill.enabled.")
         if contract_family == "620_spatial_bridge":
+            from losses620 import SpatialBridgeObjective620
             self.loss_fn = SpatialBridgeObjective620(config)
         elif contract_family == "620_spectral_ode":
             from spectral_losses620 import SpectralODEObjective620
             self.loss_fn = SpectralODEObjective620(config)
         else:
+            from losses import OTFlowMatchingObjective
             self.loss_fn = OTFlowMatchingObjective(config)
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
