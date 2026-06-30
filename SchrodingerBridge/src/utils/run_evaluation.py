@@ -3260,7 +3260,6 @@ def main(argv: list[str] | None = None):
                             repeated_latents,
                             tgt_ids,
                             target_style_latent=target_style_latent,
-                            source_style_latent=repeated_latents,  # FC-SB Phase 4 A2 Step2: 源内容 VAE latent, 供 fiber 空间反向排斥
                         )
                         chunk_runtime_observability = _runtime_observability_from_model(getattr(lgt, "model", None))
                         latent_post_debug = None

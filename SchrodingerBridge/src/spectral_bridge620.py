@@ -69,10 +69,18 @@ class SpectralODEBridge620(nn.Module):
         depth = max(1, int(getattr(model_cfg, "num_res_blocks", 4)))
         heads = max(1, int(getattr(model_cfg, "style_attn_num_heads", 4)))
         gate_init = float(getattr(model_cfg, "style_cross_attn_gate_init", 0.3))
+        gate_mode = str(getattr(model_cfg, "style_gate_mode", "tanh_gate"))
+        attn_mode = str(getattr(model_cfg, "style_attn_mode", "softmax"))
+        attn_temperature = float(getattr(model_cfg, "style_attn_temperature", 1.0))
+        shortcut_alpha = getattr(model_cfg, "style_shortcut_alpha", 1.0)
+        norm_type = str(getattr(model_cfg, "body_norm_type", "group_norm"))
         self.blocks = nn.ModuleList([
             SpatialBridgeBlock620(
                 dim=self.dim, num_heads=heads, style_gate_init=gate_init,
+                style_gate_mode=gate_mode, style_shortcut_alpha=shortcut_alpha,
                 layer_idx=idx, num_layers=depth,
+                attn_mode=attn_mode, attn_temperature=attn_temperature,
+                norm_type=norm_type,
             )
             for idx in range(depth)
         ])
