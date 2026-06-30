@@ -2122,7 +2122,7 @@ def build_model_from_config(
     elif str(getattr(config, "contract_family", "legacy") or "legacy").strip().lower() == "620_spectral_ode":
         from spectral_bridge620 import build_spectral_ode_bridge_from_config
 
-        return build_spectral_ode_bridge_from_config(config, bridge_cfg=bridge_cfg, use_checkpointing=use_checkpointing)
+        return build_spectral_ode_bridge_from_config(config, bridge_cfg=bridge_cfg)
     return TimeConditionedLANCETBridge(config)
 
 

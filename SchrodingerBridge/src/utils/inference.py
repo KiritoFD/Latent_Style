@@ -516,7 +516,7 @@ class LGTInference:
         )
 
     @torch.no_grad()
-    def generation_with_target_latent(self, x0, target_style_id, num_steps=None, target_style_latent=None, source_style_latent=None):
+    def generation_with_target_latent(self, x0, target_style_id, num_steps=None, target_style_latent=None):
         if num_steps is None:
             num_steps = self.num_steps
         b = x0.shape[0]

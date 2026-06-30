@@ -46,8 +46,7 @@ class SpatialBridgeBlock620(nn.Module):
     """AdaLN(time) → Self-Attention → Cross-Attention(style) → FFN.
 
     Active path (clean_base_v2): relu2 attention, tanh_gate, single k/v proj,
-    no FiLM, no MoE, no skip_coarse. Constructor keeps legacy params for
-    backward compatibility but ignores dead ones.
+    no FiLM, no MoE, no skip_coarse.
     """
 
     def __init__(
@@ -57,29 +56,15 @@ class SpatialBridgeBlock620(nn.Module):
         num_heads: int,
         style_gate_init: float = 0.5,
         style_gate_mode: str = "tanh_gate",
-        style_moe_enabled: bool = False,
-        style_moe_num_experts: int = 4,
-        style_moe_router_hidden_dim: int = 128,
-        style_kv_moe_content_routed: bool = False,
         style_shortcut_alpha: Any = 1.0,
-        style_query_source: str = "concat",
-        style_cross_attn_skip_coarse: bool = False,
-        style_attn_topk: int = 0,
         layer_idx: int = 0,
         num_layers: int = 4,
-        dino_dim: int = 384,
-        film_enabled: bool = False,
-        film_init_std: float = 0.02,
         attn_mode: str = "softmax",
         attn_temperature: float = 1.0,
         gate_warmup_steps: int = 0,
         norm_type: str = "group_norm",
     ) -> None:
         super().__init__()
-        # Ignore dead params (kept for call-site compatibility with spectral_bridge620.py)
-        del style_moe_enabled, style_moe_num_experts, style_moe_router_hidden_dim
-        del style_kv_moe_content_routed, style_query_source, style_cross_attn_skip_coarse
-        del style_attn_topk, dino_dim, film_enabled, film_init_std
 
         self.layer_idx = int(layer_idx)
         self.num_layers = int(num_layers)

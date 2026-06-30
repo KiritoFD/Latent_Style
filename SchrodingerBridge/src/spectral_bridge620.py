@@ -16,7 +16,7 @@ import torch.nn.functional as F
 
 from blocks620 import SpatialBridgeBlock620, sinusoidal_time_embedding_620
 from config_schema import BridgeConfig, ModelConfig
-from spectral620 import dwt2_haar, idwt2_haar, dwt2_multi_level, idwt2_multi_level
+from spectral620 import dwt2_haar, idwt2_haar
 from style_encoder620 import StyleConditioner620
 
 
@@ -47,27 +47,13 @@ class SpectralODEBridge620(nn.Module):
         self.dim = int(model_cfg.base_dim)
         self.time_dim = int(getattr(model_cfg, "time_dim", self.dim))
         self.dino_dim = int(getattr(model_cfg, "tokenizer_dino_dim", 384))
-        self.spectral_levels = max(1, int(getattr(model_cfg, "spectral_ode_levels", 1)))
-        # N1: 多级 DWT 支持 (levels>1 时, backbone 处理最粗级 LL 的 4 子带, 细级高频 pass-through)
-        # 不再 raise NotImplementedError; forward/integrate_transport 根据 spectral_levels 分支
 
-        # Style conditioner (reuse existing)
+        # Style conditioner (DINO patches -> bridge width)
         self.style_conditioner = StyleConditioner620(
             dino_dim=self.dino_dim,
             model_dim=self.dim,
             num_styles=self.num_styles,
             num_memory_tokens=256,
-            adapter_enabled=bool(getattr(model_cfg, "style_dino_adapter_enabled", False)),
-            adapter_hidden_dim=int(getattr(model_cfg, "style_dino_adapter_hidden_dim", 1024)),
-            adapter_scale=float(getattr(model_cfg, "style_dino_adapter_scale", 0.25)),
-            local_cnn_enabled=bool(getattr(model_cfg, "style_local_cnn_enabled", False)),
-            text_enabled=bool(getattr(model_cfg, "style_text_enabled", False)),
-            text_dim=int(getattr(model_cfg, "style_text_dim", 768)),
-            text_max_length=int(getattr(model_cfg, "style_text_max_length", 77)),
-            text_dropout_prob=float(getattr(model_cfg, "style_text_dropout_prob", 0.15)),
-            image_dropout_prob=float(getattr(model_cfg, "style_image_dropout_prob", 0.15)),
-            text_null_std=float(getattr(model_cfg, "style_text_null_token_init_std", 0.02)),
-            image_null_std=float(getattr(model_cfg, "style_image_null_token_init_std", 0.02)),
         )
 
         # Input projection: 4 subbands stacked -> dim channels
@@ -86,9 +72,7 @@ class SpectralODEBridge620(nn.Module):
         self.blocks = nn.ModuleList([
             SpatialBridgeBlock620(
                 dim=self.dim, num_heads=heads, style_gate_init=gate_init,
-                layer_idx=idx, num_layers=depth, dino_dim=self.dino_dim,
-                film_enabled=bool(getattr(model_cfg, "style_film_enabled", False)),
-                film_init_std=float(getattr(model_cfg, "style_film_init_std", 0.02)),
+                layer_idx=idx, num_layers=depth,
             )
             for idx in range(depth)
         ])
@@ -111,7 +95,6 @@ class SpectralODEBridge620(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        source: torch.Tensor | None = None,
         t: torch.Tensor | float | None = None,
         style_id: torch.Tensor | int | None = None,
         style_dino_patches: torch.Tensor | None = None,
@@ -119,13 +102,11 @@ class SpectralODEBridge620(nn.Module):
         content_dino_patches: torch.Tensor | None = None,
         style_latent: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
-        target_latent: torch.Tensor | None = None,
-        velocity_scale: float = 1.0,
         **_: object,
     ) -> dict[str, torch.Tensor]:
         """Returns dict with 3 velocities: {'ll': v_ll, 'lh': v_lh, 'hl': v_hl} (HH removed - 628 L8 DEAD)."""
         t_tensor = self._resolve_t(x, t)
-        # DWT (single-level Haar; multi-level removed — 628/629 confirmed spectral_levels=1 is optimal)
+        # Single-level Haar DWT (multi-level removed — 628/629 confirmed spectral_levels=1 is optimal)
         ll, lh, hl, hh = dwt2_haar(x)
         # Stack 4 subbands along channel dim (HH still decomposed for input, but no velocity head)
         stacked = torch.cat([ll, lh, hl, hh], dim=1)  # (B, 4C, H/2, W/2)
@@ -133,7 +114,6 @@ class SpectralODEBridge620(nn.Module):
         style_tokens, style_global = self.style_conditioner(
             style_dino_patches=style_dino_patches, style_dino_cls=style_dino_cls,
             style_id=style_id, batch=x.shape[0], device=x.device, dtype=x.dtype,
-            style_latent=style_latent, style_text_tokens=style_text_tokens,
         )
         time_emb = self.time_proj(
             sinusoidal_time_embedding_620(t_tensor, self.time_dim).to(device=x.device, dtype=x.dtype)
@@ -152,10 +132,6 @@ class SpectralODEBridge620(nn.Module):
         v_ll = self.head_ll(h)
         v_lh = self.head_lh(h)
         v_hl = self.head_hl(h)
-        if velocity_scale != 1.0:
-            v_ll = v_ll * velocity_scale
-            v_lh = v_lh * velocity_scale
-            v_hl = v_hl * velocity_scale
         self.last_debug = {
             "v_ll_abs": v_ll.detach().float().abs().mean(),
             "v_lh_abs": v_lh.detach().float().abs().mean(),
@@ -175,7 +151,6 @@ class SpectralODEBridge620(nn.Module):
         style_text_tokens: torch.Tensor | None = None,
         style_latent: torch.Tensor | None = None,
         target_style_latent: torch.Tensor | None = None,
-        source_style_latent: torch.Tensor | None = None,
         **_: object,
     ) -> torch.Tensor:
         """Spectral-domain Euler integration + endpoint AdaIN.
@@ -255,7 +230,6 @@ class SpectralODEBridge620(nn.Module):
 
 
 def build_spectral_ode_bridge_from_config(
-    model_cfg: ModelConfig, *, bridge_cfg: BridgeConfig | None = None, use_checkpointing: bool = False
+    model_cfg: ModelConfig, *, bridge_cfg: BridgeConfig | None = None
 ) -> SpectralODEBridge620:
-    del use_checkpointing
     return SpectralODEBridge620(model_cfg, bridge_cfg=bridge_cfg)

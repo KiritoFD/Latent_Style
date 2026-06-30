@@ -1,0 +1,1 @@
+{"ts":"2026-06-30T00:00:00","source":"orchestrator","level":"info","event":"task_init","detail":"Initialized Deli_AutoResearch state for 630 cleanup+masking+exploration. Baseline clip=0.7293 lpips=0.3203."}
