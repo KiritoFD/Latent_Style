@@ -1,28 +1,32 @@
 {
   "task": "630_cleanup_masking_exploration",
-  "iteration": 2,
+  "iteration": 3,
   "total_findings": 20,
-  "status": "PHASE1B_DONE",
+  "status": "PHASE1_COMPLETE",
   "stale_count": 0,
-  "last_seen": "2026-06-30T21:30:00",
+  "last_seen": "2026-06-30T21:45:00",
   "baseline": {
     "clip_style": 0.7293,
     "content_lpips": 0.3203,
     "clip_style_min": 0.7243,
     "content_lpips_max": 0.3453
   },
-  "relu2_3ep": {
-    "clip_style": 0.7269,
-    "content_lpips": 0.3370,
-    "verdict": "PASS (both metrics within threshold)"
+  "phase1_results": {
+    "phase1b_relu2_3ep": {"clip_style": 0.7269, "content_lpips": 0.3370, "verdict": "PASS"},
+    "phase1d_clean_3ep": {"clip_style": 0.7251, "content_lpips": 0.3373, "verdict": "PASS"}
   },
   "milestones": {
     "M1_audit": "completed",
-    "M2_phase1_subtractive": "in_progress",
-    "M3_minimal_codebase": "pending",
+    "M2_phase1_subtractive": "completed",
+    "M3_minimal_codebase": "completed",
     "M4_masking": "pending",
     "M5_exploration": "pending",
     "M6_documentation": "pending"
   },
-  "vram_constraint": "eval <= 7GB (batch_size=2)"
+  "codebase_stats": {
+    "lines_deleted_phase1a": "H1-H11 dead code",
+    "lines_deleted_phase1c": 11346,
+    "active_files": 14,
+    "vram_constraint": "eval <= 7GB (batch_size=2)"
+  }
 }
