@@ -8,7 +8,7 @@ class StyleConditioner620(nn.Module):
     """Project cached DINO patch tokens into the 620 bridge width.
 
     628/629 清理: adapter/local_cnn/text 三个死分支已删除 (clean_base_v2 全 false, 从未启用).
-    保留构造函数参数以兼容 spectral_bridge620.py 调用, 但内部忽略.
+    630 清理: deprecated 兼容参数已连根拔起 (调用点同步精简).
     """
 
     def __init__(
@@ -18,23 +18,8 @@ class StyleConditioner620(nn.Module):
         model_dim: int,
         num_styles: int,
         num_memory_tokens: int = 256,
-        # Deprecated params (accepted for compat, ignored — 628/629 confirmed dead branches)
-        adapter_enabled: bool = False,
-        adapter_hidden_dim: int = 1024,
-        adapter_scale: float = 0.25,
-        local_cnn_enabled: bool = False,
-        text_enabled: bool = False,
-        text_dim: int = 768,
-        text_max_length: int = 77,
-        text_dropout_prob: float = 0.15,
-        image_dropout_prob: float = 0.15,
-        text_null_std: float = 0.02,
-        image_null_std: float = 0.02,
     ) -> None:
         super().__init__()
-        del adapter_enabled, adapter_hidden_dim, adapter_scale, local_cnn_enabled
-        del text_enabled, text_dim, text_max_length, text_dropout_prob
-        del image_dropout_prob, text_null_std, image_null_std
         self.dino_dim = int(dino_dim)
         self.model_dim = int(model_dim)
         self.num_styles = int(num_styles)
@@ -76,10 +61,7 @@ class StyleConditioner620(nn.Module):
         batch: int,
         device: torch.device,
         dtype: torch.dtype,
-        style_latent: torch.Tensor | None = None,
-        style_text_tokens: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        del style_latent, style_text_tokens  # deprecated (text/local_cnn branches removed)
         patches = style_dino_patches
         if patches is None:
             patches = self._fallback_tokens(style_id, batch=batch, device=device, dtype=dtype)
