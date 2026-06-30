@@ -1,22 +1,28 @@
 {
   "task": "630_cleanup_masking_exploration",
-  "iteration": 0,
-  "total_findings": 0,
-  "status": "INIT",
+  "iteration": 2,
+  "total_findings": 20,
+  "status": "PHASE1B_DONE",
   "stale_count": 0,
-  "last_seen": "2026-06-30T00:00:00",
+  "last_seen": "2026-06-30T21:30:00",
   "baseline": {
     "clip_style": 0.7293,
     "content_lpips": 0.3203,
     "clip_style_min": 0.7243,
     "content_lpips_max": 0.3453
   },
+  "relu2_3ep": {
+    "clip_style": 0.7269,
+    "content_lpips": 0.3370,
+    "verdict": "PASS (both metrics within threshold)"
+  },
   "milestones": {
-    "M1_audit": "in_progress",
-    "M2_phase1_subtractive": "pending",
+    "M1_audit": "completed",
+    "M2_phase1_subtractive": "in_progress",
     "M3_minimal_codebase": "pending",
     "M4_masking": "pending",
     "M5_exploration": "pending",
     "M6_documentation": "pending"
-  }
+  },
+  "vram_constraint": "eval <= 7GB (batch_size=2)"
 }

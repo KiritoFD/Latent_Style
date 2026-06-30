@@ -504,7 +504,7 @@
     ],
     "multistep_gamma": 0.1,
     "grad_clip_norm": 1.0,
-    "num_epochs": 10,
+    "num_epochs": 3,
     "save_interval": 5,
     "async_checkpoint_save": false,
     "log_interval": 20,
@@ -536,7 +536,7 @@
     "resume_prefer_local_checkpoint": true,
     "freeze_mode": "none",
     "freeze_reinit_trainable": false,
-    "full_eval_batch_size": 16,
+    "full_eval_batch_size": 2,
     "full_eval_output_subdir": "full_eval",
     "full_eval_generation_batch_size": null,
     "full_eval_metric_batch_size": null,
@@ -557,7 +557,7 @@
     "full_eval_introstyle_ensemble_size": 1,
     "full_eval_in_process": false,
     "full_eval_runtime_model_cache": false,
-    "full_eval_each_epoch": false,
+    "full_eval_each_epoch": true,
     "full_eval_defer_until_training_end": false,
     "full_eval_force_regen": false,
     "full_eval_profile_timing": true,
@@ -622,7 +622,7 @@
     "dino_bank_limit_per_style": 8
   },
   "checkpoint": {
-    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/clean_base_v2_local",
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/clean_base_v2_relu2",
     "resume_checkpoint": ""
   },
   "full_eval": {
@@ -638,9 +638,9 @@
     "save_summary_grid": true
   },
   "ablation": {
-    "name": "p4_t5_b2v2_d2_d4",
+    "name": "clean_base_v2_relu2",
     "axis": "p4_fusion_breakout",
     "stage": "e4long",
-    "notes": "P4 T5: B2 V2 base + D2 lowpass_mode=dwt_haar + D4 style_extrap_alpha=0.1 + endpoint_adain_scale=1.0 (让 style_extrap_alpha 在推理时生效). batch_size=16, num_epochs=10."
+    "notes": "M9 fix: activate style_attn_mode=relu2 (was bugged to softmax). 3-epoch quick comparison vs softmax baseline clip=0.7293 lpips=0.3203."
   }
 }
