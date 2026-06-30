@@ -1,32 +1,30 @@
 {
   "task": "630_cleanup_masking_exploration",
-  "iteration": 3,
+  "iteration": 4,
   "total_findings": 20,
-  "status": "PHASE1_COMPLETE",
+  "status": "PHASE2_COMPLETE",
   "stale_count": 0,
-  "last_seen": "2026-06-30T21:45:00",
+  "last_seen": "2026-06-30T22:05:00",
   "baseline": {
     "clip_style": 0.7293,
     "content_lpips": 0.3203,
     "clip_style_min": 0.7243,
     "content_lpips_max": 0.3453
   },
-  "phase1_results": {
-    "phase1b_relu2_3ep": {"clip_style": 0.7269, "content_lpips": 0.3370, "verdict": "PASS"},
-    "phase1d_clean_3ep": {"clip_style": 0.7251, "content_lpips": 0.3373, "verdict": "PASS"}
+  "phase2_results": {
+    "baseline_no_mask_3ep": {"clip_style": 0.7251, "content_lpips": 0.3373},
+    "mask_random_50_3ep": {"clip_style": 0.7261, "content_lpips": 0.3296, "verdict": "PASS"},
+    "mask_random_75_3ep": {"clip_style": 0.7250, "content_lpips": 0.3278, "verdict": "PASS"},
+    "mask_shuffle_50_3ep": {"clip_style": 0.7234, "content_lpips": 0.3205, "verdict": "FAIL"},
+    "mask_shuffle_75_3ep": {"clip_style": 0.7232, "content_lpips": 0.3177, "verdict": "FAIL"}
   },
+  "best_config": {"style_mask_ratio": 0.5, "style_mask_mode": "random"},
   "milestones": {
     "M1_audit": "completed",
     "M2_phase1_subtractive": "completed",
     "M3_minimal_codebase": "completed",
-    "M4_masking": "pending",
+    "M4_masking": "completed",
     "M5_exploration": "pending",
     "M6_documentation": "pending"
-  },
-  "codebase_stats": {
-    "lines_deleted_phase1a": "H1-H11 dead code",
-    "lines_deleted_phase1c": 11346,
-    "active_files": 14,
-    "vram_constraint": "eval <= 7GB (batch_size=2)"
   }
 }
