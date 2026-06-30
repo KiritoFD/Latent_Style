@@ -315,6 +315,10 @@ class ModelConfig:
     style_film_init_std: float = 0.02  # init std for block-level style_film_proj/film_q_proj/style_bias_proj; 0.0 = zero-init (FiLM=identity, gradient=0 — lethal); 0.02 = small random (breaks symmetry); 0.1+ = strong break
     style_attn_mode: str = "relu2"  # softmax | gated | gated_raw | relu2 | style_select | sparsemax (629 D19-D22: relu2 confirmed effective)
     style_attn_temperature: float = 1.0  # <1 sharpens, >1 smooths
+    # 630 Phase 2: The Blindfolded Tokenizer (mask.md)
+    # mask_ratio = drop ratio (0.75 = keep 25%); mode = none|random|shuffle
+    style_mask_ratio: float = 0.0
+    style_mask_mode: str = "none"
     endpoint_head_mode: str = "endpoint_lowhigh"
     endpoint_style_hidden_dim: int = 128
     endpoint_lowpass_kernel: int = 5

@@ -49,11 +49,16 @@ class SpectralODEBridge620(nn.Module):
         self.dino_dim = int(getattr(model_cfg, "tokenizer_dino_dim", 384))
 
         # Style conditioner (DINO patches -> bridge width)
+        # 630 Phase 2: propagate mask config (The Blindfolded Tokenizer)
+        mask_ratio = float(getattr(model_cfg, "style_mask_ratio", 0.0))
+        mask_mode = str(getattr(model_cfg, "style_mask_mode", "none"))
         self.style_conditioner = StyleConditioner620(
             dino_dim=self.dino_dim,
             model_dim=self.dim,
             num_styles=self.num_styles,
             num_memory_tokens=256,
+            mask_ratio=mask_ratio,
+            mask_mode=mask_mode,
         )
 
         # Input projection: 4 subbands stacked -> dim channels
