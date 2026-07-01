@@ -1,23 +1,33 @@
 {
-  "iteration": 1,
+  "iteration": 2,
   "task": "code_config_simplification_subtraction_ablation",
-  "status": "smoke_test_pending",
+  "status": "smoke_test_passed",
   "stale_count": 0,
   "started_at": "2026-07-02T15:00:00+08:00",
+  "completed_at": "2026-07-02T16:30:00+08:00",
   "milestones": {
     "state_init": true,
     "audit_config": true,
     "audit_source": true,
     "execute_hardcode": true,
     "execute_deadcode": true,
-    "smoke_test": false,
-    "findings_recorded": true
+    "smoke_test": true,
+    "findings_recorded": true,
+    "git_committed": true
   },
   "changes": {
-    "style_encoder620.py": "181行→82行 (-99行), 删除 masking/freq 实验代码",
-    "spectral_bridge620.py": "删除 masking/freq 传播 + 硬编码 lowpass_levels=1/lowpass_basis=haar + 删除 block 实例化的 3 个硬编码参数",
-    "blocks620.py": "删除 attn_mode/gate_mode/norm_type 构造函数参数, 硬编码 relu2/tanh_gate/group_norm",
-    "config_schema.py": "删除 8 字段 (style_mask_ratio/mode, style_freq_lowpass_alpha/kernel/mode, style_attn_mode, style_gate_mode, body_norm_type, endpoint_lowpass_levels/basis) + 修复 style_attn_temperature 重复 bug"
+    "style_encoder620.py": "181->82 行 (-99), 删除 Phase 2/4B masking/freq 实验代码 (_apply_freq_lowpass, _apply_mask, 5 constructor params)",
+    "spectral_bridge620.py": "删除 masking/freq 传播 + 硬编码 lowpass_levels=1/lowpass_basis=haar (4D/4E 已验证无效) + 简化 block 实例化 (3 参数硬编码)",
+    "blocks620.py": "删除 style_gate_mode/attn_mode/norm_type 构造函数参数, 硬编码 tanh_gate/relu2/group_norm (629 D19-D22 已验证最优)",
+    "config_schema.py": "删除 10 字段 (style_mask_ratio/mode, style_freq_lowpass_alpha/kernel/mode, style_attn_mode, style_gate_mode, body_norm_type, endpoint_lowpass_levels/basis) + 修复 style_attn_temperature 重复 bug (L307=0.08 + L326=1.0 -> L307=1.0)",
+    "tests/test_72_cleanup_smoke.py": "修复 — 删除 endpoint_lowpass_levels=1 + endpoint_lowpass_basis=haar 引用 (字段已硬编码)"
   },
-  "total_findings": 4
+  "smoke_test_result": {
+    "total": 21,
+    "passed": 21,
+    "failed": 0,
+    "verdict": "T11 baseline preserved — subtraction ablation successful"
+  },
+  "total_findings": 4,
+  "git_commit": "ed05ffa44"
 }

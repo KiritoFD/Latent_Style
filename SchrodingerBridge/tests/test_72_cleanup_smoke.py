@@ -53,8 +53,8 @@ def _make_t11_cfg() -> tuple[ModelConfig, BridgeConfig]:
         # T11 stochastic DWT route
         dwt_route_train_prob=0.8,
         # Declared ModelConfig fields
-        endpoint_lowpass_levels=1,
-        endpoint_lowpass_basis="haar",
+        # 630 Phase 72: endpoint_lowpass_levels=1 + endpoint_lowpass_basis="haar"
+        # 已硬编码进 spectral_bridge620.py (4D/4E 多级/小波基已验证无效)
         endpoint_adain_mode="spatial_fiber",
         endpoint_adain_only_last_step=True,
     )
