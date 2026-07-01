@@ -273,6 +273,10 @@ class ModelConfig:
     style_query_source: str = "concat"
     style_cross_attn_skip_coarse: bool = False
     style_attn_topk: int = 0
+    # 630 Phase 4J.1: DWT-Routed Cross-Attention (方案 B)
+    # True: 在 cross-attention 前对特征图做 Haar DWT, LL bypass, 仅高频(LH/HL/HH) query style_mem
+    # 理论: 解放 style_mem, 让它 100% 容量表达笔触/色彩, 不再被迫学"维持结构"
+    cross_attn_dwt_route: bool = False
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None
