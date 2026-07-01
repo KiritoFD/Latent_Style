@@ -838,13 +838,8 @@ class TrainingConfig:
     resume_prefer_local_checkpoint: bool = True
     freeze_mode: str = "none"
     freeze_reinit_trainable: bool = False
-    # 630 Phase 4J.6: Few-shot Textual Inversion (新风格, 冻结 backbone, 仅优化新 style_mem)
-    # few_shot_new_style_idx: 新风格的 style_memory 行索引 (e.g., 5 = 第6个风格, 前5个从 base checkpoint 加载)
-    # few_shot_base_checkpoint: 预训练 5-style checkpoint 路径, 用于加载前5个 style_memory 行
-    # 理论: "Style Is Learned, Not Extracted" — style_mem 是 Textual Inversion 载体,
-    # 冻结 backbone 后只优化新 style_mem 行, 优化器蒸馏出最纯粹的色彩/笔触
-    few_shot_new_style_idx: int = -1
-    few_shot_base_checkpoint: str = ""
+    # 630 Phase 72 清理: few_shot_new_style_idx / few_shot_base_checkpoint 已删除
+    # (Phase 4J.6 Few-shot Textual Inversion 已证明梯度通路太弱, NEGATIVE RESULT)
     full_eval_batch_size: int = 8
     full_eval_output_subdir: str = "full_eval"
     full_eval_generation_batch_size: int | None = None
