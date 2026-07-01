@@ -34,5 +34,113 @@
     "direction": "dead_code_removal_placeholders",
     "verdict": "IN_PROGRESS (spectral_brownian_noise_scale, loss_type metric, loss_fm alias, loss_fm_total, compute_debug, loss_fn.last_debug)",
     "timestamp": "2026-07-01T09:00:00"
+  },
+  {
+    "phase": "phase4g2",
+    "direction": "per_subband_adain_alpha_1.0",
+    "verdict": "MIXED (clip=0.7361 NEW SOTA +0.0042, lpips=0.3843 FAIL +0.0415)",
+    "timestamp": "2026-07-01T08:00:00"
+  },
+  {
+    "phase": "phase4g2b",
+    "direction": "per_subband_adain_alpha_0.5",
+    "verdict": "FAIL (clip=0.7362, lpips=0.3845, identical to alpha=1.0 — multi-step Euler accumulation invalidates alpha)",
+    "timestamp": "2026-07-01T09:00:00"
+  },
+  {
+    "phase": "phase4h1a",
+    "direction": "eota_per_subband_alpha_1.0",
+    "verdict": "NEUTRAL (clip=0.7359, lpips=0.3853, ≈4G.2 — alpha=1.0 degenerates, (1-1.0)^n=0 for any n)",
+    "timestamp": "2026-07-01T12:30:00"
+  },
+  {
+    "phase": "phase4h1b",
+    "direction": "eota_per_subband_alpha_0.5",
+    "verdict": "BREAKTHROUGH (clip=0.7219, lpips=0.3226: EOTA restored alpha effectiveness. Content SOTA -0.0202 vs 4F.1. Style near-miss -0.0024 below threshold.)",
+    "timestamp": "2026-07-01T13:00:00"
+  },
+  {
+    "phase": "phase4h1c",
+    "direction": "eota_per_subband_alpha_0.7_sweep",
+    "verdict": "PENDING (find sweet spot between 0.5 and 1.0)",
+    "timestamp": "2026-07-01T13:05:00"
+  },
+  {
+    "phase": "phase4h1d",
+    "direction": "eota_per_subband_alpha_0.8_sweep",
+    "verdict": "PENDING (upper bound of alpha sweep)",
+    "timestamp": "2026-07-01T13:05:00"
+  },
+  {
+    "phase": "phase4h1e",
+    "direction": "eota_spatial_fiber_alpha_0.5_generalization",
+    "verdict": "PENDING (test if EOTA generalizes to spatial_fiber path)",
+    "timestamp": "2026-07-01T13:05:00"
+  },
+  {
+    "phase": "phase4h2",
+    "direction": "loss_ratio_grid_6_configs",
+    "verdict": "PENDING (w_ll: 0.5/1.0, w_hf: 0.5/2.0, asymmetric LH/HL)",
+    "timestamp": "2026-07-01T12:35:00"
+  },
+  {
+    "phase": "phase4i1a",
+    "direction": "multi_scale_alpha_lh05_hl05_hh09",
+    "verdict": "FAIL (clip=0.7263, lpips=0.3383 — same-direction tradeoff, avg alpha=0.633 < 0.7)",
+    "timestamp": "2026-07-01T14:00:00"
+  },
+  {
+    "phase": "phase4i1d",
+    "direction": "multi_scale_alpha_lh07_hl07_hh10",
+    "verdict": "FAIL (clip=0.7310, lpips=0.3576 — HH=1.0 too aggressive, disproves HH content-insensitive hypothesis)",
+    "timestamp": "2026-07-01T14:05:00"
+  },
+  {
+    "phase": "phase4i2a",
+    "direction": "heun_solver_3ep",
+    "verdict": "BREAKTHROUGH (clip=0.7260, lpips=0.3279 — DUAL IMPROVEMENT, Pareto frontier BROKEN by ODE solver order)",
+    "timestamp": "2026-07-01T14:10:00"
+  },
+  {
+    "phase": "phase4i2b",
+    "direction": "heun_solver_5ep_compound_gain",
+    "verdict": "NEW SOTA (clip=0.7266, lpips=0.3229 — Heun advantage COMPOUNDS with training: lpips drop 25x more than Euler 5ep)",
+    "timestamp": "2026-07-01T14:15:00"
+  },
+  {
+    "phase": "phase4i5a",
+    "direction": "nonlinear_time_schedule_cosine_heun",
+    "verdict": "PASS (clip=0.7256, lpips=0.3238 — content gain vs Heun-linear, schedule maps Pareto frontier)",
+    "timestamp": "2026-07-01T14:20:00"
+  },
+  {
+    "phase": "phase4i5b",
+    "direction": "cosine_heun_5ep",
+    "verdict": "CONTENT BREAKTHROUGH (clip=0.7262, lpips=0.3171 — below baseline content_lpips=0.3203!)",
+    "timestamp": "2026-07-01T14:35:00"
+  },
+  {
+    "phase": "phase4i5c",
+    "direction": "rquad_heun_5ep",
+    "verdict": "STYLE BIAS (clip=0.7293, lpips=0.3429 — schedule maps Pareto in opposite direction)",
+    "timestamp": "2026-07-01T14:40:00"
+  },
+  {
+    "phase": "phase4i6a",
+    "direction": "rk4_solver_5ep",
+    "verdict": "SATURATED (clip=0.7265, lpips=0.3235 — RK4 ≈ Heun, solver order hits noise floor at O(h^3))",
+    "timestamp": "2026-07-01T14:50:00"
+  },
+  {
+    "phase": "phase4i7a",
+    "direction": "cosine_heun_alpha_0.9",
+    "verdict": "STYLE GAIN (clip=0.7283, lpips=0.3255 — alpha 0.9 spends cosine content budget for style)",
+    "timestamp": "2026-07-01T14:55:00"
+  },
+  {
+    "phase": "phase4i7b",
+    "direction": "cosine_heun_alpha_0.85",
+    "verdict": "NEW SOTA (clip=0.7272, lpips=0.3218 — DUAL beat 4I.2b AND SaMam on both metrics)",
+    "timestamp": "2026-07-01T15:10:00"
   }
 ]

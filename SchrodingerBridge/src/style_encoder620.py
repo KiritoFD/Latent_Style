@@ -4,6 +4,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from spectral620 import dwt2_haar, idwt2_haar
+
 
 class StyleConditioner620(nn.Module):
     """Project cached DINO patch tokens into the 620 bridge width.
@@ -14,6 +16,9 @@ class StyleConditioner620(nn.Module):
     on style tokens to break Gate Collapse (docs/630/mask.md).
     630 Phase 4B-1: Frequency Masking (Scheme C) — subtract low-freq DINO patches
     to purify high-freq style residual, orthogonal to mask_mode.
+    630 Phase 4B-3: DWT-based 分频 Tokenizer — replace avg_pool box filter with
+    orthogonal Haar DWT, unifying frequency decomposition across the pipeline
+    (style encoder + spectral bridge use the same Haar wavelet).
     """
 
     def __init__(
@@ -27,6 +32,7 @@ class StyleConditioner620(nn.Module):
         mask_mode: str = "none",
         freq_lowpass_alpha: float = 0.0,
         freq_lowpass_kernel: int = 5,
+        freq_mode: str = "avg_pool",
     ) -> None:
         super().__init__()
         self.dino_dim = int(dino_dim)
@@ -51,30 +57,49 @@ class StyleConditioner620(nn.Module):
         self.mask_mode = str(mask_mode).strip().lower()
         if self.mask_mode not in {"none", "random", "shuffle"}:
             self.mask_mode = "none"
-        # 630 Phase 4B-1: Frequency Masking (Scheme C) — orthogonal to mask_mode
+        # 630 Phase 4B-1/4B-3: Frequency Masking config
         # alpha=0 → no-op; alpha=1 → pure high-freq residual (subtract full low-pass)
+        # freq_mode: "avg_pool" (box filter, Phase 4B-1) | "haar_dwt" (orthogonal DWT, Phase 4B-3)
         self.freq_lowpass_alpha = float(freq_lowpass_alpha)
         self.freq_lowpass_kernel = max(3, int(freq_lowpass_kernel) | 1)  # force odd >= 3
+        self.freq_mode = str(freq_mode).strip().lower()
+        if self.freq_mode not in {"avg_pool", "haar_dwt"}:
+            self.freq_mode = "avg_pool"
 
     def _apply_freq_lowpass(self, tokens: torch.Tensor) -> torch.Tensor:
-        """Scheme C: subtract low-frequency DINO patch component.
+        """Frequency masking: subtract low-frequency DINO patch component.
+
+        Two modes:
+        - avg_pool (Phase 4B-1): box low-pass via avg_pool2d, approximate.
+        - haar_dwt (Phase 4B-3): orthogonal Haar DWT, scale LL by (1-alpha),
+          then IDWT to reconstruct. Mathematically exact, no border artifacts,
+          same wavelet as the spectral bridge — unified frequency framework.
 
         Tokens arrive as [B, N, C] with N = H*W (perfect square, e.g. 256=16x16).
-        We reshape to spatial [B, C, H, W], apply avg_pool2d (box low-pass) to get
-        the low-freq base, then return `tokens - alpha * low`. This purifies the
-        high-freq style residual (brushstroke / color covariance) and starves the
-        content (global topology) — see docs/630/mask.md §C.
-
-        If N is not a perfect square, fall back to no-op (cannot form spatial grid).
+        alpha=0 → no-op; alpha=1 → pure high-freq residual.
+        See docs/630/mask.md §C and docs/630/phase4b3_dwt_tokenizer.md.
         """
         alpha = self.freq_lowpass_alpha
         if alpha <= 0.0:
             return tokens
         b, n, c = tokens.shape
         side = int(round(n ** 0.5))
-        if side * side != n or side < self.freq_lowpass_kernel:
-            return tokens  # not a perfect square or grid too small for kernel
+        if side * side != n or side < 2:
+            return tokens  # not a perfect square or grid too small
         x = tokens.reshape(b, side, side, c).permute(0, 3, 1, 2).contiguous()
+        if self.freq_mode == "haar_dwt":
+            # Phase 4B-3: Orthogonal Haar DWT frequency decomposition.
+            # DWT(x) -> (LL, LH, HL, HH), each (B, C, side/2, side/2).
+            # Scale LL by (1-alpha): alpha=1 zeros LL (pure high-freq).
+            # IDWT reconstructs: out = x - alpha * low_freq (exact, orthogonal).
+            xf = x.float()
+            ll, lh, hl, hh = dwt2_haar(xf)
+            ll_scaled = ll * (1.0 - alpha)
+            out = idwt2_haar(ll_scaled, lh, hl, hh)
+            return out.permute(0, 2, 3, 1).reshape(b, n, c).to(dtype=tokens.dtype)
+        # Phase 4B-1: avg_pool box low-pass (default, backward compatible)
+        if side < self.freq_lowpass_kernel:
+            return tokens
         pad = self.freq_lowpass_kernel // 2
         low = F.avg_pool2d(x, kernel_size=self.freq_lowpass_kernel, stride=1, padding=pad)
         out = x - alpha * low

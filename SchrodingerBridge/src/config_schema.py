@@ -324,9 +324,57 @@ class ModelConfig:
     # kernel = avg_pool2d kernel size for low-pass (odd, >=3)
     style_freq_lowpass_alpha: float = 0.0
     style_freq_lowpass_kernel: int = 5
+    # 630 Phase 4B-3: DWT-based 分频 Tokenizer
+    # freq_mode = "avg_pool" (box filter, 4B-1) | "haar_dwt" (orthogonal Haar DWT, 4B-3)
+    # haar_dwt uses the same wavelet as the spectral bridge — unified frequency framework
+    style_freq_mode: str = "avg_pool"
     endpoint_head_mode: str = "endpoint_lowhigh"
     endpoint_style_hidden_dim: int = 128
     endpoint_lowpass_kernel: int = 5
+    # 630 Phase 4D: 多级 Haar DWT 低通 (用户方案二: 多级级联分解)
+    # levels=1: LL_1 (16x16) — 现有行为 (单级 DWT)
+    # levels=2: LL_2 (8x8) — 锁死绝对构图, 释放中频 (宏观笔触) 给 endpoint AdaIN
+    # 物理意义: LL_2=构图, LH_2/HL_2/HH_2=宏观笔触, LH_1/HL_1/HH_1=微观噪点
+    endpoint_lowpass_levels: int = 1
+    # 630 Phase 4E: 平滑小波基 (用户方案一: Daubechies 平滑正交基)
+    # "haar" (default, 2-tap): 现有行为, 方块效应明显
+    # "db2" (4-tap, 2 vanishing moments): 平滑正交基, 消除棋盘格/锯齿伪影
+    endpoint_lowpass_basis: str = "haar"
+    # 630 Phase 4G: 全频域 ODE (用户方案五: 真·LL 锁死)
+    # False (default): Euler 积分时应用 v_ll (现有行为, LL 漂移)
+    # True: 推理时跳过 v_ll 应用, ll_new = ll_old (LL 完全锁死为内容锚)
+    # 与 4A2 (w_ll=0 仅去梯度但仍用 v_ll) 形成对照, 是真·LL 锁死测试
+    endpoint_lock_ll: bool = False
+    # 630 Phase 4G.2: 频域 per-subband AdaIN (利用 Haar 正交性的统计隔离)
+    # "spatial_fiber" (default): 现有行为, ep_fiber = h - lp(h), 全局 mean+std 匹配
+    # "per_subband": 频域每子带 (LH_k/HL_k/HH_k) 独立 mean+std 匹配, LL_K 锁死
+    # 理论: Haar 正交性保证不同尺度/方向子带的统计独立, 比空间域全局匹配更精准
+    endpoint_adain_mode: str = "spatial_fiber"
+    # 630 Phase 4H.1: End-of-trajectory AdaIN (EOTA)
+    # False (default): 每步 Euler 都应用 AdaIN (现有行为, 4G.2b 证明多步累积使 alpha 失效)
+    # True: 只在最后一步 (i == steps-1) 应用 AdaIN, 前 N-1 步纯频域 Euler
+    # 理论: 解耦 ODE 求解 (前 N-1 步) 与风格注入 (最后 1 步), 恢复 alpha 参数有效性
+    # 解决 4G.2b 的"多步迭代累积"问题: 单步应用 (1-alpha)^1 而非 (1-alpha)^12
+    endpoint_adain_only_last_step: bool = False
+    # 630 Phase 4I.1: 多尺度 α — 每子带方向独立风格注入强度 (结构性突破)
+    # 默认 -1.0 表示回退到 endpoint_adain_scale (向后兼容)
+    # 理论: LH/HL (中频结构) 用小 α 保内容, HH (高频细节) 用大 α 强风格
+    # 打破单 α 的 1D Pareto 前沿, 引入新的自由度
+    endpoint_adain_scale_lh: float = -1.0
+    endpoint_adain_scale_hl: float = -1.0
+    endpoint_adain_scale_hh: float = -1.0
+    # 630 Phase 4I.2: ODE solver 类型 (euler | heun | rk4)
+    # "euler" (default, 一阶 O(h^2) 截断误差): 现有行为
+    # "heun" (改进 Euler, 二阶 O(h^3) 截断误差): predictor-corrector, 相同步数下轨迹更准确
+    # "rk4" (经典 Runge-Kutta, 四阶 O(h^4) 截断误差): 4次 forward, 最高精度
+    solver_type: str = "euler"
+    # 630 Phase 4I.5: 非线性 time schedule (ODE 路径形状)
+    # "linear" (default): t = i/steps * horizon — 现有行为, 均匀步长
+    # "cosine": t = horizon * (1-cos(pi*i/steps))/2 — S形, 两端慢中间快 (DDIM风格)
+    #   理论: 在源(内容)和目标(风格)分布附近分配更多积分步数, 双向精确
+    # "quad": t = horizon * (i/steps)^2 — 开始慢, 在源分布附近多停留 (保内容)
+    # "rquad": t = horizon * (1-(1-i/steps)^2) — 结束慢, 在目标分布附近多停留 (强风格)
+    time_schedule: str = "linear"
     endpoint_high_scale: float = 0
     endpoint_velocity_floor: float = 0.05
     endpoint_film_enabled: bool = False

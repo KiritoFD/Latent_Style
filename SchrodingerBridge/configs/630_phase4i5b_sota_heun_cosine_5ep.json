@@ -1,0 +1,18 @@
+{
+  "_base": "630_phase4i5a_sota_heun_cosine.json",
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4i5b_sota_heun_cosine_5ep",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4i5b_sota_heun_cosine_5ep",
+    "axis": "nonlinear_time_schedule_long_train",
+    "stage": "phase4i5b",
+    "notes": "Phase 4I.5b: cosine + Heun + 5ep. 4I.5a (3ep) showed lpips=-0.0041 vs Heun-linear-3ep but clip -0.0004. Test if 5ep compounds the content gain (as Heun 5ep did vs 3ep). If clip recovers + lpips continues dropping, may surpass 4I.2b SOTA (clip=0.7266, lpips=0.3229)."
+  }
+}
