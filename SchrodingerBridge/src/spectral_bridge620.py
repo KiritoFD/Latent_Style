@@ -80,24 +80,34 @@ def _wct_match_fiber(
     c_centered = c_flat - c_mean  # [B, C, HW]
     N = H * W
     c_cov = (c_centered @ c_centered.transpose(1, 2)) / max(N - 1, 1)  # [B, C, C]
+    # 数值稳定性: 对角线正则化防止 eigh 失败 (depth=6 等大模型特征矩阵可能病态)
+    c_cov = c_cov + eps * torch.eye(c_cov.shape[1], device=c_cov.device)
 
     # Style 统计
     s_mean = s_flat.mean(dim=2, keepdim=True)  # [B, C, 1]
     s_centered = s_flat - s_mean  # [B, C, HW]
     s_cov = (s_centered @ s_centered.transpose(1, 2)) / max(N - 1, 1)  # [B, C, C]
+    s_cov = s_cov + eps * torch.eye(s_cov.shape[1], device=s_cov.device)
 
     # 白化: Σ_c^{-1/2} = V_c @ diag(1/√λ_c) @ V_c^T
     # eigh 不支持 BFloat16 on CUDA, 强制 float32 (协方差矩阵仅 C×C=4×4, CPU 足够快)
-    c_eigvals, c_eigvecs = torch.linalg.eigh(c_cov.float().cpu())
-    c_eigvals = c_eigvals.clamp_min(eps)
-    c_inv_sqrt = c_eigvecs @ torch.diag_embed(c_eigvals.rsqrt()) @ c_eigvecs.transpose(1, 2)
-    c_whitened = c_inv_sqrt.to(c_centered.device) @ c_centered  # [B, C, HW]
+    # 数值稳定性: eigh 可能失败(病态矩阵), 回退到 AdaIN (mean+std matching)
+    try:
+        c_eigvals, c_eigvecs = torch.linalg.eigh(c_cov.float().cpu())
+        c_eigvals = c_eigvals.clamp_min(eps)
+        c_inv_sqrt = c_eigvecs @ torch.diag_embed(c_eigvals.rsqrt()) @ c_eigvecs.transpose(1, 2)
+        c_whitened = c_inv_sqrt.to(c_centered.device) @ c_centered  # [B, C, HW]
 
-    # 着色: Σ_s^{1/2} = V_s @ diag(√λ_s) @ V_s^T
-    s_eigvals, s_eigvecs = torch.linalg.eigh(s_cov.float().cpu())
-    s_eigvals = s_eigvals.clamp_min(eps)
-    s_sqrt = s_eigvecs @ torch.diag_embed(s_eigvals.sqrt()) @ s_eigvecs.transpose(1, 2)
-    c_colored = s_sqrt.to(c_whitened.device) @ c_whitened  # [B, C, HW]
+        # 着色: Σ_s^{1/2} = V_s @ diag(√λ_s) @ V_s^T
+        s_eigvals, s_eigvecs = torch.linalg.eigh(s_cov.float().cpu())
+        s_eigvals = s_eigvals.clamp_min(eps)
+        s_sqrt = s_eigvecs @ torch.diag_embed(s_eigvals.sqrt()) @ s_eigvecs.transpose(1, 2)
+        c_colored = s_sqrt.to(c_whitened.device) @ c_whitened  # [B, C, HW]
+    except torch._C._LinAlgError:
+        # 回退到 AdaIN: 仅匹配 mean+std (无协方差匹配)
+        c_std = c_flat.std(dim=2, keepdim=True).clamp_min(eps)
+        s_std = s_flat.std(dim=2, keepdim=True).clamp_min(eps)
+        c_colored = (c_flat - c_mean) / c_std * s_std + s_mean
 
     # 加回 style mean
     c_colored = c_colored + s_mean  # [B, C, 1]
@@ -133,25 +143,13 @@ class SpectralODEBridge620(nn.Module):
         self.dino_dim = int(getattr(model_cfg, "tokenizer_dino_dim", 384))
 
         # Style conditioner (style_memory tokens -> bridge width)
-        # 630 Phase 6: DINO 退役, style_memory 成为唯一 style token 路径
-        # 630 Phase 2: propagate mask config (The Blindfolded Tokenizer)
-        # 630 Phase 4B-1: propagate freq_lowpass config (Scheme C frequency masking)
-        # 630 Phase 4B-3: propagate freq_mode (avg_pool | haar_dwt)
-        mask_ratio = float(getattr(model_cfg, "style_mask_ratio", 0.0))
-        mask_mode = str(getattr(model_cfg, "style_mask_mode", "none"))
-        freq_lowpass_alpha = float(getattr(model_cfg, "style_freq_lowpass_alpha", 0.0))
-        freq_lowpass_kernel = int(getattr(model_cfg, "style_freq_lowpass_kernel", 5))
-        freq_mode = str(getattr(model_cfg, "style_freq_mode", "avg_pool"))
+        # 630 Phase 6: DINO 退役, style_memory 成为唯一 Style token 路径
+        # 630 Phase 72 清理: masking/freq 实验配置已删除 (T11 不使用)
         self.style_conditioner = StyleConditioner620(
             dino_dim=self.dino_dim,
             model_dim=self.dim,
             num_styles=self.num_styles,
             num_memory_tokens=256,
-            mask_ratio=mask_ratio,
-            mask_mode=mask_mode,
-            freq_lowpass_alpha=freq_lowpass_alpha,
-            freq_lowpass_kernel=freq_lowpass_kernel,
-            freq_mode=freq_mode,
         )
 
         # Input projection: 4 subbands stacked -> dim channels
@@ -164,23 +162,24 @@ class SpectralODEBridge620(nn.Module):
         )
 
         # Backbone blocks (reuse SpatialBridgeBlock620)
+        # 630 Phase 72 清理: gate_mode/attn_mode/norm_type 已硬编码进 block, 不再从 config 读取
         depth = max(1, int(getattr(model_cfg, "num_res_blocks", 4)))
         heads = max(1, int(getattr(model_cfg, "style_attn_num_heads", 4)))
         gate_init = float(getattr(model_cfg, "style_cross_attn_gate_init", 0.3))
-        gate_mode = str(getattr(model_cfg, "style_gate_mode", "tanh_gate"))
-        attn_mode = str(getattr(model_cfg, "style_attn_mode", "softmax"))
         attn_temperature = float(getattr(model_cfg, "style_attn_temperature", 1.0))
         shortcut_alpha = getattr(model_cfg, "style_shortcut_alpha", 1.0)
-        norm_type = str(getattr(model_cfg, "body_norm_type", "group_norm"))
         dwt_route = bool(getattr(model_cfg, "cross_attn_dwt_route", False))
+        dwt_ll_route_alpha = float(getattr(model_cfg, "cross_attn_dwt_ll_route_alpha", 0.0))
+        dwt_route_train_prob = float(getattr(model_cfg, "dwt_route_train_prob", 0.0))
         self.blocks = nn.ModuleList([
             SpatialBridgeBlock620(
                 dim=self.dim, num_heads=heads, style_gate_init=gate_init,
-                style_gate_mode=gate_mode, style_shortcut_alpha=shortcut_alpha,
+                style_shortcut_alpha=shortcut_alpha,
                 layer_idx=idx, num_layers=depth,
-                attn_mode=attn_mode, attn_temperature=attn_temperature,
-                norm_type=norm_type,
+                attn_temperature=attn_temperature,
                 dwt_route=dwt_route,
+                dwt_ll_route_alpha=dwt_ll_route_alpha,
+                dwt_route_train_prob=dwt_route_train_prob,
             )
             for idx in range(depth)
         ])
@@ -244,6 +243,178 @@ class SpectralODEBridge620(nn.Module):
         return {"ll": v_ll, "lh": v_lh, "hl": v_hl}
 
     @torch.no_grad()
+    def _solver_step(
+        self,
+        h: torch.Tensor,
+        *,
+        t_curr: float,
+        t_mid: float,
+        t_next: float,
+        dt: float,
+        solver_type: str,
+        lock_ll: bool,
+        style_id: torch.Tensor | int | None,
+        style_text_tokens: torch.Tensor | None,
+        style_latent: torch.Tensor | None,
+    ) -> torch.Tensor:
+        """Advance one ODE step via the configured solver (euler | heun | rk4).
+
+        Spectral-domain integration: DWT decompose h, integrate LL/LH/HL
+        subbands independently with the velocity field, iDWT reconstruct.
+        """
+        t_batch = torch.full((h.shape[0],), t_curr, device=h.device, dtype=h.dtype)
+        if solver_type == "rk4":
+            # 630 Phase 4I.6: Classic RK4 (四阶精度 O(h^4))
+            ll0, lh0, hl0, hh0 = dwt2_haar(h)
+            t_mid_b = torch.full((h.shape[0],), t_mid, device=h.device, dtype=h.dtype)
+            t_next_b = torch.full((h.shape[0],), t_next, device=h.device, dtype=h.dtype)
+            k1 = self.forward(h, t=t_batch, style_id=style_id,
+                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            ll_k2 = ll0 + (k1["ll"] * dt / 2.0 if not lock_ll else 0.0)
+            lh_k2 = lh0 + k1["lh"] * dt / 2.0
+            hl_k2 = hl0 + k1["hl"] * dt / 2.0
+            h_k2 = idwt2_haar(ll_k2, lh_k2, hl_k2, hh0)
+            k2 = self.forward(h_k2, t=t_mid_b, style_id=style_id,
+                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            ll_k3 = ll0 + (k2["ll"] * dt / 2.0 if not lock_ll else 0.0)
+            lh_k3 = lh0 + k2["lh"] * dt / 2.0
+            hl_k3 = hl0 + k2["hl"] * dt / 2.0
+            h_k3 = idwt2_haar(ll_k3, lh_k3, hl_k3, hh0)
+            k3 = self.forward(h_k3, t=t_mid_b, style_id=style_id,
+                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            ll_k4 = ll0 + (k3["ll"] * dt if not lock_ll else 0.0)
+            lh_k4 = lh0 + k3["lh"] * dt
+            hl_k4 = hl0 + k3["hl"] * dt
+            h_k4 = idwt2_haar(ll_k4, lh_k4, hl_k4, hh0)
+            k4 = self.forward(h_k4, t=t_next_b, style_id=style_id,
+                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            ll_new = ll0 + ((k1["ll"] + 2.0*k2["ll"] + 2.0*k3["ll"] + k4["ll"]) / 6.0 * dt if not lock_ll else 0.0)
+            lh_new = lh0 + (k1["lh"] + 2.0*k2["lh"] + 2.0*k3["lh"] + k4["lh"]) / 6.0 * dt
+            hl_new = hl0 + (k1["hl"] + 2.0*k2["hl"] + 2.0*k3["hl"] + k4["hl"]) / 6.0 * dt
+            return idwt2_haar(ll_new, lh_new, hl_new, hh0)
+        elif solver_type == "heun":
+            # 630 Phase 4I.2: Heun's method (二阶精度 O(h^3))
+            v1 = self.forward(h, t=t_batch, style_id=style_id,
+                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            ll1, lh1, hl1, hh1 = dwt2_haar(h)
+            ll_pred = ll1 + (v1["ll"] * dt if not lock_ll else 0.0)
+            lh_pred = lh1 + v1["lh"] * dt
+            hl_pred = hl1 + v1["hl"] * dt
+            h_pred = idwt2_haar(ll_pred, lh_pred, hl_pred, hh1)
+            t_batch2 = torch.full((h_pred.shape[0],), t_next, device=h.device, dtype=h.dtype)
+            v2 = self.forward(h_pred, t=t_batch2, style_id=style_id,
+                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            ll_new = ll1 + ((v1["ll"] + v2["ll"]) / 2.0 * dt if not lock_ll else 0.0)
+            lh_new = lh1 + (v1["lh"] + v2["lh"]) / 2.0 * dt
+            hl_new = hl1 + (v1["hl"] + v2["hl"]) / 2.0 * dt
+            return idwt2_haar(ll_new, lh_new, hl_new, hh1)
+        else:
+            # Euler (一阶) — Spectral: integrate LL/LH/HL independently
+            v_dict = self.forward(h, t=t_batch, style_id=style_id,
+                                  style_text_tokens=style_text_tokens, style_latent=style_latent)
+            ll, lh, hl, hh = dwt2_haar(h)
+            if not lock_ll:
+                ll = ll + v_dict["ll"] * dt
+            lh = lh + v_dict["lh"] * dt
+            hl = hl + v_dict["hl"] * dt
+            return idwt2_haar(ll, lh, hl, hh)
+
+    @torch.no_grad()
+    def _apply_endpoint_adain(
+        self,
+        h: torch.Tensor,
+        *,
+        style_latent: torch.Tensor,
+        adain_mode: str,
+        lowpass_levels: int,
+        lowpass_basis: str,
+        style_extrap_alpha: float,
+        adain_scale_ll: float,
+        adain_scale_lh: float,
+        adain_scale_hl: float,
+        adain_scale_hh: float,
+        endpoint_adain_scale: float,
+    ) -> torch.Tensor:
+        """Apply endpoint AdaIN/WCT style injection (4 modes).
+
+        - per_subband: per-subband AdaIN (mean+std) with multi-scale α
+        - per_subband_wct: per-subband WCT (full covariance) with multi-scale α
+        - spatial_fiber_wct: global WCT on spatial fiber
+        - spatial_fiber (default): global AdaIN (mean+std) on spatial fiber
+        """
+        def _lp(y: torch.Tensor) -> torch.Tensor:
+            return dwt2_lowpass(y, levels=lowpass_levels, basis=lowpass_basis)
+
+        if adain_mode == "per_subband":
+            h_decomp = dwt2_haar_multi_decompose(h, levels=lowpass_levels)
+            s_latent = style_latent.to(dtype=h.dtype)
+            s_decomp = dwt2_haar_multi_decompose(s_latent, levels=lowpass_levels)
+            new_subs = []
+            for k, (lh, hl, hh) in enumerate(h_decomp["h"]):
+                s_lh, s_hl, s_hh = s_decomp["h"][k]
+                if style_extrap_alpha > 0.0:
+                    s_lh = s_lh * (1.0 + style_extrap_alpha)
+                    s_hl = s_hl * (1.0 + style_extrap_alpha)
+                    s_hh = s_hh * (1.0 + style_extrap_alpha)
+                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _adain_match_subband(lh, s_lh)
+                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _adain_match_subband(hl, s_hl)
+                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _adain_match_subband(hh, s_hh)
+                new_subs.append((lh_new, hl_new, hh_new))
+            return idwt2_haar_multi_reconstruct(
+                {"ll_K": h_decomp["ll_K"], "h": new_subs}, levels=lowpass_levels
+            )
+        elif adain_mode == "per_subband_wct":
+            h_decomp = dwt2_haar_multi_decompose(h, levels=lowpass_levels)
+            s_latent = style_latent.to(dtype=h.dtype)
+            s_decomp = dwt2_haar_multi_decompose(s_latent, levels=lowpass_levels)
+            ll_K = h_decomp["ll_K"]
+            if adain_scale_ll > 0.0:
+                s_ll = s_decomp["ll_K"]
+                if style_extrap_alpha > 0.0:
+                    s_ll = s_ll * (1.0 + style_extrap_alpha)
+                ll_K = (1.0 - adain_scale_ll) * ll_K + adain_scale_ll * _wct_match_fiber(ll_K, s_ll)
+            new_subs = []
+            for k, (lh, hl, hh) in enumerate(h_decomp["h"]):
+                s_lh, s_hl, s_hh = s_decomp["h"][k]
+                if style_extrap_alpha > 0.0:
+                    s_lh = s_lh * (1.0 + style_extrap_alpha)
+                    s_hl = s_hl * (1.0 + style_extrap_alpha)
+                    s_hh = s_hh * (1.0 + style_extrap_alpha)
+                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
+                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
+                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
+                new_subs.append((lh_new, hl_new, hh_new))
+            return idwt2_haar_multi_reconstruct(
+                {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
+            )
+        elif adain_mode == "spatial_fiber_wct":
+            ep_base = _lp(h)
+            ep_fiber_curr = h - ep_base
+            style_fiber = style_latent.to(dtype=h.dtype) - _lp(style_latent.to(dtype=h.dtype))
+            if style_extrap_alpha > 0.0:
+                style_fiber = style_fiber * (1.0 + style_extrap_alpha)
+            ep_fiber_matched = _wct_match_fiber(ep_fiber_curr, style_fiber)
+            return ep_base + (1.0 - endpoint_adain_scale) * ep_fiber_curr + endpoint_adain_scale * ep_fiber_matched
+        else:
+            # spatial_fiber (default): mean+std matching
+            ep_base = _lp(h)
+            ep_fiber_curr = h - ep_base
+            style_fiber = style_latent.to(dtype=h.dtype) - _lp(style_latent.to(dtype=h.dtype))
+            if style_extrap_alpha > 0.0:
+                style_fiber = style_fiber * (1.0 + style_extrap_alpha)
+            B_c = ep_fiber_curr.shape[0]
+            if style_fiber.shape[0] == 1 and B_c > 1:
+                target_mean = style_fiber.mean(dim=[2, 3], keepdim=True).expand(B_c, -1, 1, 1)
+                target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6).expand(B_c, -1, 1, 1)
+            else:
+                target_mean = style_fiber.mean(dim=[2, 3], keepdim=True)
+                target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+            pred_mean = ep_fiber_curr.mean(dim=[2, 3], keepdim=True)
+            pred_std = ep_fiber_curr.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+            ep_fiber_matched = (ep_fiber_curr - pred_mean) / pred_std * target_std + target_mean
+            return ep_base + (1.0 - endpoint_adain_scale) * ep_fiber_curr + endpoint_adain_scale * ep_fiber_matched
+
+    @torch.no_grad()
     def integrate_transport(
         self,
         x: torch.Tensor,
@@ -281,11 +452,12 @@ class SpectralODEBridge620(nn.Module):
         # 630 Phase 4D: 多级 Haar DWT 低通 (用户方案二)
         # levels=1: LL_1 (16x16) — 现有行为
         # levels=2: LL_2 (8x8) — 更纯低频, 锁死绝对构图, 释放中频 (宏观笔触) 给 AdaIN
-        lowpass_levels = int(_cfg_get('endpoint_lowpass_levels', 1))
+        # 630 Phase 72 清理: lowpass_levels=1 (4D 多级已验证无效), lowpass_basis="haar" (4E db2 已验证无效) — 硬编码
+        lowpass_levels = 1
         # 630 Phase 4E: 平滑小波基 (用户方案一: Daubechies db2)
         # "haar" (2-tap): 现有行为, 方块效应
         # "db2" (4-tap, 平滑正交): 消除棋盘格/锯齿, 提升 AdaIN 平滑度
-        lowpass_basis = str(_cfg_get('endpoint_lowpass_basis', 'haar')).lower()
+        lowpass_basis = "haar"  # 630 Phase 72: 硬编码 (4E db2 已验证无效)
         # 630 Phase 4G: 真·LL 锁死 (用户方案五: 全频域 ODE)
         # False (default): Euler 积分应用 v_ll (现有行为)
         # True: 跳过 v_ll 应用, ll_new = ll_old (LL 作为内容锚完全恒等)
@@ -310,6 +482,12 @@ class SpectralODEBridge620(nn.Module):
         adain_scale_lh = endpoint_adain_scale if _a_lh_raw < 0.0 else _a_lh_raw
         adain_scale_hl = endpoint_adain_scale if _a_hl_raw < 0.0 else _a_hl_raw
         adain_scale_hh = endpoint_adain_scale if _a_hh_raw < 0.0 else _a_hh_raw
+        # 630 Phase 4J.4: 保存 base scales, 用于 progressive alpha scheduling 每步重算
+        _base_adain_scale = endpoint_adain_scale
+        _base_adain_scale_ll = adain_scale_ll
+        _base_adain_scale_lh = adain_scale_lh
+        _base_adain_scale_hl = adain_scale_hl
+        _base_adain_scale_hh = adain_scale_hh
         # 630 Phase 4I.2: ODE solver 类型 (euler | heun)
         # Heun (改进 Euler): 二阶精度 O(h^2), predictor-corrector, 相同步数下数值误差更低
         # 理论: 更低截断误差 → 更准确的 ODE 轨迹 → 风格注入更精准
@@ -319,6 +497,14 @@ class SpectralODEBridge620(nn.Module):
         time_schedule = str(_cfg_get('time_schedule', 'linear')).lower()
         # 630 Phase 4I.8: warp_cos 幂参数 (p<1 风格偏置, p>1 内容偏置, p=1=cosine)
         time_schedule_warp = float(_cfg_get('time_schedule_warp', 1.0))
+        # 630 Phase 4J.4: Progressive Alpha Scheduling (方案 C) — 积分期平滑注入
+        # 理论: EOTA 只在最后一步强加 AdaIN, 破坏流平滑性. Progressive alpha 在每步按 α(t)=t^p 注入,
+        # t→0 不注入 (保内容), t→1 满强度 (强风格), 完美承接 style_mem 提取的极致风格.
+        # 当 schedule != "none" 时, 自动覆盖 only_last_step=False (强制每步模式, 让 progressive 生效)
+        progressive_alpha_schedule = str(_cfg_get('progressive_alpha_schedule', 'none')).lower()
+        progressive_alpha_power = float(_cfg_get('progressive_alpha_power', 3.0))
+        if progressive_alpha_schedule != "none":
+            only_last_step = False  # Progressive 需要每步注入, 覆盖 EOTA
 
         def _schedule(s: float) -> float:
             """Map normalized progress s∈[0,1] to time fraction via schedule."""
@@ -337,10 +523,6 @@ class SpectralODEBridge620(nn.Module):
                 return 1.0 - (1.0 - s) * (1.0 - s)
             return s  # linear
 
-        def lp(y: torch.Tensor) -> torch.Tensor:
-            """N-level DWT lowpass with selectable wavelet basis (haar | db2)."""
-            return dwt2_lowpass(y, levels=lowpass_levels, basis=lowpass_basis)
-
         h = x
         dt = horizon / steps
         for i in range(steps):
@@ -348,188 +530,43 @@ class SpectralODEBridge620(nn.Module):
             t_curr = _schedule(float(i) / steps) * horizon
             t_next = _schedule(float(i + 1) / steps) * horizon
             t_mid = _schedule((float(i) + 0.5) / steps) * horizon
-            t_batch = torch.full((h.shape[0],), t_curr, device=h.device, dtype=h.dtype)
-            if solver_type == "rk4":
-                # 630 Phase 4I.6: Classic RK4 (四阶精度 O(h^4))
-                # k1 = f(h, t_curr)
-                # k2 = f(h + k1*dt/2, t_mid)
-                # k3 = f(h + k2*dt/2, t_mid)
-                # k4 = f(h + k3*dt, t_next)
-                # h_new = h + (k1 + 2*k2 + 2*k3 + k4)/6 * dt
-                # 理论: O(h^4) 截断误差, 比 Heun O(h^3) 高一阶, 轨迹最准确
-                # Cost: 4x forward per step (vs Heun 2x, Euler 1x)
-                ll0, lh0, hl0, hh0 = dwt2_haar(h)
-                t_mid_b = torch.full((h.shape[0],), t_mid, device=h.device, dtype=h.dtype)
-                t_next_b = torch.full((h.shape[0],), t_next, device=h.device, dtype=h.dtype)
-                # k1
-                k1 = self.forward(h, t=t_batch, style_id=style_id,
-                                  style_text_tokens=style_text_tokens,
-                                  style_latent=style_latent)
-                ll_k2 = ll0 + (k1["ll"] * dt / 2.0 if not lock_ll else 0.0)
-                lh_k2 = lh0 + k1["lh"] * dt / 2.0
-                hl_k2 = hl0 + k1["hl"] * dt / 2.0
-                h_k2 = idwt2_haar(ll_k2, lh_k2, hl_k2, hh0)
-                # k2
-                k2 = self.forward(h_k2, t=t_mid_b, style_id=style_id,
-                                  style_text_tokens=style_text_tokens,
-                                  style_latent=style_latent)
-                ll_k3 = ll0 + (k2["ll"] * dt / 2.0 if not lock_ll else 0.0)
-                lh_k3 = lh0 + k2["lh"] * dt / 2.0
-                hl_k3 = hl0 + k2["hl"] * dt / 2.0
-                h_k3 = idwt2_haar(ll_k3, lh_k3, hl_k3, hh0)
-                # k3
-                k3 = self.forward(h_k3, t=t_mid_b, style_id=style_id,
-                                  style_text_tokens=style_text_tokens,
-                                  style_latent=style_latent)
-                ll_k4 = ll0 + (k3["ll"] * dt if not lock_ll else 0.0)
-                lh_k4 = lh0 + k3["lh"] * dt
-                hl_k4 = hl0 + k3["hl"] * dt
-                h_k4 = idwt2_haar(ll_k4, lh_k4, hl_k4, hh0)
-                # k4
-                k4 = self.forward(h_k4, t=t_next_b, style_id=style_id,
-                                  style_text_tokens=style_text_tokens,
-                                  style_latent=style_latent)
-                # 加权平均: (k1 + 2*k2 + 2*k3 + k4)/6
-                ll_new = ll0 + ((k1["ll"] + 2.0*k2["ll"] + 2.0*k3["ll"] + k4["ll"]) / 6.0 * dt if not lock_ll else 0.0)
-                lh_new = lh0 + (k1["lh"] + 2.0*k2["lh"] + 2.0*k3["lh"] + k4["lh"]) / 6.0 * dt
-                hl_new = hl0 + (k1["hl"] + 2.0*k2["hl"] + 2.0*k3["hl"] + k4["hl"]) / 6.0 * dt
-                h = idwt2_haar(ll_new, lh_new, hl_new, hh0)
-            elif solver_type == "heun":
-                # 630 Phase 4I.2: Heun's method (改进 Euler, 二阶精度 O(h^2))
-                # Predictor: v1 = f(h, t_curr); h_pred = h + v1*dt
-                # Corrector: v2 = f(h_pred, t_next); h = h + (v1+v2)/2*dt
-                # 理论: 截断误差从 O(h^2) 降到 O(h^3), 相同步数下轨迹更准确
-                v1 = self.forward(
-                    h, t=t_batch, style_id=style_id,
-                    style_text_tokens=style_text_tokens,
-                    style_latent=style_latent,
-                )
-                ll1, lh1, hl1, hh1 = dwt2_haar(h)
-                ll_pred = ll1 + (v1["ll"] * dt if not lock_ll else 0.0)
-                lh_pred = lh1 + v1["lh"] * dt
-                hl_pred = hl1 + v1["hl"] * dt
-                h_pred = idwt2_haar(ll_pred, lh_pred, hl_pred, hh1)
-                t_batch2 = torch.full((h_pred.shape[0],), t_next, device=h.device, dtype=h.dtype)
-                v2 = self.forward(
-                    h_pred, t=t_batch2, style_id=style_id,
-                    style_text_tokens=style_text_tokens,
-                    style_latent=style_latent,
-                )
-                # Corrector: 平均两个速度, 一步积分
-                ll_new = ll1 + ((v1["ll"] + v2["ll"]) / 2.0 * dt if not lock_ll else 0.0)
-                lh_new = lh1 + (v1["lh"] + v2["lh"]) / 2.0 * dt
-                hl_new = hl1 + (v1["hl"] + v2["hl"]) / 2.0 * dt
-                h = idwt2_haar(ll_new, lh_new, hl_new, hh1)
-            else:
-                # Euler (一阶, 现有行为) — Spectral: integrate LL/LH/HL independently
-                v_dict = self.forward(
-                    h, t=t_batch, style_id=style_id,
-                    style_text_tokens=style_text_tokens,
-                    style_latent=style_latent,
-                )
-                ll, lh, hl, hh = dwt2_haar(h)
-                if not lock_ll:
-                    ll = ll + v_dict["ll"] * dt   # 原行为: LL 被 v_ll 推动 (4F SOTA)
-                # else: ll = ll (Phase 4G 真·锁死: LL 完全恒等, 作为内容锚)
-                lh = lh + v_dict["lh"] * dt
-                hl = hl + v_dict["hl"] * dt
-                h = idwt2_haar(ll, lh, hl, hh)
-
-            # Endpoint AdaIN: fiber 统计匹配 (core_keep D2)
+            # 630 Phase 4J.4: Progressive Alpha Scheduling — 每步重算 α(t)
+            # 用 t_next (本步结束时的时间) 评估, 末步 t_next=horizon → α=base (满强度)
+            if progressive_alpha_schedule != "none":
+                _s_norm = max(0.0, t_next / horizon) if horizon > 0 else 1.0
+                if progressive_alpha_schedule == "linear":
+                    _alpha_mult = _s_norm
+                elif progressive_alpha_schedule == "cubic":
+                    _alpha_mult = _s_norm ** 3
+                elif progressive_alpha_schedule == "power":
+                    _alpha_mult = _s_norm ** progressive_alpha_power
+                elif progressive_alpha_schedule == "sqrt":
+                    _alpha_mult = _s_norm ** 0.5
+                else:
+                    _alpha_mult = 1.0
+                endpoint_adain_scale = _base_adain_scale * _alpha_mult
+                adain_scale_ll = _base_adain_scale_ll * _alpha_mult
+                adain_scale_lh = _base_adain_scale_lh * _alpha_mult
+                adain_scale_hl = _base_adain_scale_hl * _alpha_mult
+                adain_scale_hh = _base_adain_scale_hh * _alpha_mult
+            # ODE solver step (euler | heun | rk4) — spectral-domain integration
+            h = self._solver_step(
+                h, t_curr=t_curr, t_mid=t_mid, t_next=t_next, dt=dt,
+                solver_type=solver_type, lock_ll=lock_ll,
+                style_id=style_id, style_text_tokens=style_text_tokens,
+                style_latent=style_latent,
+            )
             # 630 Phase 4H.1: EOTA — 只在最后一步应用 AdaIN (解耦 ODE 求解与风格注入)
             apply_adain_this_step = (not only_last_step) or (i == steps - 1)
             if apply_adain_this_step and endpoint_adain_scale > 0.0 and style_latent is not None and isinstance(style_latent, torch.Tensor):
-                if adain_mode == "per_subband":
-                    # 630 Phase 4G.2: 频域 per-subband AdaIN
-                    # 多级 DWT 分解 h 和 style_latent, 对每个高频子带独立 mean+std 匹配
-                    # LL_K 不动 (内容锚), 利用 Haar 正交性保证统计隔离
-                    h_decomp = dwt2_haar_multi_decompose(h, levels=lowpass_levels)
-                    s_latent = style_latent.to(dtype=h.dtype)
-                    s_decomp = dwt2_haar_multi_decompose(s_latent, levels=lowpass_levels)
-                    # 对每个高频子带独立做 mean+std 匹配
-                    # 630 Phase 4I.1: 多尺度 α — 每子带方向独立 α (打破 1D Pareto 前沿)
-                    new_subs = []
-                    for k, (lh, hl, hh) in enumerate(h_decomp["h"]):
-                        s_lh, s_hl, s_hh = s_decomp["h"][k]
-                        # Style extrap: 对 style 子带做缩放 (与 spatial_fiber 一致)
-                        if style_extrap_alpha > 0.0:
-                            s_lh = s_lh * (1.0 + style_extrap_alpha)
-                            s_hl = s_hl * (1.0 + style_extrap_alpha)
-                            s_hh = s_hh * (1.0 + style_extrap_alpha)
-                        # Phase 4I.1: per-subband α (LH/HL 小 α 保内容, HH 大 α 强风格)
-                        lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _adain_match_subband(lh, s_lh)
-                        hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _adain_match_subband(hl, s_hl)
-                        hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _adain_match_subband(hh, s_hh)
-                        new_subs.append((lh_new, hl_new, hh_new))
-                    # LL_K 不动 (内容锚), iDWT 重建
-                    h = idwt2_haar_multi_reconstruct(
-                        {"ll_K": h_decomp["ll_K"], "h": new_subs}, levels=lowpass_levels
-                    )
-                elif adain_mode == "per_subband_wct":
-                    # 630 Phase 4I.11: Per-Subband WCT — 结构性突破
-                    # 理论: 打破 1D Pareto 前沿. LL 锁死保内容 (lpips↓), LH/HL 激进 WCT 强风格 (clip↑)
-                    # vs spatial_fiber_wct: 单 α 全频段同步权衡; per_subband_wct: 每子带独立 α + 完整协方差匹配
-                    # vs per_subband: AdaIN (mean+std) vs WCT (完整协方差) — WCT 捕获通道相关结构
-                    h_decomp = dwt2_haar_multi_decompose(h, levels=lowpass_levels)
-                    s_latent = style_latent.to(dtype=h.dtype)
-                    s_decomp = dwt2_haar_multi_decompose(s_latent, levels=lowpass_levels)
-                    # LL_K: 可选 WCT (低 α 保全局色调, 0.0=锁死)
-                    ll_K = h_decomp["ll_K"]
-                    if adain_scale_ll > 0.0:
-                        s_ll = s_decomp["ll_K"]
-                        if style_extrap_alpha > 0.0:
-                            s_ll = s_ll * (1.0 + style_extrap_alpha)
-                        ll_K = (1.0 - adain_scale_ll) * ll_K + adain_scale_ll * _wct_match_fiber(ll_K, s_ll)
-                    # 高频子带: 每子带独立 WCT
-                    new_subs = []
-                    for k, (lh, hl, hh) in enumerate(h_decomp["h"]):
-                        s_lh, s_hl, s_hh = s_decomp["h"][k]
-                        if style_extrap_alpha > 0.0:
-                            s_lh = s_lh * (1.0 + style_extrap_alpha)
-                            s_hl = s_hl * (1.0 + style_extrap_alpha)
-                            s_hh = s_hh * (1.0 + style_extrap_alpha)
-                        lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
-                        hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
-                        hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
-                        new_subs.append((lh_new, hl_new, hh_new))
-                    h = idwt2_haar_multi_reconstruct(
-                        {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
-                    )
-                elif adain_mode == "spatial_fiber_wct":
-                    # 630 Phase 4I.9: WCT (Whitening and Coloring Transform) — 协方差匹配
-                    # Probe B 诊断: AdaIN (mean+std) 对协方差修正率仅 2.5%
-                    # WCT 匹配完整协方差矩阵, 捕获通道相关结构
-                    ep_base = lp(h)
-                    ep_fiber_curr = h - ep_base
-                    style_fiber = style_latent.to(dtype=h.dtype) - lp(style_latent.to(dtype=h.dtype))
-                    # Style extrapolation: fiber 高通分量均值≈0, 外推退化为缩放 (core_keep D3)
-                    if style_extrap_alpha > 0.0:
-                        style_fiber = style_fiber * (1.0 + style_extrap_alpha)
-                    # WCT: 白化内容 fiber → 用风格协方差着色 (匹配 mean + 完整协方差)
-                    ep_fiber_matched = _wct_match_fiber(ep_fiber_curr, style_fiber)
-                    # α-blend: base 锁死保 LPIPS
-                    h = ep_base + (1.0 - endpoint_adain_scale) * ep_fiber_curr + endpoint_adain_scale * ep_fiber_matched
-                else:
-                    # 现有 spatial_fiber 模式 (mean+std 匹配, 保持不变)
-                    ep_base = lp(h)
-                    ep_fiber_curr = h - ep_base
-                    style_fiber = style_latent.to(dtype=h.dtype) - lp(style_latent.to(dtype=h.dtype))
-                    # Style extrapolation: fiber 高通分量均值≈0, 外推退化为缩放 (core_keep D3)
-                    if style_extrap_alpha > 0.0:
-                        style_fiber = style_fiber * (1.0 + style_extrap_alpha)
-                    # 全局一阶统计匹配 (mean + std)
-                    B_c = ep_fiber_curr.shape[0]
-                    if style_fiber.shape[0] == 1 and B_c > 1:
-                        target_mean = style_fiber.mean(dim=[2, 3], keepdim=True).expand(B_c, -1, 1, 1)
-                        target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6).expand(B_c, -1, 1, 1)
-                    else:
-                        target_mean = style_fiber.mean(dim=[2, 3], keepdim=True)
-                        target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
-                    pred_mean = ep_fiber_curr.mean(dim=[2, 3], keepdim=True)
-                    pred_std = ep_fiber_curr.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
-                    ep_fiber_matched = (ep_fiber_curr - pred_mean) / pred_std * target_std + target_mean
-                    # α-blend: base 锁死保 LPIPS
-                    h = ep_base + (1.0 - endpoint_adain_scale) * ep_fiber_curr + endpoint_adain_scale * ep_fiber_matched
+                h = self._apply_endpoint_adain(
+                    h, style_latent=style_latent,
+                    adain_mode=adain_mode, lowpass_levels=lowpass_levels,
+                    lowpass_basis=lowpass_basis, style_extrap_alpha=style_extrap_alpha,
+                    adain_scale_ll=adain_scale_ll, adain_scale_lh=adain_scale_lh,
+                    adain_scale_hl=adain_scale_hl, adain_scale_hh=adain_scale_hh,
+                    endpoint_adain_scale=endpoint_adain_scale,
+                )
         return h
 
     def integrate(

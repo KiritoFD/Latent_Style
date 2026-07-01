@@ -37,6 +37,7 @@ def _cfg() -> ExperimentConfig:
         single_step_edge_weight=0.1,
         semantic_swd_num_projections=4,
         training_target_projection_kernel=3,
+        training_target_projection_mode="source_low_target_high",
         bridge_sigma=0.02,
     )
     return cfg
@@ -115,11 +116,12 @@ def test_vertical_fm_target_velocity_is_target_highpass_delta() -> None:
     target = torch.randn(2, 2, 5, 5)
     t = torch.tensor([0.25, 0.75])
     x_t, target_velocity = objective._vertical_state(content, target, t)
+    projected_target, _ = objective._project_training_target(content, target)
     c_low = losses620._lowpass(content, 3)
     c_high = content - c_low
-    t_high = target - losses620._lowpass(target, 3)
+    t_high = projected_target - losses620._lowpass(projected_target, 3)
     expected_x_t = c_low + (1.0 - t).view(-1, 1, 1, 1) * c_high + t.view(-1, 1, 1, 1) * t_high
-    expected = (target - losses620._lowpass(target, 3)) - (content - losses620._lowpass(content, 3))
+    expected = (projected_target - losses620._lowpass(projected_target, 3)) - (content - losses620._lowpass(content, 3))
     assert torch.allclose(x_t, expected_x_t, atol=1e-6)
     assert torch.allclose(target_velocity, expected, atol=1e-6)
 
@@ -132,10 +134,11 @@ def test_vertical_fm_optional_low_anchor_blends_target_lowpass() -> None:
     target = torch.randn(2, 2, 5, 5)
     t = torch.tensor([0.25, 0.75])
     x_t, target_velocity = objective._vertical_state(content, target, t)
+    projected_target, _ = objective._project_training_target(content, target)
     c_low = losses620._lowpass(content, 3)
-    t_low = losses620._lowpass(target, 3)
+    t_low = losses620._lowpass(projected_target, 3)
     c_high = content - c_low
-    t_high = target - t_low
+    t_high = projected_target - t_low
     expected_x_t = 0.5 * c_low + 0.5 * t_low + (1.0 - t).view(-1, 1, 1, 1) * c_high + t.view(-1, 1, 1, 1) * t_high
     assert torch.allclose(x_t, expected_x_t, atol=1e-6)
     assert torch.allclose(target_velocity, t_high - c_high, atol=1e-6)
@@ -149,15 +152,46 @@ def test_vertical_fm_target_linear_low_mode_moves_low_frequency() -> None:
     target = torch.randn(2, 2, 5, 5)
     t = torch.tensor([0.25, 0.75])
     x_t, target_velocity = objective._vertical_state(content, target, t)
+    projected_target, _ = objective._project_training_target(content, target)
     c_low = losses620._lowpass(content, 3)
-    t_low = losses620._lowpass(target, 3)
+    t_low = losses620._lowpass(projected_target, 3)
     c_high = content - c_low
-    t_high = target - t_low
+    t_high = projected_target - t_low
     t4 = t.view(-1, 1, 1, 1)
     expected_x_t = (1.0 - t4) * c_low + t4 * t_low + (1.0 - t4) * c_high + t4 * t_high
     expected_velocity = (t_low - c_low) + (t_high - c_high)
     assert torch.allclose(x_t, expected_x_t, atol=1e-6)
     assert torch.allclose(target_velocity, expected_velocity, atol=1e-6)
+
+
+def test_projected_target_defaults_to_source_low_target_high() -> None:
+    cfg = _cfg()
+    objective = SpatialBridgeObjective620(cfg)
+    content = torch.randn(2, 2, 6, 6)
+    target = torch.randn(2, 2, 6, 6)
+    projected, metrics = objective._project_training_target(content, target)
+    c_low = losses620._lowpass(content, 3)
+    t_low = losses620._lowpass(target, 3)
+    t_high = target - t_low
+    expected = c_low + t_high
+    assert torch.allclose(projected, expected, atol=1e-6)
+    assert float(metrics["training_target_projection_active"].item()) == 1.0
+    assert float(metrics["training_target_projection_mode_source_low_target_high"].item()) == 1.0
+
+
+def test_projected_target_pure_vertical_flow_anchors_source_lowpass() -> None:
+    cfg = _cfg()
+    cfg.bridge.training_target_projection_mode = "pure_vertical_flow"
+    objective = SpatialBridgeObjective620(cfg)
+    content = torch.randn(2, 2, 6, 6)
+    target = torch.randn(2, 2, 6, 6)
+    projected, metrics = objective._project_training_target(content, target)
+    c_low = losses620._lowpass(content, 3)
+    t_low = losses620._lowpass(target, 3)
+    t_high = target - t_low
+    expected = c_low + t_high
+    assert torch.allclose(projected, expected, atol=1e-6)
+    assert float(metrics["training_target_projection_mode_pure_vertical_flow"].item()) == 1.0
 
 
 def test_single_step_swd_receives_velocity_derived_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -218,11 +252,12 @@ def test_620_endpoint_decomposition_metrics_track_low_and_high_bands(monkeypatch
     )
 
     z_hat1 = objective.last_debug["z_hat1"]
+    projected_target = objective.last_debug["projected_target"]
     z_low = losses620._lowpass(z_hat1, objective.lowpass_kernel)
     c_low = losses620._lowpass(content, objective.lowpass_kernel)
-    t_low = losses620._lowpass(target, objective.lowpass_kernel)
+    t_low = losses620._lowpass(projected_target, objective.lowpass_kernel)
     z_high = z_hat1 - z_low
-    t_high = target - t_low
+    t_high = projected_target - t_low
     assert torch.allclose(out["endpoint_low_to_source"], (z_low - c_low).abs().mean(), atol=1e-6)
     assert torch.allclose(out["endpoint_low_to_target"], (z_low - t_low).abs().mean(), atol=1e-6)
     assert torch.allclose(out["endpoint_high_to_target"], (z_high - t_high).abs().mean(), atol=1e-6)
@@ -254,9 +289,10 @@ def test_620_endpoint_lowfreq_loss_uses_target_lowpass(monkeypatch: pytest.Monke
     )
 
     z_hat1 = objective.last_debug["z_hat1"]
+    projected_target = objective.last_debug["projected_target"]
     expected = torch.nn.functional.l1_loss(
         losses620._lowpass(z_hat1, objective.lowpass_kernel).float(),
-        losses620._lowpass(target, objective.lowpass_kernel).float(),
+        losses620._lowpass(projected_target, objective.lowpass_kernel).float(),
     )
     assert torch.allclose(out["loss_endpoint_lowfreq"], expected, atol=1e-6)
     assert torch.allclose(out["endpoint_lowfreq"], expected * 0.75, atol=1e-6)

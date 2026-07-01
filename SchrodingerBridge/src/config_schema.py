@@ -277,6 +277,14 @@ class ModelConfig:
     # True: 在 cross-attention 前对特征图做 Haar DWT, LL bypass, 仅高频(LH/HL/HH) query style_mem
     # 理论: 解放 style_mem, 让它 100% 容量表达笔触/色彩, 不再被迫学"维持结构"
     cross_attn_dwt_route: bool = False
+    # 630 Remote T2: Soft LL Route — LL 以 alpha 残差注入 style, 不完全 bypass
+    # 理论: 少量 LL style 提供色彩/对比度风格, 同时不严重破坏结构
+    # 0.0=完全bypass(默认), >0.0=LL参与cross-attention并以alpha残差注入
+    cross_attn_dwt_ll_route_alpha: float = 0.0
+    # 630 Local T10: Stochastic DWT Route — 训练时以概率p使用DWT route, 推理时始终使用
+    # 解决T5分布不匹配: q_proj同时学习DWT系数和空间特征, style_mem同时学习高频和完整风格
+    # 0.0=不启用(默认), >0.0=训练时以该概率使用DWT route
+    dwt_route_train_prob: float = 0.0
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None
@@ -296,10 +304,9 @@ class ModelConfig:
     style_attn_num_tokens: int = 128
     style_attn_num_heads: int = 4
     style_attn_sharpen_scale: float = 0
-    style_attn_temperature: float = 0.08
+    style_attn_temperature: float = 1.0  # 630 Phase 72: 修复重复定义 bug (旧 L307=0.08 已删), <1 sharpens, >1 smooths
     style_cross_attn_gate_init: float = 0.05
-    style_gate_mode: str = "tanh_gate"
-    body_norm_type: str = "group_norm"  # "group_norm" | "rms_norm" — RMSNorm preserves mean (style brightness/color)
+    # 630 Phase 72 清理: style_gate_mode / body_norm_type / style_attn_mode 已硬编码进 blocks620.py (已验证最优)
     style_moe_enabled: bool = False
     style_moe_num_experts: int = 4
     style_moe_router_hidden_dim: int = 128
@@ -314,33 +321,14 @@ class ModelConfig:
     style_image_null_token_init_std: float = 0.02
     style_film_enabled: bool = False
     style_film_init_std: float = 0.02  # init std for block-level style_film_proj/film_q_proj/style_bias_proj; 0.0 = zero-init (FiLM=identity, gradient=0 — lethal); 0.02 = small random (breaks symmetry); 0.1+ = strong break
-    style_attn_mode: str = "relu2"  # softmax | gated | gated_raw | relu2 | style_select | sparsemax (629 D19-D22: relu2 confirmed effective)
-    style_attn_temperature: float = 1.0  # <1 sharpens, >1 smooths
-    # 630 Phase 2: The Blindfolded Tokenizer (mask.md)
-    # mask_ratio = drop ratio (0.75 = keep 25%); mode = none|random|shuffle
-    style_mask_ratio: float = 0.0
-    style_mask_mode: str = "none"
-    # 630 Phase 4B-1: Frequency Masking (Scheme C, mask.md §C)
-    # alpha = low-freq subtraction strength (0=no-op, 1=pure high-freq residual)
-    # kernel = avg_pool2d kernel size for low-pass (odd, >=3)
-    style_freq_lowpass_alpha: float = 0.0
-    style_freq_lowpass_kernel: int = 5
-    # 630 Phase 4B-3: DWT-based 分频 Tokenizer
-    # freq_mode = "avg_pool" (box filter, 4B-1) | "haar_dwt" (orthogonal Haar DWT, 4B-3)
-    # haar_dwt uses the same wavelet as the spectral bridge — unified frequency framework
-    style_freq_mode: str = "avg_pool"
+    # 630 Phase 72 清理: style_attn_mode 已硬编码进 blocks620.py (relu2, 629 D19-D22 已验证)
+    # 630 Phase 72 清理: style_mask_ratio/mask_mode/freq_lowpass_alpha/freq_lowpass_kernel/freq_mode 已删除
+    #   (T11 SOTA 全部使用默认 no-op, Phase 2/4B 实验已验证无效)
     endpoint_head_mode: str = "endpoint_lowhigh"
     endpoint_style_hidden_dim: int = 128
     endpoint_lowpass_kernel: int = 5
-    # 630 Phase 4D: 多级 Haar DWT 低通 (用户方案二: 多级级联分解)
-    # levels=1: LL_1 (16x16) — 现有行为 (单级 DWT)
-    # levels=2: LL_2 (8x8) — 锁死绝对构图, 释放中频 (宏观笔触) 给 endpoint AdaIN
-    # 物理意义: LL_2=构图, LH_2/HL_2/HH_2=宏观笔触, LH_1/HL_1/HH_1=微观噪点
-    endpoint_lowpass_levels: int = 1
-    # 630 Phase 4E: 平滑小波基 (用户方案一: Daubechies 平滑正交基)
-    # "haar" (default, 2-tap): 现有行为, 方块效应明显
-    # "db2" (4-tap, 2 vanishing moments): 平滑正交基, 消除棋盘格/锯齿伪影
-    endpoint_lowpass_basis: str = "haar"
+    # 630 Phase 72 清理: endpoint_lowpass_levels=1 (4D 多级已验证无效) + endpoint_lowpass_basis="haar" (4E db2 已验证无效)
+    #   已硬编码进 spectral_bridge620.py integrate_transport
     # 630 Phase 4G: 全频域 ODE (用户方案五: 真·LL 锁死)
     # False (default): Euler 积分时应用 v_ll (现有行为, LL 漂移)
     # True: 推理时跳过 v_ll 应用, ll_new = ll_old (LL 完全锁死为内容锚)
@@ -686,21 +674,6 @@ class BridgeConfig:
     spectral_w_lh: float = 1.0                  # 水平低/垂直高 频带权重
     spectral_w_hl: float = 1.0                  # 水平高/垂直低 频带权重
     spectral_w_hh: float = 2.0                  # 全高频 (笔触) 权重, 最大
-    # === 630 Phase 4J.2: WCT-Aligned Target (方案 A) — 训练目标预对齐 (训练侧) ===
-    # 理论: Phase 4I.10 probe 发现 velocity field 在 t=0.5 死亡 (target_reach_ratio=0.0009)
-    #   根因: target 与 content 空间不对齐, 模型在中点不敢画
-    #   方案: 训练 loss 中对 content 和 target 做 DWT, LL 锁死保结构,
-    #         LH/HL/HH 做 WCT 协方差匹配嫁接目标风格到内容结构上
-    #   效果: aligned_target 与 content 结构对齐, velocity field 每步都笃定,
-    #         style_mem 梯度信号清晰, 收敛更快更锋利
-    wct_aligned_target: bool = False            # 是否启用 WCT 目标对齐
-    wct_aligned_alpha: float = 0.5              # WCT 混合强度 (0.0=纯target, 1.0=纯WCT对齐)
-    # === 630 Phase 4J.6 v3: Endpoint Style Loss (few-shot 专用, 默认关闭) ===
-    # 理论: few-shot 模式下 style_memory 仅通过 FM loss 间接获得梯度, 信号弱.
-    # 方案: 添加 endpoint loss, 监督 x_1_pred 的 LH/HL 子带接近 target 的 LH/HL.
-    # 数学: endpoint loss 对 v 的梯度 = (1-t)^2 * FM 梯度, 在 t 小时增强梯度加速早期收敛.
-    spectral_w_endpoint_style_lh: float = 0.0   # LH 端点 style loss 权重 (0=关闭)
-    spectral_w_endpoint_style_hl: float = 0.0   # HL 端点 style loss 权重 (0=关闭)
     # === FC-SB Phase 4 B2 V3: Brownian bridge noise ===
     spectral_brownian_enabled: bool = False     # 启用 SB-style 前向噪声 x_t += sigma*sqrt(t*(1-t))*eps
     spectral_brownian_sigma: float = 0.1        # 噪声幅度 (典型 0.05-0.2)

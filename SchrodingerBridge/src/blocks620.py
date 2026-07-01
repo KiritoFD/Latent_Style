@@ -58,15 +58,14 @@ class SpatialBridgeBlock620(nn.Module):
         dim: int,
         num_heads: int,
         style_gate_init: float = 0.5,
-        style_gate_mode: str = "tanh_gate",
         style_shortcut_alpha: Any = 1.0,
         layer_idx: int = 0,
         num_layers: int = 4,
-        attn_mode: str = "softmax",
         attn_temperature: float = 1.0,
         gate_warmup_steps: int = 0,
-        norm_type: str = "group_norm",
         dwt_route: bool = False,
+        dwt_ll_route_alpha: float = 0.0,
+        dwt_route_train_prob: float = 0.0,
     ) -> None:
         super().__init__()
 
@@ -78,6 +77,10 @@ class SpatialBridgeBlock620(nn.Module):
         self.cross_attn_entropy = torch.tensor(0.0)
         # 630 Phase 4J.1: DWT-Routed Cross-Attention (方案 B)
         self.dwt_route = bool(dwt_route)
+        # 630 Remote T2: Soft LL Route — LL 以 alpha 残差注入 style
+        self.dwt_ll_route_alpha = float(dwt_ll_route_alpha)
+        # 630 Local T10: Stochastic DWT Route — 训练时以概率p使用DWT route, 推理时始终使用
+        self.dwt_route_train_prob = float(dwt_route_train_prob)
 
         self.shortcut_alpha = float(style_shortcut_alpha) if not isinstance(style_shortcut_alpha, (list, tuple)) else (
             float(style_shortcut_alpha[self.layer_idx]) if self.layer_idx < len(style_shortcut_alpha) else 1.0
@@ -87,8 +90,8 @@ class SpatialBridgeBlock620(nn.Module):
         while self.dim % self.num_heads != 0 and self.num_heads > 1:
             self.num_heads -= 1
         self.head_dim = self.dim // self.num_heads
-        self.norm_type = norm_type
-        self.norm1 = _make_norm(norm_type, self.dim)
+        # 630 Phase 72 清理: norm_type/group_norm, attn_mode/relu2, gate_mode/tanh_gate 硬编码 (已验证最优)
+        self.norm1 = _make_norm("group_norm", self.dim)
         self.time_adaln = nn.Sequential(nn.SiLU(), nn.Linear(self.dim, self.dim * 3))
         # Self-attention: content Q/K/V
         self.sa_qkv = nn.Linear(self.dim, self.dim * 3)
@@ -98,17 +101,17 @@ class SpatialBridgeBlock620(nn.Module):
         self.k_proj = nn.Linear(self.dim, self.dim)
         self.v_proj = nn.Linear(self.dim, self.dim)
         self.out_proj = nn.Linear(self.dim, self.dim)
-        self.norm2 = _make_norm(norm_type, self.dim)
+        self.norm2 = _make_norm("group_norm", self.dim)
         self.ffn = nn.Sequential(
-            _make_norm(norm_type, self.dim),
+            _make_norm("group_norm", self.dim),
             nn.Conv2d(self.dim, self.dim * 4, kernel_size=1),
             nn.SiLU(),
             nn.Conv2d(self.dim * 4, self.dim, kernel_size=1),
         )
         self.style_gate = nn.Parameter(torch.tensor(float(style_gate_init)))
-        self.style_gate_mode = str(style_gate_mode).strip().lower()
+        self.style_gate_mode = "tanh_gate"  # 630 Phase 72: 硬编码 (已验证最优)
         self._gate_init = float(style_gate_init)
-        self.attn_mode = str(attn_mode).strip().lower()
+        self.attn_mode = "relu2"  # 630 Phase 72: 硬编码 (629 D19-D22 已验证最优)
         self.attn_temperature = float(attn_temperature)
         nn.init.zeros_(self.time_adaln[-1].weight)
         nn.init.zeros_(self.time_adaln[-1].bias)
@@ -127,6 +130,23 @@ class SpatialBridgeBlock620(nn.Module):
             return raw
         warmup_factor = min(1.0, self._current_step / max(1, self.gate_warmup_steps))
         return raw * warmup_factor
+
+    def _compute_use_dwt(self) -> bool:
+        """Decide whether to use DWT-routed cross-attention for this forward call.
+
+        - Inference: always use DWT route when enabled (LL bypass protects content).
+        - Training with dwt_route_train_prob > 0: stochastic route (T11 SOTA config),
+          so q_proj / style_mem jointly learn DWT coefficients and full style.
+        - Training with dwt_route_train_prob == 0: deterministic route when enabled
+          (4J.1 original behavior).
+        """
+        if not self.dwt_route:
+            return False
+        if not self.training:
+            return True
+        if self.dwt_route_train_prob > 0.0:
+            return torch.rand(1).item() < self.dwt_route_train_prob
+        return True
 
     def forward(
         self,
@@ -162,16 +182,22 @@ class SpatialBridgeBlock620(nn.Module):
         # 理论: 对特征图做 Haar DWT, LL bypass (保结构), 仅高频(LH/HL/HH) query style_mem
         # 解放 style_mem: 100% 容量表达笔触/色彩, 不再被迫学"维持结构"
         ca_is_dwt = False
-        if self.dwt_route and h >= 2 and w >= 2 and (h % 2 == 0) and (w % 2 == 0):
+        use_dwt = self._compute_use_dwt()
+        if use_dwt and h >= 2 and w >= 2 and (h % 2 == 0) and (w % 2 == 0):
             x_f = x.float()
             ll_f, lh_f, hl_f, hh_f = dwt2_haar(x_f)
             hf_h, hf_w = ll_f.shape[-2], ll_f.shape[-1]
             lh_tokens = lh_f.permute(0, 2, 3, 1).reshape(b, hf_h * hf_w, c)
             hl_tokens = hl_f.permute(0, 2, 3, 1).reshape(b, hf_h * hf_w, c)
             hh_tokens = hh_f.permute(0, 2, 3, 1).reshape(b, hf_h * hf_w, c)
-            ca_in = torch.cat([lh_tokens, hl_tokens, hh_tokens], dim=1)
-            # ca_h * ca_w must equal token count for _attention_stats
-            ca_h, ca_w = 3 * hf_h, hf_w
+            if self.dwt_ll_route_alpha > 0.0:
+                # 630 Remote T2: Soft LL Route — LL 也参与 cross-attention query
+                ll_tokens = ll_f.permute(0, 2, 3, 1).reshape(b, hf_h * hf_w, c)
+                ca_in = torch.cat([ll_tokens, lh_tokens, hl_tokens, hh_tokens], dim=1)
+                ca_h, ca_w = 4 * hf_h, hf_w
+            else:
+                ca_in = torch.cat([lh_tokens, hl_tokens, hh_tokens], dim=1)
+                ca_h, ca_w = 3 * hf_h, hf_w
             ca_is_dwt = True
         else:
             ca_in = x.permute(0, 2, 3, 1).reshape(b, h * w, c)
@@ -211,10 +237,20 @@ class SpatialBridgeBlock620(nn.Module):
         if ca_is_dwt:
             attended = attended.float()
             n_hf = hf_h * hf_w
-            lh_out = attended[:, :n_hf, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
-            hl_out = attended[:, n_hf:2*n_hf, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
-            hh_out = attended[:, 2*n_hf:, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
-            attended_2d = idwt2_haar(ll_f, lh_out, hl_out, hh_out).to(dtype=x.dtype)
+            if self.dwt_ll_route_alpha > 0.0:
+                # 630 Remote T2: Soft LL Route — LL 残差注入 style
+                ll_out = attended[:, :n_hf, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
+                lh_out = attended[:, n_hf:2*n_hf, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
+                hl_out = attended[:, 2*n_hf:3*n_hf, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
+                hh_out = attended[:, 3*n_hf:, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
+                ll_final = ll_f + self.dwt_ll_route_alpha * ll_out
+                attended_2d = idwt2_haar(ll_final, lh_out, hl_out, hh_out).to(dtype=x.dtype)
+            else:
+                lh_out = attended[:, :n_hf, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
+                hl_out = attended[:, n_hf:2*n_hf, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
+                hh_out = attended[:, 2*n_hf:, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
+                # LL bypass: 完全保留内容锚, 仅高频子带注入 style (4J.1 原始设计)
+                attended_2d = idwt2_haar(ll_f, lh_out, hl_out, hh_out).to(dtype=x.dtype)
         else:
             attended_2d = attended.transpose(1, 2).reshape(b, c, h, w)
         style_delta = self._effective_gate_value().to(dtype=x.dtype) * attended_2d

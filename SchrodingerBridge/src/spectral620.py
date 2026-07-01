@@ -272,3 +272,58 @@ def dwt2_lowpass(x: torch.Tensor, levels: int = 1, basis: str = "haar") -> torch
     """
     fn = _WAVELET_LOWPASS.get(basis.lower(), dwt2_haar_lowpass)
     return fn(x, levels=levels)
+
+
+# ---------------------------------------------------------------------------
+# Multi-level Haar DWT full decomposition / reconstruction.
+# Phase 4G.2: per-subband AdaIN needs ALL subbands (not just lowpass).
+# ---------------------------------------------------------------------------
+
+def dwt2_haar_multi_decompose(x: torch.Tensor, levels: int = 1) -> dict:
+    """多级 Haar DWT 分解, 返回所有子带 (LL_K + K 个高频三元组).
+
+    输入: x (B, C, H, W)
+    输出: dict {
+        "ll_K": LL_K (B, C, H/2^K, W/2^K) — 最粗低频
+        "h": [(lh_1, hl_1, hh_1), ..., (lh_K, hl_K, hh_K)] — 从细到粗
+            subs[0] = Level 1 高频 (最细, H/2 x W/2)
+            subs[-1] = Level K 高频 (最粗, H/2^K x W/2^K)
+    }
+
+    物理 (levels=3, input 64x64):
+        LL_3 (4x4): 绝对构图/物体位置
+        H_3 (4x4): 中低频, 宏观笔触/光影体积
+        H_2 (8x8): 中频, 局部色彩/笔触方向
+        H_1 (16x16): 高频, 画布材质/微观噪点
+
+    Haar 正交性保证: <H_k, H_{k'}> = 0 (k != k'), 同级 <LH,HL>=0 等.
+    """
+    if levels <= 0:
+        return {"ll_K": x, "h": []}
+    current = x
+    subs = []
+    for _ in range(levels):
+        ll, lh, hl, hh = dwt2_haar(current)
+        subs.append((lh, hl, hh))  # 高频三元组 (从细到粗存储)
+        current = ll  # 继续分解 LL
+    # subs[0] = Level 1 高频 (最细), subs[-1] = Level K 高频 (最粗)
+    return {"ll_K": current, "h": subs}
+
+
+def idwt2_haar_multi_reconstruct(decomp: dict, levels: int = 1) -> torch.Tensor:
+    """多级 Haar IDWT 重建, 从 dwt2_haar_multi_decompose 的输出重建.
+
+    输入: decomp = {"ll_K": ..., "h": [(lh_1, hl_1, hh_1), ..., (lh_K, hl_K, hh_K)]}
+    输出: 与原 x 同尺寸的重建张量 (Perfect Reconstruction)
+
+    重建顺序: 从最粗 (LL_K + subs[-1]) 逐级 IDWT 到最细 (subs[0]).
+    """
+    if levels <= 0:
+        return decomp["ll_K"]
+    recon = decomp["ll_K"]
+    subs = decomp["h"]
+    # 从最粗 (subs[levels-1]) 到最细 (subs[0]) 逐级重建
+    for k in range(levels - 1, -1, -1):
+        lh, hl, hh = subs[k]
+        recon = idwt2_haar(recon, lh, hl, hh)
+    return recon
