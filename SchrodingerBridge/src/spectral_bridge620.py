@@ -257,12 +257,20 @@ class SpectralODEBridge620(nn.Module):
         # 630 Phase 4I.5: 非线性 time schedule (ODE 路径形状)
         # 理论: 改变 ODE 积分路径上时间步的分布, 在关键区域(源/目标分布附近)分配更多步数
         time_schedule = str(_cfg_get('time_schedule', 'linear')).lower()
+        # 630 Phase 4I.8: warp_cos 幂参数 (p<1 风格偏置, p>1 内容偏置, p=1=cosine)
+        time_schedule_warp = float(_cfg_get('time_schedule_warp', 1.0))
 
         def _schedule(s: float) -> float:
             """Map normalized progress s∈[0,1] to time fraction via schedule."""
             if time_schedule == "cosine":
                 import math
                 return (1.0 - math.cos(math.pi * s)) / 2.0
+            elif time_schedule == "warp_cos":
+                # 630 Phase 4I.8: 参数化 cosine — t = (1-cos(pi*s^p))/2
+                import math
+                p = max(0.1, time_schedule_warp)  # 防止 s^p 在 p=0 时退化
+                s_warped = s ** p
+                return (1.0 - math.cos(math.pi * s_warped)) / 2.0
             elif time_schedule == "quad":
                 return s * s
             elif time_schedule == "rquad":

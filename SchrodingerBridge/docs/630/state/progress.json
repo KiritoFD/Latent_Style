@@ -1,10 +1,10 @@
 {
   "task": "630_cleanup_masking_exploration",
-  "iteration": 28,
-  "total_findings": 59,
-  "status": "PHASE4I7B_NEW_SOTA_COSINE_HEUN_A085_DUAL_BEAT_SAMAM",
+  "iteration": 29,
+  "total_findings": 60,
+  "status": "PHASE4I8A_OVERTRAINING_PARETO_MAPPING_4I8B_RUNNING",
   "stale_count": 0,
-  "last_seen": "2026-07-01T15:10:00",
+  "last_seen": "2026-07-01T19:40:00",
   "baseline": {
     "clip_style": 0.7293,
     "content_lpips": 0.3203,
@@ -455,6 +455,56 @@
     ],
     "theoretical_significance": "Cosine schedule shifted the Pareto frontier (better content at same alpha). Combining with alpha=0.85 (slightly higher than 0.8) recovers the style loss while keeping content gains. The 2D space (schedule x alpha) has a better optimal point than the 1D alpha-only space. This is the practical culmination of the structural breakthrough: Heun broke the frontier, cosine shifted it, alpha optimization found the best point on the new frontier.",
     "new_sota": {"clip": 0.7272, "lpips": 0.3218, "config": "EOTA + spatial_fiber + alpha=0.85 + Heun solver + cosine schedule + 5ep"}
+  },
+  "phase4i8a_results": {
+    "stage": "cosine_heun_alpha_0.85_8ep_extended_training",
+    "status": "completed_overtraining_pareto_mapping",
+    "config": "configs/630_phase4i8a_cosine_heun_a085_8ep.json",
+    "experiments": [
+      {"config": "4I.8a (cosine + Heun + alpha=0.85, 8ep) epoch_5", "clip": 0.7272, "lpips": 0.3253, "verdict": "MATCHES 4I.7b (5ep) on clip, but lpips +0.0035 worse — overtraining onset"},
+      {"config": "4I.8a (cosine + Heun + alpha=0.85, 8ep) epoch_8", "clip": 0.7284, "lpips": 0.3283, "verdict": "FAIL: lpips 0.3283 ≈ SaMam 0.3282. Content advantage DESTROYED by overtraining."}
+    ],
+    "comparison_with_4i7b_5ep_sota": {
+      "4i7b_5ep": {"clip": 0.7272, "lpips": 0.3218},
+      "4i8a_5ep_checkpoint": {"clip": 0.7272, "lpips": 0.3253, "delta_clip": "+0.0000", "delta_lpips": "+0.0035", "note": "5ep checkpoint identical clip, lpips already degrading"},
+      "4i8a_8ep_final": {"clip": 0.7284, "lpips": 0.3283, "delta_clip": "+0.0012", "delta_lpips": "+0.0065", "note": "8ep: tiny clip gain, large lpips loss — classic Pareto tradeoff"},
+      "interpretation": "Extended training (5ep->8ep) is a Pareto-mapping knob, NOT a structural breakthrough. The lpips degradation (+0.0065) is 5.4x larger than clip gain (+0.0012). Heun's compound advantage SATURATES after 5ep."
+    },
+    "comparison_with_samam": {
+      "samam": {"clip": 0.7222, "lpips": 0.3282},
+      "4i8a_8ep": {"clip": 0.7284, "lpips": 0.3283, "clip_margin": "+0.0062 (+0.86%)", "lpips_margin": "-0.0001 (-0.01%)", "verdict": "BARELY PASSES: clip good, lpips advantage ELIMINATED. Unacceptable vs 'both substantially beat' goal."}
+    },
+    "theoretical_significance": "TRAINING DURATION CLASSIFICATION: Training epochs is a Pareto-mapping knob (moves along frontier), NOT a structural DOF (does not break frontier). This completes the Phase 4I classification: (1) Solver order (Euler->Heun) = STRUCTURAL DOF (breaks Pareto); (2) Schedule shape (linear/cosine/rquad/warp_cos) = Pareto-mapping knob; (3) Training duration = Pareto-mapping knob; (4) Alpha = Pareto-mapping knob. Only solver order breaks the 1D frontier.",
+    "practical_conclusion": "5ep is optimal for Heun+cosine+alpha=0.85. 8ep over-trains: content fidelity (lpips) degrades faster than style (clip) improves. The 'Heun advantage compounds with training' hypothesis from 4I.2b has a ceiling at 5ep. Do NOT extend training beyond 5ep.",
+    "next_step": "Phase 4I.8b: Test warp_cos (p=0.8) as potential structural DOF. If warp_cos breaks Pareto (both metrics improve vs 4I.7b), it's a new structural dimension. If it maps Pareto, schedule shape classification is complete."
+  },
+  "phase4i8b_results": {
+    "stage": "warp_cos_p08_alpha_0.85_5ep_structural_test",
+    "status": "completed_pareto_mapping_not_structural",
+    "config": "configs/630_phase4i8b_warpcos_p08_a085_5ep.json",
+    "experiments": [
+      {"config": "4I.8b (warp_cos p=0.8 + Heun + alpha=0.85, 5ep)", "clip": 0.7282, "lpips": 0.3271, "verdict": "PARETO MAPPING: clip +0.0010 vs 4I.7b (style gain), lpips +0.0053 (content loss). warp_cos is Pareto-mapping knob, NOT structural DOF."}
+    ],
+    "comparison_with_4i7b_sota": {
+      "4i7b_cosine_5ep": {"clip": 0.7272, "lpips": 0.3218},
+      "4i8b_warpcos_p08_5ep": {"clip": 0.7282, "lpips": 0.3271},
+      "delta_clip": "+0.0010",
+      "delta_lpips": "+0.0053",
+      "interpretation": "warp_cos(p=0.8) shifts trajectory toward style (p<1 = style bias). Both metrics move in same direction as increasing alpha — this is Pareto tradeoff, not frontier break. warp_cos is classified as Pareto-mapping knob."
+    },
+    "comparison_with_samam": {
+      "samam": {"clip": 0.7222, "lpips": 0.3282},
+      "4i8b": {"clip": 0.7282, "lpips": 0.3271, "clip_margin": "+0.0060 (+0.83%)", "lpips_margin": "-0.0011 (-0.34%)", "verdict": "BOTH PASS but lpips margin tiny (-0.34%). Does NOT meet 'both substantially beat' goal."}
+    },
+    "schedule_shape_classification_complete": {
+      "linear": {"clip": 0.7266, "lpips": 0.3229, "note": "neutral"},
+      "cosine": {"clip": 0.7272, "lpips": 0.3218, "note": "content bias (SOTA)"},
+      "rquad": {"clip": 0.7293, "lpips": 0.3429, "note": "style bias"},
+      "warp_cos_p08": {"clip": 0.7282, "lpips": 0.3271, "note": "mild style bias"},
+      "finding": "ALL schedule shapes map to the SAME Pareto frontier. Schedule shape is a Pareto-mapping knob (moves along frontier), NOT a structural DOF (does not break frontier). Only solver order (Euler->Heun) breaks the frontier.",
+      "theoretical_conclusion": "Schedule shape exploration COMPLETE. No schedule can break the 1D Pareto frontier. The 2D structural space is: (solver order) x (everything else). Only solver order is structural."
+    },
+    "next_step": "Phase 4I.8c: Test num_steps (inference steps) as potential structural DOF. num_steps controls step size h=1/num_steps, directly affecting ODE integration precision (Heun O(h^3)). Increasing num_steps from 8 to 12 reduces truncation error by ~70%. If both metrics improve, num_steps is structural DOF (similar to solver order). Test uses existing 4I.7b checkpoint — no retraining needed (num_steps is inference-only parameter)."
   },
   "phase4_plan": {
     "stage_4a1_dead_code_removal": "completed",

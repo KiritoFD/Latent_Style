@@ -374,7 +374,14 @@ class ModelConfig:
     #   理论: 在源(内容)和目标(风格)分布附近分配更多积分步数, 双向精确
     # "quad": t = horizon * (i/steps)^2 — 开始慢, 在源分布附近多停留 (保内容)
     # "rquad": t = horizon * (1-(1-i/steps)^2) — 结束慢, 在目标分布附近多停留 (强风格)
+    # "warp_cos": t = horizon * (1-cos(pi*s^p))/2, p=time_schedule_warp — 参数化 cosine
+    #   p=1.0: 退化为标准 cosine (对称 S 形)
+    #   p<1.0: 风格偏置 (s^p > s, 中段前移, 在目标分布附近多停留)
+    #   p>1.0: 内容偏置 (s^p < s, 中段后移, 在源分布附近多停留)
+    #   理论: 保持 cosine 的两端慢速特性, 通过 p 连续控制偏置方向, 引入新自由度
     time_schedule: str = "linear"
+    # 630 Phase 4I.8: warp_cos 的幂参数 (仅当 time_schedule="warp_cos" 时生效)
+    time_schedule_warp: float = 1.0
     endpoint_high_scale: float = 0
     endpoint_velocity_floor: float = 0.05
     endpoint_film_enabled: bool = False
