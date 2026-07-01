@@ -1,10 +1,10 @@
 {
   "task": "630_cleanup_masking_exploration",
-  "iteration": 31,
+  "iteration": 32,
   "total_findings": 68,
   "status": "PHASE4I11_DUAL_BEAT_SAAMAM",
   "stale_count": 0,
-  "last_seen": "2026-07-01T22:00:00",
+  "last_seen": "2026-07-01 20:39:21",
   "baseline": {
     "clip_style": 0.7293,
     "content_lpips": 0.3203,
@@ -21,16 +21,38 @@
     "stage": "dead_code_removal",
     "status": "completed",
     "commit": "31fc94cac",
-    "deleted_items": ["spectral_brownian_noise_scale", "loss_type metric", "loss_fm alias", "loss_fm_total", "compute_debug", "loss_fn.last_debug"]
+    "deleted_items": [
+      "spectral_brownian_noise_scale",
+      "loss_type metric",
+      "loss_fm alias",
+      "loss_fm_total",
+      "compute_debug",
+      "loss_fn.last_debug"
+    ]
   },
   "phase4a2_results": {
     "stage": "subtractive_ablation_3epoch",
     "status": "completed",
     "commit": "50adae4dc",
     "ablations": [
-      {"config": "spectral_w_ll=0.0", "clip": 0.7117, "lpips": 0.3120, "verdict": "FAIL"},
-      {"config": "style_extrap_alpha=0.0", "clip": 0.7242, "lpips": 0.3333, "verdict": "FAIL"},
-      {"config": "endpoint_adain_scale=0.0", "clip": 0.7082, "lpips": 0.2994, "verdict": "FAIL"}
+      {
+        "config": "spectral_w_ll=0.0",
+        "clip": 0.7117,
+        "lpips": 0.312,
+        "verdict": "FAIL"
+      },
+      {
+        "config": "style_extrap_alpha=0.0",
+        "clip": 0.7242,
+        "lpips": 0.3333,
+        "verdict": "FAIL"
+      },
+      {
+        "config": "endpoint_adain_scale=0.0",
+        "clip": 0.7082,
+        "lpips": 0.2994,
+        "verdict": "FAIL"
+      }
     ],
     "conclusion": "All 3 components effective, none removable. Content Fidelity Pathway validated."
   },
@@ -39,9 +61,24 @@
     "status": "completed",
     "commit": "d83a050e0",
     "ablations": [
-      {"config": "freq_a1 (alpha=1.0, no random)", "clip": 0.7258, "lpips": 0.3357, "verdict": "PASS"},
-      {"config": "freq_a05 (alpha=0.5, no random)", "clip": 0.7252, "lpips": 0.3347, "verdict": "PASS"},
-      {"config": "freq_a1_rand50 (combined)", "clip": 0.7264, "lpips": 0.3354, "verdict": "PASS"}
+      {
+        "config": "freq_a1 (alpha=1.0, no random)",
+        "clip": 0.7258,
+        "lpips": 0.3357,
+        "verdict": "PASS"
+      },
+      {
+        "config": "freq_a05 (alpha=0.5, no random)",
+        "clip": 0.7252,
+        "lpips": 0.3347,
+        "verdict": "PASS"
+      },
+      {
+        "config": "freq_a1_rand50 (combined)",
+        "clip": 0.7264,
+        "lpips": 0.3354,
+        "verdict": "PASS"
+      }
     ],
     "conclusion": "Frequency masking valid. Can replace or complement random dropout."
   },
@@ -49,9 +86,27 @@
     "stage": "long_train_and_mask_ratio_refinement",
     "status": "completed",
     "experiments": [
-      {"config": "freq_a1_rand50_10ep", "clip": 0.7277, "lpips": 0.3394, "v_ll_abs": 0.7255, "verdict": "PASS (parity with 10ep baseline)"},
-      {"config": "freq_a1_rand30 (3ep)", "clip": 0.7250, "lpips": 0.3252, "v_ll_abs": 0.6541, "verdict": "PASS (best lpips)"},
-      {"config": "freq_a1_rand70 (3ep)", "clip": 0.7245, "lpips": 0.3284, "v_ll_abs": 0.5636, "verdict": "PASS"}
+      {
+        "config": "freq_a1_rand50_10ep",
+        "clip": 0.7277,
+        "lpips": 0.3394,
+        "v_ll_abs": 0.7255,
+        "verdict": "PASS (parity with 10ep baseline)"
+      },
+      {
+        "config": "freq_a1_rand30 (3ep)",
+        "clip": 0.725,
+        "lpips": 0.3252,
+        "v_ll_abs": 0.6541,
+        "verdict": "PASS (best lpips)"
+      },
+      {
+        "config": "freq_a1_rand70 (3ep)",
+        "clip": 0.7245,
+        "lpips": 0.3284,
+        "v_ll_abs": 0.5636,
+        "verdict": "PASS"
+      }
     ],
     "conclusion": "Optimal: mask_ratio=0.5, train 5ep (content drift after 5ep). head_ll compensation universal (0.56-0.73)."
   },
@@ -59,8 +114,20 @@
     "stage": "dwt_tokenizer",
     "status": "completed",
     "experiments": [
-      {"config": "dwt_a1 (3ep, haar_dwt)", "clip": 0.7266, "lpips": 0.3402, "v_ll_abs": 0.7018, "verdict": "PASS"},
-      {"config": "dwt_a1_rand50 (3ep, haar_dwt+random)", "clip": 0.7255, "lpips": 0.3297, "v_ll_abs": 0.6456, "verdict": "PASS"}
+      {
+        "config": "dwt_a1 (3ep, haar_dwt)",
+        "clip": 0.7266,
+        "lpips": 0.3402,
+        "v_ll_abs": 0.7018,
+        "verdict": "PASS"
+      },
+      {
+        "config": "dwt_a1_rand50 (3ep, haar_dwt+random)",
+        "clip": 0.7255,
+        "lpips": 0.3297,
+        "v_ll_abs": 0.6456,
+        "verdict": "PASS"
+      }
     ],
     "conclusion": "Orthogonal Haar DWT works (parity with avg_pool baseline). random mask on style_memory (not real DINO) still weakly hurts."
   },
@@ -68,8 +135,19 @@
     "stage": "multi_level_2level_haar_dwt",
     "status": "completed",
     "experiments": [
-      {"config": "lvl2 (3ep)", "clip": 0.7301, "lpips": 0.3402, "verdict": "PASS - BREAKTHROUGH (over 10ep baseline 0.7288)"},
-      {"config": "lvl2_dwt_rand50 (3ep)", "clip": 0.7294, "lpips": 0.3394, "v_ll_abs": 0.6620, "verdict": "PASS (slightly worse than lvl2 alone)"}
+      {
+        "config": "lvl2 (3ep)",
+        "clip": 0.7301,
+        "lpips": 0.3402,
+        "verdict": "PASS - BREAKTHROUGH (over 10ep baseline 0.7288)"
+      },
+      {
+        "config": "lvl2_dwt_rand50 (3ep)",
+        "clip": 0.7294,
+        "lpips": 0.3394,
+        "v_ll_abs": 0.662,
+        "verdict": "PASS (slightly worse than lvl2 alone)"
+      }
     ],
     "conclusion": "2-Level DWT is the strongest single improvement. Random mask incompatible with multi-level DWT (random breaks mid-freq continuity). Phase 4D.1 lvl2 is current SOTA."
   },
@@ -77,8 +155,20 @@
     "stage": "rgb_block_masking_with_real_dino",
     "status": "completed_negative_result",
     "experiments": [
-      {"config": "4C.0 (clean DINO + lvl2, 3ep)", "clip": 0.7118, "lpips": 0.3038, "v_ll_abs": 0.3419, "verdict": "FAIL (clip -0.0125 below threshold)"},
-      {"config": "4C.1 (blockmask r0.6 b128 + lvl2, 3ep)", "clip": 0.7151, "lpips": 0.3177, "v_ll_abs": 0.2662, "verdict": "FAIL (clip -0.0092 below threshold; block mask recovers +0.0033 over 4C.0)"}
+      {
+        "config": "4C.0 (clean DINO + lvl2, 3ep)",
+        "clip": 0.7118,
+        "lpips": 0.3038,
+        "v_ll_abs": 0.3419,
+        "verdict": "FAIL (clip -0.0125 below threshold)"
+      },
+      {
+        "config": "4C.1 (blockmask r0.6 b128 + lvl2, 3ep)",
+        "clip": 0.7151,
+        "lpips": 0.3177,
+        "v_ll_abs": 0.2662,
+        "verdict": "FAIL (clip -0.0092 below threshold; block mask recovers +0.0033 over 4C.0)"
+      }
     ],
     "conclusion": "NEGATIVE: Real DINO cache HURTS clip_style by -0.018 vs style_memory. Block mask partially recovers (+0.0033) but cannot compensate. Key insight: 'Style Is Learned, Not Extracted' - learnable style_memory is task-optimal; DINOv2 features are content-biased. style_memory retained as default. Phase 4C route abandoned."
   },
@@ -86,8 +176,20 @@
     "stage": "daubechies_db2_smooth_wavelet",
     "status": "completed_flat_result",
     "experiments": [
-      {"config": "4E.1 (db2 lvl1, 3ep)", "clip": 0.7258, "lpips": 0.3288, "v_ll_abs": 0.666, "verdict": "PASS (flat vs haar lvl1 0.7261, Δ=-0.0003)"},
-      {"config": "4E.2 (db2 lvl2, 3ep)", "clip": 0.7298, "lpips": 0.3398, "v_ll_abs": 0.666, "verdict": "PASS (flat vs haar lvl2 0.7301, Δ=-0.0003)"}
+      {
+        "config": "4E.1 (db2 lvl1, 3ep)",
+        "clip": 0.7258,
+        "lpips": 0.3288,
+        "v_ll_abs": 0.666,
+        "verdict": "PASS (flat vs haar lvl1 0.7261, Δ=-0.0003)"
+      },
+      {
+        "config": "4E.2 (db2 lvl2, 3ep)",
+        "clip": 0.7298,
+        "lpips": 0.3398,
+        "v_ll_abs": 0.666,
+        "verdict": "PASS (flat vs haar lvl2 0.7301, Δ=-0.0003)"
+      }
     ],
     "smoke_test": "ALL 7 PASS - PR error ≤ 8.88e-16, db2 fiber TV 34.5% lower than Haar after AdaIN",
     "conclusion": "FLAT: db2 ≈ haar in aggregate metrics (CLIP/LPIPS insensitive to pixel-level smoothness). Multi-level (lvl1→lvl2) is the dominant effect (+0.0040 clip for both bases). SOTA unchanged: Phase 4D.1 haar lvl2 (clip=0.7301). db2 code retained as optional basis, not default."
@@ -96,14 +198,45 @@
     "stage": "multi_level_deep_exploration",
     "status": "completed",
     "experiments": [
-      {"config": "4F.1 (haar lvl3, 3ep)", "clip": 0.7319, "lpips": 0.3428, "v_ll_abs": 0.666, "verdict": "PASS - NEW SOTA (+0.0018 over lvl2)"},
-      {"config": "4F.2 (haar lvl4, 3ep)", "clip": 0.7316, "lpips": 0.3461, "verdict": "FAIL (lpips > 0.3453 threshold, trend reverses)"}
+      {
+        "config": "4F.1 (haar lvl3, 3ep)",
+        "clip": 0.7319,
+        "lpips": 0.3428,
+        "v_ll_abs": 0.666,
+        "verdict": "PASS - NEW SOTA (+0.0018 over lvl2)"
+      },
+      {
+        "config": "4F.2 (haar lvl4, 3ep)",
+        "clip": 0.7316,
+        "lpips": 0.3461,
+        "verdict": "FAIL (lpips > 0.3453 threshold, trend reverses)"
+      }
     ],
     "trend_table": {
-      "level_1": {"ll_size": "16x16", "clip": 0.7261, "lpips": 0.3296, "delta_clip": "baseline"},
-      "level_2": {"ll_size": "8x8", "clip": 0.7301, "lpips": 0.3402, "delta_clip": "+0.0040"},
-      "level_3": {"ll_size": "4x4", "clip": 0.7319, "lpips": 0.3428, "delta_clip": "+0.0018"},
-      "level_4": {"ll_size": "2x2", "clip": 0.7316, "lpips": 0.3461, "delta_clip": "-0.0003"}
+      "level_1": {
+        "ll_size": "16x16",
+        "clip": 0.7261,
+        "lpips": 0.3296,
+        "delta_clip": "baseline"
+      },
+      "level_2": {
+        "ll_size": "8x8",
+        "clip": 0.7301,
+        "lpips": 0.3402,
+        "delta_clip": "+0.0040"
+      },
+      "level_3": {
+        "ll_size": "4x4",
+        "clip": 0.7319,
+        "lpips": 0.3428,
+        "delta_clip": "+0.0018"
+      },
+      "level_4": {
+        "ll_size": "2x2",
+        "clip": 0.7316,
+        "lpips": 0.3461,
+        "delta_clip": "-0.0003"
+      }
     },
     "conclusion": "3-Level (LL_3 4x4) is optimal peak. Multi-level trend: +0.0040 (1->2), +0.0018 (2->3), -0.0003 (3->4 with lpips FAIL). 4-Level LL_4 (2x2) is too aggressive, loses position info, breaks content fidelity. SOTA: haar lvl3 clip=0.7319. Multi-level DWT exploration complete."
   },
@@ -111,14 +244,46 @@
     "stage": "true_ll_lock_2x2_matrix",
     "status": "completed_negative_result",
     "experiments": [
-      {"config": "4G.1a (lock_ll=True, w_ll=1.0, 3ep)", "clip": 0.7178, "lpips": 0.3281, "v_ll_abs": 0.654, "verdict": "FAIL (clip -0.0141 below 0.7243 threshold)"},
-      {"config": "4G.1b (lock_ll=True, w_ll=0.0, 3ep)", "clip": 0.7174, "lpips": 0.3372, "v_ll_abs": 0.010, "verdict": "FAIL (clip -0.0145 below threshold, v_ll untrained stays zero-init)"}
+      {
+        "config": "4G.1a (lock_ll=True, w_ll=1.0, 3ep)",
+        "clip": 0.7178,
+        "lpips": 0.3281,
+        "v_ll_abs": 0.654,
+        "verdict": "FAIL (clip -0.0141 below 0.7243 threshold)"
+      },
+      {
+        "config": "4G.1b (lock_ll=True, w_ll=0.0, 3ep)",
+        "clip": 0.7174,
+        "lpips": 0.3372,
+        "v_ll_abs": 0.01,
+        "verdict": "FAIL (clip -0.0145 below threshold, v_ll untrained stays zero-init)"
+      }
     ],
     "matrix_2x2": {
-      "lock_False_w_0": {"name": "4A2", "clip": 0.7117, "lpips": 0.2994, "note": "random v_ll noise injection (worst)"},
-      "lock_False_w_1": {"name": "4F.1_SOTA", "clip": 0.7319, "lpips": 0.3428, "note": "full open - best clip"},
-      "lock_True_w_0": {"name": "4G.1b", "clip": 0.7174, "lpips": 0.3372, "note": "full lock - pure content anchor"},
-      "lock_True_w_1": {"name": "4G.1a", "clip": 0.7178, "lpips": 0.3281, "note": "trained but unused - best lpips in lock row"}
+      "lock_False_w_0": {
+        "name": "4A2",
+        "clip": 0.7117,
+        "lpips": 0.2994,
+        "note": "random v_ll noise injection (worst)"
+      },
+      "lock_False_w_1": {
+        "name": "4F.1_SOTA",
+        "clip": 0.7319,
+        "lpips": 0.3428,
+        "note": "full open - best clip"
+      },
+      "lock_True_w_0": {
+        "name": "4G.1b",
+        "clip": 0.7174,
+        "lpips": 0.3372,
+        "note": "full lock - pure content anchor"
+      },
+      "lock_True_w_1": {
+        "name": "4G.1a",
+        "clip": 0.7178,
+        "lpips": 0.3281,
+        "note": "trained but unused - best lpips in lock row"
+      }
     },
     "key_findings": [
       "LL velocity contributes +0.0141 clip_style (4F.1 vs 4G.1a: 0.7319 vs 0.7178)",
@@ -134,7 +299,13 @@
     "status": "completed_mixed_result",
     "config": "configs/630_phase4g2_per_subband.json",
     "experiments": [
-      {"config": "4G.2 (per_subband alpha=1.0, haar lvl3, 3ep)", "clip": 0.7361, "lpips": 0.3843, "v_ll_abs": 0.6592, "verdict": "MIXED (clip NEW SOTA +0.0042, lpips FAIL +0.0415)"}
+      {
+        "config": "4G.2 (per_subband alpha=1.0, haar lvl3, 3ep)",
+        "clip": 0.7361,
+        "lpips": 0.3843,
+        "v_ll_abs": 0.6592,
+        "verdict": "MIXED (clip NEW SOTA +0.0042, lpips FAIL +0.0415)"
+      }
     ],
     "conclusion": "MIXED: per_subband breaks clip SOTA but lpips FAIL from 9x style injection"
   },
@@ -143,7 +314,13 @@
     "status": "completed_fail_result",
     "config": "configs/630_phase4g2b_per_subband_a05.json",
     "experiments": [
-      {"config": "4G.2b (per_subband alpha=0.5, haar lvl3, 3ep)", "clip": 0.7362, "lpips": 0.3845, "v_ll_abs": 0.6560, "verdict": "FAIL (identical to alpha=1.0)"}
+      {
+        "config": "4G.2b (per_subband alpha=0.5, haar lvl3, 3ep)",
+        "clip": 0.7362,
+        "lpips": 0.3845,
+        "v_ll_abs": 0.656,
+        "verdict": "FAIL (identical to alpha=1.0)"
+      }
     ],
     "surprising_finding": "alpha=0.5 and alpha=1.0 produce nearly identical results (clip delta=0.0001, lpips delta=0.0002)",
     "root_cause": "Multi-step Euler (num_steps=12) applies AdaIN each step. Residual after n steps = (1-alpha)^n. For alpha=0.5, n=12: (0.5)^12 = 0.024% - effectively full replacement. Alpha parameter INVALIDATED by iterative accumulation.",
@@ -155,7 +332,12 @@
     "status": "completed",
     "config": "configs/630_phase4h1a_eota_per_subband.json",
     "experiments": [
-      {"config": "4H.1a (EOTA + per_subband alpha=1.0, haar lvl3, 3ep)", "clip": 0.7359, "lpips": 0.3853, "verdict": "NEUTRAL (≈4G.2, alpha=1.0 makes (1-1.0)^n=0 for any n)"}
+      {
+        "config": "4H.1a (EOTA + per_subband alpha=1.0, haar lvl3, 3ep)",
+        "clip": 0.7359,
+        "lpips": 0.3853,
+        "verdict": "NEUTRAL (≈4G.2, alpha=1.0 makes (1-1.0)^n=0 for any n)"
+      }
     ],
     "conclusion": "EOTA+alpha=1.0 ≈ 4G.2 (every-step+alpha=1.0). When alpha=1.0, first application fully replaces statistics, so EOTA vs every-step is indistinguishable. The REAL test is 4H.1b (EOTA + alpha=0.5)."
   },
@@ -164,19 +346,36 @@
     "status": "completed_breakthrough",
     "config": "configs/630_phase4h1b_eota_per_subband_a05.json",
     "experiments": [
-      {"config": "4H.1b (EOTA + per_subband alpha=0.5, haar lvl3, 3ep)", "clip": 0.7219, "lpips": 0.3226, "verdict": "MIXED: content SOTA (-0.0202 vs 4F.1), style near-miss (-0.0024 below threshold)"}
+      {
+        "config": "4H.1b (EOTA + per_subband alpha=0.5, haar lvl3, 3ep)",
+        "clip": 0.7219,
+        "lpips": 0.3226,
+        "verdict": "MIXED: content SOTA (-0.0202 vs 4F.1), style near-miss (-0.0024 below threshold)"
+      }
     ],
     "comparison_with_4g2b": {
-      "4g2b_every_step_a05": {"clip": 0.7362, "lpips": 0.3845},
-      "4h1b_eota_a05": {"clip": 0.7219, "lpips": 0.3226},
+      "4g2b_every_step_a05": {
+        "clip": 0.7362,
+        "lpips": 0.3845
+      },
+      "4h1b_eota_a05": {
+        "clip": 0.7219,
+        "lpips": 0.3226
+      },
       "delta_clip": -0.0143,
       "delta_lpips": -0.0619,
       "interpretation": "EOTA restored alpha effectiveness: alpha=0.5 now ACTUALLY reduces style injection (clip down) and preserves content (lpips down sharply). Theory CONFIRMED."
     },
     "comparison_with_4f1_sota": {
-      "4f1_sota": {"clip": 0.7319, "lpips": 0.3428},
-      "4h1b": {"clip": 0.7219, "lpips": 0.3226},
-      "delta_clip": -0.0100,
+      "4f1_sota": {
+        "clip": 0.7319,
+        "lpips": 0.3428
+      },
+      "4h1b": {
+        "clip": 0.7219,
+        "lpips": 0.3226
+      },
+      "delta_clip": -0.01,
       "delta_lpips": -0.0202,
       "verdict": "CONTENT SOTA achieved, but style below threshold (0.7219 < 0.7243)"
     },
@@ -188,17 +387,40 @@
     "status": "completed_dual_pass",
     "config": "configs/630_phase4h1c_eota_per_subband_a07.json",
     "experiments": [
-      {"config": "4H.1c (EOTA + per_subband alpha=0.7, haar lvl3, 3ep)", "clip": 0.7280, "lpips": 0.3442, "verdict": "PASS BOTH (clip>0.7243, lpips<0.3453)"}
+      {
+        "config": "4H.1c (EOTA + per_subband alpha=0.7, haar lvl3, 3ep)",
+        "clip": 0.728,
+        "lpips": 0.3442,
+        "verdict": "PASS BOTH (clip>0.7243, lpips<0.3453)"
+      }
     ],
     "alpha_sweep_monotonic_tradeoff": {
-      "alpha_0.5": {"clip": 0.7219, "lpips": 0.3226, "verdict": "content-heavy, style FAIL"},
-      "alpha_0.7": {"clip": 0.7280, "lpips": 0.3442, "verdict": "BALANCED, BOTH PASS"},
-      "alpha_1.0": {"clip": 0.7359, "lpips": 0.3853, "verdict": "style-heavy, content FAIL"}
+      "alpha_0.5": {
+        "clip": 0.7219,
+        "lpips": 0.3226,
+        "verdict": "content-heavy, style FAIL"
+      },
+      "alpha_0.7": {
+        "clip": 0.728,
+        "lpips": 0.3442,
+        "verdict": "BALANCED, BOTH PASS"
+      },
+      "alpha_1.0": {
+        "clip": 0.7359,
+        "lpips": 0.3853,
+        "verdict": "style-heavy, content FAIL"
+      }
     },
     "theoretical_significance": "The alpha sweep reveals a SMOOTH MONOTONIC content-style tradeoff curve. This is theoretically beautiful: alpha is now a valid interpolation knob between content preservation and style transfer. The tradeoff is approximately LINEAR in alpha, confirming EOTA's theoretical correctness.",
     "comparison_with_4f1_sota": {
-      "4f1_sota": {"clip": 0.7319, "lpips": 0.3428},
-      "4h1c": {"clip": 0.7280, "lpips": 0.3442},
+      "4f1_sota": {
+        "clip": 0.7319,
+        "lpips": 0.3428
+      },
+      "4h1c": {
+        "clip": 0.728,
+        "lpips": 0.3442
+      },
       "delta_clip": -0.0039,
       "delta_lpips": "+0.0014",
       "verdict": "4H.1c passes both thresholds but slightly below 4F.1 SOTA on both metrics. Not a new SOTA, but provides a THEORETICALLY BEAUTIFUL alternative with explicit alpha control."
@@ -210,13 +432,34 @@
     "status": "completed",
     "config": "configs/630_phase4h1d_eota_per_subband_a08.json",
     "experiments": [
-      {"config": "4H.1d (EOTA + per_subband alpha=0.8, haar lvl3, 3ep)", "clip": 0.7309, "lpips": 0.3572, "verdict": "STYLE PASS, CONTENT FAIL (lpips>0.3453)"}
+      {
+        "config": "4H.1d (EOTA + per_subband alpha=0.8, haar lvl3, 3ep)",
+        "clip": 0.7309,
+        "lpips": 0.3572,
+        "verdict": "STYLE PASS, CONTENT FAIL (lpips>0.3453)"
+      }
     ],
     "alpha_sweep_complete": {
-      "alpha_0.5": {"clip": 0.7219, "lpips": 0.3226, "verdict": "content SOTA, style FAIL"},
-      "alpha_0.7": {"clip": 0.7280, "lpips": 0.3442, "verdict": "BALANCED, BOTH PASS (only valid operating point)"},
-      "alpha_0.8": {"clip": 0.7309, "lpips": 0.3572, "verdict": "style good, content FAIL"},
-      "alpha_1.0": {"clip": 0.7359, "lpips": 0.3853, "verdict": "style SOTA, content FAIL"},
+      "alpha_0.5": {
+        "clip": 0.7219,
+        "lpips": 0.3226,
+        "verdict": "content SOTA, style FAIL"
+      },
+      "alpha_0.7": {
+        "clip": 0.728,
+        "lpips": 0.3442,
+        "verdict": "BALANCED, BOTH PASS (only valid operating point)"
+      },
+      "alpha_0.8": {
+        "clip": 0.7309,
+        "lpips": 0.3572,
+        "verdict": "style good, content FAIL"
+      },
+      "alpha_1.0": {
+        "clip": 0.7359,
+        "lpips": 0.3853,
+        "verdict": "style SOTA, content FAIL"
+      },
       "monotonicity": "clip: 0.7219 < 0.7280 < 0.7309 < 0.7359 (monotonic increase with alpha)",
       "lpips_monotonicity": "0.3226 < 0.3442 < 0.3572 < 0.3853 (monotonic increase with alpha)",
       "sweet_spot": "alpha=0.7 is the ONLY value passing both thresholds"
@@ -229,12 +472,26 @@
     "status": "completed_breakthrough_content_best",
     "config": "configs/630_phase4h1e_eota_spatial_fiber_a05.json",
     "experiments": [
-      {"config": "4H.1e (EOTA + spatial_fiber alpha=0.5, haar lvl3, 3ep)", "clip": 0.7185, "lpips": 0.3095, "verdict": "CONTENT BEST EVER (-0.0333 vs 4F.1, -0.0108 vs baseline), style FAIL"}
+      {
+        "config": "4H.1e (EOTA + spatial_fiber alpha=0.5, haar lvl3, 3ep)",
+        "clip": 0.7185,
+        "lpips": 0.3095,
+        "verdict": "CONTENT BEST EVER (-0.0333 vs 4F.1, -0.0108 vs baseline), style FAIL"
+      }
     ],
     "eota_generalization_confirmed": {
-      "per_subband_eota_a05": {"clip": 0.7219, "lpips": 0.3226},
-      "spatial_fiber_eota_a05": {"clip": 0.7185, "lpips": 0.3095},
-      "delta": {"clip": -0.0034, "lpips": -0.0131},
+      "per_subband_eota_a05": {
+        "clip": 0.7219,
+        "lpips": 0.3226
+      },
+      "spatial_fiber_eota_a05": {
+        "clip": 0.7185,
+        "lpips": 0.3095
+      },
+      "delta": {
+        "clip": -0.0034,
+        "lpips": -0.0131
+      },
       "interpretation": "EOTA generalizes to BOTH AdaIN modes. spatial_fiber+EOTA achieves BETTER content preservation (lpips 0.3095 < 0.3226) than per_subband+EOTA. EOTA is a UNIVERSAL structural principle."
     },
     "content_preservation_record": {
@@ -250,7 +507,12 @@
     "status": "completed",
     "config": "configs/630_phase4h1f_eota_spatial_fiber_a07.json",
     "experiments": [
-      {"config": "4H.1f (EOTA + spatial_fiber alpha=0.7, haar lvl3, 3ep)", "clip": 0.7231, "lpips": 0.3208, "verdict": "NEAR-MISS: style 0.0012 below threshold, content SOTA-level"}
+      {
+        "config": "4H.1f (EOTA + spatial_fiber alpha=0.7, haar lvl3, 3ep)",
+        "clip": 0.7231,
+        "lpips": 0.3208,
+        "verdict": "NEAR-MISS: style 0.0012 below threshold, content SOTA-level"
+      }
     ]
   },
   "phase4h1g_results": {
@@ -258,18 +520,45 @@
     "status": "completed_new_sota",
     "config": "configs/630_phase4h1g_eota_spatial_fiber_a08.json",
     "experiments": [
-      {"config": "4H.1g (EOTA + spatial_fiber alpha=0.8, haar lvl3, 3ep)", "clip": 0.7251, "lpips": 0.3281, "verdict": "NEW SOTA: BOTH PASS, lpips -0.0147 vs 4F.1"}
+      {
+        "config": "4H.1g (EOTA + spatial_fiber alpha=0.8, haar lvl3, 3ep)",
+        "clip": 0.7251,
+        "lpips": 0.3281,
+        "verdict": "NEW SOTA: BOTH PASS, lpips -0.0147 vs 4F.1"
+      }
     ],
     "spatial_fiber_eota_alpha_sweep_complete": {
-      "alpha_0.5": {"clip": 0.7185, "lpips": 0.3095, "verdict": "content BEST, style FAIL"},
-      "alpha_0.7": {"clip": 0.7231, "lpips": 0.3208, "verdict": "near-miss (style -0.0012)"},
-      "alpha_0.8": {"clip": 0.7251, "lpips": 0.3281, "verdict": "NEW SOTA (both pass, lpips best among valid)"},
-      "alpha_1.0_4f1": {"clip": 0.7319, "lpips": 0.3428, "verdict": "previous SOTA (style best, lpips higher)"},
+      "alpha_0.5": {
+        "clip": 0.7185,
+        "lpips": 0.3095,
+        "verdict": "content BEST, style FAIL"
+      },
+      "alpha_0.7": {
+        "clip": 0.7231,
+        "lpips": 0.3208,
+        "verdict": "near-miss (style -0.0012)"
+      },
+      "alpha_0.8": {
+        "clip": 0.7251,
+        "lpips": 0.3281,
+        "verdict": "NEW SOTA (both pass, lpips best among valid)"
+      },
+      "alpha_1.0_4f1": {
+        "clip": 0.7319,
+        "lpips": 0.3428,
+        "verdict": "previous SOTA (style best, lpips higher)"
+      },
       "monotonicity_confirmed": "both clip and lpips increase monotonically with alpha"
     },
     "new_sota_analysis": {
-      "4f1_previous_sota": {"clip": 0.7319, "lpips": 0.3428},
-      "4h1g_new_sota": {"clip": 0.7251, "lpips": 0.3281},
+      "4f1_previous_sota": {
+        "clip": 0.7319,
+        "lpips": 0.3428
+      },
+      "4h1g_new_sota": {
+        "clip": 0.7251,
+        "lpips": 0.3281
+      },
       "delta_clip": -0.0068,
       "delta_lpips": -0.0147,
       "verdict": "4H.1g is a NEW PARETO-OPTIMAL point: trades 0.0068 style for 0.0147 content gain. Better content-style balance than 4F.1."
@@ -282,20 +571,45 @@
     "status": "completed_fail",
     "config": "configs/630_phase4h5f_sota_mask75.json",
     "experiments": [
-      {"config": "4H.5f (EOTA + spatial_fiber alpha=0.8 + mask=0.75, 3ep)", "clip": 0.7237, "lpips": 0.3272, "verdict": "FAIL (clip -0.0006 below 0.7243 threshold)"}
+      {
+        "config": "4H.5f (EOTA + spatial_fiber alpha=0.8 + mask=0.75, 3ep)",
+        "clip": 0.7237,
+        "lpips": 0.3272,
+        "verdict": "FAIL (clip -0.0006 below 0.7243 threshold)"
+      }
     ],
     "mask_sweep_under_eota": {
-      "mask_0.0_4h1g": {"clip": 0.7251, "lpips": 0.3281, "verdict": "SOTA"},
-      "mask_0.25_4h5e": {"clip": 0.7227, "lpips": 0.3172, "verdict": "FAIL (clip -0.0016)"},
-      "mask_0.75_4h5f": {"clip": 0.7237, "lpips": 0.3272, "verdict": "FAIL (clip -0.0006)"},
+      "mask_0.0_4h1g": {
+        "clip": 0.7251,
+        "lpips": 0.3281,
+        "verdict": "SOTA"
+      },
+      "mask_0.25_4h5e": {
+        "clip": 0.7227,
+        "lpips": 0.3172,
+        "verdict": "FAIL (clip -0.0016)"
+      },
+      "mask_0.75_4h5f": {
+        "clip": 0.7237,
+        "lpips": 0.3272,
+        "verdict": "FAIL (clip -0.0006)"
+      },
       "interpretation": "Mask under EOTA acts as another content-style tradeoff knob (same direction as alpha). Higher mask = more content, less style. All mask values map to same Pareto frontier."
     }
   },
   "phase4h_conclusion": {
     "stage": "phase4h_final_summary",
     "status": "completed",
-    "sota": {"config": "4H.1g (EOTA + spatial_fiber + alpha=0.8, 3ep)", "clip": 0.7251, "lpips": 0.3281},
-    "sota_5ep": {"config": "4H.1g-5ep", "clip": 0.7261, "lpips": 0.3279},
+    "sota": {
+      "config": "4H.1g (EOTA + spatial_fiber + alpha=0.8, 3ep)",
+      "clip": 0.7251,
+      "lpips": 0.3281
+    },
+    "sota_5ep": {
+      "config": "4H.1g-5ep",
+      "clip": 0.7261,
+      "lpips": 0.3279
+    },
     "key_finding": "EOTA framework: ALL tactical parameters (loss weights, patch sizes, mask ratios, model capacity) map to the SAME Pareto frontier as alpha. No tactical parameter can break the content-style tradeoff curve. Structural changes needed.",
     "tactical_params_invalidated": [
       "4H.2h (w_hf=1.5): clip=0.7250, lpips=0.3330 — ineffective",
@@ -315,11 +629,22 @@
     "status": "completed_pareto_not_broken",
     "config": "configs/630_phase4i1a_eota_per_subband_multi_alpha.json",
     "experiments": [
-      {"config": "4I.1a (EOTA + per_subband + LH=0.5, HL=0.5, HH=0.9, 3ep)", "clip": 0.7263, "lpips": 0.3383, "verdict": "PASS BOTH but same-direction tradeoff (Pareto not broken)"    }
+      {
+        "config": "4I.1a (EOTA + per_subband + LH=0.5, HL=0.5, HH=0.9, 3ep)",
+        "clip": 0.7263,
+        "lpips": 0.3383,
+        "verdict": "PASS BOTH but same-direction tradeoff (Pareto not broken)"
+      }
     ],
     "comparison_with_4h1c": {
-      "4h1c_single_alpha_0.7": {"clip": 0.7280, "lpips": 0.3442},
-      "4i1a_multi_alpha": {"clip": 0.7263, "lpips": 0.3383},
+      "4h1c_single_alpha_0.7": {
+        "clip": 0.728,
+        "lpips": 0.3442
+      },
+      "4i1a_multi_alpha": {
+        "clip": 0.7263,
+        "lpips": 0.3383
+      },
       "delta_clip": -0.0017,
       "delta_lpips": -0.0059,
       "interpretation": "Both clip and lpips decreased — same-direction tradeoff. Multi-scale alpha did NOT break Pareto frontier in this config. Root cause: average alpha = (0.5+0.5+0.9)/3 = 0.633 < 0.7, effectively reducing average alpha. Need to keep mid-freq alpha constant and only increase HH (4I.1d)."
@@ -330,13 +655,30 @@
     "status": "completed_dual_improvement_breakthrough",
     "config": "configs/630_phase4i2a_sota_heun.json",
     "experiments": [
-      {"config": "4I.2a (SOTA + Heun solver, 3ep)", "clip": 0.7260, "lpips": 0.3279, "verdict": "DUAL IMPROVEMENT: clip +0.0009, lpips -0.0002 vs SOTA. Pareto frontier BROKEN (both metrics improve simultaneously)"}
+      {
+        "config": "4I.2a (SOTA + Heun solver, 3ep)",
+        "clip": 0.726,
+        "lpips": 0.3279,
+        "verdict": "DUAL IMPROVEMENT: clip +0.0009, lpips -0.0002 vs SOTA. Pareto frontier BROKEN (both metrics improve simultaneously)"
+      }
     ],
     "comparison_with_sota": {
-      "4h1g_sota_euler_3ep": {"clip": 0.7251, "lpips": 0.3281},
-      "4h1g_5ep_euler": {"clip": 0.7261, "lpips": 0.3279},
-      "4i2a_heun_3ep": {"clip": 0.7260, "lpips": 0.3279},
-      "delta_vs_sota_3ep": {"clip": "+0.0009", "lpips": "-0.0002"},
+      "4h1g_sota_euler_3ep": {
+        "clip": 0.7251,
+        "lpips": 0.3281
+      },
+      "4h1g_5ep_euler": {
+        "clip": 0.7261,
+        "lpips": 0.3279
+      },
+      "4i2a_heun_3ep": {
+        "clip": 0.726,
+        "lpips": 0.3279
+      },
+      "delta_vs_sota_3ep": {
+        "clip": "+0.0009",
+        "lpips": "-0.0002"
+      },
       "interpretation": "Heun 3ep matches 5ep Euler! Higher-order ODE solver's precision gain ~ +2 epochs of training. Both clip AND lpips improved simultaneously — Pareto frontier is BROKEN. Theoretical: Heun's O(h^3) truncation error vs Euler's O(h^2) gives more accurate trajectory, leading to better style injection precision."
     },
     "theoretical_significance": "FIRST structural breakthrough in Phase 4I. Confirms that numerical precision of ODE integration is a NEW degree of freedom that can break the 1D Pareto frontier. This is theoretically beautiful: the content-style tradeoff is not just about alpha (style injection strength), but also about how accurately we solve the ODE that generates the content trajectory.",
@@ -347,11 +689,22 @@
     "status": "completed_fail_hh_too_aggressive",
     "config": "configs/630_phase4i1d_eota_per_subband_hh_only.json",
     "experiments": [
-      {"config": "4I.1d (EOTA + per_subband + LH=0.7, HL=0.7, HH=1.0, 3ep)", "clip": 0.7310, "lpips": 0.3576, "verdict": "FAIL (lpips > 0.3453). HH=1.0 too aggressive — same-direction tradeoff (both clip and lpips increased)"}
+      {
+        "config": "4I.1d (EOTA + per_subband + LH=0.7, HL=0.7, HH=1.0, 3ep)",
+        "clip": 0.731,
+        "lpips": 0.3576,
+        "verdict": "FAIL (lpips > 0.3453). HH=1.0 too aggressive — same-direction tradeoff (both clip and lpips increased)"
+      }
     ],
     "comparison_with_4h1c": {
-      "4h1c_single_alpha_0.7": {"clip": 0.7280, "lpips": 0.3442},
-      "4i1d_hh_only_1.0": {"clip": 0.7310, "lpips": 0.3576},
+      "4h1c_single_alpha_0.7": {
+        "clip": 0.728,
+        "lpips": 0.3442
+      },
+      "4i1d_hh_only_1.0": {
+        "clip": 0.731,
+        "lpips": 0.3576
+      },
       "delta_clip": "+0.0030",
       "delta_lpips": "+0.0134",
       "interpretation": "HH=1.0 boosts style but hurts content MORE. Disproves 'HH is content-insensitive' hypothesis. In latent space, ALL subbands contribute to content — AdaIN stat matching on HH diffuses through iDWT reconstruction."
@@ -363,38 +716,91 @@
     "status": "completed_new_sota_significant_dual_improvement",
     "config": "configs/630_phase4i2b_sota_heun_5ep.json",
     "experiments": [
-      {"config": "4I.2b (SOTA + Heun solver, 5ep)", "clip": 0.7266, "lpips": 0.3229, "verdict": "NEW SOTA. DUAL IMPROVEMENT with COMPOUND GAIN: clip +0.0015, lpips -0.0052 vs 4H.1g SOTA (3ep). lpips drop is 26x larger than Euler 5ep gain."}
+      {
+        "config": "4I.2b (SOTA + Heun solver, 5ep)",
+        "clip": 0.7266,
+        "lpips": 0.3229,
+        "verdict": "NEW SOTA. DUAL IMPROVEMENT with COMPOUND GAIN: clip +0.0015, lpips -0.0052 vs 4H.1g SOTA (3ep). lpips drop is 26x larger than Euler 5ep gain."
+      }
     ],
     "comparison_all_heun_vs_euler": {
-      "4h1g_sota_euler_3ep": {"clip": 0.7251, "lpips": 0.3281},
-      "4h1g_5ep_euler": {"clip": 0.7261, "lpips": 0.3279},
-      "4i2a_heun_3ep": {"clip": 0.7260, "lpips": 0.3279},
-      "4i2b_heun_5ep": {"clip": 0.7266, "lpips": 0.3229},
-      "delta_euler_5ep_vs_3ep": {"clip": "+0.0010", "lpips": "-0.0002", "note": "Euler saturates: lpips barely moves"},
-      "delta_heun_5ep_vs_3ep": {"clip": "+0.0006", "lpips": "-0.0050", "note": "Heun COMPOUNDS: lpips drops 25x more than Euler"},
-      "delta_heun_5ep_vs_euler_5ep": {"clip": "+0.0005", "lpips": "-0.0050", "note": "Heun advantage GROWS with training: from -0.0002 (3ep) to -0.0050 (5ep)"},
+      "4h1g_sota_euler_3ep": {
+        "clip": 0.7251,
+        "lpips": 0.3281
+      },
+      "4h1g_5ep_euler": {
+        "clip": 0.7261,
+        "lpips": 0.3279
+      },
+      "4i2a_heun_3ep": {
+        "clip": 0.726,
+        "lpips": 0.3279
+      },
+      "4i2b_heun_5ep": {
+        "clip": 0.7266,
+        "lpips": 0.3229
+      },
+      "delta_euler_5ep_vs_3ep": {
+        "clip": "+0.0010",
+        "lpips": "-0.0002",
+        "note": "Euler saturates: lpips barely moves"
+      },
+      "delta_heun_5ep_vs_3ep": {
+        "clip": "+0.0006",
+        "lpips": "-0.0050",
+        "note": "Heun COMPOUNDS: lpips drops 25x more than Euler"
+      },
+      "delta_heun_5ep_vs_euler_5ep": {
+        "clip": "+0.0005",
+        "lpips": "-0.0050",
+        "note": "Heun advantage GROWS with training: from -0.0002 (3ep) to -0.0050 (5ep)"
+      },
       "interpretation": "Heun's O(h^3) truncation error vs Euler's O(h^2) provides compounding precision gains over longer training. The numerical accuracy of ODE integration is a NEW structural degree of freedom that breaks the 1D Pareto frontier with increasing magnitude as training progresses."
     },
     "theoretical_significance": "CONFIRMED structural breakthrough. Heun solver's advantage is not static — it COMPOUNDS with training duration. This proves the content-style tradeoff is fundamentally linked to ODE integration precision, not just style injection strength (alpha). The 1D Pareto frontier (alpha-only) is broken by a 2nd dimension: numerical order of the solver.",
     "eval_time": "99.8s (5ep Heun) vs 86s (Euler) — +14s overhead for 2x forward, acceptable",
-    "new_sota": {"clip": 0.7266, "lpips": 0.3229, "config": "EOTA + spatial_fiber + alpha=0.8 + Heun solver + 5ep"}
+    "new_sota": {
+      "clip": 0.7266,
+      "lpips": 0.3229,
+      "config": "EOTA + spatial_fiber + alpha=0.8 + Heun solver + 5ep"
+    }
   },
   "phase4i5a_results": {
     "stage": "cosine_time_schedule_heun_3ep",
     "status": "completed_content_fidelity_gain_style_tradeoff",
     "config": "configs/630_phase4i5a_sota_heun_cosine.json",
     "experiments": [
-      {"config": "4I.5a (SOTA + Heun + cosine schedule, 3ep)", "clip": 0.7256, "lpips": 0.3238, "verdict": "CONTENT GAIN: lpips -0.0041 vs 4I.2a (Heun linear 3ep), but clip -0.0004. Cosine schedule shifts toward content fidelity at slight style cost."}
+      {
+        "config": "4I.5a (SOTA + Heun + cosine schedule, 3ep)",
+        "clip": 0.7256,
+        "lpips": 0.3238,
+        "verdict": "CONTENT GAIN: lpips -0.0041 vs 4I.2a (Heun linear 3ep), but clip -0.0004. Cosine schedule shifts toward content fidelity at slight style cost."
+      }
     ],
     "comparison_with_heun_linear": {
-      "4i2a_heun_linear_3ep": {"clip": 0.7260, "lpips": 0.3279},
-      "4i5a_heun_cosine_3ep": {"clip": 0.7256, "lpips": 0.3238},
-      "delta": {"clip": "-0.0004", "lpips": "-0.0041"},
+      "4i2a_heun_linear_3ep": {
+        "clip": 0.726,
+        "lpips": 0.3279
+      },
+      "4i5a_heun_cosine_3ep": {
+        "clip": 0.7256,
+        "lpips": 0.3238
+      },
+      "delta": {
+        "clip": "-0.0004",
+        "lpips": "-0.0041"
+      },
       "interpretation": "Cosine schedule's S-shape (slow at boundaries) allocates more integration steps near source (t=0) and target (t=1) distributions. The extra precision near t=0 preserves content better (lpips drop), but the reduced steps in the middle of the trajectory slightly weakens style transfer (clip drop)."
     },
     "comparison_with_sota_5ep": {
-      "4i2b_heun_linear_5ep_SOTA": {"clip": 0.7266, "lpips": 0.3229},
-      "4i5a_heun_cosine_3ep": {"clip": 0.7256, "lpips": 0.3238},
+      "4i2b_heun_linear_5ep_SOTA": {
+        "clip": 0.7266,
+        "lpips": 0.3229
+      },
+      "4i5a_heun_cosine_3ep": {
+        "clip": 0.7256,
+        "lpips": 0.3238
+      },
       "interpretation": "Cosine 3ep nearly matches linear 5ep on lpips (0.3238 vs 0.3229), suggesting schedule shape is another structural DOF. Need 5ep cosine (4I.5b) to test compounding."
     },
     "theoretical_significance": "Time schedule is a NEW structural degree of freedom, ORTHOGONAL to solver order. Cosine biases toward content (asymmetric S-shape spends more time near source). This opens a 2D space: (solver order) x (schedule shape).",
@@ -404,19 +810,38 @@
     "stage": "cosine_time_schedule_heun_5ep",
     "status": "completed_content_fidelity_breakthrough",
     "experiments": [
-      {"config": "4I.5b (SOTA + Heun + cosine, 5ep)", "clip": 0.7262, "lpips": 0.3171, "verdict": "CONTENT BREAKTHROUGH: lpips 0.3171 < baseline 0.3203! Cosine 5ep compounds content gain (lpips -0.0067 vs 3ep), clip recovers slightly (+0.0006). Below-baseline content loss achieved while passing style threshold."}
+      {
+        "config": "4I.5b (SOTA + Heun + cosine, 5ep)",
+        "clip": 0.7262,
+        "lpips": 0.3171,
+        "verdict": "CONTENT BREAKTHROUGH: lpips 0.3171 < baseline 0.3203! Cosine 5ep compounds content gain (lpips -0.0067 vs 3ep), clip recovers slightly (+0.0006). Below-baseline content loss achieved while passing style threshold."
+      }
     ]
   },
   "phase4i5c_results": {
     "stage": "rquad_time_schedule_heun_5ep",
     "status": "completed_style_bias_confirmed",
     "experiments": [
-      {"config": "4I.5c (SOTA + Heun + rquad, 5ep)", "clip": 0.7293, "lpips": 0.3429, "verdict": "STYLE BIAS: clip back to baseline 0.7293 (+0.0027 vs linear), but lpips +0.0200. rquad confirms schedule shape maps Pareto frontier in opposite direction."}
+      {
+        "config": "4I.5c (SOTA + Heun + rquad, 5ep)",
+        "clip": 0.7293,
+        "lpips": 0.3429,
+        "verdict": "STYLE BIAS: clip back to baseline 0.7293 (+0.0027 vs linear), but lpips +0.0200. rquad confirms schedule shape maps Pareto frontier in opposite direction."
+      }
     ],
     "schedule_pareto_map": {
-      "cosine_content_bias": {"clip": 0.7262, "lpips": 0.3171},
-      "linear_neutral": {"clip": 0.7266, "lpips": 0.3229},
-      "rquad_style_bias": {"clip": 0.7293, "lpips": 0.3429},
+      "cosine_content_bias": {
+        "clip": 0.7262,
+        "lpips": 0.3171
+      },
+      "linear_neutral": {
+        "clip": 0.7266,
+        "lpips": 0.3229
+      },
+      "rquad_style_bias": {
+        "clip": 0.7293,
+        "lpips": 0.3429
+      },
       "finding": "Schedule shape moves along the SAME Pareto frontier (both metrics move together). NOT a structural DOF that breaks the frontier, unlike solver order (Heun). But cosine achieves below-baseline lpips — content fidelity champion.",
       "theoretical_classification": "Solver order = structural DOF (breaks Pareto). Schedule shape = Pareto-mapping knob (moves along frontier). Alpha = Pareto-mapping knob (moves along frontier). Only solver order breaks the 1D frontier."
     }
@@ -425,7 +850,12 @@
     "stage": "rk4_solver_5ep",
     "status": "completed_solver_order_saturation",
     "experiments": [
-      {"config": "4I.6a (SOTA + RK4, 5ep)", "clip": 0.7265, "lpips": 0.3235, "verdict": "NO FURTHER GAIN. RK4 ≈ Heun (clip -0.0001, lpips +0.0006). Solver order SATURATES at Heun."}
+      {
+        "config": "4I.6a (SOTA + RK4, 5ep)",
+        "clip": 0.7265,
+        "lpips": 0.3235,
+        "verdict": "NO FURTHER GAIN. RK4 ≈ Heun (clip -0.0001, lpips +0.0006). Solver order SATURATES at Heun."
+      }
     ],
     "theoretical_significance": "Solver order saturation: Euler O(h^2)=0.0156 -> Heun O(h^3)=0.00195 (8x reduction, significant Pareto break) -> RK4 O(h^4)=0.000244 (8x more, but hits noise floor). The Pareto frontier break is specifically from Euler->Heun, not from infinite precision. Other error sources (training noise, AdaIN discretization) dominate below O(h^3).",
     "eval_time": "156.9s (RK4) vs 99.8s (Heun) vs 86s (Euler) — RK4 4x forward calls, 1.6x Heun time"
@@ -434,16 +864,48 @@
     "stage": "cosine_heun_alpha_0.9_5ep",
     "status": "completed_style_gain_content_loss",
     "experiments": [
-      {"config": "4I.7a (cosine + Heun + alpha=0.9, 5ep)", "clip": 0.7283, "lpips": 0.3255, "verdict": "vs SaMam: clip +0.0061, lpips -0.0027. Style gain but lpips margin slim. Alpha 0.8->0.9 spends cosine's content budget."}
+      {
+        "config": "4I.7a (cosine + Heun + alpha=0.9, 5ep)",
+        "clip": 0.7283,
+        "lpips": 0.3255,
+        "verdict": "vs SaMam: clip +0.0061, lpips -0.0027. Style gain but lpips margin slim. Alpha 0.8->0.9 spends cosine's content budget."
+      }
     ]
   },
   "samam_comparison": {
-    "samam_baseline": {"clip": 0.7222, "lpips": 0.3282},
+    "samam_baseline": {
+      "clip": 0.7222,
+      "lpips": 0.3282
+    },
     "best_configs": {
-      "4i5b_cosine_a08": {"clip": 0.7262, "lpips": 0.3171, "clip_margin": "+0.0040", "lpips_margin": "-0.0111", "verdict": "BEST lpips (-3.38% vs SaMam), content champion"},
-      "4i2b_linear_a08": {"clip": 0.7266, "lpips": 0.3229, "clip_margin": "+0.0044", "lpips_margin": "-0.0053", "verdict": "previous balanced SOTA"},
-      "4i7a_cosine_a09": {"clip": 0.7283, "lpips": 0.3255, "clip_margin": "+0.0061", "lpips_margin": "-0.0027", "verdict": "BEST clip (+0.84% vs SaMam), style champion"},
-      "4i7b_cosine_a085": {"clip": 0.7272, "lpips": 0.3218, "clip_margin": "+0.0050", "lpips_margin": "-0.0064", "verdict": "NEW SOTA. DUAL beat: dominates 4I.2b on BOTH metrics (clip+0.0006, lpips-0.0011). vs SaMam: clip +0.69%, lpips -1.95%."}
+      "4i5b_cosine_a08": {
+        "clip": 0.7262,
+        "lpips": 0.3171,
+        "clip_margin": "+0.0040",
+        "lpips_margin": "-0.0111",
+        "verdict": "BEST lpips (-3.38% vs SaMam), content champion"
+      },
+      "4i2b_linear_a08": {
+        "clip": 0.7266,
+        "lpips": 0.3229,
+        "clip_margin": "+0.0044",
+        "lpips_margin": "-0.0053",
+        "verdict": "previous balanced SOTA"
+      },
+      "4i7a_cosine_a09": {
+        "clip": 0.7283,
+        "lpips": 0.3255,
+        "clip_margin": "+0.0061",
+        "lpips_margin": "-0.0027",
+        "verdict": "BEST clip (+0.84% vs SaMam), style champion"
+      },
+      "4i7b_cosine_a085": {
+        "clip": 0.7272,
+        "lpips": 0.3218,
+        "clip_margin": "+0.0050",
+        "lpips_margin": "-0.0064",
+        "verdict": "NEW SOTA. DUAL beat: dominates 4I.2b on BOTH metrics (clip+0.0006, lpips-0.0011). vs SaMam: clip +0.69%, lpips -1.95%."
+      }
     }
   },
   "phase4i7b_results": {
@@ -451,28 +913,71 @@
     "status": "completed_new_sota_dual_improvement_beats_samam",
     "config": "configs/630_phase4i7b_cosine_heun_a085_5ep.json",
     "experiments": [
-      {"config": "4I.7b (cosine + Heun + alpha=0.85, 5ep)", "clip": 0.7272, "lpips": 0.3218, "verdict": "NEW SOTA. DUAL improvement over 4I.2b (clip +0.0006, lpips -0.0011). vs SaMam: clip +0.0050 (+0.69%), lpips -0.0064 (-1.95%). Both metrics significantly exceed SaMam."}
+      {
+        "config": "4I.7b (cosine + Heun + alpha=0.85, 5ep)",
+        "clip": 0.7272,
+        "lpips": 0.3218,
+        "verdict": "NEW SOTA. DUAL improvement over 4I.2b (clip +0.0006, lpips -0.0011). vs SaMam: clip +0.0050 (+0.69%), lpips -0.0064 (-1.95%). Both metrics significantly exceed SaMam."
+      }
     ],
     "theoretical_significance": "Cosine schedule shifted the Pareto frontier (better content at same alpha). Combining with alpha=0.85 (slightly higher than 0.8) recovers the style loss while keeping content gains. The 2D space (schedule x alpha) has a better optimal point than the 1D alpha-only space. This is the practical culmination of the structural breakthrough: Heun broke the frontier, cosine shifted it, alpha optimization found the best point on the new frontier.",
-    "new_sota": {"clip": 0.7272, "lpips": 0.3218, "config": "EOTA + spatial_fiber + alpha=0.85 + Heun solver + cosine schedule + 5ep"}
+    "new_sota": {
+      "clip": 0.7272,
+      "lpips": 0.3218,
+      "config": "EOTA + spatial_fiber + alpha=0.85 + Heun solver + cosine schedule + 5ep"
+    }
   },
   "phase4i8a_results": {
     "stage": "cosine_heun_alpha_0.85_8ep_extended_training",
     "status": "completed_overtraining_pareto_mapping",
     "config": "configs/630_phase4i8a_cosine_heun_a085_8ep.json",
     "experiments": [
-      {"config": "4I.8a (cosine + Heun + alpha=0.85, 8ep) epoch_5", "clip": 0.7272, "lpips": 0.3253, "verdict": "MATCHES 4I.7b (5ep) on clip, but lpips +0.0035 worse — overtraining onset"},
-      {"config": "4I.8a (cosine + Heun + alpha=0.85, 8ep) epoch_8", "clip": 0.7284, "lpips": 0.3283, "verdict": "FAIL: lpips 0.3283 ≈ SaMam 0.3282. Content advantage DESTROYED by overtraining."}
+      {
+        "config": "4I.8a (cosine + Heun + alpha=0.85, 8ep) epoch_5",
+        "clip": 0.7272,
+        "lpips": 0.3253,
+        "verdict": "MATCHES 4I.7b (5ep) on clip, but lpips +0.0035 worse — overtraining onset"
+      },
+      {
+        "config": "4I.8a (cosine + Heun + alpha=0.85, 8ep) epoch_8",
+        "clip": 0.7284,
+        "lpips": 0.3283,
+        "verdict": "FAIL: lpips 0.3283 ≈ SaMam 0.3282. Content advantage DESTROYED by overtraining."
+      }
     ],
     "comparison_with_4i7b_5ep_sota": {
-      "4i7b_5ep": {"clip": 0.7272, "lpips": 0.3218},
-      "4i8a_5ep_checkpoint": {"clip": 0.7272, "lpips": 0.3253, "delta_clip": "+0.0000", "delta_lpips": "+0.0035", "note": "5ep checkpoint identical clip, lpips already degrading"},
-      "4i8a_8ep_final": {"clip": 0.7284, "lpips": 0.3283, "delta_clip": "+0.0012", "delta_lpips": "+0.0065", "note": "8ep: tiny clip gain, large lpips loss — classic Pareto tradeoff"},
+      "4i7b_5ep": {
+        "clip": 0.7272,
+        "lpips": 0.3218
+      },
+      "4i8a_5ep_checkpoint": {
+        "clip": 0.7272,
+        "lpips": 0.3253,
+        "delta_clip": "+0.0000",
+        "delta_lpips": "+0.0035",
+        "note": "5ep checkpoint identical clip, lpips already degrading"
+      },
+      "4i8a_8ep_final": {
+        "clip": 0.7284,
+        "lpips": 0.3283,
+        "delta_clip": "+0.0012",
+        "delta_lpips": "+0.0065",
+        "note": "8ep: tiny clip gain, large lpips loss — classic Pareto tradeoff"
+      },
       "interpretation": "Extended training (5ep->8ep) is a Pareto-mapping knob, NOT a structural breakthrough. The lpips degradation (+0.0065) is 5.4x larger than clip gain (+0.0012). Heun's compound advantage SATURATES after 5ep."
     },
     "comparison_with_samam": {
-      "samam": {"clip": 0.7222, "lpips": 0.3282},
-      "4i8a_8ep": {"clip": 0.7284, "lpips": 0.3283, "clip_margin": "+0.0062 (+0.86%)", "lpips_margin": "-0.0001 (-0.01%)", "verdict": "BARELY PASSES: clip good, lpips advantage ELIMINATED. Unacceptable vs 'both substantially beat' goal."}
+      "samam": {
+        "clip": 0.7222,
+        "lpips": 0.3282
+      },
+      "4i8a_8ep": {
+        "clip": 0.7284,
+        "lpips": 0.3283,
+        "clip_margin": "+0.0062 (+0.86%)",
+        "lpips_margin": "-0.0001 (-0.01%)",
+        "verdict": "BARELY PASSES: clip good, lpips advantage ELIMINATED. Unacceptable vs 'both substantially beat' goal."
+      }
     },
     "theoretical_significance": "TRAINING DURATION CLASSIFICATION: Training epochs is a Pareto-mapping knob (moves along frontier), NOT a structural DOF (does not break frontier). This completes the Phase 4I classification: (1) Solver order (Euler->Heun) = STRUCTURAL DOF (breaks Pareto); (2) Schedule shape (linear/cosine/rquad/warp_cos) = Pareto-mapping knob; (3) Training duration = Pareto-mapping knob; (4) Alpha = Pareto-mapping knob. Only solver order breaks the 1D frontier.",
     "practical_conclusion": "5ep is optimal for Heun+cosine+alpha=0.85. 8ep over-trains: content fidelity (lpips) degrades faster than style (clip) improves. The 'Heun advantage compounds with training' hypothesis from 4I.2b has a ceiling at 5ep. Do NOT extend training beyond 5ep.",
@@ -483,24 +988,60 @@
     "status": "completed_pareto_mapping_not_structural",
     "config": "configs/630_phase4i8b_warpcos_p08_a085_5ep.json",
     "experiments": [
-      {"config": "4I.8b (warp_cos p=0.8 + Heun + alpha=0.85, 5ep)", "clip": 0.7282, "lpips": 0.3271, "verdict": "PARETO MAPPING: clip +0.0010 vs 4I.7b (style gain), lpips +0.0053 (content loss). warp_cos is Pareto-mapping knob, NOT structural DOF."}
+      {
+        "config": "4I.8b (warp_cos p=0.8 + Heun + alpha=0.85, 5ep)",
+        "clip": 0.7282,
+        "lpips": 0.3271,
+        "verdict": "PARETO MAPPING: clip +0.0010 vs 4I.7b (style gain), lpips +0.0053 (content loss). warp_cos is Pareto-mapping knob, NOT structural DOF."
+      }
     ],
     "comparison_with_4i7b_sota": {
-      "4i7b_cosine_5ep": {"clip": 0.7272, "lpips": 0.3218},
-      "4i8b_warpcos_p08_5ep": {"clip": 0.7282, "lpips": 0.3271},
+      "4i7b_cosine_5ep": {
+        "clip": 0.7272,
+        "lpips": 0.3218
+      },
+      "4i8b_warpcos_p08_5ep": {
+        "clip": 0.7282,
+        "lpips": 0.3271
+      },
       "delta_clip": "+0.0010",
       "delta_lpips": "+0.0053",
       "interpretation": "warp_cos(p=0.8) shifts trajectory toward style (p<1 = style bias). Both metrics move in same direction as increasing alpha — this is Pareto tradeoff, not frontier break. warp_cos is classified as Pareto-mapping knob."
     },
     "comparison_with_samam": {
-      "samam": {"clip": 0.7222, "lpips": 0.3282},
-      "4i8b": {"clip": 0.7282, "lpips": 0.3271, "clip_margin": "+0.0060 (+0.83%)", "lpips_margin": "-0.0011 (-0.34%)", "verdict": "BOTH PASS but lpips margin tiny (-0.34%). Does NOT meet 'both substantially beat' goal."}
+      "samam": {
+        "clip": 0.7222,
+        "lpips": 0.3282
+      },
+      "4i8b": {
+        "clip": 0.7282,
+        "lpips": 0.3271,
+        "clip_margin": "+0.0060 (+0.83%)",
+        "lpips_margin": "-0.0011 (-0.34%)",
+        "verdict": "BOTH PASS but lpips margin tiny (-0.34%). Does NOT meet 'both substantially beat' goal."
+      }
     },
     "schedule_shape_classification_complete": {
-      "linear": {"clip": 0.7266, "lpips": 0.3229, "note": "neutral"},
-      "cosine": {"clip": 0.7272, "lpips": 0.3218, "note": "content bias (SOTA)"},
-      "rquad": {"clip": 0.7293, "lpips": 0.3429, "note": "style bias"},
-      "warp_cos_p08": {"clip": 0.7282, "lpips": 0.3271, "note": "mild style bias"},
+      "linear": {
+        "clip": 0.7266,
+        "lpips": 0.3229,
+        "note": "neutral"
+      },
+      "cosine": {
+        "clip": 0.7272,
+        "lpips": 0.3218,
+        "note": "content bias (SOTA)"
+      },
+      "rquad": {
+        "clip": 0.7293,
+        "lpips": 0.3429,
+        "note": "style bias"
+      },
+      "warp_cos_p08": {
+        "clip": 0.7282,
+        "lpips": 0.3271,
+        "note": "mild style bias"
+      },
       "finding": "ALL schedule shapes map to the SAME Pareto frontier. Schedule shape is a Pareto-mapping knob (moves along frontier), NOT a structural DOF (does not break frontier). Only solver order (Euler->Heun) breaks the frontier.",
       "theoretical_conclusion": "Schedule shape exploration COMPLETE. No schedule can break the 1D Pareto frontier. The 2D structural space is: (solver order) x (everything else). Only solver order is structural."
     },
@@ -511,11 +1052,22 @@
     "status": "completed_saturation_confirmed",
     "config": "4I.7b checkpoint + num_steps=12 (inference only, no retraining)",
     "experiments": [
-      {"config": "4I.8c (4I.7b checkpoint, num_steps=12)", "clip": 0.7269, "lpips": 0.3217, "verdict": "SATURATION: vs num_steps=8, clip -0.0003, lpips -0.0001. Negligible change. num_steps is NOT a structural DOF."}
+      {
+        "config": "4I.8c (4I.7b checkpoint, num_steps=12)",
+        "clip": 0.7269,
+        "lpips": 0.3217,
+        "verdict": "SATURATION: vs num_steps=8, clip -0.0003, lpips -0.0001. Negligible change. num_steps is NOT a structural DOF."
+      }
     ],
     "comparison_with_4i7b_ns8": {
-      "4i7b_ns8": {"clip": 0.7272, "lpips": 0.3218},
-      "4i8c_ns12": {"clip": 0.7269, "lpips": 0.3217},
+      "4i7b_ns8": {
+        "clip": 0.7272,
+        "lpips": 0.3218
+      },
+      "4i8c_ns12": {
+        "clip": 0.7269,
+        "lpips": 0.3217
+      },
       "delta_clip": "-0.0003",
       "delta_lpips": "-0.0001",
       "interpretation": "num_steps 8->12: truncation error reduces ~70% (Heun O(h^3), h: 0.125->0.083), but metrics barely move. Heun at ns=8 is already near noise floor. Confirms RK4 saturation finding: precision gains below O(h^3) are dominated by other error sources (training noise, AdaIN discretization, velocity field accuracy)."
@@ -565,11 +1117,25 @@
     "stage": "wct_covariance_matching",
     "status": "completed_pareto_tradeoff_not_breakthrough",
     "experiments": [
-      {"config": "4I.9 WCT alpha=0.85 (4I.7b checkpoint, inference override)", "clip": 0.7319, "lpips": 0.3568, "verdict": "STYLE GAIN but CONTENT LOSS. clip +1.34% vs SaMam, lpips +8.71% (worse). alpha=0.85 too aggressive for WCT."},
-      {"config": "4I.9 WCT alpha=0.50 (4I.7b checkpoint, inference override)", "clip": 0.7200, "lpips": 0.2971, "verdict": "CONTENT GAIN but STYLE LOSS. lpips -9.50% vs SaMam (huge), clip -0.30% (slight). Pareto tradeoff, not breakthrough."}
+      {
+        "config": "4I.9 WCT alpha=0.85 (4I.7b checkpoint, inference override)",
+        "clip": 0.7319,
+        "lpips": 0.3568,
+        "verdict": "STYLE GAIN but CONTENT LOSS. clip +1.34% vs SaMam, lpips +8.71% (worse). alpha=0.85 too aggressive for WCT."
+      },
+      {
+        "config": "4I.9 WCT alpha=0.50 (4I.7b checkpoint, inference override)",
+        "clip": 0.72,
+        "lpips": 0.2971,
+        "verdict": "CONTENT GAIN but STYLE LOSS. lpips -9.50% vs SaMam (huge), clip -0.30% (slight). Pareto tradeoff, not breakthrough."
+      }
     ],
     "wct_vs_adain_analysis": "WCT matches full covariance (AdaIN only mean+std). alpha=0.85: covariance correction works (clip+1.34%) but content destroyed (lpips+8.71%). alpha=0.50: content preserved (lpips-9.50%) but style insufficient (clip-0.30%). WCT alone cannot break Pareto — needs velocity field improvement for clip.",
-    "samam_comparison": {"clip": 0.7222, "lpips": 0.3282, "note": "SaMam baseline. WCT a=0.5 beats on lpips (-9.5%) but loses on clip (-0.3%). Need BOTH to win."},
+    "samam_comparison": {
+      "clip": 0.7222,
+      "lpips": 0.3282,
+      "note": "SaMam baseline. WCT a=0.5 beats on lpips (-9.5%) but loses on clip (-0.3%). Need BOTH to win."
+    },
     "conclusion": "WCT is a valid content-preservation tool at low alpha, but cannot boost clip beyond SaMam alone. The bottleneck is velocity field accuracy, not style matching method."
   },
   "phase4i10_results": {
@@ -581,11 +1147,11 @@
     "critical_findings": {
       "A_velocity_u_shaped_death": {
         "description": "Velocity field is DEAD at t=0.5 (trajectory midpoint)",
-        "t0_cos": 0.60,
+        "t0_cos": 0.6,
         "t05_cos": 0.01,
         "t1_cos": 0.62,
         "amp_ratio_t0": 0.56,
-        "amp_ratio_t05": 0.10,
+        "amp_ratio_t05": 0.1,
         "verdict": "FM training target (target-content) is t-independent, but model cannot recover direction at midpoint. Structural ambiguity."
       },
       "B_ode_trajectory_useless": {
@@ -607,7 +1173,7 @@
       "D_style_sensitivity_inverted": {
         "description": "LL (should be content-locked) has highest style sensitivity; LH/HL (should carry style) barely respond",
         "LL_style_sensitivity": 0.62,
-        "LH_style_sensitivity": 0.20,
+        "LH_style_sensitivity": 0.2,
         "HL_style_sensitivity": 0.25,
         "verdict": "Style conditioning leaks into LL. LH/HL are style-deaf. Inverted from design intent."
       },
@@ -629,7 +1195,11 @@
       "4_BFR_base_fiber_realignment": "Also blend lowpass base toward target's base. Fixes AdaIN pushing away from target."
     },
     "recommended_combo": "CAR (WCT a=0.5) + EPT (t=0 training) + SSD (LL content lock). Expected: clip>0.73, lpips<0.30 (both beat SaMam significantly).",
-    "acceptance_criteria": {"clip_min": 0.7300, "lpips_max": 0.3100, "goal": "both significantly beat SaMam (0.7222, 0.3282)"},
+    "acceptance_criteria": {
+      "clip_min": 0.73,
+      "lpips_max": 0.31,
+      "goal": "both significantly beat SaMam (0.7222, 0.3282)"
+    },
     "next_step": "Implement 4I.10a (WCT a=0.3 scan) + 4I.10b (EPT training) + 4I.10c (EPT+WCT combo)"
   },
   "phase4i10b_results": {
@@ -637,8 +1207,18 @@
     "status": "completed_failed",
     "config": "configs/630_phase4i10b_ept_t01.json",
     "experiments": [
-      {"config": "4I.10b EPT default eval (8 steps [0,1])", "clip": 0.7153, "lpips": 0.4474, "verdict": "FAIL (OOD drift, v_ll_abs dropped 0.666->0.471)"},
-      {"config": "4I.10c EPT+WCT a=0.5 (1 step)", "clip": 0.6976, "lpips": 0.6362, "verdict": "FAIL (v_ll_abs=1.078 too strong for dt=1.0 extrapolation)"}
+      {
+        "config": "4I.10b EPT default eval (8 steps [0,1])",
+        "clip": 0.7153,
+        "lpips": 0.4474,
+        "verdict": "FAIL (OOD drift, v_ll_abs dropped 0.666->0.471)"
+      },
+      {
+        "config": "4I.10c EPT+WCT a=0.5 (1 step)",
+        "clip": 0.6976,
+        "lpips": 0.6362,
+        "verdict": "FAIL (v_ll_abs=1.078 too strong for dt=1.0 extrapolation)"
+      }
     ],
     "conclusion": "EPT route abandoned. Training only at t=[0,0.1] makes velocity field too strong at t=0 for single-step extrapolation, and OOD for multi-step [0,1] integration."
   },
@@ -647,12 +1227,88 @@
     "status": "completed_dual_beat",
     "final_sota": {
       "config": "configs/override_pswct_mild_extrap04.json",
-      "clip_style": 0.7250,
+      "clip_style": 0.725,
       "content_lpips": 0.3129,
       "delta_clip_vs_saamam": "+0.39%",
       "delta_lpips_vs_saamam": "-4.67%",
       "verdict": "DUAL BEAT - both metrics exceed SaMam"
     },
     "conclusion": "Phase 4I.11 achieves DUAL BEAT over SaMam via Per-Subband WCT (LL=0, LH/HL=0.3, HH=0.5, extrap=0.4)."
+  },
+  "phase4j6_results": {
+    "phase": "4J.6",
+    "title": "Few-shot Textual Inversion (Pop_Art, 8 images)",
+    "status": "FAILED",
+    "baseline": {
+      "samam_clip": 0.7222,
+      "samam_lpips": 0.3282,
+      "threshold_clip_min": 0.7243,
+      "threshold_lpips_max": 0.3453
+    },
+    "base_checkpoint": "630_phase4j1_dwt_route/epoch_0005.pt (clip=0.7226, lpips=0.3068)",
+    "experiments": {
+      "v1": {
+        "config": "lr=0.0002, epochs=5",
+        "results": {
+          "transfer_clip": 0.6984,
+          "transfer_lpips": 0.317,
+          "all_pairs_clip": 0.721,
+          "all_pairs_lpips": 0.3069
+        },
+        "vs_samam": "clip -3.3% (FAIL), lpips -3.4%",
+        "conclusion": "endpoint losses 全 0 (spectral_losses620 硬编码), style_memory 仅通过 FM loss 间接获得梯度"
+      },
+      "v2": {
+        "config": "lr=0.005, epochs=15",
+        "results": {
+          "ep5": {
+            "transfer_clip": 0.6954,
+            "transfer_lpips": 0.3019
+          },
+          "ep10": {
+            "transfer_clip": 0.6998,
+            "transfer_lpips": 0.3289
+          },
+          "ep15": {
+            "transfer_clip": 0.6988,
+            "transfer_lpips": 0.3215
+          }
+        },
+        "best": "ep10: clip=0.6998 (FAIL, -3.1% vs SaMam)",
+        "conclusion": "提高 LR 25x 改善 LPIPS 但未能有效提升 clip_style"
+      },
+      "v3": {
+        "config": "lr=0.005, epochs=15, spectral_w_endpoint_style_lh=1.0, spectral_w_endpoint_style_hl=1.0",
+        "results": {
+          "ep5": {
+            "transfer_clip": 0.6955,
+            "transfer_lpips": 0.3026
+          },
+          "ep10": {
+            "transfer_clip": 0.6996,
+            "transfer_lpips": 0.3276
+          },
+          "ep15": {
+            "transfer_clip": 0.6988,
+            "transfer_lpips": 0.3204
+          }
+        },
+        "best": "ep10: clip=0.6996 (FAIL, -3.1% vs SaMam)",
+        "conclusion": "endpoint loss 无效, v3 与 v2 结果几乎完全相同 (差异 <0.0002)"
+      }
+    },
+    "root_cause_analysis": {
+      "primary": "style_memory 梯度通路太长太弱: style_memory -> patch_proj -> cross-attention (k_proj, v_proj) -> relu2 gates -> tanh style_gate -> shortcut_alpha -> SpectralVelocityHead -> v_dict -> loss",
+      "secondary": "多重门控削弱梯度: tanh(0.3)~=0.29, relu2 稀疏激活, (1-t)^2 系数期望 1/3",
+      "tertiary": "backbone 冻结, 所有中间层权重固定, 梯度无法通过权重调整放大",
+      "endpoint_loss_failure": "endpoint loss 梯度到达 style_memory[5] 时已极度微弱, 无法产生可观察的效果"
+    },
+    "theoretical_conclusion": "Few-shot Textual Inversion 在当前 FC-SB 架构下不可行. style_memory 通过 cross-attention 间接参与计算, 梯度通路经过多重门控 (patch_proj, k/v_proj, relu2 gates, tanh style_gate), 信号到达 style_memory[new_idx] 时已极度微弱. 这不是 loss 函数的问题, 而是架构限制.",
+    "next_directions": [
+      "直接优化 style_memory (bypass cross-attention, 直接作为 style_latent 注入)",
+      "使用更强的梯度通路 (如 bypass cross-attention, 直接将 style_memory 加到输出)",
+      "放弃 few-shot 方向, 转向全量训练优化"
+    ],
+    "timestamp": "2026-07-01 20:39:21"
   }
 }
