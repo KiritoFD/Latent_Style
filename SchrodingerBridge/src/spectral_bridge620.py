@@ -506,6 +506,22 @@ class SpectralODEBridge620(nn.Module):
         if progressive_alpha_schedule != "none":
             only_last_step = False  # Progressive 需要每步注入, 覆盖 EOTA
 
+        # 630 Phase 72 方案 A: Zero-Step WCT Pre-alignment
+        # 在 t=0 (ODE 积分前) 对 LL 子带做 WCT, 构造伪起点 x̃_0
+        # 理论: LL 同时承载内容(结构)和风格(色调), 网络 Bypass LL 导致色调无法注入.
+        # 零步 WCT 在 ODE 外部修改 LL 的 mean+协方差, 让 x̃_0 已带风格色调,
+        # ODE 从 x̃_0 积分只负责高频纹理, 完全没有色彩负担.
+        zero_step_wct = bool(_cfg_get('zero_step_wct_enabled', False))
+        zero_step_wct_alpha = float(_cfg_get('zero_step_wct_alpha', 1.0))
+        if (zero_step_wct and zero_step_wct_alpha > 0.0
+                and style_latent is not None and isinstance(style_latent, torch.Tensor)):
+            s_latent = style_latent.to(dtype=x.dtype)
+            ll_x, lh_x, hl_x, hh_x = dwt2_haar(x.float())
+            ll_s, _, _, _ = dwt2_haar(s_latent.float())
+            ll_matched = _wct_match_fiber(ll_x, ll_s)
+            ll_x_new = (1.0 - zero_step_wct_alpha) * ll_x + zero_step_wct_alpha * ll_matched
+            x = idwt2_haar(ll_x_new, lh_x, hl_x, hh_x).to(dtype=x.dtype)
+
         def _schedule(s: float) -> float:
             """Map normalized progress s∈[0,1] to time fraction via schedule."""
             if time_schedule == "cosine":

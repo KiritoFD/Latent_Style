@@ -345,6 +345,15 @@ class ModelConfig:
     # 理论: 解耦 ODE 求解 (前 N-1 步) 与风格注入 (最后 1 步), 恢复 alpha 参数有效性
     # 解决 4G.2b 的"多步迭代累积"问题: 单步应用 (1-alpha)^1 而非 (1-alpha)^12
     endpoint_adain_only_last_step: bool = False
+    # 630 Phase 72 方案 A: Zero-Step WCT Pre-alignment (零步预白化与着色)
+    # 理论: 1:8 死锁根源是 LL 子带同时承载内容(结构)和风格(色调), 而网络只能 Bypass LL.
+    # 方案 A 在 t=0 (ODE 积分前) 对 LL 子带做一次 WCT, 构造伪起点 x̃_0:
+    #   - 结构是原图 (LL 的空间布局保留)
+    #   - 色调是风格图 (LL 的 mean+协方差 匹配到 style)
+    # ODE 从 x̃_0 积分, 网络只负责高频纹理, 完全没有色彩负担.
+    # 预期: 瞬间补齐 T11 缺少的 CLIP-S, 而 LPIPS 破坏极小.
+    zero_step_wct_enabled: bool = False
+    zero_step_wct_alpha: float = 1.0  # 0=不变, 1=全 WCT (LL 完全匹配风格色调)
     # 630 Phase 4I.1: 多尺度 α — 每子带方向独立风格注入强度 (结构性突破)
     # 默认 -1.0 表示回退到 endpoint_adain_scale (向后兼容)
     # 理论: LH/HL (中频结构) 用小 α 保内容, HH (高频细节) 用大 α 强风格
