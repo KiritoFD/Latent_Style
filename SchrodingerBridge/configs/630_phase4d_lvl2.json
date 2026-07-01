@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase3_mask_random_50_10ep.json",
+  "model": {
+    "endpoint_lowpass_levels": 2
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4d_lvl2",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4d_lvl2",
+    "axis": "multi_level_dwt_lowpass",
+    "stage": "phase4d",
+    "notes": "Phase 4D: 2-Level Haar DWT lowpass for endpoint AdaIN. LL_2 (8x8) locked = absolute composition; LH_2/HL_2/HH_2 (8x8) released for macro-strokes; LH_1/HL_1/HH_1 (16x16) for micro-noise. User scheme 2: cascade decomposition. Tests if releasing mid-freq style signal improves clip_style."
+  }
+}

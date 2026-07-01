@@ -1,0 +1,23 @@
+{
+  "_base": "630_phase4d_lvl2.json",
+  "data": {
+    "dino_cache_path": "G:/GitHub/Latent_Style/SchrodingerBridge/eval_cache/offline_pairing/dinov2_small_wikiart_distinct5_train_cache_clean.pt",
+    "dino_cache_required": true,
+    "dino_bank_limit_per_style": 8
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4c_dino_clean_lvl2",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4c_dino_clean_lvl2",
+    "axis": "real_dino_cache_control",
+    "stage": "phase4c",
+    "notes": "Phase 4C.0 CONTROL: real DINO cache (clean, no RGB mask) + 2-Level DWT lowpass. Isolates the effect of using real DINO patches (vs learnable style_memory). baseline 4D.1 used style_memory (dino_cache_path=''); this config uses real DINO cache to measure the delta."
+  }
+}

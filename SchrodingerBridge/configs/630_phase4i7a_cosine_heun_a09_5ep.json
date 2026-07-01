@@ -1,0 +1,23 @@
+{
+  "_base": "630_phase4i5b_sota_heun_cosine_5ep.json",
+  "model": {
+    "solver_type": "heun",
+    "time_schedule": "cosine",
+    "endpoint_adain_scale": 0.9
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4i7a_cosine_heun_a09_5ep",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4i7a_cosine_heun_a09_5ep",
+    "axis": "cosine_schedule_with_higher_alpha",
+    "stage": "phase4i7a",
+    "notes": "Phase 4I.7a: cosine + Heun + alpha=0.9 + 5ep. STRATEGIC: cosine schedule bought 0.0058 lpips improvement over linear (4I.5b). Spend this 'content budget' on higher alpha for more style. If alpha 0.8->0.9 gives +0.003 clip and +0.004 lpips, net result: clip~0.729, lpips~0.321 — both significantly beat SaMam (clip=0.7222, lpips=0.3282). Tests if cosine+alpha tradeoff is more efficient than linear+alpha."
+  }
+}

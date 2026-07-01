@@ -1,0 +1,22 @@
+{
+  "_base": "630_phase4i2a_sota_heun.json",
+  "model": {
+    "solver_type": "heun",
+    "time_schedule": "cosine"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4i5a_sota_heun_cosine",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4i5a_sota_heun_cosine",
+    "axis": "nonlinear_time_schedule",
+    "stage": "phase4i5a",
+    "notes": "Phase 4I.5a: SOTA (4I.2a Heun) + cosine time schedule. STRUCTURAL: ODE path shape. Theory: cosine schedule t=horizon*(1-cos(pi*i/steps))/2 allocates more integration steps near source (content) and target (style) distributions. Unlike linear which uniformly samples time, cosine is S-shaped: slow at boundaries, fast in middle. This gives the ODE solver more precision where it matters most - near the endpoints where distribution characteristics are defined. Synergy with Heun: higher-order solver + smarter step allocation. If effective, proves ODE path shape is a new structural degree of freedom beyond solver order."
+  }
+}

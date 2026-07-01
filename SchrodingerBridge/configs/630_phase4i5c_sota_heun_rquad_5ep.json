@@ -1,0 +1,17 @@
+{
+  "_base": "630_phase4i5b_sota_heun_cosine_5ep.json",
+  "model": {
+    "solver_type": "heun",
+    "time_schedule": "rquad"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4i5c_sota_heun_rquad_5ep",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "phase4i5c_sota_heun_rquad_5ep",
+    "axis": "nonlinear_time_schedule_style_bias",
+    "stage": "phase4i5c",
+    "notes": "Phase 4I.5c: rquad schedule + Heun + 5ep. rquad: t=horizon*(1-(1-i/steps)^2) — slow at END (near target/style distribution). Bias toward style transfer (opposite of cosine's content bias). Goal: recover clip while keeping lpips gains. Map the schedule-shape Pareto frontier: cosine (content) vs linear (neutral) vs rquad (style). If rquad gives clip > 0.7266 with lpips < 0.3229, schedule shape breaks Pareto in BOTH directions."
+  }
+}
