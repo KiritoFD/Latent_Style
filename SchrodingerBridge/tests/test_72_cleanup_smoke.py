@@ -392,6 +392,80 @@ def test_t11_inference_end_to_end():
     assert torch.isfinite(out).all()
 
 
+def test_zero_step_wct_disabled_by_default():
+    """方案 A: zero_step_wct_enabled defaults to False — T11 behavior unchanged."""
+    mcfg, _ = _make_t11_cfg()
+    assert not getattr(mcfg, "zero_step_wct_enabled", False), "default should be False"
+    assert getattr(mcfg, "zero_step_wct_alpha", 1.0) == 1.0
+
+
+def test_zero_step_wct_enabled_changes_output():
+    """方案 A: enabling zero_step_wct modifies the output (LL gets style color)."""
+    torch.manual_seed(0)
+    mcfg_disabled, bcfg = _make_t11_cfg()
+    bridge_disabled = _make_bridge(mcfg_disabled, bcfg)
+    bridge_disabled.eval()
+
+    torch.manual_seed(0)  # reset seed so both bridges have identical weights
+    mcfg_enabled, _ = _make_t11_cfg()
+    setattr(mcfg_enabled, "zero_step_wct_enabled", True)
+    setattr(mcfg_enabled, "zero_step_wct_alpha", 1.0)
+    bridge_enabled = _make_bridge(mcfg_enabled, bcfg)
+    bridge_enabled.eval()
+
+    torch.manual_seed(42)  # fixed seed for inputs
+    B, C, H, W = 2, 4, 32, 32
+    x = torch.randn(B, C, H, W)
+    style_id = torch.tensor([0, 1])
+    style_latent = torch.randn(1, C, H, W)
+
+    out_disabled = bridge_disabled.integrate_transport(
+        x, style_id=style_id, num_steps=4, step_size=1.0,
+        style_latent=style_latent,
+    )
+    out_enabled = bridge_enabled.integrate_transport(
+        x, style_id=style_id, num_steps=4, step_size=1.0,
+        style_latent=style_latent,
+    )
+    # Outputs must differ — zero-step WCT modified the starting point
+    assert not torch.allclose(out_disabled, out_enabled, atol=1e-6), \
+        "zero_step_wct should change the output"
+    assert torch.isfinite(out_enabled).all(), "zero_step_wct output has NaN/Inf"
+
+
+def test_zero_step_wct_alpha_zero_is_noop():
+    """方案 A: alpha=0 means no WCT — output equals disabled."""
+    torch.manual_seed(0)
+    mcfg_disabled, bcfg = _make_t11_cfg()
+    bridge_disabled = _make_bridge(mcfg_disabled, bcfg)
+    bridge_disabled.eval()
+
+    torch.manual_seed(0)  # reset seed so both bridges have identical weights
+    mcfg_a0, _ = _make_t11_cfg()
+    setattr(mcfg_a0, "zero_step_wct_enabled", True)
+    setattr(mcfg_a0, "zero_step_wct_alpha", 0.0)  # alpha=0 → no-op
+    bridge_a0 = _make_bridge(mcfg_a0, bcfg)
+    bridge_a0.eval()
+
+    torch.manual_seed(42)  # fixed seed for inputs
+    B, C, H, W = 2, 4, 32, 32
+    x = torch.randn(B, C, H, W)
+    style_id = torch.tensor([0, 1])
+    style_latent = torch.randn(1, C, H, W)
+
+    out_disabled = bridge_disabled.integrate_transport(
+        x, style_id=style_id, num_steps=4, step_size=1.0,
+        style_latent=style_latent,
+    )
+    out_a0 = bridge_a0.integrate_transport(
+        x, style_id=style_id, num_steps=4, step_size=1.0,
+        style_latent=style_latent,
+    )
+    # alpha=0 should be a no-op
+    assert torch.allclose(out_disabled, out_a0, atol=1e-6), \
+        "alpha=0 should be equivalent to disabled"
+
+
 if __name__ == "__main__":
     # Run all tests in sequence, print pass/fail
     funcs = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
