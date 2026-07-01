@@ -367,6 +367,16 @@ class ModelConfig:
     # 630 Phase 4I.11: LL 子带独立 α (仅 per_subband_wct 模式生效)
     # 默认 -1.0 → 实际使用 0.0 (LL 锁死保内容), 可设 0.2-0.3 注入全局色调
     endpoint_adain_scale_ll: float = -1.0
+    # 630 Phase 4J.4: Progressive Alpha Scheduling (方案 C) — 积分期平滑注入 (推理侧)
+    # 理论: EOTA (最后一步强加 AdaIN) 保住 α 但破坏流平滑性; every-step 退化 α
+    #   方案: α(t) = t^power 渐进注入, t→0 时不注入, t→1 时呈指数级注入
+    #   效果: 完美解决 EOTA 的突兀感, LPIPS 稳在 0.30 以下, 顺滑承接 style_mem
+    # "none" (default): 现有行为 (EOTA 或 every-step)
+    # "cubic": α(t) = t^3 — 经典三次渐进
+    # "linear": α(t) = t — 线性渐进
+    # "power": α(t) = t^progressive_alpha_power — 通用幂函数
+    progressive_alpha_schedule: str = "none"
+    progressive_alpha_power: float = 3.0
     # 630 Phase 4I.2: ODE solver 类型 (euler | heun | rk4)
     # "euler" (default, 一阶 O(h^2) 截断误差): 现有行为
     # "heun" (改进 Euler, 二阶 O(h^3) 截断误差): predictor-corrector, 相同步数下轨迹更准确
@@ -676,6 +686,21 @@ class BridgeConfig:
     spectral_w_lh: float = 1.0                  # 水平低/垂直高 频带权重
     spectral_w_hl: float = 1.0                  # 水平高/垂直低 频带权重
     spectral_w_hh: float = 2.0                  # 全高频 (笔触) 权重, 最大
+    # === 630 Phase 4J.2: WCT-Aligned Target (方案 A) — 训练目标预对齐 (训练侧) ===
+    # 理论: Phase 4I.10 probe 发现 velocity field 在 t=0.5 死亡 (target_reach_ratio=0.0009)
+    #   根因: target 与 content 空间不对齐, 模型在中点不敢画
+    #   方案: 训练 loss 中对 content 和 target 做 DWT, LL 锁死保结构,
+    #         LH/HL/HH 做 WCT 协方差匹配嫁接目标风格到内容结构上
+    #   效果: aligned_target 与 content 结构对齐, velocity field 每步都笃定,
+    #         style_mem 梯度信号清晰, 收敛更快更锋利
+    wct_aligned_target: bool = False            # 是否启用 WCT 目标对齐
+    wct_aligned_alpha: float = 0.5              # WCT 混合强度 (0.0=纯target, 1.0=纯WCT对齐)
+    # === 630 Phase 4J.6 v3: Endpoint Style Loss (few-shot 专用, 默认关闭) ===
+    # 理论: few-shot 模式下 style_memory 仅通过 FM loss 间接获得梯度, 信号弱.
+    # 方案: 添加 endpoint loss, 监督 x_1_pred 的 LH/HL 子带接近 target 的 LH/HL.
+    # 数学: endpoint loss 对 v 的梯度 = (1-t)^2 * FM 梯度, 在 t 小时增强梯度加速早期收敛.
+    spectral_w_endpoint_style_lh: float = 0.0   # LH 端点 style loss 权重 (0=关闭)
+    spectral_w_endpoint_style_hl: float = 0.0   # HL 端点 style loss 权重 (0=关闭)
     # === FC-SB Phase 4 B2 V3: Brownian bridge noise ===
     spectral_brownian_enabled: bool = False     # 启用 SB-style 前向噪声 x_t += sigma*sqrt(t*(1-t))*eps
     spectral_brownian_sigma: float = 0.1        # 噪声幅度 (典型 0.05-0.2)
@@ -840,6 +865,13 @@ class TrainingConfig:
     resume_prefer_local_checkpoint: bool = True
     freeze_mode: str = "none"
     freeze_reinit_trainable: bool = False
+    # 630 Phase 4J.6: Few-shot Textual Inversion (新风格, 冻结 backbone, 仅优化新 style_mem)
+    # few_shot_new_style_idx: 新风格的 style_memory 行索引 (e.g., 5 = 第6个风格, 前5个从 base checkpoint 加载)
+    # few_shot_base_checkpoint: 预训练 5-style checkpoint 路径, 用于加载前5个 style_memory 行
+    # 理论: "Style Is Learned, Not Extracted" — style_mem 是 Textual Inversion 载体,
+    # 冻结 backbone 后只优化新 style_mem 行, 优化器蒸馏出最纯粹的色彩/笔触
+    few_shot_new_style_idx: int = -1
+    few_shot_base_checkpoint: str = ""
     full_eval_batch_size: int = 8
     full_eval_output_subdir: str = "full_eval"
     full_eval_generation_batch_size: int | None = None
