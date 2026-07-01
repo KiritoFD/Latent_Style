@@ -67,7 +67,12 @@ class FiLMEndpointHead(nn.Module):
 
 
 class SpatialBridge620(nn.Module):
-    """A new 620 bridge: velocity training, DINO-token style path, I2SB inference."""
+    """A new 620 bridge: velocity training, style_memory token path, I2SB inference.
+
+    630 Phase 6 (DINO 退役): external DINO patch/cls inputs removed; style_memory
+    is the only source of style tokens. dino_dim kept as attribute name for
+    checkpoint compatibility (style_memory/patch_proj/cls_proj preserved).
+    """
 
     def __init__(self, model_cfg: ModelConfig, bridge_cfg: BridgeConfig | None = None) -> None:
         super().__init__()
@@ -155,17 +160,6 @@ class SpatialBridge620(nn.Module):
             model_dim=self.dim,
             num_styles=self.num_styles,
             num_memory_tokens=256,
-            adapter_enabled=bool(getattr(model_cfg, "style_dino_adapter_enabled", False)),
-            adapter_hidden_dim=int(getattr(model_cfg, "style_dino_adapter_hidden_dim", 1024)),
-            adapter_scale=float(getattr(model_cfg, "style_dino_adapter_scale", 0.25)),
-            local_cnn_enabled=style_local_cnn_enabled,
-            text_enabled=self.style_text_enabled,
-            text_dim=self.style_text_dim,
-            text_max_length=int(getattr(model_cfg, "style_text_max_length", 77)),
-            text_dropout_prob=float(getattr(model_cfg, "style_text_dropout_prob", 0.15)),
-            image_dropout_prob=float(getattr(model_cfg, "style_image_dropout_prob", 0.15)),
-            text_null_std=float(getattr(model_cfg, "style_text_null_token_init_std", 0.02)),
-            image_null_std=float(getattr(model_cfg, "style_image_null_token_init_std", 0.02)),
         )
         self.input_proj = nn.Conv2d(self.latent_channels, self.dim, kernel_size=3, padding=1)
         self.time_proj = nn.Sequential(
@@ -206,7 +200,6 @@ class SpatialBridge620(nn.Module):
                     style_attn_topk=attn_topk,
                     layer_idx=idx,
                     num_layers=depth,
-                    dino_dim=self.dino_dim,
                     film_enabled=self.style_film_enabled,
                     film_init_std=style_film_init_std,
                     attn_mode="relu2",  # 629 D19-D22: relu2 confirmed effective
@@ -362,9 +355,6 @@ class SpatialBridge620(nn.Module):
         source: torch.Tensor | None = None,
         t: torch.Tensor | float | None = None,
         style_id: torch.Tensor | int | None = None,
-        style_dino_patches: torch.Tensor | None = None,
-        style_dino_cls: torch.Tensor | None = None,
-        content_dino_patches: torch.Tensor | None = None,
         style_latent: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
         target_latent: torch.Tensor | None = None,
@@ -385,14 +375,10 @@ class SpatialBridge620(nn.Module):
             style_global = self.intrinsic_style_global(style_feat.mean(dim=[2, 3]).float()).to(dtype=x.dtype)
         else:
             style_tokens, style_global = self.style_conditioner(
-                style_dino_patches=style_dino_patches,
-                style_dino_cls=style_dino_cls,
                 style_id=style_id,
                 batch=x.shape[0],
                 device=x.device,
                 dtype=x.dtype,
-                style_latent=style_latent,
-                style_text_tokens=style_text_tokens,
             )
         # 🆕 M3: Style Embed Amplification — 放大 style_global 源信号
         # 理论: FC-SB 要求 fiber "狂热扩散", 但当前 style 信号过弱 (FiLM gamma~0.13).
@@ -410,7 +396,7 @@ class SpatialBridge620(nn.Module):
         debug_vals: dict[str, list[torch.Tensor]] = {}
         total_entropy = []
         for block_idx, block in enumerate(self.blocks):
-            h = block(h, time_emb=time_emb, style_tokens=style_tokens, style_global=style_global, content_dino_patches=content_dino_patches)
+            h = block(h, time_emb=time_emb, style_tokens=style_tokens, style_global=style_global)
             total_entropy.append(block.cross_attn_entropy)
             for key, value in block.last_debug.items():
                 debug_vals.setdefault(key, []).append(value)
@@ -516,7 +502,6 @@ class SpatialBridge620(nn.Module):
         # 629 D23: endpoint_head_mode == "endpoint_lowhigh" always true
         self.last_debug["endpoint_style_low_abs"] = style_low.detach().float().abs().mean()
         self.last_debug["endpoint_style_high_abs"] = style_high.detach().float().abs().mean()
-        self.last_debug["style_dino_active"] = x.new_tensor(1.0 if style_dino_patches is not None else 0.0)
         # Keep a detached endpoint reference so external probes can compute alpha without re-running.
         self.last_debug["last_endpoint"] = endpoint.detach()
 
@@ -536,13 +521,11 @@ class SpatialBridge620(nn.Module):
         *,
         t: torch.Tensor | float | None = None,
         style_id: torch.Tensor | int | None = None,
-        style_dino_patches: torch.Tensor | None = None,
-        style_dino_cls: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
         style_latent: torch.Tensor | None = None,
     ) -> torch.Tensor:
         t_tensor = self._resolve_t(x, t)
-        v = self.forward(x, t=t_tensor, style_id=style_id, style_dino_patches=style_dino_patches, style_dino_cls=style_dino_cls, style_text_tokens=style_text_tokens, style_latent=style_latent)
+        v = self.forward(x, t=t_tensor, style_id=style_id, style_text_tokens=style_text_tokens, style_latent=style_latent)
         return x + (1.0 - t_tensor).view(-1, 1, 1, 1).to(dtype=x.dtype) * v
 
     def predict_transport_base(self, x: torch.Tensor, **kwargs: object) -> torch.Tensor:
@@ -555,8 +538,6 @@ class SpatialBridge620(nn.Module):
         style_id: torch.Tensor | int | None,
         num_steps: int = 8,
         step_size: float = 1.0,
-        style_dino_patches: torch.Tensor | None = None,
-        style_dino_cls: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
         style_latent: torch.Tensor | None = None,
         target_style_latent: torch.Tensor | None = None,
@@ -660,8 +641,6 @@ class SpatialBridge620(nn.Module):
                 h,
                 t=t_batch,
                 style_id=style_id,
-                style_dino_patches=style_dino_patches,
-                style_dino_cls=style_dino_cls,
                 style_text_tokens=style_text_tokens,
                 style_latent=style_latent,
             )
@@ -944,12 +923,8 @@ class SpatialBridge620(nn.Module):
         *,
         num_steps: int = 8,
         step_size: float = 1.0,
-        style_dino_patches: torch.Tensor | None = None,
-        style_dino_cls: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
         style_latent: torch.Tensor | None = None,
-        idt_dino_patches: torch.Tensor | None = None,
-        idt_dino_cls: torch.Tensor | None = None,
         cfg_target_scale: float = 1.0,
         cfg_repulse_scale: float = 0.0,
         cfg_text_scale: float = 0.0,
@@ -973,18 +948,14 @@ class SpatialBridge620(nn.Module):
 
             ep_target = self.predict_endpoint(
                 h, t=t_batch, style_id=style_id,
-                style_dino_patches=style_dino_patches,
-                style_dino_cls=style_dino_cls,
                 style_text_tokens=style_text_tokens,
                 style_latent=style_latent,
             )
-            ep_null = self.predict_endpoint(h, t=t_batch, style_id=style_id, style_dino_patches=None, style_dino_cls=None, style_text_tokens=None, style_latent=None)
+            ep_null = self.predict_endpoint(h, t=t_batch, style_id=style_id, style_text_tokens=None, style_latent=None)
 
-            if cfg_repulse_scale > 0.0 and idt_dino_patches is not None:
+            if cfg_repulse_scale > 0.0 and idt_style_id is not None:
                 ep_idt = self.predict_endpoint(
                     h, t=t_batch, style_id=idt_style_id,
-                    style_dino_patches=idt_dino_patches,
-                    style_dino_cls=idt_dino_cls,
                 )
                 guided = ep_target + cfg_target_scale * (ep_target - ep_null) - cfg_repulse_scale * (ep_idt - ep_null)
             elif cfg_target_scale > 0.0:

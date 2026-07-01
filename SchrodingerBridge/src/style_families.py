@@ -104,13 +104,6 @@ I2SB_OBJECTIVE_MODES = {
     "bridge_endpoint",
 }
 
-DINO_CONDITIONED_TOKENIZER_FAMILIES = {
-    "tok_a_dino_dict",
-    "tok_b_cross_image",
-    "tok_c_residual_adapter",
-    "tok_d_vlm_prompt",
-}
-
 LATENT_STRUCTURED_TOKENIZER_FAMILIES = {
     "pure_latent_spatial",
     "smoe_translator",
@@ -136,47 +129,6 @@ def normalize_tokenizer_family(value: str, *, default: str = "legacy_factorized"
 
 def normalize_contract_family(value: str, *, default: str = "legacy") -> str:
     return normalize_family(value, allowed=CONTRACT_FAMILIES, default=default)
-
-
-def tokenizer_family_requires_dino(value: str) -> bool:
-    family = normalize_tokenizer_family(value)
-    return family in DINO_CONDITIONED_TOKENIZER_FAMILIES
-
-
-def semantic_supervision_requires_dino(value: str) -> bool:
-    family = normalize_family(value, allowed=SEMANTIC_SUPERVISION_FAMILIES, default="legacy_terminal_swd")
-    return family == "dino_masked_swd"
-
-
-def runtime_conditioning_requires_dino(*, tokenizer_family: str, semantic_supervision_family: str) -> bool:
-    return tokenizer_family_requires_dino(tokenizer_family) or semantic_supervision_requires_dino(semantic_supervision_family)
-
-
-def validate_dino_retired_runtime(
-    *,
-    tokenizer_family: str,
-    semantic_supervision_family: str,
-    allow_dino: bool = False,
-    context: str = "round2 pure-sde launcher",
-) -> None:
-    if allow_dino:
-        return
-    family = normalize_tokenizer_family(tokenizer_family)
-    semantic = normalize_family(
-        semantic_supervision_family,
-        allowed=SEMANTIC_SUPERVISION_FAMILIES,
-        default="legacy_terminal_swd",
-    )
-    if not runtime_conditioning_requires_dino(
-        tokenizer_family=family,
-        semantic_supervision_family=semantic,
-    ):
-        return
-    raise ValueError(
-        f"{context} blocks DINO-conditioned configs by default; "
-        f"got tokenizer_family={family!r}, semantic_supervision_family={semantic!r}. "
-        "Use the explicit allow-dino override only if a later board result justifies reviving the archived DINO route."
-    )
 
 
 def compat_state_strip_prefixes_for_tokenizer_family(value: str) -> tuple[str, ...]:
@@ -224,7 +176,6 @@ def validate_pure_latent_contract(
     tokenizer_family: str,
     style_tokenizer: str = "",
     semantic_supervision_family: str = "",
-    dino_masked_swd_weight: float = 0.0,
     tokenizer_content_adaptive: bool = False,
 ) -> None:
     family = normalize_tokenizer_family(tokenizer_family)
@@ -246,10 +197,6 @@ def validate_pure_latent_contract(
     if semantic != "legacy_terminal_swd":
         raise ValueError(
             f"tokenizer_family={family!r} requires bridge.semantic_supervision_family='legacy_terminal_swd'."
-        )
-    if float(dino_masked_swd_weight) > 0.0:
-        raise ValueError(
-            f"tokenizer_family={family!r} requires bridge.dino_masked_swd_weight=0.0."
         )
     if bool(tokenizer_content_adaptive):
         raise ValueError(

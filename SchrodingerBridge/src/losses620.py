@@ -392,16 +392,8 @@ class SpatialBridgeObjective620:
     ) -> Dict[str, torch.Tensor]:
         del source_style_id, aux_target_style, aux_target_valid
         conditioning = conditioning or {}
-        style_patches = conditioning.get("target_style_dino_patches")
-        style_cls = conditioning.get("target_style_dino_cls")
-        content_patches = conditioning.get("content_dino_patches")
+        # 630 Phase 6 (DINO 退役): extract only non-DINO conditioning from batch
         style_text_tokens = conditioning.get("target_style_text_tokens")
-        if not torch.is_tensor(style_patches):
-            style_patches = None
-        if not torch.is_tensor(style_cls):
-            style_cls = None
-        if not torch.is_tensor(content_patches):
-            content_patches = None
         if not torch.is_tensor(style_text_tokens):
             style_text_tokens = None
 
@@ -426,9 +418,6 @@ class SpatialBridgeObjective620:
         _call_kwargs = {
             "x": x_t, "x_t": x_t, "t": t,
             "style_id": target_style_id,
-            "style_dino_patches": style_patches,
-            "style_dino_cls": style_cls,
-            "content_dino_patches": content_patches,
             "style_latent": target_style_for_model,
             "style_text_tokens": style_text_tokens,
         }
@@ -485,8 +474,6 @@ class SpatialBridgeObjective620:
                 content,
                 t=torch.zeros((content.shape[0],), device=content.device, dtype=content.dtype),
                 style_id=target_style_id,
-                style_dino_patches=style_patches,
-                style_dino_cls=style_cls,
                 style_text_tokens=style_text_tokens,
             )
             source_endpoint_aux = (
@@ -754,7 +741,6 @@ class SpatialBridgeObjective620:
             "training_target_projection_low_mode_all": content.new_tensor(1.0 if self.low_mode == "all" else 0.0),
             "bridge_sigma": content.new_tensor(float(getattr(model, "bridge_sigma", 0.0))),
             "swd_noise_sigma": content.new_tensor(self.swd_noise_sigma),
-            "style_dino_active": content.new_tensor(1.0 if style_patches is not None else 0.0),
             "style_gate_value": debug.get("style_gate_value", zero).detach() if torch.is_tensor(debug.get("style_gate_value", None)) else zero,
             "cross_attn_entropy": debug.get("cross_attn_entropy", zero).detach() if torch.is_tensor(debug.get("cross_attn_entropy", None)) else zero,
             "cross_attn_delta_abs": debug.get("cross_attn_delta_abs", zero).detach() if torch.is_tensor(debug.get("cross_attn_delta_abs", None)) else zero,

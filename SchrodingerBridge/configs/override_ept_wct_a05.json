@@ -1,0 +1,12 @@
+{
+  "model": {
+    "solver_type": "euler",
+    "time_schedule": "linear",
+    "endpoint_adain_mode": "spatial_fiber_wct",
+    "endpoint_adain_scale": 0.5,
+    "endpoint_adain_only_last_step": true
+  },
+  "training": {
+    "full_eval_num_steps": 1
+  }
+}

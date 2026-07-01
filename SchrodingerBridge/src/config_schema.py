@@ -296,9 +296,6 @@ class ModelConfig:
     style_cross_attn_gate_init: float = 0.05
     style_gate_mode: str = "tanh_gate"
     body_norm_type: str = "group_norm"  # "group_norm" | "rms_norm" — RMSNorm preserves mean (style brightness/color)
-    style_dino_adapter_enabled: bool = False
-    style_dino_adapter_hidden_dim: int = 1024
-    style_dino_adapter_scale: float = 0.25
     style_moe_enabled: bool = False
     style_moe_num_experts: int = 4
     style_moe_router_hidden_dim: int = 128
@@ -363,6 +360,9 @@ class ModelConfig:
     endpoint_adain_scale_lh: float = -1.0
     endpoint_adain_scale_hl: float = -1.0
     endpoint_adain_scale_hh: float = -1.0
+    # 630 Phase 4I.11: LL 子带独立 α (仅 per_subband_wct 模式生效)
+    # 默认 -1.0 → 实际使用 0.0 (LL 锁死保内容), 可设 0.2-0.3 注入全局色调
+    endpoint_adain_scale_ll: float = -1.0
     # 630 Phase 4I.2: ODE solver 类型 (euler | heun | rk4)
     # "euler" (default, 一阶 O(h^2) 截断误差): 现有行为
     # "heun" (改进 Euler, 二阶 O(h^3) 截断误差): predictor-corrector, 相同步数下轨迹更准确
@@ -653,7 +653,6 @@ class BridgeConfig:
     single_step_swd_weight: float = 8.0
     single_step_edge_weight: float = 0.1
     semantic_supervision_family: str = "legacy_terminal_swd"
-    dino_masked_swd_weight: float = 0.0
     w_variance_penalty: float = 0.0
     w_style_energy_floor: float = 0.0
     w_lowfreq_velocity: float = 0.0
@@ -963,9 +962,6 @@ class DataConfig:
     style_caption_path: str = ""
     latent_cache_mode: str = "off"
     latent_cache_dir: str = ""
-    dino_cache_path: str = ""
-    dino_cache_required: bool = False
-    dino_bank_limit_per_style: int = 8
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -1049,7 +1045,6 @@ class ExperimentConfig:
                 tokenizer_family=str(getattr(cfg.model, "tokenizer_family", "legacy_factorized")),
                 style_tokenizer=str(getattr(cfg.model, "style_tokenizer", "")),
                 semantic_supervision_family=str(getattr(cfg.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
-                dino_masked_swd_weight=float(getattr(cfg.bridge, "dino_masked_swd_weight", 0.0)),
                 tokenizer_content_adaptive=bool(getattr(cfg.model, "tokenizer_content_adaptive", False)),
             )
             validate_phase616_clean_contract(

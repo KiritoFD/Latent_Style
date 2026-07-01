@@ -1,8 +1,9 @@
 """Spatial Bridge Block 620 — cleaned active path only.
 
 628/629 cleanup: removed dead attn_modes (gated/gated_raw/style_select/sparsemax),
-FiLM modulation, style MoE, content_dino query, learnable shortcut, skip_coarse,
+FiLM modulation, style MoE, learnable shortcut, skip_coarse,
 top-k truncation, style_bias. Kept RMSNorm (E4+ uses it) and softmax/relu2 modes.
+630 Phase 6 (DINO 退役): content_dino query path removed entirely.
 """
 from __future__ import annotations
 
@@ -129,9 +130,8 @@ class SpatialBridgeBlock620(nn.Module):
         time_emb: torch.Tensor,
         style_tokens: torch.Tensor,
         style_global: torch.Tensor | None = None,
-        content_dino_patches: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        del style_global, content_dino_patches  # unused (FiLM/content_dino removed)
+        del style_global  # unused (FiLM removed)
         b, c, h, w = x.shape
 
         # --- Self-attention with AdaLN(time) ---

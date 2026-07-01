@@ -1,0 +1,22 @@
+{
+  "_base": "630_phase4i7b_cosine_heun_a085_5ep.json",
+  "bridge": {
+    "t_min": 0.0,
+    "t_max": 0.1
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4i10b_ept_t01",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4i10b_ept_t01",
+    "axis": "endpoint_prediction_training",
+    "stage": "phase4i10b",
+    "notes": "Phase 4I.10b: Endpoint Prediction Training (EPT). Structural breakthrough based on probe diagnostic. Probe found velocity field DEAD at t=0.5 (cos=0.01) due to FM midpoint ambiguity. ODE trajectory useless (reach_ratio=0.0009). EPT fixes this by training ONLY at t=[0, 0.1] — model focuses all capacity on endpoint prediction from near-pure content. At inference: num_steps=1, solver=euler (single forward pass). Theory: eliminate dead midpoint, concentrate learning where model is effective (t=0 cos=0.60). Combined with WCT alpha=0.5 for style refinement. Expected: clip>0.73, lpips<0.30 (both beat SaMam 0.7222, 0.3282)."
+  }
+}

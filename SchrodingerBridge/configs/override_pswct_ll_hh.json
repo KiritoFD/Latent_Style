@@ -1,0 +1,11 @@
+{
+  "model": {
+    "endpoint_adain_mode": "per_subband_wct",
+    "endpoint_adain_only_last_step": true,
+    "endpoint_adain_scale": 0.5,
+    "endpoint_adain_scale_ll": 0.3,
+    "endpoint_adain_scale_lh": 0.0,
+    "endpoint_adain_scale_hl": 0.0,
+    "endpoint_adain_scale_hh": 0.5
+  }
+}
