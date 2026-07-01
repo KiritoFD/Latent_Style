@@ -1031,7 +1031,7 @@ class SBTrainer:
             "injection_branch": "injection_only",
         }
         mode = aliases.get(mode, mode)
-        if mode not in {"tokenizer_only", "style_branch", "backbone_only", "attention_only", "executor_only", "budget_only", "injection_only"}:
+        if mode not in {"tokenizer_only", "style_branch", "backbone_only", "attention_only", "executor_only", "budget_only", "injection_only", "few_shot"}:
             raise ValueError(f"Unsupported freeze_mode: {mode}")
 
         for _, param in self.model.named_parameters():
@@ -1049,6 +1049,13 @@ class SBTrainer:
                 for name, param in structured.named_parameters():
                     param.requires_grad_(True)
                     trainable_names.append(f"structured_style_tokenizer.{name}")
+            # 630 Phase 4J.3: SpectralODEBridge620 uses style_conditioner (StyleConditioner620)
+            # support tokenizer_only freeze_mode for style_memory few-shot optimization
+            conditioner = getattr(self.model, "style_conditioner", None)
+            if conditioner is not None:
+                for name, param in conditioner.named_parameters():
+                    param.requires_grad_(True)
+                    trainable_names.append(f"style_conditioner.{name}")
         if mode == "budget_only":
             budget_head = getattr(self.model, "execution_budget_head", None)
             if budget_head is None:
@@ -1116,6 +1123,63 @@ class SBTrainer:
                     continue
                 param.requires_grad_(True)
                 trainable_names.append(name)
+        if mode == "few_shot":
+            # 630 Phase 4J.6: Few-shot Textual Inversion
+            # 冻结 backbone, 仅优化 style_memory[new_style_idx] (新风格行)
+            # 理论: "Style Is Learned, Not Extracted" — style_mem 是 Textual Inversion 载体
+            conditioner = getattr(self.model, "style_conditioner", None)
+            if conditioner is None:
+                raise RuntimeError("freeze_mode=few_shot requires model.style_conditioner")
+            new_idx = int(self.train_cfg.get("few_shot_new_style_idx", -1))
+            if new_idx < 0:
+                raise RuntimeError("freeze_mode=few_shot requires few_shot_new_style_idx >= 0")
+            # 1. 从 base checkpoint 加载前 N 个 style_memory 行 (新行保持随机初始化)
+            base_ckpt_path = str(self.train_cfg.get("few_shot_base_checkpoint", "")).strip()
+            if base_ckpt_path:
+                base_ckpt = Path(base_ckpt_path)
+                if not base_ckpt.is_absolute():
+                    base_ckpt = (Path.cwd() / base_ckpt).resolve()
+                if base_ckpt.exists():
+                    base_state = torch.load(base_ckpt, map_location=self.device, weights_only=False)
+                    base_model_state = base_state.get("model_state_dict", base_state)
+                    # strip compile prefix
+                    base_style_mem_key = "style_conditioner.style_memory"
+                    for k in base_model_state:
+                        if k.endswith("style_conditioner.style_memory"):
+                            base_style_mem_key = k
+                            break
+                    base_style_mem = base_model_state.get(base_style_mem_key)
+                    if base_style_mem is not None:
+                        rows_to_copy = min(new_idx, base_style_mem.shape[0])
+                        with torch.no_grad():
+                            conditioner.style_memory.data[:rows_to_copy] = base_style_mem[:rows_to_copy].to(
+                                dtype=conditioner.style_memory.dtype, device=conditioner.style_memory.device
+                            )
+                        logger.info(
+                            "Few-shot: loaded %d style_memory rows from %s, row %d stays random init",
+                            rows_to_copy, base_ckpt, new_idx,
+                        )
+                    else:
+                        logger.warning("Few-shot: base checkpoint has no style_memory key, all rows random init")
+                else:
+                    logger.warning("Few-shot: base checkpoint not found: %s", base_ckpt)
+            # 2. 解冻 style_memory (整参数), 用梯度钩子屏蔽非目标行
+            conditioner.style_memory.requires_grad_(True)
+            # 3. 保存快照用于 post-step 恢复 (防止 Adam 动量漂移)
+            with torch.no_grad():
+                self._few_shot_snapshot = conditioner.style_memory.data.clone()
+                self._few_shot_new_idx = new_idx
+            # 4. 注册梯度钩子: 非目标行梯度置零
+            _new_idx = new_idx
+            def _few_shot_grad_hook(grad):
+                grad = grad.clone()
+                if _new_idx > 0:
+                    grad[:_new_idx] = 0.0
+                if _new_idx + 1 < grad.shape[0]:
+                    grad[_new_idx + 1:] = 0.0
+                return grad
+            conditioner.style_memory.register_hook(_few_shot_grad_hook)
+            trainable_names.append(f"style_conditioner.style_memory[row={new_idx}]")
 
         if bool(self.train_cfg.get("freeze_reinit_trainable", False)):
             self._reset_trainable_style_params(mode)
@@ -1126,6 +1190,29 @@ class SBTrainer:
         self.optimizer = self._build_optimizer(trainable_params)
         self._rebuild_scheduler_for_current_optimizer()
         logger.info("Freeze mode=%s | trainable_count=%d | trainable=%s", mode, len(trainable_params), ", ".join(trainable_names[:24]))
+
+    def _few_shot_post_step(self) -> None:
+        """630 Phase 4J.6: Restore non-target style_memory rows after optimizer.step().
+
+        梯度钩子已屏蔽非目标行梯度, 但 Adam 动量 (m, v) 可能导致微小漂移.
+        每次 optimizer.step() 后从快照恢复非目标行, 确保只有 new_style_idx 行被更新.
+        """
+        snapshot = getattr(self, "_few_shot_snapshot", None)
+        new_idx = getattr(self, "_few_shot_new_idx", -1)
+        if snapshot is None or new_idx < 0:
+            return
+        conditioner = getattr(self.model, "style_conditioner", None)
+        if conditioner is None:
+            return
+        with torch.no_grad():
+            if new_idx > 0:
+                conditioner.style_memory.data[:new_idx] = snapshot[:new_idx].to(
+                    dtype=conditioner.style_memory.dtype, device=conditioner.style_memory.device
+                )
+            if new_idx + 1 < snapshot.shape[0]:
+                conditioner.style_memory.data[new_idx + 1:] = snapshot[new_idx + 1:].to(
+                    dtype=conditioner.style_memory.dtype, device=conditioner.style_memory.device
+                )
 
     def _configure_distillation(self) -> None:
         if not self.distill_enabled:
@@ -1202,6 +1289,13 @@ class SBTrainer:
                 for name, param in structured.named_parameters():
                     param.requires_grad_(True)
                     trainable_names.append(f"structured_style_tokenizer.{name}")
+            # 630 Phase 4J.3: SpectralODEBridge620 uses style_conditioner (StyleConditioner620)
+            # support tokenizer_only freeze_mode for style_memory few-shot optimization
+            conditioner = getattr(self.model, "style_conditioner", None)
+            if conditioner is not None:
+                for name, param in conditioner.named_parameters():
+                    param.requires_grad_(True)
+                    trainable_names.append(f"style_conditioner.{name}")
 
         if bool(self.distill_cfg.get("reinit_trainable", True)):
             self._reset_trainable_style_params(mode)
@@ -1391,6 +1485,7 @@ class SBTrainer:
                 if self.grad_clip_norm > 0.0:
                     total_grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
                 self.optimizer.step()
+                self._few_shot_post_step()
                 self.optimizer.zero_grad(set_to_none=True)
                 optimizer_time_total += max(0.0, time.perf_counter() - t0)
                 self.global_step += 1
@@ -1498,6 +1593,7 @@ class SBTrainer:
             if self.grad_clip_norm > 0.0:
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_norm)
             self.optimizer.step()
+            self._few_shot_post_step()
             self.optimizer.zero_grad(set_to_none=True)
             self.global_step += 1
 
