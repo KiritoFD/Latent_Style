@@ -172,6 +172,7 @@ class SpectralODEBridge620(nn.Module):
         attn_temperature = float(getattr(model_cfg, "style_attn_temperature", 1.0))
         shortcut_alpha = getattr(model_cfg, "style_shortcut_alpha", 1.0)
         norm_type = str(getattr(model_cfg, "body_norm_type", "group_norm"))
+        dwt_route = bool(getattr(model_cfg, "cross_attn_dwt_route", False))
         self.blocks = nn.ModuleList([
             SpatialBridgeBlock620(
                 dim=self.dim, num_heads=heads, style_gate_init=gate_init,
@@ -179,6 +180,7 @@ class SpectralODEBridge620(nn.Module):
                 layer_idx=idx, num_layers=depth,
                 attn_mode=attn_mode, attn_temperature=attn_temperature,
                 norm_type=norm_type,
+                dwt_route=dwt_route,
             )
             for idx in range(depth)
         ])

@@ -14,6 +14,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from spectral620 import dwt2_haar, idwt2_haar
+
 
 class RMSNorm(nn.Module):
     """Root Mean Square Normalization — preserves mean (unlike GroupNorm).
@@ -64,6 +66,7 @@ class SpatialBridgeBlock620(nn.Module):
         attn_temperature: float = 1.0,
         gate_warmup_steps: int = 0,
         norm_type: str = "group_norm",
+        dwt_route: bool = False,
     ) -> None:
         super().__init__()
 
@@ -73,6 +76,8 @@ class SpatialBridgeBlock620(nn.Module):
         self._current_step = 0
         self.max_entropy_queries = 256
         self.cross_attn_entropy = torch.tensor(0.0)
+        # 630 Phase 4J.1: DWT-Routed Cross-Attention (方案 B)
+        self.dwt_route = bool(dwt_route)
 
         self.shortcut_alpha = float(style_shortcut_alpha) if not isinstance(style_shortcut_alpha, (list, tuple)) else (
             float(style_shortcut_alpha[self.layer_idx]) if self.layer_idx < len(style_shortcut_alpha) else 1.0
@@ -153,14 +158,31 @@ class SpatialBridgeBlock620(nn.Module):
         x = x + sa_delta
 
         # --- Cross-attention (content × style) ---
-        ca_in = x.permute(0, 2, 3, 1).reshape(b, h * w, c)
-        q = self.q_proj(ca_in).view(b, h * w, self.num_heads, self.head_dim).transpose(1, 2)
+        # 630 Phase 4J.1: DWT-Routed Cross-Attention (方案 B)
+        # 理论: 对特征图做 Haar DWT, LL bypass (保结构), 仅高频(LH/HL/HH) query style_mem
+        # 解放 style_mem: 100% 容量表达笔触/色彩, 不再被迫学"维持结构"
+        ca_is_dwt = False
+        if self.dwt_route and h >= 2 and w >= 2 and (h % 2 == 0) and (w % 2 == 0):
+            x_f = x.float()
+            ll_f, lh_f, hl_f, hh_f = dwt2_haar(x_f)
+            hf_h, hf_w = ll_f.shape[-2], ll_f.shape[-1]
+            lh_tokens = lh_f.permute(0, 2, 3, 1).reshape(b, hf_h * hf_w, c)
+            hl_tokens = hl_f.permute(0, 2, 3, 1).reshape(b, hf_h * hf_w, c)
+            hh_tokens = hh_f.permute(0, 2, 3, 1).reshape(b, hf_h * hf_w, c)
+            ca_in = torch.cat([lh_tokens, hl_tokens, hh_tokens], dim=1)
+            # ca_h * ca_w must equal token count for _attention_stats
+            ca_h, ca_w = 3 * hf_h, hf_w
+            ca_is_dwt = True
+        else:
+            ca_in = x.permute(0, 2, 3, 1).reshape(b, h * w, c)
+            ca_h, ca_w = h, w
+        q = self.q_proj(ca_in).view(b, ca_in.shape[1], self.num_heads, self.head_dim).transpose(1, 2)
         k_tokens = self.k_proj(style_tokens)
         v_tokens = self.v_proj(style_tokens)
         k = k_tokens.view(b, style_tokens.shape[1], self.num_heads, self.head_dim).transpose(1, 2)
         v = v_tokens.view(b, style_tokens.shape[1], self.num_heads, self.head_dim).transpose(1, 2)
 
-        attn_entropy, pixel_entropy = self._attention_stats(q, k, h=h, w=w, dtype=x.dtype)
+        attn_entropy, pixel_entropy = self._attention_stats(q, k, h=ca_h, w=ca_w, dtype=x.dtype)
 
         # --- Attention computation (only relu2 + softmax kept) ---
         scale_attn = 1.0 / math.sqrt(float(self.head_dim))
@@ -182,11 +204,19 @@ class SpatialBridgeBlock620(nn.Module):
             gate_std = torch.tensor(0.0, device=x.device)
             actual_attn_entropy = attn_entropy
 
-        attended = attended.transpose(1, 2).reshape(b, h * w, c)
+        attended = attended.transpose(1, 2).reshape(b, ca_in.shape[1], c)
         ca_input_std = ca_in.detach().float().std()
         ca_output_std = attended.detach().float().std()
         attended = self.out_proj(attended)
-        attended_2d = attended.transpose(1, 2).reshape(b, c, h, w)
+        if ca_is_dwt:
+            attended = attended.float()
+            n_hf = hf_h * hf_w
+            lh_out = attended[:, :n_hf, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
+            hl_out = attended[:, n_hf:2*n_hf, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
+            hh_out = attended[:, 2*n_hf:, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
+            attended_2d = idwt2_haar(ll_f, lh_out, hl_out, hh_out).to(dtype=x.dtype)
+        else:
+            attended_2d = attended.transpose(1, 2).reshape(b, c, h, w)
         style_delta = self._effective_gate_value().to(dtype=x.dtype) * attended_2d
         self.pixel_entropy = pixel_entropy
         self.cross_attn_entropy = attn_entropy
