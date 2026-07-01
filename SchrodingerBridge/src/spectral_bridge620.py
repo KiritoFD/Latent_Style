@@ -44,6 +44,66 @@ def _adain_match_subband(content: torch.Tensor, style: torch.Tensor) -> torch.Te
     return (content - pred_mean) / pred_std * target_std + target_mean
 
 
+def _wct_match_fiber(
+    content_fiber: torch.Tensor,
+    style_fiber: torch.Tensor,
+    eps: float = 1e-6,
+) -> torch.Tensor:
+    """Whitening and Coloring Transform: 匹配 mean + 完整协方差 (Phase 4I.9).
+
+    AdaIN 只匹配 mean+std (对角协方差), 丢失通道间相关性.
+    WCT 匹配完整协方差矩阵, 捕获通道相关结构.
+
+    数学:
+        白化: f_w = Σ_c^{-1/2} @ (f - μ_c)   — 去除内容协方差
+        着色: f_out = Σ_s^{1/2} @ f_w + μ_s  — 注入风格协方差
+
+    对于 C=4 通道, 协方差是 4×4 矩阵, eigh 开销极小.
+
+    输入: content_fiber, style_fiber — 形状 (B, C, H, W) 的高频 fiber
+    输出: matched — 与 content_fiber 同形状, mean+协方差匹配到 style
+    """
+    orig_dtype = content_fiber.dtype
+    # eigh 不支持 BFloat16, 全程在 float32 计算
+    c_f = content_fiber.float()
+    s_f = style_fiber.float() if style_fiber.dtype != torch.float32 else style_fiber
+    B, C, H, W = c_f.shape
+    # Flatten spatial: [B, C, HW]
+    c_flat = c_f.reshape(B, C, -1)
+    if s_f.shape[0] == 1 and B > 1:
+        s_flat = s_f.expand(B, -1, -1, -1).reshape(B, C, -1)
+    else:
+        s_flat = s_f.reshape(B, C, -1)
+
+    # Content 统计
+    c_mean = c_flat.mean(dim=2, keepdim=True)  # [B, C, 1]
+    c_centered = c_flat - c_mean  # [B, C, HW]
+    N = H * W
+    c_cov = (c_centered @ c_centered.transpose(1, 2)) / max(N - 1, 1)  # [B, C, C]
+
+    # Style 统计
+    s_mean = s_flat.mean(dim=2, keepdim=True)  # [B, C, 1]
+    s_centered = s_flat - s_mean  # [B, C, HW]
+    s_cov = (s_centered @ s_centered.transpose(1, 2)) / max(N - 1, 1)  # [B, C, C]
+
+    # 白化: Σ_c^{-1/2} = V_c @ diag(1/√λ_c) @ V_c^T
+    # eigh 不支持 BFloat16 on CUDA, 强制 float32 (协方差矩阵仅 C×C=4×4, CPU 足够快)
+    c_eigvals, c_eigvecs = torch.linalg.eigh(c_cov.float().cpu())
+    c_eigvals = c_eigvals.clamp_min(eps)
+    c_inv_sqrt = c_eigvecs @ torch.diag_embed(c_eigvals.rsqrt()) @ c_eigvecs.transpose(1, 2)
+    c_whitened = c_inv_sqrt.to(c_centered.device) @ c_centered  # [B, C, HW]
+
+    # 着色: Σ_s^{1/2} = V_s @ diag(√λ_s) @ V_s^T
+    s_eigvals, s_eigvecs = torch.linalg.eigh(s_cov.float().cpu())
+    s_eigvals = s_eigvals.clamp_min(eps)
+    s_sqrt = s_eigvecs @ torch.diag_embed(s_eigvals.sqrt()) @ s_eigvecs.transpose(1, 2)
+    c_colored = s_sqrt.to(c_whitened.device) @ c_whitened  # [B, C, HW]
+
+    # 加回 style mean
+    c_colored = c_colored + s_mean  # [B, C, 1]
+    return c_colored.reshape(B, C, H, W).to(dtype=orig_dtype)
+
+
 class SpectralVelocityHead(nn.Module):
     """单子带速度头: dim -> latent_channels, zero-init conv."""
 
@@ -72,7 +132,8 @@ class SpectralODEBridge620(nn.Module):
         self.time_dim = int(getattr(model_cfg, "time_dim", self.dim))
         self.dino_dim = int(getattr(model_cfg, "tokenizer_dino_dim", 384))
 
-        # Style conditioner (DINO patches -> bridge width)
+        # Style conditioner (style_memory tokens -> bridge width)
+        # 630 Phase 6: DINO 退役, style_memory 成为唯一 style token 路径
         # 630 Phase 2: propagate mask config (The Blindfolded Tokenizer)
         # 630 Phase 4B-1: propagate freq_lowpass config (Scheme C frequency masking)
         # 630 Phase 4B-3: propagate freq_mode (avg_pool | haar_dwt)
@@ -142,9 +203,6 @@ class SpectralODEBridge620(nn.Module):
         x: torch.Tensor,
         t: torch.Tensor | float | None = None,
         style_id: torch.Tensor | int | None = None,
-        style_dino_patches: torch.Tensor | None = None,
-        style_dino_cls: torch.Tensor | None = None,
-        content_dino_patches: torch.Tensor | None = None,
         style_latent: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
         **_: object,
@@ -155,9 +213,8 @@ class SpectralODEBridge620(nn.Module):
         ll, lh, hl, hh = dwt2_haar(x)
         # Stack 4 subbands along channel dim (HH still decomposed for input, but no velocity head)
         stacked = torch.cat([ll, lh, hl, hh], dim=1)  # (B, 4C, H/2, W/2)
-        # Style
+        # Style (630 Phase 6: DINO 退役, style_memory 唯一路径)
         style_tokens, style_global = self.style_conditioner(
-            style_dino_patches=style_dino_patches, style_dino_cls=style_dino_cls,
             style_id=style_id, batch=x.shape[0], device=x.device, dtype=x.dtype,
         )
         time_emb = self.time_proj(
@@ -168,7 +225,7 @@ class SpectralODEBridge620(nn.Module):
         for block in self.blocks:
             h = block(
                 h, time_emb=time_emb, style_tokens=style_tokens,
-                style_global=style_global, content_dino_patches=content_dino_patches,
+                style_global=style_global,
             )
             total_entropy.append(block.cross_attn_entropy)
         if total_entropy:
@@ -191,8 +248,6 @@ class SpectralODEBridge620(nn.Module):
         style_id: torch.Tensor | int | None,
         num_steps: int = 8,
         step_size: float = 1.0,
-        style_dino_patches: torch.Tensor | None = None,
-        style_dino_cls: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
         style_latent: torch.Tensor | None = None,
         target_style_latent: torch.Tensor | None = None,
@@ -244,9 +299,12 @@ class SpectralODEBridge620(nn.Module):
         # 理论: 单 α 强制所有频段同步权衡, 映射到 1D Pareto 前沿.
         # 多 α 引入新自由度: LH/HL (中频结构) 用小 α 保内容, HH (高频细节) 用大 α 强风格.
         # 默认 -1.0 回退到 endpoint_adain_scale (向后兼容)
+        _a_ll_raw = float(_cfg_get('endpoint_adain_scale_ll', -1.0))
         _a_lh_raw = float(_cfg_get('endpoint_adain_scale_lh', -1.0))
         _a_hl_raw = float(_cfg_get('endpoint_adain_scale_hl', -1.0))
         _a_hh_raw = float(_cfg_get('endpoint_adain_scale_hh', -1.0))
+        # 630 Phase 4I.11: LL 默认 0.0 (内容锚锁死), 仅 per_subband_wct 模式下生效
+        adain_scale_ll = 0.0 if _a_ll_raw < 0.0 else _a_ll_raw
         adain_scale_lh = endpoint_adain_scale if _a_lh_raw < 0.0 else _a_lh_raw
         adain_scale_hl = endpoint_adain_scale if _a_hl_raw < 0.0 else _a_hl_raw
         adain_scale_hh = endpoint_adain_scale if _a_hh_raw < 0.0 else _a_hh_raw
@@ -302,32 +360,32 @@ class SpectralODEBridge620(nn.Module):
                 t_mid_b = torch.full((h.shape[0],), t_mid, device=h.device, dtype=h.dtype)
                 t_next_b = torch.full((h.shape[0],), t_next, device=h.device, dtype=h.dtype)
                 # k1
-                k1 = self.forward(h, t=t_batch, style_id=style_id, style_dino_patches=style_dino_patches,
-                                  style_dino_cls=style_dino_cls, style_text_tokens=style_text_tokens,
+                k1 = self.forward(h, t=t_batch, style_id=style_id,
+                                  style_text_tokens=style_text_tokens,
                                   style_latent=style_latent)
                 ll_k2 = ll0 + (k1["ll"] * dt / 2.0 if not lock_ll else 0.0)
                 lh_k2 = lh0 + k1["lh"] * dt / 2.0
                 hl_k2 = hl0 + k1["hl"] * dt / 2.0
                 h_k2 = idwt2_haar(ll_k2, lh_k2, hl_k2, hh0)
                 # k2
-                k2 = self.forward(h_k2, t=t_mid_b, style_id=style_id, style_dino_patches=style_dino_patches,
-                                  style_dino_cls=style_dino_cls, style_text_tokens=style_text_tokens,
+                k2 = self.forward(h_k2, t=t_mid_b, style_id=style_id,
+                                  style_text_tokens=style_text_tokens,
                                   style_latent=style_latent)
                 ll_k3 = ll0 + (k2["ll"] * dt / 2.0 if not lock_ll else 0.0)
                 lh_k3 = lh0 + k2["lh"] * dt / 2.0
                 hl_k3 = hl0 + k2["hl"] * dt / 2.0
                 h_k3 = idwt2_haar(ll_k3, lh_k3, hl_k3, hh0)
                 # k3
-                k3 = self.forward(h_k3, t=t_mid_b, style_id=style_id, style_dino_patches=style_dino_patches,
-                                  style_dino_cls=style_dino_cls, style_text_tokens=style_text_tokens,
+                k3 = self.forward(h_k3, t=t_mid_b, style_id=style_id,
+                                  style_text_tokens=style_text_tokens,
                                   style_latent=style_latent)
                 ll_k4 = ll0 + (k3["ll"] * dt if not lock_ll else 0.0)
                 lh_k4 = lh0 + k3["lh"] * dt
                 hl_k4 = hl0 + k3["hl"] * dt
                 h_k4 = idwt2_haar(ll_k4, lh_k4, hl_k4, hh0)
                 # k4
-                k4 = self.forward(h_k4, t=t_next_b, style_id=style_id, style_dino_patches=style_dino_patches,
-                                  style_dino_cls=style_dino_cls, style_text_tokens=style_text_tokens,
+                k4 = self.forward(h_k4, t=t_next_b, style_id=style_id,
+                                  style_text_tokens=style_text_tokens,
                                   style_latent=style_latent)
                 # 加权平均: (k1 + 2*k2 + 2*k3 + k4)/6
                 ll_new = ll0 + ((k1["ll"] + 2.0*k2["ll"] + 2.0*k3["ll"] + k4["ll"]) / 6.0 * dt if not lock_ll else 0.0)
@@ -340,8 +398,8 @@ class SpectralODEBridge620(nn.Module):
                 # Corrector: v2 = f(h_pred, t_next); h = h + (v1+v2)/2*dt
                 # 理论: 截断误差从 O(h^2) 降到 O(h^3), 相同步数下轨迹更准确
                 v1 = self.forward(
-                    h, t=t_batch, style_id=style_id, style_dino_patches=style_dino_patches,
-                    style_dino_cls=style_dino_cls, style_text_tokens=style_text_tokens,
+                    h, t=t_batch, style_id=style_id,
+                    style_text_tokens=style_text_tokens,
                     style_latent=style_latent,
                 )
                 ll1, lh1, hl1, hh1 = dwt2_haar(h)
@@ -351,8 +409,8 @@ class SpectralODEBridge620(nn.Module):
                 h_pred = idwt2_haar(ll_pred, lh_pred, hl_pred, hh1)
                 t_batch2 = torch.full((h_pred.shape[0],), t_next, device=h.device, dtype=h.dtype)
                 v2 = self.forward(
-                    h_pred, t=t_batch2, style_id=style_id, style_dino_patches=style_dino_patches,
-                    style_dino_cls=style_dino_cls, style_text_tokens=style_text_tokens,
+                    h_pred, t=t_batch2, style_id=style_id,
+                    style_text_tokens=style_text_tokens,
                     style_latent=style_latent,
                 )
                 # Corrector: 平均两个速度, 一步积分
@@ -363,8 +421,8 @@ class SpectralODEBridge620(nn.Module):
             else:
                 # Euler (一阶, 现有行为) — Spectral: integrate LL/LH/HL independently
                 v_dict = self.forward(
-                    h, t=t_batch, style_id=style_id, style_dino_patches=style_dino_patches,
-                    style_dino_cls=style_dino_cls, style_text_tokens=style_text_tokens,
+                    h, t=t_batch, style_id=style_id,
+                    style_text_tokens=style_text_tokens,
                     style_latent=style_latent,
                 )
                 ll, lh, hl, hh = dwt2_haar(h)
@@ -405,8 +463,52 @@ class SpectralODEBridge620(nn.Module):
                     h = idwt2_haar_multi_reconstruct(
                         {"ll_K": h_decomp["ll_K"], "h": new_subs}, levels=lowpass_levels
                     )
+                elif adain_mode == "per_subband_wct":
+                    # 630 Phase 4I.11: Per-Subband WCT — 结构性突破
+                    # 理论: 打破 1D Pareto 前沿. LL 锁死保内容 (lpips↓), LH/HL 激进 WCT 强风格 (clip↑)
+                    # vs spatial_fiber_wct: 单 α 全频段同步权衡; per_subband_wct: 每子带独立 α + 完整协方差匹配
+                    # vs per_subband: AdaIN (mean+std) vs WCT (完整协方差) — WCT 捕获通道相关结构
+                    h_decomp = dwt2_haar_multi_decompose(h, levels=lowpass_levels)
+                    s_latent = style_latent.to(dtype=h.dtype)
+                    s_decomp = dwt2_haar_multi_decompose(s_latent, levels=lowpass_levels)
+                    # LL_K: 可选 WCT (低 α 保全局色调, 0.0=锁死)
+                    ll_K = h_decomp["ll_K"]
+                    if adain_scale_ll > 0.0:
+                        s_ll = s_decomp["ll_K"]
+                        if style_extrap_alpha > 0.0:
+                            s_ll = s_ll * (1.0 + style_extrap_alpha)
+                        ll_K = (1.0 - adain_scale_ll) * ll_K + adain_scale_ll * _wct_match_fiber(ll_K, s_ll)
+                    # 高频子带: 每子带独立 WCT
+                    new_subs = []
+                    for k, (lh, hl, hh) in enumerate(h_decomp["h"]):
+                        s_lh, s_hl, s_hh = s_decomp["h"][k]
+                        if style_extrap_alpha > 0.0:
+                            s_lh = s_lh * (1.0 + style_extrap_alpha)
+                            s_hl = s_hl * (1.0 + style_extrap_alpha)
+                            s_hh = s_hh * (1.0 + style_extrap_alpha)
+                        lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
+                        hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
+                        hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
+                        new_subs.append((lh_new, hl_new, hh_new))
+                    h = idwt2_haar_multi_reconstruct(
+                        {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
+                    )
+                elif adain_mode == "spatial_fiber_wct":
+                    # 630 Phase 4I.9: WCT (Whitening and Coloring Transform) — 协方差匹配
+                    # Probe B 诊断: AdaIN (mean+std) 对协方差修正率仅 2.5%
+                    # WCT 匹配完整协方差矩阵, 捕获通道相关结构
+                    ep_base = lp(h)
+                    ep_fiber_curr = h - ep_base
+                    style_fiber = style_latent.to(dtype=h.dtype) - lp(style_latent.to(dtype=h.dtype))
+                    # Style extrapolation: fiber 高通分量均值≈0, 外推退化为缩放 (core_keep D3)
+                    if style_extrap_alpha > 0.0:
+                        style_fiber = style_fiber * (1.0 + style_extrap_alpha)
+                    # WCT: 白化内容 fiber → 用风格协方差着色 (匹配 mean + 完整协方差)
+                    ep_fiber_matched = _wct_match_fiber(ep_fiber_curr, style_fiber)
+                    # α-blend: base 锁死保 LPIPS
+                    h = ep_base + (1.0 - endpoint_adain_scale) * ep_fiber_curr + endpoint_adain_scale * ep_fiber_matched
                 else:
-                    # 现有 spatial_fiber 模式 (保持不变)
+                    # 现有 spatial_fiber 模式 (mean+std 匹配, 保持不变)
                     ep_base = lp(h)
                     ep_fiber_curr = h - ep_base
                     style_fiber = style_latent.to(dtype=h.dtype) - lp(style_latent.to(dtype=h.dtype))

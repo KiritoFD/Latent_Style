@@ -17,7 +17,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from config_schema import ExperimentConfig, load_experiment_config
-from style_families import runtime_conditioning_requires_dino, validate_i2sb_contract, validate_pure_latent_contract
+from style_families import validate_i2sb_contract, validate_pure_latent_contract
 from trainer import SBTrainer
 from utils.dataset import AdaCUTLatentDataset
 
@@ -462,23 +462,10 @@ def main() -> None:
             tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
             style_tokenizer=str(getattr(config.model, "style_tokenizer", "")),
             semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
-            dino_masked_swd_weight=float(getattr(config.bridge, "dino_masked_swd_weight", 0.0)),
             tokenizer_content_adaptive=bool(getattr(config.model, "tokenizer_content_adaptive", False)),
         )
 
     data_cfg = config.data
-    needs_dino_runtime = contract_family in ("620_spatial_bridge", "620_spectral_ode") or runtime_conditioning_requires_dino(
-        tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
-        semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
-    )
-    dino_cache_path = str(data_cfg.dino_cache_path) if needs_dino_runtime else ""
-    dino_cache_required = bool(data_cfg.dino_cache_required) if needs_dino_runtime else False
-    if (not needs_dino_runtime) and (str(data_cfg.dino_cache_path).strip() or bool(data_cfg.dino_cache_required)):
-        logger.info(
-            "Ignoring DINO sidecar config for tokenizer_family=%s semantic_supervision_family=%s; pure-latent mainline does not require runtime DINO conditioning.",
-            str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
-            str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
-        )
     dataset = AdaCUTLatentDataset(
         data_root=data_cfg.data_root,
         style_subdirs=data_cfg.style_subdirs,
@@ -508,9 +495,6 @@ def main() -> None:
         pairing_cache_cross_only=bool(data_cfg.pairing_cache_cross_only),
         latent_cache_mode=str(data_cfg.latent_cache_mode),
         latent_cache_dir=str(data_cfg.latent_cache_dir),
-        dino_cache_path=dino_cache_path,
-        dino_cache_required=dino_cache_required,
-        dino_bank_limit_per_style=int(data_cfg.dino_bank_limit_per_style),
         style_caption_path=str(getattr(data_cfg, "style_caption_path", "")),
         device=str(device),
     )

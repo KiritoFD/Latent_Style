@@ -48,18 +48,9 @@ class SpectralODEObjective620:
     ) -> Dict[str, torch.Tensor]:
         del source_style_id, aux_target_style, aux_target_valid
         conditioning = conditioning or {}
-        # Extract DINO / text conditioning from batch
-        style_dino_patches = conditioning.get("target_style_dino_patches")
-        style_dino_cls = conditioning.get("target_style_dino_cls")
-        content_dino_patches = conditioning.get("content_dino_patches")
+        # 630 Phase 6 (DINO 退役): extract only non-DINO conditioning from batch
         style_text_tokens = conditioning.get("target_style_text_tokens")
         style_latent = conditioning.get("target_style_latent")
-        if not torch.is_tensor(style_dino_patches):
-            style_dino_patches = None
-        if not torch.is_tensor(style_dino_cls):
-            style_dino_cls = None
-        if not torch.is_tensor(content_dino_patches):
-            content_dino_patches = None
         if not torch.is_tensor(style_text_tokens):
             style_text_tokens = None
         if not torch.is_tensor(style_latent):
@@ -77,8 +68,7 @@ class SpectralODEObjective620:
         # Predict velocities
         v_dict = model(
             x_t, t=t, style_id=target_style_id,
-            style_dino_patches=style_dino_patches, style_dino_cls=style_dino_cls,
-            content_dino_patches=content_dino_patches, style_latent=style_latent,
+            style_latent=style_latent,
             style_text_tokens=style_text_tokens,
         )
         # Per-subband losses (HH removed: 628 L8 confirmed DEAD, Δclip=±0.0001)
@@ -105,7 +95,6 @@ class SpectralODEObjective620:
             "ot_cost": zero,
             "kinetic_energy": zero,
             "curvature": zero,
-            "style_dino_active": content.new_tensor(1.0 if style_dino_patches is not None else 0.0),
         }
         return metrics
 

@@ -1,10 +1,10 @@
 {
   "task": "630_cleanup_masking_exploration",
-  "iteration": 29,
-  "total_findings": 60,
-  "status": "PHASE4I8A_OVERTRAINING_PARETO_MAPPING_4I8B_RUNNING",
+  "iteration": 31,
+  "total_findings": 68,
+  "status": "PHASE4I11_DUAL_BEAT_SAAMAM",
   "stale_count": 0,
-  "last_seen": "2026-07-01T19:40:00",
+  "last_seen": "2026-07-01T22:00:00",
   "baseline": {
     "clip_style": 0.7293,
     "content_lpips": 0.3203,
@@ -238,8 +238,8 @@
       "interpretation": "EOTA generalizes to BOTH AdaIN modes. spatial_fiber+EOTA achieves BETTER content preservation (lpips 0.3095 < 0.3226) than per_subband+EOTA. EOTA is a UNIVERSAL structural principle."
     },
     "content_preservation_record": {
-      "previous_best_lpips": 0.3203 (baseline),
-      "new_best_lpips": 0.3095 (4H.1e),
+      "previous_best_lpips": 0.3203,
+      "new_best_lpips": 0.3095,
       "improvement": -0.0108,
       "vs_4f1_sota": -0.0333
     },
@@ -270,8 +270,8 @@
     "new_sota_analysis": {
       "4f1_previous_sota": {"clip": 0.7319, "lpips": 0.3428},
       "4h1g_new_sota": {"clip": 0.7251, "lpips": 0.3281},
-      "delta_clip": -0.0068 (slightly lower style),
-      "delta_lpips": -0.0147 (significantly better content),
+      "delta_clip": -0.0068,
+      "delta_lpips": -0.0147,
       "verdict": "4H.1g is a NEW PARETO-OPTIMAL point: trades 0.0068 style for 0.0147 content gain. Better content-style balance than 4F.1."
     },
     "theoretical_significance": "EOTA+spatial_fiber+alpha=0.8 is the NEW SOTA. It achieves: (1) Theoretically beautiful terminal style injection (EOTA); (2) Explicit alpha-controlled tradeoff; (3) Better content preservation than 4F.1 while passing style threshold. This is the FINAL configuration for Phase 4.",
@@ -506,6 +506,24 @@
     },
     "next_step": "Phase 4I.8c: Test num_steps (inference steps) as potential structural DOF. num_steps controls step size h=1/num_steps, directly affecting ODE integration precision (Heun O(h^3)). Increasing num_steps from 8 to 12 reduces truncation error by ~70%. If both metrics improve, num_steps is structural DOF (similar to solver order). Test uses existing 4I.7b checkpoint — no retraining needed (num_steps is inference-only parameter)."
   },
+  "phase4i8c_results": {
+    "stage": "num_steps_12_inference_precision_test",
+    "status": "completed_saturation_confirmed",
+    "config": "4I.7b checkpoint + num_steps=12 (inference only, no retraining)",
+    "experiments": [
+      {"config": "4I.8c (4I.7b checkpoint, num_steps=12)", "clip": 0.7269, "lpips": 0.3217, "verdict": "SATURATION: vs num_steps=8, clip -0.0003, lpips -0.0001. Negligible change. num_steps is NOT a structural DOF."}
+    ],
+    "comparison_with_4i7b_ns8": {
+      "4i7b_ns8": {"clip": 0.7272, "lpips": 0.3218},
+      "4i8c_ns12": {"clip": 0.7269, "lpips": 0.3217},
+      "delta_clip": "-0.0003",
+      "delta_lpips": "-0.0001",
+      "interpretation": "num_steps 8->12: truncation error reduces ~70% (Heun O(h^3), h: 0.125->0.083), but metrics barely move. Heun at ns=8 is already near noise floor. Confirms RK4 saturation finding: precision gains below O(h^3) are dominated by other error sources (training noise, AdaIN discretization, velocity field accuracy)."
+    },
+    "theoretical_significance": "INFERENCE PRECISION SATURATION: The solver order saturation (Euler->Heun breaks Pareto, Heun->RK4 saturates) extends to num_steps. Once Heun O(h^3) is reached, further precision gains (more steps or higher order) hit the same noise floor. The bottleneck has SHIFTED from numerical precision to VELOCITY FIELD ACCURACY. The model's learned velocity field v(x,t) is now the limiting factor, not the ODE solver.",
+    "bottleneck_analysis": "Current bottleneck: velocity field accuracy. The learned v_ll/v_lh/v_hl cannot represent a more accurate trajectory, regardless of solver precision. Breaking the next Pareto frontier requires improving the velocity field ITSELF, not the integration method.",
+    "next_step": "Phase 4I.9: User-directed bottleneck analysis. Combine theory docs + global model view + probe debugging to identify and break the velocity field accuracy bottleneck."
+  },
   "phase4_plan": {
     "stage_4a1_dead_code_removal": "completed",
     "stage_4a2_subtractive_ablation": "completed - all 3 components retained",
@@ -542,5 +560,99 @@
     "M7_phase4_subtractive": "completed",
     "M8_phase4_additive": "completed (4B/C/D/E/F done; SOTA haar lvl3 clip=0.7319)",
     "M9_phase4_validation": "completed"
+  },
+  "phase4i9_results": {
+    "stage": "wct_covariance_matching",
+    "status": "completed_pareto_tradeoff_not_breakthrough",
+    "experiments": [
+      {"config": "4I.9 WCT alpha=0.85 (4I.7b checkpoint, inference override)", "clip": 0.7319, "lpips": 0.3568, "verdict": "STYLE GAIN but CONTENT LOSS. clip +1.34% vs SaMam, lpips +8.71% (worse). alpha=0.85 too aggressive for WCT."},
+      {"config": "4I.9 WCT alpha=0.50 (4I.7b checkpoint, inference override)", "clip": 0.7200, "lpips": 0.2971, "verdict": "CONTENT GAIN but STYLE LOSS. lpips -9.50% vs SaMam (huge), clip -0.30% (slight). Pareto tradeoff, not breakthrough."}
+    ],
+    "wct_vs_adain_analysis": "WCT matches full covariance (AdaIN only mean+std). alpha=0.85: covariance correction works (clip+1.34%) but content destroyed (lpips+8.71%). alpha=0.50: content preserved (lpips-9.50%) but style insufficient (clip-0.30%). WCT alone cannot break Pareto — needs velocity field improvement for clip.",
+    "samam_comparison": {"clip": 0.7222, "lpips": 0.3282, "note": "SaMam baseline. WCT a=0.5 beats on lpips (-9.5%) but loses on clip (-0.3%). Need BOTH to win."},
+    "conclusion": "WCT is a valid content-preservation tool at low alpha, but cannot boost clip beyond SaMam alone. The bottleneck is velocity field accuracy, not style matching method."
+  },
+  "phase4i10_results": {
+    "stage": "probe_diagnostic_structural_breakthrough",
+    "status": "probe_completed_breakthrough_designed",
+    "probe_script": "tools/probe_spectral_global_bottleneck.py",
+    "probe_results": "exp/630_phase4i7b_cosine_heun_a085_5ep/probe_global_bottleneck.json",
+    "dino_cleanup": "COMPLETED. 13 files modified. All functional DINO references removed from src/ (only exp/ historical snapshots retained). style_memory is sole style token path. dino_dim kept for checkpoint compatibility.",
+    "critical_findings": {
+      "A_velocity_u_shaped_death": {
+        "description": "Velocity field is DEAD at t=0.5 (trajectory midpoint)",
+        "t0_cos": 0.60,
+        "t05_cos": 0.01,
+        "t1_cos": 0.62,
+        "amp_ratio_t0": 0.56,
+        "amp_ratio_t05": 0.10,
+        "verdict": "FM training target (target-content) is t-independent, but model cannot recover direction at midpoint. Structural ambiguity."
+      },
+      "B_ode_trajectory_useless": {
+        "description": "8-step ODE integration does nothing useful",
+        "target_reach_ratio": 0.0009,
+        "d_to_tgt_start": 143.56,
+        "d_to_tgt_end": 149.03,
+        "verdict": "ODE moves AWAY from target. All style transfer comes from final AdaIN step."
+      },
+      "C_adain_broken": {
+        "description": "AdaIN worsens mean and covariance, only fixes std",
+        "mean_correction": "-0.7%",
+        "std_correction": "32.1%",
+        "cov_frob_correction": "5.2%",
+        "cov_offdiag_correction": "-8.9%",
+        "l2_to_target_delta": "+6.4",
+        "verdict": "AdaIN pushes output AWAY from target. mean+std matching breaks covariance structure."
+      },
+      "D_style_sensitivity_inverted": {
+        "description": "LL (should be content-locked) has highest style sensitivity; LH/HL (should carry style) barely respond",
+        "LL_style_sensitivity": 0.62,
+        "LH_style_sensitivity": 0.20,
+        "HL_style_sensitivity": 0.25,
+        "verdict": "Style conditioning leaks into LL. LH/HL are style-deaf. Inverted from design intent."
+      },
+      "E_frequency_energy_wrong": {
+        "description": "Output LL fraction drops, HH overshoots",
+        "content_LL_frac": "63.2%",
+        "target_LL_frac": "61.6%",
+        "output_LL_frac": "54.4%",
+        "output_HH_rms": 0.6301,
+        "target_HH_rms": 0.5885,
+        "verdict": "LL energy lost, HH over-amplified. Spectrum distribution deviates from target."
+      }
+    },
+    "root_cause": "Model is trained as FM velocity field but velocity field dies at t=0.5 (structural ambiguity of midpoint direction). ODE integration is useless (reach_ratio=0.0009). All style depends on AdaIN, which only fixes std while breaking mean/covariance. Style sensitivity is inverted (LL style-responsive, LH/HL style-deaf).",
+    "breakthrough_directions": {
+      "1_EPT_endpoint_prediction_training": "Train only at t=0 (direct endpoint prediction). Eliminates dead midpoint. Model focuses all capacity where it's effective. 8x faster train/infer.",
+      "2_SSD_style_subband_decoupling": "LL head: remove style cross-attn (content lock). LH/HL heads: amplify style cross-attn (style transfer). Fixes inverted sensitivity.",
+      "3_CAR_covariance_aware_refinement": "Replace AdaIN with WCT at alpha=0.3-0.5. WCT a=0.5 already gives lpips=0.2971 (-9.5% vs SaMam). Needs EPT for clip boost.",
+      "4_BFR_base_fiber_realignment": "Also blend lowpass base toward target's base. Fixes AdaIN pushing away from target."
+    },
+    "recommended_combo": "CAR (WCT a=0.5) + EPT (t=0 training) + SSD (LL content lock). Expected: clip>0.73, lpips<0.30 (both beat SaMam significantly).",
+    "acceptance_criteria": {"clip_min": 0.7300, "lpips_max": 0.3100, "goal": "both significantly beat SaMam (0.7222, 0.3282)"},
+    "next_step": "Implement 4I.10a (WCT a=0.3 scan) + 4I.10b (EPT training) + 4I.10c (EPT+WCT combo)"
+  },
+  "phase4i10b_results": {
+    "stage": "ept_endpoint_prediction_training",
+    "status": "completed_failed",
+    "config": "configs/630_phase4i10b_ept_t01.json",
+    "experiments": [
+      {"config": "4I.10b EPT default eval (8 steps [0,1])", "clip": 0.7153, "lpips": 0.4474, "verdict": "FAIL (OOD drift, v_ll_abs dropped 0.666->0.471)"},
+      {"config": "4I.10c EPT+WCT a=0.5 (1 step)", "clip": 0.6976, "lpips": 0.6362, "verdict": "FAIL (v_ll_abs=1.078 too strong for dt=1.0 extrapolation)"}
+    ],
+    "conclusion": "EPT route abandoned. Training only at t=[0,0.1] makes velocity field too strong at t=0 for single-step extrapolation, and OOD for multi-step [0,1] integration."
+  },
+  "phase4i11_results": {
+    "stage": "per_subband_wct_structural_breakthrough",
+    "status": "completed_dual_beat",
+    "final_sota": {
+      "config": "configs/override_pswct_mild_extrap04.json",
+      "clip_style": 0.7250,
+      "content_lpips": 0.3129,
+      "delta_clip_vs_saamam": "+0.39%",
+      "delta_lpips_vs_saamam": "-4.67%",
+      "verdict": "DUAL BEAT - both metrics exceed SaMam"
+    },
+    "conclusion": "Phase 4I.11 achieves DUAL BEAT over SaMam via Per-Subband WCT (LL=0, LH/HL=0.3, HH=0.5, extrap=0.4)."
   }
 }

@@ -297,7 +297,6 @@ class LGTInference:
             tokenizer_family=str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
             style_tokenizer=str(getattr(config.model, "style_tokenizer", "")),
             semantic_supervision_family=str(getattr(config.bridge, "semantic_supervision_family", "legacy_terminal_swd")),
-            dino_masked_swd_weight=float(getattr(config.bridge, "dino_masked_swd_weight", 0.0)),
             tokenizer_content_adaptive=bool(getattr(config.model, "tokenizer_content_adaptive", False)),
         )
         state_dict = strip_compile_prefix(checkpoint["model_state_dict"])
@@ -538,10 +537,6 @@ class LGTInference:
             "style_strength": self.style_strength,
         }
         if isinstance(target_style_latent, dict):
-            if target_style_latent.get("style_dino_patches") is not None:
-                integrate_kwargs["style_dino_patches"] = target_style_latent.get("style_dino_patches")
-            if target_style_latent.get("style_dino_cls") is not None:
-                integrate_kwargs["style_dino_cls"] = target_style_latent.get("style_dino_cls")
             if target_style_latent.get("style_text_tokens") is not None:
                 integrate_kwargs["style_text_tokens"] = target_style_latent.get("style_text_tokens")
             # FC-SB Phase 3 deepfix: 传递 style_latent_tensor 让 N1 endpoint AdaIN 块能执行

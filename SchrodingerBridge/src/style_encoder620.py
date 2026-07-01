@@ -8,17 +8,20 @@ from spectral620 import dwt2_haar, idwt2_haar
 
 
 class StyleConditioner620(nn.Module):
-    """Project cached DINO patch tokens into the 620 bridge width.
+    """Project learnable style_memory tokens into the 620 bridge width.
 
     628/629 清理: adapter/local_cnn/text 三个死分支已删除 (clean_base_v2 全 false, 从未启用).
     630 清理: deprecated 兼容参数已连根拔起 (调用点同步精简).
     630 Phase 2: The Blindfolded Tokenizer — random dropout + spatial shuffle
     on style tokens to break Gate Collapse (docs/630/mask.md).
-    630 Phase 4B-1: Frequency Masking (Scheme C) — subtract low-freq DINO patches
+    630 Phase 4B-1: Frequency Masking (Scheme C) — subtract low-freq component
     to purify high-freq style residual, orthogonal to mask_mode.
     630 Phase 4B-3: DWT-based 分频 Tokenizer — replace avg_pool box filter with
     orthogonal Haar DWT, unifying frequency decomposition across the pipeline
     (style encoder + spectral bridge use the same Haar wavelet).
+    630 Phase 6 (DINO 退役): external DINO patch/cls inputs removed; style_memory
+    is the only source of style tokens. dino_dim kept as attribute name for
+    checkpoint compatibility (style_memory/patch_proj/cls_proj preserved).
     """
 
     def __init__(
@@ -35,6 +38,8 @@ class StyleConditioner620(nn.Module):
         freq_mode: str = "avg_pool",
     ) -> None:
         super().__init__()
+        # dino_dim is kept as attribute name for checkpoint compatibility;
+        # it's the channel dim of style_memory / patch_proj / cls_proj.
         self.dino_dim = int(dino_dim)
         self.model_dim = int(model_dim)
         self.num_styles = int(num_styles)
@@ -67,7 +72,7 @@ class StyleConditioner620(nn.Module):
             self.freq_mode = "avg_pool"
 
     def _apply_freq_lowpass(self, tokens: torch.Tensor) -> torch.Tensor:
-        """Frequency masking: subtract low-frequency DINO patch component.
+        """Frequency masking: subtract low-frequency patch component.
 
         Two modes:
         - avg_pool (Phase 4B-1): box low-pass via avg_pool2d, approximate.
@@ -152,42 +157,25 @@ class StyleConditioner620(nn.Module):
     def forward(
         self,
         *,
-        style_dino_patches: torch.Tensor | None,
-        style_dino_cls: torch.Tensor | None,
         style_id: torch.Tensor | int | None,
         batch: int,
         device: torch.device,
         dtype: torch.dtype,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        patches = style_dino_patches
-        if patches is None:
-            patches = self._fallback_tokens(style_id, batch=batch, device=device, dtype=dtype)
-        else:
-            patches = patches.to(device=device, dtype=dtype)
-            if patches.ndim == 2:
-                patches = patches.unsqueeze(0)
-            if patches.shape[0] == 1 and batch > 1:
-                patches = patches.expand(batch, -1, -1)
-            if patches.shape[0] != batch:
-                raise ValueError(f"style_dino_patches batch mismatch: expected {batch}, got {patches.shape[0]}")
+        # 630 Phase 6 (DINO 退役): style_memory is the only source of patches.
+        patches = self._fallback_tokens(style_id, batch=batch, device=device, dtype=dtype)
         if patches.shape[-1] != self.dino_dim:
-            raise ValueError(f"style_dino_patches last dim must be {self.dino_dim}, got {patches.shape[-1]}")
+            raise ValueError(f"style_memory last dim must be {self.dino_dim}, got {patches.shape[-1]}")
 
         # 630 Phase 4B-1: Apply Frequency Masking (Scheme C) on raw patches BEFORE patch_proj.
-        # Subtracting low-freq DINO component purifies high-freq style residual.
+        # Subtracting low-freq component purifies high-freq style residual.
         patches = self._apply_freq_lowpass(patches)
         img_tokens = self.patch_proj(patches.float()).to(dtype=dtype)
         # 630 Phase 2: Apply Blindfolded Tokenizer masking after projection
         img_tokens = self._apply_mask(img_tokens)
 
-        if style_dino_cls is None:
-            style_global_raw = patches.float().mean(dim=1)
-        else:
-            style_global_raw = style_dino_cls.to(device=device, dtype=dtype)
-            if style_global_raw.ndim == 1:
-                style_global_raw = style_global_raw.unsqueeze(0)
-            if style_global_raw.shape[0] == 1 and batch > 1:
-                style_global_raw = style_global_raw.expand(batch, -1)
+        # 630 Phase 6 (DINO 退役): no external cls input; use mean of style_memory tokens.
+        style_global_raw = patches.float().mean(dim=1)
         img_global = self.cls_proj(style_global_raw.float()).to(dtype=dtype)
 
         return img_tokens, img_global
