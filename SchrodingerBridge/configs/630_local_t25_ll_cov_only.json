@@ -1,0 +1,17 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "model": {
+    "endpoint_adain_mode": "per_subband_wct_ll_cov_only",
+    "endpoint_adain_scale_ll": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_t25_ll_cov_only",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "local_t25_ll_cov_only",
+    "axis": "endpoint_adain_mode",
+    "stage": "local_t25",
+    "notes": "T25: Plan G Covariance-Only LL WCT. Plan E(mean-only)失败:LPIPS对mean敏感. Plan F(std-only)失败:std破坏CLIP. Plan G测试最后一个未测统计量:cross-channel covariance(协方差). 仅迁移通道间色彩关系(如R-G相关性),保留content mean和std. _wct_match_fiber_keep_mean: WCT但加回content mean. 假设:CLIP正向(色彩关系迁移),LPIPS中性(亮度保留). 目标: clip>0.7213 AND lpips<0.2868 (dual beat T11)."
+  }
+}

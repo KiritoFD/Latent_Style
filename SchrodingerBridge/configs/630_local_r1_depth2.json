@@ -1,0 +1,16 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "model": {
+    "num_res_blocks": 2
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_r1_depth2",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "local_r1_depth2",
+    "axis": "num_res_blocks",
+    "stage": "local_r1",
+    "notes": "R1: 反向实验 depth=2 (反向 T19a depth=6 NaN 失败). 更小更快, 测试是否保持 T11 性能. 基于 T11 SOTA (depth=4, dim=64, p=0.8, w_ll=0.0). 假设: depth=2 参数更少, 可能欠拟合导致 clip/lpips 都下降; 也可能因正则化效果保持性能. 目标: 验证 depth=4 是否为容量甜点."
+  }
+}

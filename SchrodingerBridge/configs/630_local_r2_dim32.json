@@ -1,0 +1,16 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "model": {
+    "base_dim": 32
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_r2_dim32",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "local_r2_dim32",
+    "axis": "base_dim",
+    "stage": "local_r2",
+    "notes": "R2: 反向实验 dim=32 (反向 T19b dim=96 underfitting 失败). 更少参数, 测试是否保持 T11 性能. 基于 T11 SOTA (depth=4, dim=64, p=0.8, w_ll=0.0). 假设: dim=32 参数减半, 可能欠拟合导致 clip 下降; 也可能因 5-epoch 预算下更易收敛保持性能. 目标: 验证 dim=64 是否为容量甜点."
+  }
+}

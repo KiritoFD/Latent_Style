@@ -66,6 +66,8 @@ class SpatialBridgeBlock620(nn.Module):
         dwt_route: bool = False,
         dwt_ll_route_alpha: float = 0.0,
         dwt_route_train_prob: float = 0.0,
+        ll_adaln_zero: bool = False,
+        ll_tone_bias: bool = False,
     ) -> None:
         super().__init__()
 
@@ -81,6 +83,12 @@ class SpatialBridgeBlock620(nn.Module):
         self.dwt_ll_route_alpha = float(dwt_ll_route_alpha)
         # 630 Local T10: Stochastic DWT Route — 训练时以概率p使用DWT route, 推理时始终使用
         self.dwt_route_train_prob = float(dwt_route_train_prob)
+        # 630 Phase 72 方案 C: Global AdaLN-Zero on LL
+        # 独立 global_tone_embedding 通过 AdaLN-Zero 调制 LL 的 mean/std
+        # γ/β 零初始化 (训练初期恒等), 逐渐学习色调调制, 不破坏边缘结构
+        self.ll_adaln_zero = bool(ll_adaln_zero)
+        # 630 Phase 72 方案 D: Direct Tone Bias Injection (无 GroupNorm, 强制注入)
+        self.ll_tone_bias = bool(ll_tone_bias)
 
         self.shortcut_alpha = float(style_shortcut_alpha) if not isinstance(style_shortcut_alpha, (list, tuple)) else (
             float(style_shortcut_alpha[self.layer_idx]) if self.layer_idx < len(style_shortcut_alpha) else 1.0
@@ -90,6 +98,19 @@ class SpatialBridgeBlock620(nn.Module):
         while self.dim % self.num_heads != 0 and self.num_heads > 1:
             self.num_heads -= 1
         self.head_dim = self.dim // self.num_heads
+        # 630 Phase 72 方案 C: AdaLN-Zero modules (必须在 self.dim 赋值之后初始化)
+        if self.ll_adaln_zero:
+            self.adaln_norm = nn.GroupNorm(min(self.dim, 8), self.dim)
+            self.adaln_proj = nn.Linear(self.dim, self.dim * 2)
+            nn.init.zeros_(self.adaln_proj.weight)
+            nn.init.zeros_(self.adaln_proj.bias)
+        # 630 Phase 72 方案 D: Direct Tone Bias modules (无 GroupNorm, scale+shift 直接注入)
+        # LL = LL * (1 + α*γ) + α*β, γ/β 从 global_tone 投影, α 可学习标量 init=0.1
+        if self.ll_tone_bias:
+            self.tone_proj = nn.Linear(self.dim, self.dim * 2)
+            nn.init.normal_(self.tone_proj.weight, std=0.01)
+            nn.init.zeros_(self.tone_proj.bias)
+            self.tone_alpha = nn.Parameter(torch.tensor(0.1))
         # 630 Phase 72 清理: norm_type/group_norm, attn_mode/relu2, gate_mode/tanh_gate 硬编码 (已验证最优)
         self.norm1 = _make_norm("group_norm", self.dim)
         self.time_adaln = nn.Sequential(nn.SiLU(), nn.Linear(self.dim, self.dim * 3))
@@ -155,6 +176,7 @@ class SpatialBridgeBlock620(nn.Module):
         time_emb: torch.Tensor,
         style_tokens: torch.Tensor,
         style_global: torch.Tensor | None = None,
+        global_tone: torch.Tensor | None = None,
     ) -> torch.Tensor:
         del style_global  # unused (FiLM removed)
         b, c, h, w = x.shape
@@ -249,6 +271,21 @@ class SpatialBridgeBlock620(nn.Module):
                 lh_out = attended[:, :n_hf, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
                 hl_out = attended[:, n_hf:2*n_hf, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
                 hh_out = attended[:, 2*n_hf:, :].permute(0, 2, 1).reshape(b, c, hf_h, hf_w)
+                # 630 Phase 72 方案 C: AdaLN-Zero on LL (global_tone 调制 LL 色调)
+                # LL_new = LL + γ(S_global)⊙Norm(LL) + β(S_global), γ/β 零初始化
+                if self.ll_adaln_zero and global_tone is not None:
+                    normed_ll = self.adaln_norm(ll_f)
+                    gamma_beta = self.adaln_proj(global_tone.float()).to(dtype=ll_f.dtype)
+                    gamma, beta = gamma_beta.chunk(2, dim=-1)
+                    ll_f = ll_f + gamma[:, :, None, None] * normed_ll + beta[:, :, None, None]
+                # 630 Phase 72 方案 D: Direct Tone Bias (无 GroupNorm, 强制 scale+shift 注入)
+                # LL = LL * (1 + α*γ) + α*β, γ/β 从 global_tone 投影, α 可学习 init=0.1
+                # 无 GroupNorm 内容归一化, 模型无法抑制, 必须学习风格色调注入
+                if self.ll_tone_bias and global_tone is not None:
+                    gamma_beta = self.tone_proj(global_tone.float()).to(dtype=ll_f.dtype)
+                    gamma, beta = gamma_beta.chunk(2, dim=-1)
+                    alpha = torch.tanh(self.tone_alpha)  # 限制在 [-1, 1] 防止发散
+                    ll_f = ll_f * (1.0 + alpha * gamma[:, :, None, None]) + alpha * beta[:, :, None, None]
                 # LL bypass: 完全保留内容锚, 仅高频子带注入 style (4J.1 原始设计)
                 attended_2d = idwt2_haar(ll_f, lh_out, hl_out, hh_out).to(dtype=x.dtype)
         else:
