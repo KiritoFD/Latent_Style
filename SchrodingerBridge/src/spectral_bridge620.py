@@ -114,6 +114,56 @@ def _wct_match_fiber(
     return c_colored.reshape(B, C, H, W).to(dtype=orig_dtype)
 
 
+def _wct_match_fiber_keep_mean(
+    content_fiber: torch.Tensor,
+    style_fiber: torch.Tensor,
+    eps: float = 1e-6,
+) -> torch.Tensor:
+    """Covariance-Only WCT: 匹配协方差但保留 content mean (Phase 72 方案 G).
+
+    与 _wct_match_fiber 的唯一区别: 加回 content mean 而非 style mean.
+    这样 mean (亮度) 完全保留, 只迁移 cross-channel correlation (色彩关系).
+    """
+    orig_dtype = content_fiber.dtype
+    c_f = content_fiber.float()
+    s_f = style_fiber.float() if style_fiber.dtype != torch.float32 else style_fiber
+    B, C, H, W = c_f.shape
+    c_flat = c_f.reshape(B, C, -1)
+    if s_f.shape[0] == 1 and B > 1:
+        s_flat = s_f.expand(B, -1, -1, -1).reshape(B, C, -1)
+    else:
+        s_flat = s_f.reshape(B, C, -1)
+
+    c_mean = c_flat.mean(dim=2, keepdim=True)  # [B, C, 1]
+    c_centered = c_flat - c_mean
+    N = H * W
+    c_cov = (c_centered @ c_centered.transpose(1, 2)) / max(N - 1, 1)
+    c_cov = c_cov + eps * torch.eye(c_cov.shape[1], device=c_cov.device)
+
+    s_mean = s_flat.mean(dim=2, keepdim=True)
+    s_centered = s_flat - s_mean
+    s_cov = (s_centered @ s_centered.transpose(1, 2)) / max(N - 1, 1)
+    s_cov = s_cov + eps * torch.eye(s_cov.shape[1], device=s_cov.device)
+
+    try:
+        c_eigvals, c_eigvecs = torch.linalg.eigh(c_cov.float().cpu())
+        c_eigvals = c_eigvals.clamp_min(eps)
+        c_inv_sqrt = c_eigvecs @ torch.diag_embed(c_eigvals.rsqrt()) @ c_eigvecs.transpose(1, 2)
+        c_whitened = c_inv_sqrt.to(c_centered.device) @ c_centered
+
+        s_eigvals, s_eigvecs = torch.linalg.eigh(s_cov.float().cpu())
+        s_eigvals = s_eigvals.clamp_min(eps)
+        s_sqrt = s_eigvecs @ torch.diag_embed(s_eigvals.sqrt()) @ s_eigvecs.transpose(1, 2)
+        c_colored = s_sqrt.to(c_whitened.device) @ c_whitened
+    except torch._C._LinAlgError:
+        # 回退: 不修改 (协方差匹配失败, 保持原样)
+        return content_fiber
+
+    # 关键区别: 加回 CONTENT mean (不是 style mean)
+    c_colored = c_colored + c_mean
+    return c_colored.reshape(B, C, H, W).to(dtype=orig_dtype)
+
+
 class SpectralVelocityHead(nn.Module):
     """单子带速度头: dim -> latent_channels, zero-init conv."""
 
@@ -171,6 +221,18 @@ class SpectralODEBridge620(nn.Module):
         dwt_route = bool(getattr(model_cfg, "cross_attn_dwt_route", False))
         dwt_ll_route_alpha = float(getattr(model_cfg, "cross_attn_dwt_ll_route_alpha", 0.0))
         dwt_route_train_prob = float(getattr(model_cfg, "dwt_route_train_prob", 0.0))
+        # 630 Phase 72 方案 C: Global AdaLN-Zero on LL
+        ll_adaln_zero = bool(getattr(model_cfg, "ll_adaln_zero", False))
+        self.ll_adaln_zero = ll_adaln_zero
+        # 630 Phase 72 方案 D: Direct Tone Bias Injection
+        ll_tone_bias = bool(getattr(model_cfg, "ll_tone_bias", False))
+        self.ll_tone_bias = ll_tone_bias
+        if ll_adaln_zero or ll_tone_bias:
+            # 独立于 style_memory 的全局色调嵌入, 每个风格一个 dim 维向量
+            # 专为 LL 色调调制训练, 不受 style_memory 高频偏向污染
+            # 方案 C/D 共用此 embedding
+            self.global_tone_embedding = nn.Embedding(self.num_styles, self.dim)
+            nn.init.normal_(self.global_tone_embedding.weight, std=0.02)
         self.blocks = nn.ModuleList([
             SpatialBridgeBlock620(
                 dim=self.dim, num_heads=heads, style_gate_init=gate_init,
@@ -180,6 +242,8 @@ class SpectralODEBridge620(nn.Module):
                 dwt_route=dwt_route,
                 dwt_ll_route_alpha=dwt_ll_route_alpha,
                 dwt_route_train_prob=dwt_route_train_prob,
+                ll_adaln_zero=ll_adaln_zero,
+                ll_tone_bias=ll_tone_bias,
             )
             for idx in range(depth)
         ])
@@ -218,6 +282,18 @@ class SpectralODEBridge620(nn.Module):
         style_tokens, style_global = self.style_conditioner(
             style_id=style_id, batch=x.shape[0], device=x.device, dtype=x.dtype,
         )
+        # 630 Phase 72 方案 C/D: 提取独立 global_tone_embedding (AdaLN-Zero 或 Direct Tone Bias 共用)
+        global_tone = None
+        if self.ll_adaln_zero or self.ll_tone_bias:
+            if style_id is None:
+                ids = torch.zeros(x.shape[0], device=x.device, dtype=torch.long)
+            elif torch.is_tensor(style_id):
+                ids = style_id.to(device=x.device, dtype=torch.long).view(-1)
+                if ids.numel() == 1 and x.shape[0] > 1:
+                    ids = ids.expand(x.shape[0])
+            else:
+                ids = torch.full((x.shape[0],), int(style_id), device=x.device, dtype=torch.long)
+            global_tone = self.global_tone_embedding(ids).to(dtype=x.dtype)
         time_emb = self.time_proj(
             sinusoidal_time_embedding_620(t_tensor, self.time_dim).to(device=x.device, dtype=x.dtype)
         )
@@ -226,7 +302,7 @@ class SpectralODEBridge620(nn.Module):
         for block in self.blocks:
             h = block(
                 h, time_emb=time_emb, style_tokens=style_tokens,
-                style_global=style_global,
+                style_global=style_global, global_tone=global_tone,
             )
             total_entropy.append(block.cross_attn_entropy)
         if total_entropy:
@@ -373,6 +449,161 @@ class SpectralODEBridge620(nn.Module):
                 if style_extrap_alpha > 0.0:
                     s_ll = s_ll * (1.0 + style_extrap_alpha)
                 ll_K = (1.0 - adain_scale_ll) * ll_K + adain_scale_ll * _wct_match_fiber(ll_K, s_ll)
+            new_subs = []
+            for k, (lh, hl, hh) in enumerate(h_decomp["h"]):
+                s_lh, s_hl, s_hh = s_decomp["h"][k]
+                if style_extrap_alpha > 0.0:
+                    s_lh = s_lh * (1.0 + style_extrap_alpha)
+                    s_hl = s_hl * (1.0 + style_extrap_alpha)
+                    s_hh = s_hh * (1.0 + style_extrap_alpha)
+                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
+                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
+                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
+                new_subs.append((lh_new, hl_new, hh_new))
+            return idwt2_haar_multi_reconstruct(
+                {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
+            )
+        elif adain_mode == "per_subband_wct_ll_mean":
+            # 630 Phase 72 方案 E (T23): Mean-Only LL AdaIN — 仅迁移 LL mean (色调), 保留 std (结构)
+            # 理论: LL mean = 颜色/亮度 (CLIP-positive), LL std = 对比度/结构 (LPIPS-sensitive)
+            # 仅迁移 mean 是最 LPIPS 中性的色调迁移: ll_K + α*(target_mean - pred_mean)
+            # 高频子带仍用 WCT (与 per_subband_wct 一致), 仅 LL 改为 mean-only
+            h_decomp = dwt2_haar_multi_decompose(h, levels=lowpass_levels)
+            s_latent = style_latent.to(dtype=h.dtype)
+            s_decomp = dwt2_haar_multi_decompose(s_latent, levels=lowpass_levels)
+            ll_K = h_decomp["ll_K"]
+            if adain_scale_ll > 0.0:
+                s_ll = s_decomp["ll_K"]
+                if style_extrap_alpha > 0.0:
+                    s_ll = s_ll * (1.0 + style_extrap_alpha)
+                B_c = ll_K.shape[0]
+                if s_ll.shape[0] == 1 and B_c > 1:
+                    target_mean = s_ll.mean(dim=[2, 3], keepdim=True).expand(B_c, -1, 1, 1)
+                else:
+                    target_mean = s_ll.mean(dim=[2, 3], keepdim=True)
+                pred_mean = ll_K.mean(dim=[2, 3], keepdim=True)
+                ll_K = ll_K + adain_scale_ll * (target_mean - pred_mean)
+            new_subs = []
+            for k, (lh, hl, hh) in enumerate(h_decomp["h"]):
+                s_lh, s_hl, s_hh = s_decomp["h"][k]
+                if style_extrap_alpha > 0.0:
+                    s_lh = s_lh * (1.0 + style_extrap_alpha)
+                    s_hl = s_hl * (1.0 + style_extrap_alpha)
+                    s_hh = s_hh * (1.0 + style_extrap_alpha)
+                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
+                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
+                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
+                new_subs.append((lh_new, hl_new, hh_new))
+            return idwt2_haar_multi_reconstruct(
+                {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
+            )
+        elif adain_mode == "per_subband_wct_ll_cov_only":
+            # 630 Phase 72 方案 G (T25): Covariance-Only LL WCT — 仅迁移跨通道协方差, 保留 mean 和 std
+            # 理论: Plan E (mean-only) 失败: LPIPS 对 mean 偏移极敏感.
+            #       Plan F (std-only) 失败: std 修改破坏 CLIP (边缘结构).
+            # Plan G 测试最后一个未测试的统计量: cross-channel correlation (off-diagonal covariance).
+            # 协方差捕获通道间色彩关系 (如 R-G 相关性), 是高阶统计量, 可能:
+            # - CLIP-positive (捕获风格调色板)
+            # - LPIPS-neutral (不改变单像素值, 只改变通道间关系)
+            # 实现: WCT 但保留 content mean (不迁移 style mean)
+            h_decomp = dwt2_haar_multi_decompose(h, levels=lowpass_levels)
+            s_latent = style_latent.to(dtype=h.dtype)
+            s_decomp = dwt2_haar_multi_decompose(s_latent, levels=lowpass_levels)
+            ll_K = h_decomp["ll_K"]
+            if adain_scale_ll > 0.0:
+                s_ll = s_decomp["ll_K"]
+                if style_extrap_alpha > 0.0:
+                    s_ll = s_ll * (1.0 + style_extrap_alpha)
+                # Covariance-only WCT: 迁移协方差但保留 content mean
+                ll_K_matched = _wct_match_fiber_keep_mean(ll_K, s_ll)
+                ll_K = (1.0 - adain_scale_ll) * ll_K + adain_scale_ll * ll_K_matched
+            new_subs = []
+            for k, (lh, hl, hh) in enumerate(h_decomp["h"]):
+                s_lh, s_hl, s_hh = s_decomp["h"][k]
+                if style_extrap_alpha > 0.0:
+                    s_lh = s_lh * (1.0 + style_extrap_alpha)
+                    s_hl = s_hl * (1.0 + style_extrap_alpha)
+                    s_hh = s_hh * (1.0 + style_extrap_alpha)
+                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
+                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
+                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
+                new_subs.append((lh_new, hl_new, hh_new))
+            return idwt2_haar_multi_reconstruct(
+                {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
+            )
+        elif adain_mode == "per_subband_wct_ll_std_only":
+            # 630 Phase 72 方案 F (T24): Std-Only LL AdaIN — 仅迁移 LL std (对比度/纹理), 保留 mean (亮度)
+            # 理论: Plan E (mean-only) 失败, 因 LPIPS 对 mean 偏移极敏感而 CLIP 不受益.
+            # Plan F 是互补假设: std = 对比度/纹理 (CLIP-positive), mean = 亮度 (LPIPS-sensitive).
+            # 仅迁移 std, 保留 mean: ll_K_matched = (ll_K - pred_mean) / pred_std * target_std + pred_mean
+            # 预期: CLIP 正向 (纹理/对比度迁移), LPIPS 中性 (亮度保留)
+            h_decomp = dwt2_haar_multi_decompose(h, levels=lowpass_levels)
+            s_latent = style_latent.to(dtype=h.dtype)
+            s_decomp = dwt2_haar_multi_decompose(s_latent, levels=lowpass_levels)
+            ll_K = h_decomp["ll_K"]
+            if adain_scale_ll > 0.0:
+                s_ll = s_decomp["ll_K"]
+                if style_extrap_alpha > 0.0:
+                    s_ll = s_ll * (1.0 + style_extrap_alpha)
+                B_c = ll_K.shape[0]
+                if s_ll.shape[0] == 1 and B_c > 1:
+                    target_std = s_ll.std(dim=[2, 3], keepdim=True).clamp_min(1e-6).expand(B_c, -1, 1, 1)
+                else:
+                    target_std = s_ll.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+                pred_mean = ll_K.mean(dim=[2, 3], keepdim=True)
+                pred_std = ll_K.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+                # std-only: 归一化到 target std, 保留 pred mean
+                ll_K_matched = (ll_K - pred_mean) / pred_std * target_std + pred_mean
+                ll_K = (1.0 - adain_scale_ll) * ll_K + adain_scale_ll * ll_K_matched
+            new_subs = []
+            for k, (lh, hl, hh) in enumerate(h_decomp["h"]):
+                s_lh, s_hl, s_hh = s_decomp["h"][k]
+                if style_extrap_alpha > 0.0:
+                    s_lh = s_lh * (1.0 + style_extrap_alpha)
+                    s_hl = s_hl * (1.0 + style_extrap_alpha)
+                    s_hh = s_hh * (1.0 + style_extrap_alpha)
+                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
+                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
+                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
+                new_subs.append((lh_new, hl_new, hh_new))
+            return idwt2_haar_multi_reconstruct(
+                {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
+            )
+        elif adain_mode == "per_subband_wct_ll_ycbcr":
+            # 630 Phase 72 方案 H (T26): YCbCr-style LL color decorrelation — paradigm-level change
+            # 理论: Plan E/F/G 分别测试 LL mean/std/cov, 全部有害.
+            #   根因: LL 的 luma (亮度/结构) 和 chroma (色彩关系) 在原生通道空间耦合,
+            #         任何全通道统计迁移都会同时影响两者.
+            # Plan H 结构性解耦: 将 LL 分离为 luma + chroma 两个正交分量,
+            #   只迁移 chroma 协方差, 完全保留 luma (逐像素, 非仅 mean).
+            # 数学:
+            #   Y = mean_c(LL)           # (B,1,H,W) luma = channel-mean, 捕获亮度图
+            #   C = LL - Y               # (B,4,H,W) chroma, sum(dim=1)=0, 捕获色彩偏差
+            #   C_matched = WCT_keep_mean(C_content, C_style)  # 迁移 chroma 协方差
+            #   LL_new = Y_content + C_matched                 # 重组
+            # 关键区别 vs Plan G (cov-only):
+            #   Plan G: 保留 content mean (4 标量), 迁移 FULL 4x4 cov (含 luma-chroma 交叉项)
+            #   Plan H: 保留 content luma (HxW 值, 整个亮度图), 只迁移 3D chroma 子空间 cov
+            # 预期: LPIPS 完全中性 (亮度图不动), CLIP 可能受益 (色彩关系迁移)
+            h_decomp = dwt2_haar_multi_decompose(h, levels=lowpass_levels)
+            s_latent = style_latent.to(dtype=h.dtype)
+            s_decomp = dwt2_haar_multi_decompose(s_latent, levels=lowpass_levels)
+            ll_K = h_decomp["ll_K"]
+            if adain_scale_ll > 0.0:
+                s_ll = s_decomp["ll_K"]
+                if style_extrap_alpha > 0.0:
+                    s_ll = s_ll * (1.0 + style_extrap_alpha)
+                # Luma-Chroma separation: Y = channel-mean, C = deviation
+                y_content = ll_K.mean(dim=1, keepdim=True)  # (B, 1, H, W) luma map
+                c_content = ll_K - y_content                # (B, 4, H, W) chroma, sum(dim=1)=0
+                y_style = s_ll.mean(dim=1, keepdim=True)
+                c_style = s_ll - y_style
+                # WCT on chroma only: 迁移 chroma 协方差, 保留 content chroma mean (~0)
+                # _wct_match_fiber_keep_mean 保留 content mean, 只匹配 covariance
+                c_matched = _wct_match_fiber_keep_mean(c_content, c_style)
+                # 重组: 完全保留 content luma + 匹配的 chroma
+                ll_K_matched = y_content + c_matched
+                ll_K = (1.0 - adain_scale_ll) * ll_K + adain_scale_ll * ll_K_matched
             new_subs = []
             for k, (lh, hl, hh) in enumerate(h_decomp["h"]):
                 s_lh, s_hl, s_hh = s_decomp["h"][k]

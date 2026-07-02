@@ -285,6 +285,21 @@ class ModelConfig:
     # 解决T5分布不匹配: q_proj同时学习DWT系数和空间特征, style_mem同时学习高频和完整风格
     # 0.0=不启用(默认), >0.0=训练时以该概率使用DWT route
     dwt_route_train_prob: float = 0.0
+    # 630 Phase 72 方案 C: Global AdaLN-Zero on LL (打破 1:8 trade-off)
+    # 理论: LL 同时承载内容(结构)和风格(色调). DWT route 的 LL bypass 保护结构但丢失色调.
+    # 方案 C 新增独立 global_tone_embedding (每个风格一个 dim 维向量), 通过 AdaLN-Zero
+    # 调制 LL 的 mean/std: LL_new = LL + γ(S_global)⊙Norm(LL) + β(S_global).
+    # γ/β 零初始化 (训练初期恒等), 逐渐学习色调调制. 线性操作不破坏边缘结构.
+    # 与 style_memory 独立: global_tone_embedding 专为全局色调训练, 不受高频偏向污染.
+    ll_adaln_zero: bool = False
+    # 630 Phase 72 方案 D: Direct Tone Bias Injection (Plan C 失败后的结构性 pivot)
+    # Plan C (T21) 失败根因: AdaLN-Zero 的 GroupNorm 让模型学到抑制 LL (γ→0) 而非注入风格.
+    # Plan D 移除 GroupNorm, 直接对 LL 做 scale+shift: LL = LL * (1 + α*γ) + α*β
+    # γ/β 从 global_tone_embedding 投影而来 (dim -> 2*dim), α 为可学习标量 (init=0.1).
+    # 无 GroupNorm 内容归一化, 模型无法通过归一化抑制, 必须学习风格色调注入.
+    # 理论: 全局 scale+shift 只改变 LL 的色彩统计 (mean/std), 不改变空间结构 (边缘/梯度),
+    # 因此 LPIPS 中性 (结构保留) 而 CLIP 正向 (色彩迁移).
+    ll_tone_bias: bool = False
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None

@@ -1,10 +1,10 @@
 {
-  "iteration": 2,
+  "iteration": 7,
   "task": "code_config_simplification_subtraction_ablation",
-  "status": "smoke_test_passed",
-  "stale_count": 0,
+  "status": "FLAGGED_FOR_HUMAN_ATTENTION_TRADEOFF_FUNDAMENTAL",
+  "stale_count": 8,
   "started_at": "2026-07-02T15:00:00+08:00",
-  "completed_at": "2026-07-02T16:30:00+08:00",
+  "completed_at": "2026-07-02T09:57:00+08:00",
   "milestones": {
     "state_init": true,
     "audit_config": true,
@@ -13,21 +13,51 @@
     "execute_deadcode": true,
     "smoke_test": true,
     "findings_recorded": true,
-    "git_committed": true
+    "git_committed": true,
+    "planA_zero_step_wct_eval": true,
+    "planB_structure_aligned_target_trained": true,
+    "reverse_experiments_r1r2r3": true,
+    "plan_c_adaln_zero_code": true,
+    "plan_c_t21_training": true,
+    "plan_c_t21_eval": true,
+    "plan_d_tone_bias_code": true,
+    "plan_d_t22_training": true,
+    "plan_d_t22_eval": true,
+    "stall_analysis_complete": true,
+    "plan_e_ll_mean_only_code": true,
+    "plan_e_t23_training": true,
+    "plan_e_t23_eval": true,
+    "plan_f_ll_std_only_code": true,
+    "plan_f_t24_training": true,
+    "plan_f_t24_eval": true,
+    "plan_g_ll_cov_only_code": true,
+    "plan_g_t25_training": true,
+    "plan_g_t25_eval": true
   },
-  "changes": {
-    "style_encoder620.py": "181->82 行 (-99), 删除 Phase 2/4B masking/freq 实验代码 (_apply_freq_lowpass, _apply_mask, 5 constructor params)",
-    "spectral_bridge620.py": "删除 masking/freq 传播 + 硬编码 lowpass_levels=1/lowpass_basis=haar (4D/4E 已验证无效) + 简化 block 实例化 (3 参数硬编码)",
-    "blocks620.py": "删除 style_gate_mode/attn_mode/norm_type 构造函数参数, 硬编码 tanh_gate/relu2/group_norm (629 D19-D22 已验证最优)",
-    "config_schema.py": "删除 10 字段 (style_mask_ratio/mode, style_freq_lowpass_alpha/kernel/mode, style_attn_mode, style_gate_mode, body_norm_type, endpoint_lowpass_levels/basis) + 修复 style_attn_temperature 重复 bug (L307=0.08 + L326=1.0 -> L307=1.0)",
-    "tests/test_72_cleanup_smoke.py": "修复 — 删除 endpoint_lowpass_levels=1 + endpoint_lowpass_basis=haar 引用 (字段已硬编码)"
+  "experiments_summary": {
+    "T11_baseline": {"clip": 0.7213, "lpips": 0.2868, "config": "p=0.8, w_ll=0.0, depth=4, dim=64, scale_ll=0.0", "verdict": "LOCAL_SOTA_PARETO_OPTIMAL"},
+    "T20_planB": {"clip": 0.7037, "lpips": 0.2722, "v_ll_abs": 5.986e-06, "verdict": "non_dual_beat_clip_crashed"},
+    "R1_depth2": {"clip": 0.7172, "lpips": 0.2705, "params": 745550, "verdict": "content_heavy_tradeoff"},
+    "R2_dim32": {"clip": 0.7153, "lpips": 0.2705, "params": 617264, "verdict": "content_heavy_tradeoff"},
+    "R3_gate0": {"clip": 0.7080, "lpips": 0.2641, "params": 903248, "v_ll_abs": 0.821, "verdict": "content_heavy_tradeoff"},
+    "T21_planC": {"clip": 0.7174, "lpips": 0.2790, "v_ll_abs": 0.709, "params": 937360, "verdict": "non_dual_beat_tradeoff_1_2"},
+    "T22_planD": {"clip": 0.7150, "lpips": 0.2597, "v_ll_abs": 0.764, "params": 936852, "verdict": "non_dual_beat_tradeoff_1_4.3"},
+    "T23_planE": {"clip": 0.7215, "lpips": 0.3856, "v_ll_abs": 0.659, "params": 903248, "verdict": "non_dual_beat_lpips_severely_degraded"},
+    "T24_planF": {"clip": 0.7172, "lpips": 0.2889, "v_ll_abs": 0.615, "params": 903248, "verdict": "non_dual_beat_both_metrics_worse"},
+    "T25_planG": {"clip": 0.7205, "lpips": 0.3069, "v_ll_abs": 0.651, "params": 903248, "verdict": "non_dual_beat_least_harmful"}
   },
-  "smoke_test_result": {
-    "total": 21,
-    "passed": 21,
-    "failed": 0,
-    "verdict": "T11 baseline preserved — subtraction ablation successful"
+  "ll_statistic_transfer_analysis": {
+    "mean_only_T23": {"clip_delta": "+0.0002", "lpips_delta": "+0.0988", "verdict": "LPIPS severely hurt, CLIP no benefit"},
+    "std_only_T24": {"clip_delta": "-0.0041", "lpips_delta": "+0.0021", "verdict": "Both metrics hurt (CLIP structure disrupted)"},
+    "cov_only_T25": {"clip_delta": "-0.0008", "lpips_delta": "+0.0201", "verdict": "Both slightly hurt, least harmful"},
+    "conclusion": "LL mean/std/covariance ALL harmful. T11 LL-lock (scale_ll=0.0) is the only optimal strategy. 1:8 trade-off confirmed from all angles."
   },
-  "total_findings": 4,
-  "git_commit": "ed05ffa44"
+  "total_findings": 18,
+  "git_commit": "7a9023aa3",
+  "next_steps_proposed": [
+    "(A) Accept T11 as local SOTA, proceed to paper writing — STRONGLY RECOMMENDED (8 failures, trade-off confirmed from all angles)",
+    "(B) Paradigm-level change E1: Dual-decoder architecture (structure+texture decoders, pixel-space composition)",
+    "(C) Paradigm-level change E2: LL color decorrelation (YCbCr-like transform, transfer only Cb/Cr)",
+    "(D) Paradigm-level change E3: Auxiliary losses (perceptual/adversarial) to change training objective"
+  ]
 }

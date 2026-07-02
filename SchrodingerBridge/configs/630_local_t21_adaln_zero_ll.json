@@ -1,0 +1,16 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "model": {
+    "ll_adaln_zero": true
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_t21_adaln_zero_ll",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "local_t21_adaln_zero_ll",
+    "axis": "ll_adaln_zero",
+    "stage": "local_t21",
+    "notes": "T21: Plan C Global AdaLN-Zero on LL. 独立 global_tone_embedding (每风格1个dim维向量) 通过 AdaLN-Zero 调制 LL 的 mean/std. γ/β 零初始化 (训练初期恒等), 逐渐学习色调调制. 线性操作不破坏边缘结构. 与 style_memory 独立, 专为全局色调训练. 打破 1:8 trade-off: 空间保真(LPIPS)与色彩迁移(CLIP) 100% 物理解耦. 基于 T11 SOTA (p=0.8, w_ll=0.0). 目标: clip > 0.732 AND lpips < 0.30 (dual beat)."
+  }
+}

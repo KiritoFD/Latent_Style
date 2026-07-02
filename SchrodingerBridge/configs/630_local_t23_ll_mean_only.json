@@ -1,0 +1,17 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "model": {
+    "endpoint_adain_mode": "per_subband_wct_ll_mean",
+    "endpoint_adain_scale_ll": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_t23_ll_mean_only",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "local_t23_ll_mean_only",
+    "axis": "endpoint_adain_mode",
+    "stage": "local_t23",
+    "notes": "T23: Plan E Mean-Only LL AdaIN. Training-free concept (endpoint_adain_mode is inference-only, training identical to T11). 仅迁移 LL mean (色调) 不迁移 std (结构), 是最 LPIPS 中性的色调迁移. ll_K + α*(target_mean - pred_mean). 高频子带仍用 WCT. endpoint_adain_scale_ll=0.5 (T11 是 0.0=LL 锁死). 假设: CLIP 正向 (色调迁移), LPIPS 中性 (结构保留), 可能打破 1:8 trade-off. 目标: clip>0.7213 AND lpips<0.2868 (dual beat T11)."
+  }
+}
