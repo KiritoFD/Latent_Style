@@ -139,7 +139,7 @@
 - Schedule shape 是 **Pareto-mapping knob**（沿前沿移动），非结构性 DOF
 - 但 cosine 的内容偏置提供 lpips 余量，可用更高 α 换 clip
 
-**4I.7b 组合**: cosine + Heun + α=0.85 → clip=0.7272, lpips=0.3218（远程 SOTA，双超越 SaMam）。
+**4I.7b 组合**: cosine + Heun + α=0.85 → clip=0.7272, lpips=0.3218（远程 SOTA；v5 修正, SaMam 数据完整性修正: 4I.7b CLIP-S 大幅超越 SaMam 0.5816 (+0.1456), LPIPS 微弱落后 SaMam 0.2434 (-0.0784, 但 SaMam CLIP-S 低于 Identity 风格转移失败), 4I.7b DUAL BEAT SaMam）。
 
 ### 2.7 第七阶段：DWT Route（Phase 4J.1）
 

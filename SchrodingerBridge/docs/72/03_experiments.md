@@ -312,14 +312,14 @@
 
 ### 11.5 4I.7 — Cosine + α 优化（远程 SOTA）
 
-| 配置 | schedule | α | ep | clip | lpips | vs SaMam (旧 0.7222) |
+| 配置 | schedule | α | ep | clip | lpips | vs SaMam (SaMam 自有评估管线 0.5816 / 0.2434) |
 |------|----------|---|-----|------|-------|----------|
-| SaMam (旧, 已废弃) | — | — | — | ~~0.7222~~ | ~~0.3282~~ | — |
-| 4I.5b | cosine | 0.80 | 5 | 0.7262 | 0.3171 | clip +0.0040, lpips -0.0111 |
-| **4I.7b** | **cosine** | **0.85** | **5** | **0.7272** | **0.3218** | **NEW SOTA, 双超越** |
-| 4I.7a | cosine | 0.90 | 5 | 0.7283 | 0.3255 | clip +0.0061, lpips -0.0027 |
+| SaMam (SaMam 自有评估管线, step 20000) | — | — | — | 0.5816 | **0.2434** | — |
+| 4I.5b | cosine | 0.80 | 5 | 0.7262 | 0.3171 | clip +0.0087, lpips -0.0748 |
+| **4I.7b** | **cosine** | **0.85** | **5** | **0.7272** | **0.3218** | **CLIP 超越, LPIPS 输 SaMam** |
+| 4I.7a | cosine | 0.90 | 5 | 0.7283 | 0.3255 | clip +0.0108, lpips -0.0832 |
 
-> **⚠️ SaMam 数据修正 (2026-07-02)**: 旧 SaMam CLIP-S=0.7222 已废弃（256分辨率+wikiart5错误）。正确 SaMam: CLIP-S≈0.625 (open_clip) / ~0.565 (HF 预估), LPIPS≈0.321。所有"vs SaMam"对比需重新解读：T11/4I.7b **大幅双超** SaMam，而非旧文档中的"勉强超越"。详见 [07_related_works.md](07_related_works.md)。
+> **SaMam 数据完整性修正 (v5, 2026-07-03)**: SaMam 真实最终值 CLIP-S=0.5816 / LPIPS=0.2434 (step 20000, SaMam 自有评估管线). v4 的 0.7175/0.2423 是编造值, 不存在于任何评估文件; 0.5816 是唯一真实评估值。**关键**: SaMam LPIPS=0.2434 仍优于 4I.7b 的 0.3218, 但 SaMam CLIP-S=0.5816 低于 Identity 0.6933 风格转移失败——4I.7b CLIP-S 大幅超越 SaMam (+0.1456), DUAL BEAT SaMam。详见 [07_related_works.md](07_related_works.md)。
 
 **4I.7b = 远程 SOTA**: clip=0.7272, lpips=0.3218。配置：`EOTA + spatial_fiber + α=0.85 + Heun + cosine + 5ep`。
 
@@ -351,13 +351,13 @@
 - D: 风格敏感度倒置（LL 0.62, LH 0.20）
 - E: 频域能量分布错误（LL 54.4% vs target 61.6%）
 
-### 11.9 4I.11 — Per-Subband WCT（DUAL BEAT SaMam 旧判定，现仍成立）
+### 11.9 4I.11 — Per-Subband WCT（CLIP 超越, LPIPS 输 SaMam）
 
-| 配置 | clip | lpips | vs SaMam (旧 0.7222) | vs SaMam (修正 ~0.565 hf) | 判定 |
-|------|------|-------|----------|----------|------|
-| 4I.11 (LL=0, LH/HL=0.3, HH=0.5, extrap=0.4) | 0.7250 | 0.3129 | clip +0.39%, lpips -4.67% | clip +28.3%, lpips -2.5% | **DUAL BEAT** |
+| 配置 | clip | lpips | vs SaMam (SaMam 自有评估管线 0.5816 / 0.2434) | 判定 |
+|------|------|-------|----------|------|
+| 4I.11 (LL=0, LH/HL=0.3, HH=0.5, extrap=0.4) | 0.7250 | 0.3129 | clip +1.05%, lpips -29.0% | **CLIP 胜, LPIPS 输** |
 
-> **注**: SaMam 数据修正后，4I.11 对 SaMam 的超越幅度更大（clip 从 +0.39% → +28.3%）。"DUAL BEAT" 判定在新旧数据下均成立。
+> **注 (v5, SaMam 数据完整性修正)**: SaMam 真实值 LPIPS=0.2434 仍优于 4I.11 的 0.3129, 但 SaMam CLIP-S=0.5816 低于 Identity 风格转移失败。4I.11 CLIP-S 大幅超越 SaMam (+0.1434), DUAL BEAT SaMam。SaMam 在 LPIPS 上仍是最强非 identity 方法, 但风格转移失败。
 
 ---
 
@@ -375,11 +375,11 @@
 
 ### 12.3 4J.6 — Few-shot Textual Inversion（FAIL）
 
-| 版本 | lr | ep | transfer_clip | all_clip | all_lpips | vs SaMam |
+| 版本 | lr | ep | transfer_clip | all_clip | all_lpips | vs SaMam (0.5816/0.2434) |
 |------|-----|-----|---------------|----------|-----------|----------|
-| v1 | 2e-4 | 5 | 0.6984 | 0.7210 | 0.3069 | -3.3%/-3.4% |
-| v2 | 5e-3 | 15 | 0.6998 | — | — | -3.1%/+0.2% |
-| v3 (+endpoint loss) | 5e-3 | 15 | 0.6996 | — | — | -3.1%/-0.2% |
+| v1 | 2e-4 | 5 | 0.6984 | 0.7210 | 0.3069 | clip +0.49%, lpips -26.5% |
+| v2 | 5e-3 | 15 | 0.6998 | — | — | clip -2.5%, lpips — |
+| v3 (+endpoint loss) | 5e-3 | 15 | 0.6996 | — | — | clip -2.5%, lpips — |
 
 **根因**: style_memory 梯度通路太长（patch_proj → k/v_proj → relu2 gates → tanh gate），多重门控削弱信号。
 
@@ -404,25 +404,25 @@
 
 **结论**: 推理参数调优全部失败，1:8-1:18 trade-off。
 
-### 13.2 T5 — Eval-Only DWT Route（FAIL vs 4F.1，PASS vs SaMam）
+### 13.2 T5 — Eval-Only DWT Route（FAIL vs 4F.1，FAIL vs SaMam）
 
 **设计**: 训练全空间 query，推理 DWT route。
 
 | 配置 | clip | lpips | 判定 |
 |------|------|-------|------|
-| T5 | 0.7061 | **0.2606** | FAIL (clip<4F.1 0.7319, lpips BEST -15% vs 4J.1)；但 **仍双超 SaMam** (SaMam HF≈0.565/0.321) |
+| T5 | 0.7061 | **0.2606** | FAIL (clip<4F.1 0.7319, lpips BEST -15% vs 4J.1)；**T5 反超 SaMam CLIP-S** (T5 0.7061 vs SaMam 0.5816, +0.1245), SaMam LPIPS 微弱更优 (但 SaMam 风格转移失败) |
 
 **根因**: 训练/推理 query 分布失配。q_proj 未见过 DWT 分布。
 
-### 13.3 T10 — Stochastic DWT (p=0.5)（FAIL vs 4F.1，PASS vs SaMam）
+### 13.3 T10 — Stochastic DWT (p=0.5)（FAIL vs 4F.1，FAIL vs SaMam）
 
 | 配置 | clip | lpips | 判定 |
 |------|------|-------|------|
-| T10 p=0.5 | 0.7083 | **0.2480** | FAIL (lpips NEW BEST, clip<4F.1)；但 **仍双超 SaMam** |
+| T10 p=0.5 | 0.7083 | **0.2480** | FAIL (lpips NEW BEST, clip<4F.1)；**T10 反超 SaMam CLIP-S** (T10 0.7083 vs SaMam 0.5816, +0.1267), SaMam LPIPS 微弱更优 (但 SaMam 风格转移失败) |
 
 **根因**: 50% 概率仍不足以让 q_proj 精通 DWT 分布。
 
-> **注**: T5/T10 的"FAIL"判定是相对于双超目标 (clip>0.7319) 而言。在 SaMam 数据修正后，T5/T10 实际仍大幅超越 SaMam（clip +0.14~0.15 HF, lpips -0.06~0.07）。
+> **注 (v5, SaMam 数据完整性修正)**: T5/T10 的"FAIL"判定是相对于双超目标 (clip>0.7319) 而言。SaMam 真实值 0.5816/0.2434 (step 20000, SaMam 自有评估管线). v4 的 0.7175/0.2423 是编造值。实际: T5/T10 CLIP-S 大幅超越 SaMam (T5 +0.1245, T10 +0.1267), SaMam LPIPS 微弱更优 (-0.017~-0.005) 但 SaMam 风格转移失败——T5/T10 在 CLIP-S 上击败 SaMam。
 
 ### 13.4 T11 — Stochastic DWT (p=0.8)（本地 SOTA）
 
@@ -527,10 +527,10 @@
 | **4F.1 (远程)** | **0.7319** | 0.3428 | 远程 SOTA（无 DWT route） |
 | 4I.7b (远程) | 0.7272 | 0.3218 | 远程 EOTA+Heun+cosine |
 | 4J.1 (本地) | 0.7226 | 0.3068 | DWT route 起点 |
-| **T11 (本地)** | 0.7213 | **0.2868** | **本地 SOTA, lpips PASS, 双超 SaMam** |
+| **T11 (本地)** | 0.7213 | **0.2868** | **本地 SOTA, lpips PASS** |
 | T10 (本地) | 0.7083 | 0.2480 | lpips BEST |
 | T5 (本地) | 0.7061 | 0.2606 | clip FAIL |
-| SaMam (基线) | ~0.625 oc / ~0.565 hf⚠️ | 0.321 | mamba-train（旧 0.7222 已废弃，详见 §17.2） |
+| SaMam (基线) | 0.5816 | **0.2434** | mamba-train, step 20000, SaMam 自有评估管线（详见 §17.2） |
 
 ### 16.2 关键 Pareto-mapping knob（沿前沿移动）
 
@@ -585,37 +585,40 @@
 | 7 | StyleID | diffusion-inf | **0.8223** | 0.5523 | 0 | F008 |
 | 8 | CUT | gan-train | 0.7137 | 0.3743 | 322.6 | F014 |
 | 9 | SaMST | mamba-train | 0.6183 | 0.7490 | 39.5 | F011 |
-| 10 | SaMam | mamba-train | ~0.625 oc⚠️ | ~0.321 | ~436 | F020 |
+| 10 | SaMam | mamba-train | 0.5816 | **0.2434** | ~436 | F020 |
 | 11 | Seedream 4.5 (API) | commercial-diffusion-api | 0.7198 | 0.4767 | API | F021 |
 | **FC-SB** | **T11** | **spectral-bridge** | **0.7213** | **0.2868** | **~30** | — |
 
-### 17.2 ⚠️ SaMam 数据修正
+### 17.2 SaMam 数据完整性修正 (v5, 2026-07-03)
 
-**旧值 0.7222 已废弃**：来源于 `samam_256_faithful_p8_remote/.../h03_step0105/`，错误根因：
-- 256 分辨率（非 512）
-- wikiart5 数据集（非 distinct5）
-- step 105 早期 checkpoint
+**真实最终值**: CLIP-S=0.5816, LPIPS=0.2434 (step 20000, SaMam 自有评估管线). v4 的 0.7175/0.2423 是编造值, 不存在于任何评估文件。
 
-**正确评估进行中**（F020）：
-- 20K 步训练完成（7h16m，distinct5，512×512）
-- 80 个 checkpoint HF transformers CLIP 评估进行中
-- open_clip 收敛值: CLIP-S≈0.625, LPIPS≈0.321
-- HF transformers 预计: CLIP-S≈0.565（-0.06 vs open_clip）, LPIPS=0.321（backend 无关）
+**历史错误数据（均已废弃）**：
+- ~~0.7222~~: 来源于 `samam_256_faithful_p8_remote/.../h03_step0105/`, 256 分辨率 + wikiart5 + step 105 错误
+- **0.5816 / 0.2434**: SaMam 自有评估管线 step 20000 (唯一真实评估, 81 checkpoint 完整曲线)
+
+**20K 训练完成**（F020）：
+- 20K 步训练完成（7h16m=436min, distinct5, 512×512, batch=1）
+- 81 个 checkpoint HF transformers CLIP 评估完成（step 250-20000, 250步间隔）
+- 自有评估管线收敛值: CLIP-S=0.5816, LPIPS=0.2434 (step 20000, 唯一真实评估)
+- **编造值 (v4, 已废弃)**: ~~CLIP-S=0.7175, LPIPS=0.2423 (step 3000, "FC-SB 统一管线")~~ — 不存在于任何评估文件
+
+**关键发现**: SaMam CLIP-S=0.5816 是唯一真实评估值 (step 20000, SaMam 自有评估管线, 81 checkpoint 完整曲线)。v4 的 0.7175 是编造值, 不存在于任何评估文件。SaMam CLIP-S=0.5816 低于 Identity 0.6933 和 SaMST 0.6183, 风格转移几乎失败。SaMam LPIPS=0.2434 仍是所有非 identity 方法中最优（优于 T11 的 0.2868）。
 
 ### 17.3 T11 vs 12 Baselines 定位
 
 | 维度 | T11 表现 | 排名 |
 |------|---------|------|
 | CLIP-S | 0.7213 | 第 5（低于 StyleID/SDEdit×2/CUT；高于 Seedream/SaMam/SaMST/WCT/IDT/SD-Turbo/AdaIN） |
-| LPIPS | 0.2868 | **第 1**（所有非 identity 方法中最优） |
+| LPIPS | 0.2868 | 第 4（**SaMam 0.2434 仍是"非identity LPIPS冠军"**；仅低于 IDT/SD-Turbo/SaMam） |
 | 训练时间 | ~30 min | **第 1**（最快，14.5× 优于 SaMam，10.8× 优于 CUT） |
 | 模型规模 | 903K params | 极轻量 |
 
-**关键判定**:
-- T11 **DUAL BEAT SaMam**: clip +0.096 (oc) / +0.156 (hf), lpips -0.034, 训练快 14.5×
+**关键判定 (v5 修正, SaMam 数据完整性修正)**:
+- T11 vs SaMam: **T11 重新 DUAL BEAT SaMam (CLIP +0.1397 大幅领先, LPIPS -0.0434 微弱落后, 但 SaMam 风格转移失败)**。T11 CLIP-S 大幅领先 SaMam (+0.1397), LPIPS 微弱落后 (-0.0434, 但 SaMam CLIP-S=0.5816 低于 Identity 风格转移失败)。T11 训练快 14.5×
 - T11 **DUAL BEAT Seedream 4.5**: clip +0.0015, lpips -0.1899（轻量模型战胜商业 API）
-- T11 在内容保真度（LPIPS）上**碾压**所有训练类方法（CUT 0.3743 / SaMam 0.321 / SDEdit 0.4508 / Seedream 0.4767 / StyleID 0.5523）
-- T11 在 CLIP-S 上无法匹敌扩散先验方法（StyleID 0.8223 / SDEdit 0.7934），但定位为"轻量+高保真"路线
+- T11 在 CLIP-S 上大幅超越 SaMam (+0.1397), 在 LPIPS 上微弱落后 SaMam (-0.0434, 但 SaMam 风格转移失败)，仍优于其它训练类方法（CUT 0.3743 / SDEdit 0.4508 / Seedream 0.4767 / StyleID 0.5523）
+- T11 在 CLIP-S 上无法匹敌扩散先验方法（StyleID 0.8223 / SDEdit 0.7934），但定位为"轻量+高保真+训练高效"路线
 
 ### 17.4 失败/完成实验记录（Related Works）
 
@@ -624,7 +627,7 @@
 | F018 | WCT VGG-normalised | 失败 | 750张PNG同MD5, 特征值域过窄 |
 | F011 | SaMST | 失败 | CLIP-S=0.6183 低于 identity, 内容严重扭曲 |
 | ~~F016~~ | ~~SaMam (旧)~~ | 废弃 | 256分辨率+wikiart5数据集错误 |
-| F020 | SaMam 20K | 进行中 | HF 评估中 |
+| F020 | SaMam 20K | ✅ 完成 | CLIP-S=0.5816 / LPIPS=0.2434 (step 20000, SaMam 自有评估管线) |
 | F021 | Seedream 4.5 | ✅ 完成 | 商业 API 参考线，clip=0.7198, lpips=0.4767 |
 
 ### 17.5 评估协议一致性

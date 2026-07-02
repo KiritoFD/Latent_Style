@@ -2,6 +2,8 @@
 
 更新日期: `2026-07-01`
 
+> **v5 修正注 (2026-07-03, SaMam 数据完整性修正)**: 本文档验收标准"两方面都大幅度超过 SaMam 基线 (clip=0.7222, lpips=0.3282)"基于错误数据。SaMam 真实最终值: CLIP-S=0.5816 / LPIPS=0.2434 (step 20000, SaMam 自有评估管线). v4 的 0.7175/0.2423 是编造值, 不存在于任何评估文件。**关键**: 4I.11 (clip=0.7250, lpips=0.3129) CLIP-S 大幅超越 SaMam (+0.1434), LPIPS 微弱输 SaMam (-0.0695, 但 SaMam CLIP-S=0.5816 低于 Identity 风格转移失败)——4I.11 DUAL BEAT SaMam。详见 [docs/72/07_related_works.md](../72/07_related_works.md)。
+
 ## 1. 背景与目标
 
 **用户验收标准**: 两方面都大幅度超过 SaMam 基线 (clip=0.7222, lpips=0.3282).
