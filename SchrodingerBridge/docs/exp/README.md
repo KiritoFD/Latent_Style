@@ -91,12 +91,16 @@ I:\Github\Latent_Style\
 
 ```
 g:\GitHub\Latent_Style\SchrodingerBridge\exp\
-├── exp_baselines/           (3 个: baseline_reeval, baseline_images, baseline_v2)
-├── exp_ours/
-│   ├── early/               (14 个: task1-4, clean_base_v2, 628_ablation)
-│   ├── phase4/              (66 个: 630_phase1d-4j6 系列消融实验)
+├── FCSB/                    (93 个 distinct5 主线)
+│   ├── early/               (3 个: clean_base_v2_local, clean_base_v2_relu2, 628_ablation)
+│   ├── phase4/              (66 个: 630_phase1d-4j6 系统消融实验)
 │   └── local_t/             (24 个: 630_local T/R 系列实验)
-└── exp_shared/              (7 个: adain_checkpoints, eval_cache, clean_base 等)
+├── baseline/                (3 个: reeval, images, v2)
+├── 256/                     (256 分辨率历史占位, 非主线)
+├── wiki5/                   (11 个 wikiarts5 非主线: smoke 10 + full/task4_iter 16 子目录)
+├── fewshot6/                (3 个: 630_phase4j6_fewshot_popart{,_v2,_v3})
+├── legacy/                  (shared 7 + logs 12)
+└── README.md
 ```
 
 详见 [local_experiments.md](local_experiments.md)。
@@ -149,7 +153,7 @@ g:\GitHub\Latent_Style\SchrodingerBridge\exp\
 
 | 数据源 | 路径 | 说明 |
 |--------|------|------|
-| 12 baseline 统一评估结果 | `exp/exp_baselines/baseline_v2/eval/unified_results.json` | SaMam 真实值 step 20000 SaMam 自有评估管线 (v4 的 0.7175/0.2423 是编造值) |
+| 12 baseline 统一评估结果 | `exp/baseline/v2/eval/unified_results.json` | SaMam 真实值 step 20000 SaMam 自有评估管线 (v4 的 0.7175/0.2423 是编造值) |
 | 远程实验清单 | `docs/exp/remote_experiments.md` | M3 产出 |
 | 本地实验清单 | `docs/exp/local_experiments.md` | M7 产出 |
 
@@ -182,7 +186,7 @@ g:\GitHub\Latent_Style\SchrodingerBridge\exp\
 ### 5.1 新增实验时
 
 1. 远程新实验：放入对应 `I:\exp_ours/{phase2|recent}/` 或 `I:\exp_samam/training/`
-2. 本地新实验：放入对应 `exp/exp_ours/{early|phase4|local_t}/`
+2. 本地新实验：放入对应 `exp/FCSB/{early|phase4|local_t}/`
 3. 更新对应清单文档（remote_experiments.md 或 local_experiments.md）
 4. 若引入新 baseline：更新 `unified_results.json` + `07_related_works.md` + 本 README §3.2
 

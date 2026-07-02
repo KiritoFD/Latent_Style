@@ -52,7 +52,7 @@
 
 ## 一、12个Baseline方法完整指标表（SaMam 已对齐）
 
-数据源: `exp/baseline_v2/eval/unified_results.json`（SaMam 已用 FC-SB 统一管线 HF 值替换）
+数据源: `exp/baseline/v2/eval/unified_results.json`（SaMam 已用 FC-SB 统一管线 HF 值替换）
 
 | # | 方法 | 类别 | CLIP-S ↑ | LPIPS ↓ | Δ_idt | n_pairs | 训练/调用时间(min) | 复现时间 | Finding ID |
 |---|------|------|---------|---------|-------|---------|-------------------|---------|------------|
@@ -154,7 +154,7 @@
 
 ### 4.2 错误数据0.7222的来源追溯
 
-- **文件**: `exp/baseline_v2/eval/samam/summary.json` 和 `samam_256_faithful_p8_remote/b1_sph35_20260522_050523/h03_step0105/x8/metrics.csv`
+- **文件**: `exp/baseline/v2/eval/samam/summary.json` 和 `samam_256_faithful_p8_remote/b1_sph35_20260522_050523/h03_step0105/x8/metrics.csv`
 - **实验**: `samam_256_faithful_p8_remote` (256分辨率, 2026-05-22)
 - **数据集**: wikiart5 (Hayao/cezanne/vangogh/photo/monet)
 - **checkpoint**: h03_step0105 (step 105)
@@ -250,17 +250,17 @@ ssh -p 2222 administrator@100.115.18.62 "wsl -d Ubuntu-22.04 -u xy -- cat /mnt/i
 
 | 方法 | 评估目录 |
 |------|---------|
-| identity | exp/baseline_v2/eval/identity/images/ |
-| adain | exp/baseline_v2/eval/adain/images/ |
-| wct_vgg19 | exp/baseline_v2/eval/wct_vgg19/images/ |
-| sdturbo | exp/baseline_v2/eval/sdturbo/images/ |
-| sdedit_str0.35 | exp/baseline_v2/eval/sdedit_str0.35/images/ |
-| sdedit_str0.40 | exp/baseline_v2/eval/sdedit_str0.40/images/ |
-| styleid | exp/baseline_v2/eval/styleid/images/ |
-| cut | exp/baseline_v2/eval/cut/images/ |
-| samst | exp/baseline_v2/eval/samst/images/ |
-| samam | exp/baseline_v2/eval/samam/images/ (⚠️ 旧数据，待替换) |
-| seedream | exp/baseline_v2/eval/seedream/images/ (待 copy 自 seedream45_api/.../repaired750) |
+| identity | exp/baseline/v2/eval/identity/images/ |
+| adain | exp/baseline/v2/eval/adain/images/ |
+| wct_vgg19 | exp/baseline/v2/eval/wct_vgg19/images/ |
+| sdturbo | exp/baseline/v2/eval/sdturbo/images/ |
+| sdedit_str0.35 | exp/baseline/v2/eval/sdedit_str0.35/images/ |
+| sdedit_str0.40 | exp/baseline/v2/eval/sdedit_str0.40/images/ |
+| styleid | exp/baseline/v2/eval/styleid/images/ |
+| cut | exp/baseline/v2/eval/cut/images/ |
+| samst | exp/baseline/v2/eval/samst/images/ |
+| samam | exp/baseline/v2/eval/samam/images/ (⚠️ 旧数据，待替换) |
+| seedream | exp/baseline/v2/eval/seedream/images/ (待 copy 自 seedream45_api/.../repaired750) |
 
 **注**: SDEdit s=0.10 和 s=0.20 的images目录仍存在但不再用于论文
 
@@ -346,4 +346,4 @@ ssh -p 2222 administrator@100.115.18.62 "wsl -d Ubuntu-22.04 -u xy -- cat /mnt/i
 4. ~~确认SaMam收敛步数~~ ✅ step 6500 (CLIP-S peak 0.5925), step 20000 (final, CLIP-S=0.5816)
 5. **Art FID评估**: 目前无方法评估过Art FID
 6. **论文用图**: 用新数据重新生成dashboard
-7. **Seedream images 目录**: 执行 `add_seedream_to_unified.sh` + `inspect_seedream.sh` 中的 cp 步骤，把 Seedream 750 images 复制到 `exp/baseline_v2/eval/seedream/images/`（待执行）
+7. **Seedream images 目录**: 执行 `add_seedream_to_unified.sh` + `inspect_seedream.sh` 中的 cp 步骤，把 Seedream 750 images 复制到 `exp/baseline/v2/eval/seedream/images/`（待执行）
