@@ -148,12 +148,13 @@ g:\GitHub\Latent_Style\SchrodingerBridge\
 ├── src/                     (主代码: run.py, model620.py, blocks620.py, trainer.py, config_schema.py, utils/)
 ├── configs/                 (实验配置 .json)
 ├── exp/
-│   ├── exp_baselines/       (3 个: baseline_reeval, baseline_images, baseline_v2)
-│   ├── exp_ours/
-│   │   ├── early/           (14 个: task1-4, clean_base_v2, 628_ablation)
-│   │   ├── phase4/          (66 个: 630_phase1d-4j6 系列消融实验)
-│   │   └── local_t/         (24 个: 630_local T/R 系列实验)
-│   └── exp_shared/          (7 个: adain_checkpoints, eval_cache, clean_base, 4 个 eval-only 结果)
+│   ├── FCSB/                (93 个 distinct5 主线: early 3 + phase4 66 + local_t 24)
+│   ├── baseline/            (3 个: reeval, images, v2)
+│   ├── 256/                 (256 历史占位, 非主线)
+│   ├── wiki5/               (11 个 wikiarts5 非主线: smoke 10 + full/task4_iter 16 子目录)
+│   ├── fewshot6/            (3 个: 4J.6 系列, 非主线)
+│   ├── legacy/              (shared 7 + logs 12)
+│   └── README.md
 ├── docs/                    (本文档所在)
 ├── tools/                   (SaMam 评估脚本等)
 └── run.py                   (项目入口, 转发到 src/run.py)
@@ -407,7 +408,7 @@ def main() -> None:
 | [docs/72/07_related_works.md](../72/07_related_works.md) | 12 baseline 完整指标表 + SaMam v5 真实值 |
 | [src/utils/run_evaluation.py](../../src/utils/run_evaluation.py) | 评估脚本主入口 |
 | [src/run.py](../../src/run.py) | 训练+评估主入口 |
-| [exp/exp_baselines/baseline_v2/eval/unified_results.json](../../exp/exp_baselines/baseline_v2/eval/unified_results.json) | 12 baseline 统一评估结果 (数据真相源) |
+| [exp/baseline/v2/eval/unified_results.json](../../exp/baseline/v2/eval/unified_results.json) | 12 baseline 统一评估结果 (数据真相源) |
 
 ---
 

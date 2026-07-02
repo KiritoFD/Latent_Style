@@ -1,9 +1,9 @@
 {
   "iteration": 3,
   "total_findings": 0,
-  "status": "ALL_MILESTONES_COMPLETED",
+  "status": "ALL_MILESTONES_COMPLETED_PLUS_EXP_REORG",
   "stale_count": 0,
-  "current_milestone": "M28",
+  "current_milestone": "EXP_REORG",
   "milestones": {
     "M10": "completed",
     "M11": "completed",
@@ -15,8 +15,9 @@
     "M25": "completed",
     "M26": "completed",
     "M27": "completed",
-    "M28": "completed"
+    "M28": "completed",
+    "EXP_REORG": "completed"
   },
-  "last_seen": "2026-07-03T10:30:00+08:00",
-  "notes": "全部 11 个 milestones (M10-M28) 已完成. M27 归档 26 目录+26 文件到 docs/archive/ (commit 64ba3f118). M28 一致性校验全部通过: SaMam 真实值 0.5816/0.2434 在 14 主线文档中一致出现 85 处; 6 个 SOTA ckpt 一致; 12 baseline 数值一致; 路径引用全部修复. 任务完成."
+  "last_seen": "2026-07-03T11:00:00+08:00",
+  "notes": "全部 11 个 milestones (M10-M28) 已完成 + exp/ 物理目录重组完成. M27 归档 26 目录+26 文件到 docs/archive/ (commit 64ba3f118). M28 一致性校验全部通过. EXP_REORG: 119 个实验目录按实验脉络+数据集物理分离到 FCSB/(93 distinct5 主线)+baseline/(3)+wiki5/(11 非主线)+fewshot6/(3 非主线)+256/(占位)+legacy/(shared 7+logs 12); 6 个 SOTA ckpt 验证完好 (各 10.26 MB); 文档路径引用全部更新 (5 处当前结构树 + 7 处 docs/72/baseline_v2→baseline/v2 + 8 处 section header + title 修正 + task4_iter 子目录计数 14/15→16)."
 }

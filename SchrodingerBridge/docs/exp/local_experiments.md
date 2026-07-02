@@ -39,23 +39,27 @@
 - `datasets/` 为空，无本地数据集重复
 - 训练 / 评估数据集统一从 `I:\` 盘读取（远程）
 
-### 当前 `exp/` 重组后结构
+### 当前 `exp/` 重组后结构 (2026-07-03 exp reorg, 按实验脉络+数据集物理分离)
 
 ```
 exp/
-├── exp_baselines/     (3 个: baseline_reeval, baseline_images, baseline_v2)
-├── exp_ours/
-│   ├── early/         (14 个: task1-4, clean_base_v2, 628_ablation)
-│   ├── phase4/        (66 个: 630_phase1d-4j6 系列消融实验)
+├── FCSB/              (93 个 distinct5 主线: early 3 + phase4 66 + local_t 24)
+│   ├── early/         (3 个: clean_base_v2_local, clean_base_v2_relu2, 628_ablation)
+│   ├── phase4/        (66 个: 630_phase1d-4j6 系统消融实验)
 │   └── local_t/       (24 个: 630_local T/R 系列实验)
-└── exp_shared/        (7 个: adain_checkpoints, eval_cache, clean_base, 4 个 eval-only 结果)
+├── baseline/          (3 个: reeval, images, v2)
+├── 256/               (256 分辨率历史实验占位, 非主线)
+├── wiki5/             (11 个 wikiarts5 非主线: smoke 10 + full/task4_iter 16 子目录)
+├── fewshot6/          (3 个: 630_phase4j6_fewshot_popart{,_v2,_v3}, 非主线)
+├── legacy/            (shared 7 + logs 12 散落文件)
+└── README.md
 ```
 
 ---
 
-## 1. Baseline 评估实验 (`exp_baselines/`)
+## 1. Baseline 评估实验 (`baseline/`)
 
-数据源：`exp_baselines/baseline_reeval/`（重评估目录）+ `exp_baselines/baseline_v2/`
+数据源：`baseline/reeval/`（重评估目录）+ `baseline/v2/`
 评估协议：`run_evaluation.py`，HF transformers CLIP (ViT-B/32)，LPIPS (Alex)，750 pairs
 test_dir：`I:\wikiart_distinct5_samam_512_classview\test`
 
@@ -90,7 +94,7 @@ test_dir：`I:\wikiart_distinct5_samam_512_classview\test`
 
 ---
 
-## 2. 早期实验 (`exp_ours/early/`) — 14 个目录
+## 2. 早期实验 (`FCSB/early/` + `wiki5/`) — 14 个目录
 
 > 2026-06-23 ~ 2026-06-30 的早期探索实验，包含 task1/3/4 系列、clean_base_v2 基线、628 消融。
 
@@ -110,7 +114,7 @@ test_dir：`I:\wikiart_distinct5_samam_512_classview\test`
 | `task4_style_strength_w05_2ep/` | fixed_one, w=0.5 | 2026-06-23 | 2 | epoch_0002 | 63.35 | 0.7064 | 0.2753 | Task4 w=0.5 |
 | `task4_style_strength_w10_2ep/` | fixed_one, w=1.0 | 2026-06-23 | 2 | epoch_0002 | 62.97 | 0.7062 | 0.2750 | Task4 w=1.0 |
 
-### 2.2 task4_iter/ — Task4 迭代实验集（2026-06-24，15 个子实验）
+### 2.2 task4_iter/ — Task4 迭代实验集（2026-06-24，16 个子实验）
 
 > r1a-r7 系列迭代实验，含 src/ 和 config.json，部分有 ckpt。
 > 总占用：2686 MB（最大子实验 r3c_optimal_5ep 含 epoch_0003.pt）
@@ -155,7 +159,7 @@ test_dir：`I:\wikiart_distinct5_samam_512_classview\test`
 
 ---
 
-## 3. Phase4 消融实验 (`exp_ours/phase4/`) — 66 个目录
+## 3. Phase4 消融实验 (`FCSB/phase4/`) — 66 个目录
 
 > 2026-06-30 ~ 2026-07-01 的 Phase4 系统消融实验。
 > 默认配置：dim=64, depth=4, gate_init=0.05, style_gate_mode=tanh_gate, body_block_type=global_attn, α=0.1, w_ll=0.3
@@ -275,7 +279,7 @@ test_dir：`I:\wikiart_distinct5_samam_512_classview\test`
 
 ---
 
-## 4. 630_local T/R 系列 (`exp_ours/local_t/`) — 24 个目录
+## 4. 630_local T/R 系列 (`FCSB/local_t/`) — 24 个目录
 
 > 2026-07-01 ~ 2026-07-02 的当前主线实验。
 > 默认配置：dim=64, depth=4, α=0.4, w_ll=0.3, gate_init=0.05
@@ -335,7 +339,7 @@ test_dir：`I:\wikiart_distinct5_samam_512_classview\test`
 
 ---
 
-## 5. 共享资源 (`exp_shared/`) — 7 个目录
+## 5. 共享资源 (`legacy/shared/`) — 7 个目录
 
 | 目录 | 大小 | mtime | 内容 | 说明 |
 |------|------|-------|------|------|

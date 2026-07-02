@@ -1,6 +1,6 @@
-# FC-SB 实验审计报告 (exp_ours)
+# FC-SB 实验审计报告 (FCSB)
 
-> 核查范围：`exp/exp_ours/{early,local_t,phase4}/` 全部实验子目录。
+> 核查范围：`exp/FCSB/{early,local_t,phase4}/` 全部实验子目录。
 > 参考文档：`docs/72/03_experiments.md`（实验结论主参考）。
 > 核查依据：每个目录的 `config.json` 的 `ablation.notes` + `data.data_root` + `training.num_epochs`，结合 `03_experiments.md` 的结论表。
 > 输出目的：判定每个实验的 why / conclusion / ckpt 意义，给出"无意义 ckpt 删除建议清单"。
@@ -24,7 +24,7 @@
 
 ---
 
-## 1. Early 早期实验 (`exp_ours/early/`)
+## 1. Early 早期实验 (`FCSB/early/` + `wiki5/`)
 
 | 实验目录 | 数据集 | why（为什么做） | conclusion（结论） | ckpt | 意义判定 |
 |---|---|---|---|---|---|
@@ -53,7 +53,7 @@
 
 ---
 
-## 2. Local T 系列 (`exp_ours/local_t/`)
+## 2. Local T 系列 (`FCSB/local_t/`)
 
 > 全部基于 distinct5 主线、5ep 训练、基于 T11 SOTA (p=0.8, w_ll=0.0) 做消融。
 
@@ -81,7 +81,7 @@
 
 ---
 
-## 3. Phase 4 系列 (`exp_ours/phase4/`)
+## 3. Phase 4 系列 (`FCSB/phase4/`)
 
 > 全部 distinct5 主线。
 
