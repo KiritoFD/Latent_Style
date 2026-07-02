@@ -189,23 +189,11 @@ class SpatialBridge620(nn.Module):
                     dim=self.dim,
                     num_heads=heads,
                     style_gate_init=gate_init,
-                    style_gate_mode=self.style_gate_mode,
-                    style_moe_enabled=moe_enabled,
-                    style_moe_num_experts=moe_num_experts,
-                    style_moe_router_hidden_dim=moe_router_hidden_dim,
-                    style_kv_moe_content_routed=kv_content_routed,
                     style_shortcut_alpha=shortcut_alpha,
-                    style_query_source=query_source,
-                    style_cross_attn_skip_coarse=skip_coarse,
-                    style_attn_topk=attn_topk,
                     layer_idx=idx,
                     num_layers=depth,
-                    film_enabled=self.style_film_enabled,
-                    film_init_std=style_film_init_std,
-                    attn_mode="relu2",  # 629 D19-D22: relu2 confirmed effective
                     attn_temperature=self.style_attn_temperature,
                     gate_warmup_steps=gate_warmup_steps,
-                    norm_type=body_norm_type,
                 )
                 for idx in range(depth)
             ]
