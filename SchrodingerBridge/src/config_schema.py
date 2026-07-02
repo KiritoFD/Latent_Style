@@ -683,6 +683,15 @@ class BridgeConfig:
     spectral_w_lh: float = 1.0                  # 水平低/垂直高 频带权重
     spectral_w_hl: float = 1.0                  # 水平高/垂直低 频带权重
     spectral_w_hh: float = 2.0                  # 全高频 (笔触) 权重, 最大
+    # 630 Phase 72 方案 B: Structure-Aligned Flow Matching (结构对齐流匹配)
+    # 理论: 1:8 死锁根源是训练目标 x₁ (风格图) 的 LL 与 content 的 LL 不同,
+    #   网络被迫学习空间形变 (把照片结构拉扯成名画结构), 破坏 LPIPS.
+    # 方案 B 动态构造 x₁* = IDWT(LL_content, LH_style, HL_style, HH_style):
+    #   - x₁* 的低频结构永远和 Content 对齐
+    #   - target_delta = x₁* - x₀ 的 LL 分量 ≈ 0
+    #   - 网络只学习高频纹理置换, 不再受逼迫破坏结构
+    # 这是 4J.2 路线 (WCT-Aligned Target) 的完全体: 不修改推理, 只修改训练目标.
+    structure_aligned_target: bool = False       # True=构造 x₁* (结构对齐目标), False=原始 x₁
     # === FC-SB Phase 4 B2 V3: Brownian bridge noise ===
     spectral_brownian_enabled: bool = False     # 启用 SB-style 前向噪声 x_t += sigma*sqrt(t*(1-t))*eps
     spectral_brownian_sigma: float = 0.1        # 噪声幅度 (典型 0.05-0.2)

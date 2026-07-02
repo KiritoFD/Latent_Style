@@ -13,7 +13,7 @@ from typing import Dict
 import torch
 import torch.nn.functional as F
 from config_schema import ExperimentConfig
-from spectral620 import dwt2_haar
+from spectral620 import dwt2_haar, idwt2_haar
 
 
 class SpectralODEObjective620:
@@ -29,6 +29,7 @@ class SpectralODEObjective620:
         self.w_lh = float(getattr(self.bridge_cfg, "spectral_w_lh", 1.0))
         self.w_hl = float(getattr(self.bridge_cfg, "spectral_w_hl", 1.0))
         self.loss_type = str(getattr(self.bridge_cfg, "loss_type", "mse")).lower().strip()
+        self.structure_aligned_target = bool(getattr(self.bridge_cfg, "structure_aligned_target", False))
         self.last_debug: dict = {}
 
     def _sample_t(self, content: torch.Tensor) -> torch.Tensor:
@@ -56,6 +57,13 @@ class SpectralODEObjective620:
             style_latent = None
 
         target = target_style
+        # 630 Phase 72 方案 B: 构造结构对齐目标 x₁* = IDWT(LL_content, LH_style, HL_style, HH_style)
+        # 理论: 让 target 的 LL 永远 = content 的 LL, target_delta 的 LL ≈ 0,
+        # 网络只学高频纹理置换, 不再被迫破坏空间结构. 打破 1:8 trade-off.
+        if self.structure_aligned_target:
+            ll_c, _, _, _ = dwt2_haar(content)
+            _, lh_t, hl_t, hh_t = dwt2_haar(target)
+            target = idwt2_haar(ll_c, lh_t, hl_t, hh_t)
         t = self._sample_t(content)
         t_view = t.view(-1, 1, 1, 1).to(dtype=content.dtype)
         x_t = (1.0 - t_view) * content + t_view * target
