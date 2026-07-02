@@ -23,7 +23,7 @@ baselines = {
     "StyleID":       (0.8223, 0.5523, "diffusion", 60),
     "CUT":           (0.7137, 0.3743, "gan", 60),
     "SaMST":         (0.6183, 0.7490, "mamba", 60),
-    "SaMam (20K)":   (0.5816, 0.2434, "mamba", 70),
+    "SaMam (step3K)": (0.7175, 0.2423, "mamba", 70),
     "SeeDream":      (0.7198, 0.4767, "diffusion", 60),
 }
 
