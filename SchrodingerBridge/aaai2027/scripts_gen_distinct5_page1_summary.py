@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import json
 import argparse
+import re
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -30,6 +31,7 @@ INTROSTYLE_PAGE1_CSV = ROOT / "introstyle_page1" / "introstyle_page1_summary.csv
 PAGE1_ARTFID_RERUN_CSV = ROOT / "page1_bundle" / "page1_artfid_rerun_summary.csv"
 PHASE2_POINTS_CSV = EXPERIMENTS / "phase2_fiber_bundle" / "plot_points.csv"
 AUX_ARTIFACT_CSV = ROOT / "final" / "distinct5_aux_artifact_table.csv"
+DASHBOARD_HTML = ROOT.parent / "exp" / "phase616_live_dashboard" / "phase616_live_dashboard.html"
 OUT_DIR = ROOT / "figures"
 KNEE_ARTFID_JSON = ROOT / "local_eval" / "lbm_knee_e13_artfid" / "aggregate_targetwise_artfid_fast_repro.json"
 SEEDREAM_ARTFID_JSON = (
@@ -76,7 +78,58 @@ COLORS = {
     "bg": "#CFCFCF",
     "text": "#333333",
     "lbm_band": "#F3E7D6",
+    "stylegallery": "#F97316",
+    "styleshot": "#EF4444",
+    "csgo_low_vram": "#64748B",
+    "fcsb": "#14B8A6",
 }
+
+
+DASHBOARD_PARETO_POINTS = [
+    (0.627, 0.0321),
+    (0.502, 0.0651),
+    (0.494, 0.0751),
+    (0.456, 0.0771),
+    (0.419, 0.0871),
+    (0.398, 0.0531),
+    (0.441, 0.0641),
+]
+
+
+FC_SB_FOLLOWUP_POINTS = [
+    {
+        "label": "I7",
+        "x": 1.0 - 0.3625,
+        "style_minus_idt": 0.7017 - 0.6399208252628644,
+        "color": "#0F766E",
+        "dx": -10.0,
+        "dy": 12.0,
+    },
+    {
+        "label": "U4",
+        "x": 1.0 - 0.3660,
+        "style_minus_idt": 0.7225 - 0.6399208252628644,
+        "color": "#14B8A6",
+        "dx": -2.0,
+        "dy": 13.0,
+    },
+    {
+        "label": "V6",
+        "x": 1.0 - 0.3722,
+        "style_minus_idt": 0.7262 - 0.6399208252628644,
+        "color": "#0891B2",
+        "dx": 10.0,
+        "dy": 12.0,
+    },
+    {
+        "label": "V3",
+        "x": 1.0 - 0.3963,
+        "style_minus_idt": 0.7295 - 0.6399208252628644,
+        "color": "#1D4ED8",
+        "dx": 10.0,
+        "dy": -14.0,
+    },
+]
 
 PHASE2_TRACE_STYLES = {
     "k070_e1_e5": ("#E08E00", "P"),
@@ -111,6 +164,14 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         return []
     with path.open("r", encoding="utf-8", newline="") as f:
         return list(csv.DictReader(f))
+
+
+def load_dashboard_data() -> dict[str, object]:
+    text = DASHBOARD_HTML.read_text(encoding="utf-8")
+    match = re.search(r"window\.PHASE616_LIVE_DATA\s*=\s*(\{.*?\})\s*;\s*let data =", text, re.S)
+    if not match:
+        raise RuntimeError(f"Could not extract dashboard payload from {DASHBOARD_HTML}")
+    return json.loads(match.group(1))
 
 
 def transfer_row(family: str, label: str) -> dict[str, object]:
@@ -328,7 +389,7 @@ def axis_ylabel(metric: str) -> str:
 
 def axis_title(metric: str) -> str:
     if metric == "clip_delta_idt":
-        return "(a) IDT failure zone and frontier"
+        return "(a) Real style direction on the transfer plane"
     if metric == "introstyle_delta_idt":
         return "(a) IntroStyle IDT-calibrated frontier"
     if metric == "introstyle_margin":
@@ -338,7 +399,7 @@ def axis_title(metric: str) -> str:
 
 def axis_ylim(metric: str) -> tuple[float, float]:
     if metric == "clip_delta_idt":
-        return (-0.11, 0.102)
+        return (-0.07, 0.19)
     if metric == "introstyle_delta_idt":
         return (-0.24, 0.03)
     if metric == "introstyle_margin":
@@ -353,23 +414,31 @@ def main() -> None:
         choices=["clip_delta_idt", "introstyle_delta_idt", "introstyle_margin"],
         default="clip_delta_idt",
     )
+    parser.add_argument(
+        "--include-phase2",
+        action="store_true",
+        help="Overlay phase-2 exploratory points on panel (a). Disabled by default for the paper-facing figure.",
+    )
     args = parser.parse_args()
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    dashboard = load_dashboard_data()
+    dashboard_baselines = dashboard.get("baselines", {})
 
     idt = transfer_row("Reference", "No-op transfer")
     idt["delta_idt_tr"] = 0.0
-    phase2_rows = phase2_transfer_rows(float(idt["clip_style"]))
+    phase2_rows = phase2_transfer_rows(float(idt["clip_style"])) if args.include_phase2 else []
     samam = transfer_row("SaMAM", "SaMAM 2250")
     samam["delta_idt_tr"] = samam["clip_style"] - idt["clip_style"]
     samst = transfer_row("SaMST", "SaMST e15")
     samst["delta_idt_tr"] = samst["clip_style"] - idt["clip_style"]
+    dashboard_seedream = dashboard_baselines.get("seedream", {})
     seedream = {
         "label": "Seedream-4.5",
-        "clip_style": 0.6920,
-        "lpips": 0.4923,
-        "one_minus_lpips": 1.0 - 0.4923,
-        "delta_idt_tr": 0.6920 - float(idt["clip_style"]),
+        "clip_style": float(dashboard_seedream.get("clip_style", 0.6920)),
+        "lpips": float(dashboard_seedream.get("lpips", 0.4923)),
+        "one_minus_lpips": float(dashboard_seedream.get("x", 1.0 - 0.4923)),
+        "delta_idt_tr": float(dashboard_seedream.get("style_minus_idt", 0.6920 - float(idt["clip_style"]))),
     }
 
     compact = best_row("best_compact_mainline_anchor")
@@ -397,140 +466,101 @@ def main() -> None:
 
     ax = axes[0]
     ax.set_facecolor("#FCFBF8")
-    ax.axhspan(-0.11, 0.0, color="#F2E8F7", alpha=0.26, zorder=0)
+    ax.axhspan(-0.07, 0.0, color="#F2E8F7", alpha=0.22, zorder=0)
     bg = read_background_points()
     if bg:
         ax.scatter(
             [row["x"] for row in bg],
             [row["y"] for row in bg],
-            s=10,
+            s=9,
             c=COLORS["bg"],
-            alpha=0.15,
+            alpha=0.10,
             linewidths=0,
             zorder=1,
         )
 
-    ax.axhline(0.0, color=COLORS["idt"], lw=1.5, ls=(0, (7, 4)), zorder=2)
-    ax.text(0.835, -0.014 if args.y_metric == "clip_delta_idt" else -0.028, "IDT floor", color=COLORS["idt"], fontsize=8.4, ha="right", weight="bold")
-    if args.y_metric == "clip_delta_idt":
-        ax.text(0.17, -0.087, "failure zone", color="#8B6BAF", fontsize=6.6, weight="bold", alpha=0.82)
+    ax.axhline(0.0, color=COLORS["idt"], lw=1.6, ls=(0, (7, 4)), zorder=2)
+    ax.text(0.41, 0.004, "IDT floor", color=COLORS["idt"], fontsize=7.9, ha="left", weight="bold")
+    ax.text(0.60, -0.028, "wrong-direction zone", color=COLORS["samam"], fontsize=5.8, ha="center", weight="bold")
 
-    selected = [
-        ("SaMAM", samam, intro_rows.get("SaMAM_2250"), COLORS["samam"], "o"),
-        ("SaMST", samst, intro_rows.get("SaMST_e15"), COLORS["samst"], "s"),
-        ("Seedream", seedream, intro_rows.get("Seedream_repaired750"), COLORS["seedream"], "P"),
-        ("K", compact, intro_rows.get("LBM-K_e1"), COLORS["compact"], "D"),
-        ("Knee", knee, intro_rows.get("LBM-Knee_e13"), COLORS["structot"], "o"),
-        ("Lat-MAM", latent_samam, intro_rows.get("Lat_SaMAM_step1500"), COLORS["latent_samam"], "^"),
-        ("Lat-MST", latent_samst, intro_rows.get("Lat_SaMST_batch1050"), COLORS["latent_samst"], "v"),
-        ("PS-v2", psv2, intro_rows.get("LBM-PS-v2_e13"), COLORS["psv2"], "*"),
+    samam_curve = sorted(
+        [
+            (float(row["x"]), float(row["style_minus_idt"]))
+            for row in dashboard_baselines.get("samam_curve", [])
+        ],
+        key=lambda p: p[0],
+    )
+    if samam_curve:
+        ax.plot([p[0] for p in samam_curve], [p[1] for p in samam_curve], color=COLORS["samam"], lw=2.4, alpha=0.88, zorder=3)
+        ax.scatter([p[0] for p in samam_curve], [p[1] for p in samam_curve], s=24, c=COLORS["samam"], edgecolors="#0f172a", linewidths=0.55, zorder=4)
+        samam_main = max(samam_curve, key=lambda p: p[0])
+        ax.scatter([samam_main[0]], [samam_main[1]], s=58, c=COLORS["samam"], edgecolors="white", linewidths=0.9, zorder=6)
+        annotate(ax, samam_main[0], samam_main[1], "SaMAM\nbelow IDT", 10, 8, COLORS["samam"], fontsize=5.8, weight="bold")
+
+    samst_curve = sorted(
+        [
+            (float(row["x"]), float(row["style_minus_idt"]))
+            for row in dashboard_baselines.get("samst_curve", [])
+        ],
+        key=lambda p: p[0],
+    )
+    if samst_curve:
+        ax.plot([p[0] for p in samst_curve], [p[1] for p in samst_curve], color=COLORS["samst"], lw=2.1, alpha=0.82, zorder=3)
+        ax.scatter([p[0] for p in samst_curve], [p[1] for p in samst_curve], s=22, c=COLORS["samst"], edgecolors="#0f172a", linewidths=0.55, zorder=4)
+        samst_main = max(samst_curve, key=lambda p: p[0])
+        annotate(ax, samst_main[0], samst_main[1], "SaMST e15", 10, -14, COLORS["samst"], arrow=False, fontsize=5.8, weight="medium", alpha=0.86)
+
+    ax.scatter([seedream["one_minus_lpips"]], [seedream["delta_idt_tr"]], s=48, c=COLORS["seedream"], edgecolors="#0f172a", linewidths=0.8, zorder=5)
+    annotate(ax, seedream["one_minus_lpips"], seedream["delta_idt_tr"], "Seedream", -14, -13, COLORS["seedream"], arrow=False, fontsize=5.8, weight="medium", alpha=0.86)
+
+    dashboard_external_points = [
+        row for row in dashboard_baselines.get("external_points", [])
+        if row.get("id") in {"stylegallery", "styleshot", "csgo_low_vram"}
     ]
-    lbm_labels = {"K", "Knee", "PS-v2"}
-    for label, row, intro_row, color, marker in selected:
-        is_lbm = label in lbm_labels
-        ax.scatter(
-            [row["one_minus_lpips"]],
-            [y_value_for(args.y_metric, row, intro_row)],
-            s=(82 if marker != "*" else 126) if is_lbm else (58 if marker != "*" else 92),
-            c=color,
-            marker=marker,
-            edgecolors="white",
-            linewidths=1.0 if is_lbm else 0.8,
-            alpha=1.0 if is_lbm else 0.92,
-            zorder=5 if is_lbm else 4,
+    for row in dashboard_external_points:
+        color = COLORS[row["id"]]
+        ax.scatter([row["x"]], [row["style_minus_idt"]], s=34, c=color, edgecolors="#0f172a", linewidths=0.75, zorder=5)
+        annotate(
+            ax,
+            row["x"],
+            row["style_minus_idt"],
+            row["label"],
+            row["label_dx"],
+            row["label_dy"],
+            color,
+            arrow=False,
+            fontsize=5.8,
+            weight="medium",
+            alpha=0.9,
         )
 
-    if args.y_metric == "clip_delta_idt" and phase2_rows:
-        by_trace: dict[str, list[dict[str, object]]] = {}
-        for row in phase2_rows:
-            by_trace.setdefault(str(row.get("trace_id") or "phase2"), []).append(row)
-        for trace_id, trace_rows in by_trace.items():
-            trace_rows = sorted(
-                trace_rows,
-                key=lambda row: (
-                    str(row.get("step_or_epoch") or ""),
-                    float(row.get("one_minus_lpips") or 0.0),
-                ),
-            )
-            color, marker = phase2_trace_style(trace_id)
-            if len(trace_rows) > 1:
-                ax.plot(
-                    [float(row["one_minus_lpips"]) for row in trace_rows],
-                    [float(row["delta_idt_tr"]) for row in trace_rows],
-                    color=color,
-                    lw=1.55,
-                    alpha=0.76,
-                    zorder=4,
-                )
-            ax.scatter(
-                [float(row["one_minus_lpips"]) for row in trace_rows],
-                [float(row["delta_idt_tr"]) for row in trace_rows],
-                s=70,
-                c=color,
-                marker=marker,
-                edgecolors="white",
-                linewidths=0.95,
-                alpha=0.98,
-                zorder=6,
-            )
-        for row in phase2_rows:
-            text = str(row.get("label") or "").strip()
-            if not text:
-                continue
-            color, _marker = phase2_trace_style(str(row.get("trace_id") or "phase2"))
-            dx = row.get("label_dx")
-            dy = row.get("label_dy")
-            annotate(
-                ax,
-                float(row["one_minus_lpips"]),
-                float(row["delta_idt_tr"]),
-                text,
-                float(dx) if dx is not None else 8.0,
-                float(dy) if dy is not None else 10.0,
-                color,
-                fontsize=5.9,
-                weight="bold",
-                alpha=0.95,
-            )
+    pareto_x = [p[0] for p in DASHBOARD_PARETO_POINTS]
+    pareto_y = [p[1] for p in DASHBOARD_PARETO_POINTS]
+    ax.plot(pareto_x, pareto_y, color=COLORS["fcsb"], lw=1.8, ls=(0, (8, 4)), alpha=0.68, zorder=2)
+    ax.text(0.425, 0.095, "Anti-degeneration\nPareto front", color=COLORS["fcsb"], fontsize=5.8, weight="bold", ha="left", va="center")
 
-    lbm_frontier_x = [compact["one_minus_lpips"], knee["one_minus_lpips"], psv2["one_minus_lpips"]]
-    lbm_frontier_y = [
-        y_value_for(args.y_metric, compact, intro_rows.get("LBM-K_e1")),
-        y_value_for(args.y_metric, knee, intro_rows.get("LBM-Knee_e13")),
-        y_value_for(args.y_metric, psv2, intro_rows.get("LBM-PS-v2_e13")),
-    ]
-    ax.plot(
-        lbm_frontier_x,
-        lbm_frontier_y,
-        color="#B54708",
-        lw=2.2,
-        alpha=0.82,
-        zorder=3,
-    )
-    ax.text(0.475, 0.083, "LBM frontier", color="#9A3412", fontsize=6.3, weight="bold", alpha=0.95)
-
-    annotate(ax, psv2["one_minus_lpips"], y_value_for(args.y_metric, psv2, intro_rows.get("LBM-PS-v2_e13")), "PS-v2", -60, -4, COLORS["psv2"], fontsize=6.7, weight="bold")
-    annotate(ax, samst["one_minus_lpips"], y_value_for(args.y_metric, samst, intro_rows.get("SaMST_e15")), "SaMST", -10, 12, COLORS["samst"], arrow=False, fontsize=5.9, weight="medium", alpha=0.84)
-    annotate(ax, seedream["one_minus_lpips"], y_value_for(args.y_metric, seedream, intro_rows.get("Seedream_repaired750")), "Seedream-4.5", -86, -4, COLORS["seedream"], arrow=False, fontsize=5.8, weight="medium", alpha=0.78)
-    annotate(ax, latent_samst["one_minus_lpips"], y_value_for(args.y_metric, latent_samst, intro_rows.get("Lat_SaMST_batch1050")), "Lat-MST", 14, -14, COLORS["latent_samst"], arrow=False, fontsize=5.8, weight="medium", alpha=0.78)
-    annotate(ax, knee["one_minus_lpips"], y_value_for(args.y_metric, knee, intro_rows.get("LBM-Knee_e13")), "Knee", 14, 22, COLORS["structot"], fontsize=6.7, weight="bold")
-    annotate(ax, compact["one_minus_lpips"], y_value_for(args.y_metric, compact, intro_rows.get("LBM-K_e1")), "K", 22, 10, COLORS["compact"], fontsize=6.6, weight="bold")
-    annotate(ax, latent_samam["one_minus_lpips"], y_value_for(args.y_metric, latent_samam, intro_rows.get("Lat_SaMAM_step1500")), "Lat-MAM", -52, -2, COLORS["latent_samam"], arrow=False, fontsize=5.8, weight="medium", alpha=0.8)
-    annotate(ax, samam["one_minus_lpips"], y_value_for(args.y_metric, samam, intro_rows.get("SaMAM_2250")), "SaMAM", 6, 8, COLORS["samam"], arrow=False, fontsize=5.9, weight="medium", alpha=0.82)
+    fc_x = [p["x"] for p in FC_SB_FOLLOWUP_POINTS]
+    fc_y = [p["style_minus_idt"] for p in FC_SB_FOLLOWUP_POINTS]
+    ax.plot(fc_x, fc_y, color=COLORS["fcsb"], lw=2.5, zorder=6)
+    for point in FC_SB_FOLLOWUP_POINTS:
+        ax.scatter([point["x"]], [point["style_minus_idt"]], s=54, c=point["color"], edgecolors="white", linewidths=0.9, zorder=7)
+        annotate(
+            ax,
+            point["x"],
+            point["style_minus_idt"],
+            point["label"],
+            point["dx"],
+            point["dy"],
+            point["color"],
+            fontsize=6.0,
+            weight="bold",
+        )
 
     ax.set_title(axis_title(args.y_metric), pad=6, fontsize=9.2, fontweight="bold")
     ax.set_xlabel(r"$1-\mathrm{LPIPS}$ $\uparrow$")
     ax.set_ylabel(axis_ylabel(args.y_metric))
-    if args.y_metric == "clip_delta_idt" and phase2_rows:
-        base_xlim = (0.14, 0.85)
-        base_ylim = axis_ylim(args.y_metric)
-        x_vals = [float(row["one_minus_lpips"]) for row in phase2_rows]
-        y_vals = [float(row["delta_idt_tr"]) for row in phase2_rows]
-        ax.set_xlim(min(base_xlim[0], min(x_vals) - 0.025), max(base_xlim[1], max(x_vals) + 0.025))
-        ax.set_ylim(min(base_ylim[0], min(y_vals) - 0.018), max(base_ylim[1], max(y_vals) + 0.018))
-    else:
-        ax.set_xlim(0.14, 0.85)
-        ax.set_ylim(*axis_ylim(args.y_metric))
+    ax.set_xlim(0.14, 0.85)
+    ax.set_ylim(*axis_ylim(args.y_metric))
 
     ax = axes[1]
     ax.set_facecolor("#FCFBF8")
@@ -546,12 +576,10 @@ def main() -> None:
     raw_art_rows = [
         ("IDT", idt_artfid, COLORS["idt"]),
         ("SaMAM", samam_artfid, COLORS["samam"]),
-        ("Lat-\nSaMAM", latent_samam_artfid, COLORS["latent_samam"]),
         ("LBM-\nK", compact_artfid, COLORS["compact"]),
         ("LBM-\nKnee", knee_artfid, COLORS["structot"]),
         ("LBM-\nPS-v2", psv2_artfid, COLORS["psv2"]),
         ("SaMST", samst_artfid, COLORS["samst"]),
-        ("Lat-\nSaMST", latent_samst_artfid, COLORS["latent_samst"]),
         ("Seedream-\n4.5", seedream_artfid, COLORS["seedream"]),
     ]
     art_rows = [(label, row, color) for label, row, color in raw_art_rows if row is not None]
@@ -573,7 +601,7 @@ def main() -> None:
         colors = [color for _, _, color in art_rows]
         ax.axvspan(2.5, min(5.5, max(2.5, len(art_rows) - 0.5)), color=COLORS["lbm_band"], alpha=0.36, zorder=0)
         if len(art_rows) >= 4:
-            ax.text(4.0, max(vals) * 0.92, "LBM family", ha="center", va="center", fontsize=6.4, color="#9A3412", weight="bold")
+            ax.text(4.0, max(vals) * 0.87, "LBM family", ha="center", va="center", fontsize=6.4, color="#9A3412", weight="bold")
         ax.bar(xs, vals, color=colors, edgecolor="white", linewidth=0.9, zorder=3)
         ax.set_xticks(xs, [label for label, _, _ in art_rows])
         ax.tick_params(axis="x", labelsize=6.2)

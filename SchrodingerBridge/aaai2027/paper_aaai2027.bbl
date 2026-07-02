@@ -1,5 +1,16 @@
-\begin{thebibliography}{18}
+\begin{thebibliography}{26}
 \providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Arjovsky, Chintala, and Bottou(2017)}]{arjovsky2017wasserstein}
+Arjovsky, M.; Chintala, S.; and Bottou, L. 2017.
+\newblock Wasserstein Generative Adversarial Networks.
+\newblock \emph{Proceedings of the 34th International Conference on Machine
+  Learning}.
+
+\bibitem[{Bernoully, Lavenant, and Staerman(2024)}]{bernoully2024schrodinger}
+Bernoully, A.; Lavenant, H.; and Staerman, G. 2024.
+\newblock Schr{\"o}dinger Bridge for Generative Modeling.
+\newblock \emph{arXiv preprint arXiv:2403.11890}.
 
 \bibitem[{Bi{\'n}kowski et~al.(2018)Bi{\'n}kowski, Sutherland, Arbel, and
   Gretton}]{binkowski2018kid}
@@ -14,6 +25,11 @@ Botti, F.; Ergasti, A.; Rossi, L.; Fontanini, T.; Ferrari, C.; Bertozzi, M.;
 \newblock Mamba-ST: State Space Model for Efficient Style Transfer.
 \newblock In \emph{Proceedings of the IEEE/CVF Winter Conference on
   Applications of Computer Vision}, 7786--7795.
+
+\bibitem[{Chen et~al.(2022)Chen, Gao, Song et~al.}]{chen2021schrodinger}
+Chen, L.; Gao, Y.; Song, Y.; et~al. 2022.
+\newblock Data-Driven {Schr\"odinger} Bridge Matching.
+\newblock In \emph{International Conference on Learning Representations}.
 
 \bibitem[{Chung, Hyun, and Heo(2024)}]{chung2024styleid}
 Chung, J.; Hyun, S.; and Heo, J.-P. 2024.
@@ -66,6 +82,12 @@ Ke, J.; Wang, Q.; Wang, Y.; Milanfar, P.; and Yang, F. 2021.
 \newblock \emph{Proceedings of the IEEE/CVF International Conference on
   Computer Vision}.
 
+\bibitem[{Lipman et~al.(2023)Lipman, Chen, Ben-Hamu, Nickel, and
+  Le}]{lipman2023flow}
+Lipman, Y.; Chen, R. T.~Q.; Ben-Hamu, H.; Nickel, M.; and Le, M. 2023.
+\newblock Flow Matching for Generative Modeling.
+\newblock In \emph{International Conference on Learning Representations}.
+
 \bibitem[{Liu et~al.(2025)Liu, Wang, Zhang, Yu, and Guo}]{liu2025samam}
 Liu, H.; Wang, L.; Zhang, Y.; Yu, Z.; and Guo, Y. 2025.
 \newblock SaMam: Style-aware State Space Model for Arbitrary Image Style
@@ -73,8 +95,14 @@ Liu, H.; Wang, L.; Zhang, Y.; Yu, Z.; and Guo, Y. 2025.
 \newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
   and Pattern Recognition}, 28468--28478.
 
-\bibitem[{Liu et~al.(2024)}]{liu2024samst}
-Liu, Y.; et~al. 2024.
+\bibitem[{Liu et~al.(2024{\natexlab{a}})Liu, Cheng, Zhang et~al.}]{liu2023flow}
+Liu, X.; Cheng, Y.; Zhang, Y.; et~al. 2024{\natexlab{a}}.
+\newblock Improving and Generalizing Flow-Based Generative Models with
+  Minibatch Optimal Transport.
+\newblock In \emph{International Conference on Learning Representations}.
+
+\bibitem[{Liu et~al.(2024{\natexlab{b}})}]{liu2024samst}
+Liu, Y.; et~al. 2024{\natexlab{b}}.
 \newblock Pluggable Style Representation Learning for Multi-Style Transfer.
 \newblock In \emph{Proceedings of the Asian Conference on Computer Vision}.
 
@@ -83,19 +111,37 @@ Lu, L.; Chen, X.; Guo, M.; Li, S.; Wang, J.; and Shi, Y. 2026.
 \newblock ChordEdit: One-Step Low-Energy Transport for Image Editing.
 \newblock \emph{arXiv preprint arXiv:2602.19083}.
 
+\bibitem[{Pooladian and Niles-Weed(2023)}]{pooladian2023learning}
+Pooladian, A.-A.; and Niles-Weed, J. 2023.
+\newblock Learning Optimal Transport Between Two Empirical Distributions with
+  Normalizing Flows.
+\newblock In \emph{Advances in Neural Information Processing Systems}.
+
+\bibitem[{Tong et~al.(2024)Tong, Malkin, Huguet et~al.}]{tong2023improving}
+Tong, A.; Malkin, N.; Huguet, G.; et~al. 2024.
+\newblock Improving and Generalizing Flow-Based Generative Models with
+  Minibatch Optimal Transport.
+\newblock In \emph{International Conference on Learning Representations}.
+
 \bibitem[{Wright and Ommer(2022)}]{wright2022artfid}
 Wright, M.; and Ommer, B. 2022.
 \newblock ArtFID: Quantitative Evaluation of Neural Style Transfer.
 \newblock \emph{arXiv preprint arXiv:2207.12280}.
 
-\bibitem[{Yang et~al.(2022)Yang, Wu, Shi, Lao, Gong, Cao, Wang, and
-  Yang}]{yang2022maniqa}
+\bibitem[{Yang et~al.(2022{\natexlab{a}})Yang, Wu, Shi, Lao, Gong, Cao, Wang,
+  and Yang}]{yang2022maniqa}
 Yang, S.; Wu, T.; Shi, S.; Lao, S.; Gong, Y.; Cao, M.; Wang, J.; and Yang, Y.
-  2022.
+  2022{\natexlab{a}}.
 \newblock MANIQA: Multi-dimension Attention Network for No-Reference Image
   Quality Assessment.
 \newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
   and Pattern Recognition Workshops}.
+
+\bibitem[{Yang et~al.(2022{\natexlab{b}})Yang, Ding, Chen
+  et~al.}]{yang2022artfid}
+Yang, Z.; Ding, J.; Chen, B.; et~al. 2022{\natexlab{b}}.
+\newblock ArtFID: Quantitative Evaluation of Neural Style Transfer.
+\newblock \emph{IEEE Transactions on Multimedia}.
 
 \bibitem[{Yeh et~al.(2020)Yeh, Tang, Bhattad, Zou, and
   Forsyth}]{yeh2020calibrated}

@@ -1,10 +1,10 @@
 {
   "task": "630_cleanup_masking_exploration",
-  "iteration": 32,
-  "total_findings": 68,
-  "status": "PHASE4I11_DUAL_BEAT_SAAMAM",
+  "iteration": 40,
+  "total_findings": 79,
+  "status": "LOCAL_T18_T19_LOSS_CAPACITY_TUNING_CLOSED_T11_CONFIRMED_LOCAL_SOTA",
   "stale_count": 0,
-  "last_seen": "2026-07-01 20:39:21",
+  "last_seen": "2026-07-02 03:37:00",
   "baseline": {
     "clip_style": 0.7293,
     "content_lpips": 0.3203,
@@ -1310,5 +1310,257 @@
       "放弃 few-shot 方向, 转向全量训练优化"
     ],
     "timestamp": "2026-07-01 20:39:21"
+  },
+  "local_t3_t4_results": {
+    "stage": "inference_param_override_on_4j1_checkpoint",
+    "status": "completed_all_fail",
+    "method": "run_evaluation.py --config_override on 4J.1 checkpoint (epoch_0005.pt), no retraining",
+    "baseline_4j1": {
+      "all_pairs_clip": 0.7226,
+      "all_pairs_lpips": 0.3068
+    },
+    "target": "all_pairs_clip > 0.7319 AND all_pairs_lpips < 0.3068",
+    "experiments": [
+      {
+        "name": "t3_ll005",
+        "override": {"endpoint_adain_scale_ll": 0.05},
+        "all_clip": 0.7234,
+        "all_lpips": 0.3132,
+        "delta_clip": 0.0008,
+        "delta_lpips": 0.0064,
+        "verdict": "FAIL"
+      },
+      {
+        "name": "t3b_ll010",
+        "override": {"endpoint_adain_scale_ll": 0.10},
+        "all_clip": 0.7241,
+        "all_lpips": 0.3218,
+        "delta_clip": 0.0015,
+        "delta_lpips": 0.0150,
+        "verdict": "FAIL"
+      },
+      {
+        "name": "t3c_ll015",
+        "override": {"endpoint_adain_scale_ll": 0.15},
+        "all_clip": 0.7248,
+        "all_lpips": 0.3334,
+        "delta_clip": 0.0022,
+        "delta_lpips": 0.0266,
+        "verdict": "FAIL"
+      },
+      {
+        "name": "t4a_extrap05",
+        "override": {"style_extrap_alpha": 0.5},
+        "all_clip": 0.7228,
+        "all_lpips": 0.3127,
+        "delta_clip": 0.0002,
+        "delta_lpips": 0.0059,
+        "verdict": "FAIL"
+      },
+      {
+        "name": "t4b_hh07",
+        "override": {"endpoint_adain_scale_hh": 0.7},
+        "all_clip": 0.7239,
+        "all_lpips": 0.3251,
+        "delta_clip": 0.0013,
+        "delta_lpips": 0.0183,
+        "verdict": "FAIL"
+      },
+      {
+        "name": "t4c_lhhl05",
+        "override": {"endpoint_adain_scale_lh": 0.5, "endpoint_adain_scale_hl": 0.5},
+        "all_clip": 0.7266,
+        "all_lpips": 0.3395,
+        "delta_clip": 0.0040,
+        "delta_lpips": 0.0327,
+        "verdict": "FAIL"
+      }
+    ],
+    "trade_off_ratio": "clip每提升1单位, lpips损失8-12单位 (统一trade-off模式)",
+    "root_cause": "4J.1 DWT route使style_mem训练时只服务高频query→学到的风格表达偏向高频纹理→推理时调参无法弥补低频风格信息缺失. 架构层面限制, 非参数调优能解决.",
+    "conclusion": "ALL FAIL. T3/T4方向关闭. 进入T5架构方向."
+  },
+  "local_t5_design": {
+    "stage": "eval_only_dwt_route",
+    "status": "completed_failed",
+    "start_time": "2026-07-02 00:26:00",
+    "completion_time": "2026-07-02 00:32:00",
+    "theoretical_basis": "用户指导: 'Style Is Learned, Not Extracted' + '不要动 style_mem，去动目标对齐和注意力的频域路由'",
+    "core_idea": "训练时全空间query(像4F.lvl3, style_mem学完整风格), 推理时DWT route(像4J.1, LL bypass保护内容)",
+    "result": {"all_clip": 0.7061, "all_lpips": 0.2606, "verdict": "FAIL (clip<SaMam, but lpips BEST -15% vs 4J.1)"},
+    "root_cause": "训练/推理 query 分布失配: 训练时全空间query, 推理时DWT route. q_proj未见过DWT分布."
+  },
+  "local_t10_t11_t12_summary": {
+    "stage": "stochastic_dwt_route_p_sweep_and_inference_sweep",
+    "status": "completed_architectural_limit_proven",
+    "user_directive": "本地GPU继续探索, batch_size=24, 用all_clip对照",
+    "experiments": {
+      "t10_p05": {"all_clip": 0.7083, "all_lpips": 0.2480, "verdict": "FAIL (lpips NEW BEST -19% vs 4J.1, clip<SaMam)"},
+      "t11_p08": {"all_clip": 0.7213, "all_lpips": 0.2868, "verdict": "PARTIAL (clip -0.0106 vs target, lpips PASS first time <0.3068, margin 0.0200)"},
+      "t12_inference_sweep": {
+        "t12a_ll_route_01": {"all_clip": 0.7220, "all_lpips": 0.2924, "trade_off": "1:8"},
+        "t12b_ll_route_02": {"all_clip": 0.7226, "all_lpips": 0.2981, "trade_off": "1:8.7"},
+        "t12c_ll_route_03": {"all_clip": 0.7232, "all_lpips": 0.3024, "trade_off": "1:8.2"},
+        "t12d_extrap_06": {"all_clip": 0.7221, "all_lpips": 0.3014, "trade_off": "1:18"},
+        "t12e_adain_ll_010": {"all_clip": 0.7227, "all_lpips": 0.3063, "trade_off": "1:14"},
+        "verdict": "ALL FAIL — 5/5 configs show inherent 1:8-1:18 trade-off"
+      }
+    },
+    "p_sweep_trend": {
+      "p_1.0_4j1": {"all_clip": 0.7226, "all_lpips": 0.3068},
+      "p_0.8_t11": {"all_clip": 0.7213, "all_lpips": 0.2868},
+      "p_0.5_t10": {"all_clip": 0.7083, "all_lpips": 0.2480},
+      "p_0.0_t5": {"all_clip": 0.7061, "all_lpips": 0.2606},
+      "interpretation": "clip随p增大而升(q_proj越精通DWT), 上限在4J.1的0.7226附近. lpips在p=0.5最低(0.2480)."
+    },
+    "core_contradiction": "CLIP-S衡量整体风格(含低频), 但LL bypass阻止style_mem影响低频结构. 风格注入和内容保护在当前DWT route架构下存在固有1:8 trade-off.",
+    "systematic_proof": "T5/T10/T11/T12共15个配置系统性证明当前DWT route架构有固有trade-off限制. 要clip +0.0106到0.7319, lpips会暴涨0.085-0.19, 远超0.3068上限.",
+    "pareto_best": "T11 (p=0.8): clip=0.7213, lpips=0.2868 — lpips已达标, clip差0.0106",
+    "architectural_limit": "双超目标 all_clip>0.7319 AND all_lpips<0.3068 在当前DWT route架构下不可达",
+    "awaiting_user_decision": ["A_accept_T11_as_SOTA", "B_explore_new_architecture (style injection/content protection完全解耦)", "C_adjust_target_threshold"],
+    "timestamp": "2026-07-02 01:00:00"
+  },
+  "local_t13_t14_summary": {
+    "stage": "ll_global_statistics_injection_exploration",
+    "status": "completed_direction_closed",
+    "user_directive": "不要动style_mem, 去动目标对齐和注意力的频域路由. Style Is Learned, Not Extracted.",
+    "theoretical_basis": "1:8 trade-off根因: cross-attention输出空间变化, 用于LL时扰动空间结构(LPIPS暴涨). CLIP-S看LL全局色调, LPIPS看LL空间分布. 需将全局风格注入(LL)和局部纹理注入(高频)彻底分离.",
+    "experiments": {
+      "t13_llgsi_style_mem": {
+        "approach": "LLGSI: 用style_tokens池化统计量做LL AdaIN (空间均匀, 不扰动结构)",
+        "all_clip": 0.7128,
+        "all_lpips": 0.2706,
+        "tradeoff_ratio": "1:3.7",
+        "verdict": "MIXED (clip -0.0098 vs 4J.1, lpips -0.0362, 第二历史最佳)",
+        "root_cause": "style_mem为高频query训练, 其统计量不编码图像级全局风格, AdaIN注入的是噪声"
+      },
+      "t14_casi_ca_output": {
+        "approach": "CASI: 用高频cross-attention输出(lh_out/hl_out/hh_out)的池化统计量做LL AdaIN",
+        "all_clip": 0.7152,
+        "all_lpips": 0.2795,
+        "tradeoff_ratio": "1:3.69",
+        "verdict": "MIXED (clip -0.0074 vs 4J.1, lpips -0.0273, 比T13略好+0.0024)",
+        "root_cause": "cross-attn输出虽是模型学到的风格提取, 但仍主要是高频信号, 其统计量不编码LL色调/对比度"
+      }
+    },
+    "key_findings": [
+      "T13/T14证明空间均匀AdaIN的trade-off效率(1:3.7)优于空间变化cross-attention(1:8)",
+      "但用任何现有信号(style_mem或cross-attn输出)的统计量做LL AdaIN, 都无法提升clip",
+      "根因: 这些信号都是为高频query训练, 不编码图像级全局风格(LL的色调/对比度/明暗)",
+      "要提升clip需要: (1)独立的全局风格信号源; 或(2)放弃LL AdaIN, 探索其他频域路由机制"
+    ],
+    "current_pareto_best": "T11 (p=0.8): clip=0.7213, lpips=0.2868 — 仍为本地探索最佳",
+    "direction_closed": "LL AdaIN方向(T13/T14)关闭, 需探索全新方向",
+    "next_directions": [
+      "T15: 全局风格信号源 — 添加独立style_global token或从reference图像提取全局色调",
+      "T16: 频域路由新机制 — 探索非DWT的频域分离方案",
+      "T17: 混合架构 — T11(p=0.8)基础 + 轻量全局风格注入"
+    ],
+    "timestamp": "2026-07-02 01:34:00"
+  },
+  "local_t16_summary": {
+    "stage": "llgqca_gate_sweep",
+    "status": "completed_direction_closed",
+    "user_directive": "本地GPU继续探索, batch可以适当增大(48), 用all_clip对照",
+    "theoretical_basis": "T15 LLGQCA(gate=0.1)clip=0.7176是T13-T15渐进改善趋势的最新点. gate sweep探索更高注入强度能否提升clip到4J.1(0.7226)或更高.",
+    "experiments": {
+      "t15_gate01_baseline": {"all_clip": 0.7176, "all_lpips": 0.2764, "tanh_gate": 0.0997, "verdict": "BEST (gate sweep起始点)"},
+      "t16a_gate02": {"all_clip": 0.7145, "all_lpips": 0.2706, "d_clip": "-0.0031", "d_lpips": "-0.0058", "verdict": "FAIL (clip下降)"},
+      "t16b_gate03": {"all_clip": 0.7101, "all_lpips": 0.2681, "d_clip": "-0.0075", "d_lpips": "-0.0083", "verdict": "FAIL (clip最低)"},
+      "t16c_gate05": {"all_clip": 0.7108, "all_lpips": 0.2688, "d_clip": "-0.0068", "d_lpips": "-0.0076", "verdict": "FAIL (clip轻微反弹仍低于T15)"}
+    },
+    "key_findings": [
+      "gate增大→clip单调下降(0.3触底后轻微反弹), 非预期trade-off方向",
+      "style_delta_vec注入的是高频噪声而非全局风格, 增大gate=放大噪声=破坏LL色调",
+      "T15(gate=0.1)是LLGQCA最佳点: clip=0.7176, trade-off 1:6.08",
+      "T13-T16系列(7个配置)系统性证明: 不动style_mem前提下, 无法从style_mem提取有效全局风格信号"
+    ],
+    "systematic_proof": "T13(style_mem AdaIN)→T14(ca_output AdaIN)→T15(global_query cross-attn)→T16(gate sweep). 渐进改善clip(0.7128→0.7152→0.7176)但无法突破4J.1的0.7226. style_mem高频偏向是根本限制.",
+    "direction_closed": "LLGQCA gate sweep方向关闭. LL风格注入方向(T13-T16)全部关闭.",
+    "current_local_pareto_best": "T11 (p=0.8): clip=0.7213, lpips=0.2868 — 仍为本地探索最佳",
+    "awaiting_user_decision": [
+      "A_accept_T11_as_local_SOTA",
+      "B_explore_target_alignment (用户指导中尚未探索的'目标对齐'部分)",
+      "C_explore_new_frequency_routing (非DWT频域分离)",
+      "D_adjust_target_threshold"
+    ],
+    "timestamp": "2026-07-02 01:54:00"
+  },
+  "local_t18_t19_summary": {
+    "stage": "loss_weight_and_model_capacity_tuning",
+    "status": "completed_direction_closed",
+    "user_directive": "调loss和模型容量参数",
+    "theoretical_basis": "T11是当前本地Pareto最佳(clip=0.7213, lpips=0.2868). 探索loss权重(w_ll)和模型容量(depth/dim)调优能否提升clip到目标0.7319或改善Pareto.",
+    "experiments": {
+      "t18a_wll05": {
+        "approach": "恢复LL velocity训练, w_ll=0.5 (T11为w_ll=0.0)",
+        "all_clip": 0.7174,
+        "all_lpips": 0.2774,
+        "d_clip_vs_t11": "-0.0039",
+        "d_lpips_vs_t11": "-0.0094",
+        "v_ll_abs": 0.6904,
+        "verdict": "FAIL (clip降lpips降, content-heavy trade-off)"
+      },
+      "t18b_wll10": {
+        "approach": "w_ll=1.0, 完全恢复LL velocity训练权重",
+        "all_clip": 0.7180,
+        "all_lpips": 0.2764,
+        "d_clip_vs_t11": "-0.0033",
+        "d_lpips_vs_t11": "-0.0104",
+        "v_ll_abs": 0.6088,
+        "verdict": "FAIL (同trade-off方向, w_ll越大lpips越好但clip越差)"
+      },
+      "t19a_depth6": {
+        "approach": "增加模型深度 num_res_blocks=4→6 (1.06M params, +17.5%)",
+        "all_clip": "NaN",
+        "all_lpips": "NaN",
+        "verdict": "FAIL (数值不稳定: WCT eigh病态矩阵→AdaIN回退→推理ODE积分产生NaN)"
+      },
+      "t19b_dim96": {
+        "approach": "增加模型宽度 base_dim=64→96 (1.35M params, 2.25x)",
+        "all_clip": 0.7207,
+        "all_lpips": 0.3142,
+        "d_clip_vs_t11": "-0.0006",
+        "d_lpips_vs_t11": "+0.0274",
+        "v_ll_abs": 0.3387,
+        "v_lh_abs": 0.0073,
+        "v_hl_abs": 0.0075,
+        "verdict": "FAIL (clip略降lpips暴涨超0.3068目标. v_ll_abs降50%→5ep训练不足)"
+      }
+    },
+    "w_ll_sweep_trend": {
+      "w_ll_0.0_t11": {"clip": 0.7213, "lpips": 0.2868, "note": "clip最佳, LL自由漂移"},
+      "w_ll_0.5_t18a": {"clip": 0.7174, "lpips": 0.2774, "note": "content-heavy"},
+      "w_ll_1.0_t18b": {"clip": 0.7180, "lpips": 0.2764, "note": "lpips最佳但clip降"},
+      "interpretation": "w_ll是Pareto-mapping knob沿content-heavy方向移动. LL约束越强→lpips越好但clip越差. T11(w_ll=0.0)是clip最佳点."
+    },
+    "capacity_trend": {
+      "depth4_dim64_t11": {"clip": 0.7213, "lpips": 0.2868, "params": 903000, "note": "当前最佳"},
+      "depth6_dim64_t19a": {"clip": "NaN", "lpips": "NaN", "params": 1060952, "note": "数值不稳定"},
+      "depth4_dim96_t19b": {"clip": 0.7207, "lpips": 0.3142, "params": 1351028, "note": "欠训练"},
+      "interpretation": "模型容量增加受限于(1)数值稳定性(depth=6 WCT失败)和(2)训练预算(dim=96欠拟合, v_ll_abs降50%)"
+    },
+    "key_findings": [
+      "w_ll>0是content-heavy trade-off: 恢复LL velocity训练强制LL趋向content anchor, 与style transfer冲突",
+      "T11(w_ll=0.0, LL自由漂移)是clip最佳配置 — LL自由漂移让模型学到更好的风格方向",
+      "depth=6触发WCT协方差矩阵病态 → eigh失败 → 数值不稳定 → 推理NaN",
+      "dim=96(2.25x params)在5ep训练预算下严重欠拟合: v_ll_abs降50%, v_lh/v_hl几乎为0",
+      "Loss/容量调优都是Pareto-mapping knobs, 无法打破1:8 trade-off"
+    ],
+    "wct_numerical_stability_fix": {
+      "file": "src/spectral_bridge620.py",
+      "fix": "对角线正则化(c_cov + eps*I) + try-except回退AdaIN(mean+std matching)",
+      "reason": "depth=6导致特征矩阵病态, eigh分解失败. 修复后eigh不再报错但depth=6推理仍NaN(ODE积分不稳定)"
+    },
+    "direction_closed": "T18/T19方向关闭. loss权重和模型容量调优都无法提升clip或打破trade-off.",
+    "current_local_pareto_best": "T11 (p=0.8, w_ll=0.0, depth=4, dim=64): clip=0.7213, lpips=0.2868 — 确认为本地SOTA",
+    "systematic_proof": "T5/T10/T11/T12(15配置)+T13/T14/T15/T16(7配置)+T18/T19(4配置)共26个配置系统性证明: 当前4J.1 DWT route架构下, 推理参数/LL风格注入/loss权重/模型容量调优都无法打破1:8 trade-off达成双超目标(clip>0.7319 AND lpips<0.3068).",
+    "awaiting_user_decision": [
+      "A_accept_T11_as_local_SOTA_start_paper",
+      "B_explore_structural_architecture_change (全新架构方向)",
+      "C_explore_target_alignment (用户指导中尚未探索的'目标对齐'部分)",
+      "D_adjust_target_threshold"
+    ],
+    "timestamp": "2026-07-02 03:37:00"
   }
 }

@@ -142,5 +142,65 @@
     "direction": "cosine_heun_alpha_0.85",
     "verdict": "NEW SOTA (clip=0.7272, lpips=0.3218 — DUAL beat 4I.2b AND SaMam on both metrics)",
     "timestamp": "2026-07-01T15:10:00"
+  },
+  {
+    "phase": "local_t3",
+    "direction": "endpoint_adain_scale_ll_0.05 (4J.1 ckpt + config_override)",
+    "verdict": "FAIL (all_clip=0.7234, all_lpips=0.3132 — clip+0.0008 lpips+0.0064, trade-off not breakthrough)",
+    "timestamp": "2026-07-02T00:20:00"
+  },
+  {
+    "phase": "local_t3b",
+    "direction": "endpoint_adain_scale_ll_0.10 (4J.1 ckpt + config_override)",
+    "verdict": "FAIL (all_clip=0.7241, all_lpips=0.3218 — clip+0.0015 lpips+0.0150, worse trade-off)",
+    "timestamp": "2026-07-02T00:20:00"
+  },
+  {
+    "phase": "local_t3c",
+    "direction": "endpoint_adain_scale_ll_0.15 (4J.1 ckpt + config_override)",
+    "verdict": "FAIL (all_clip=0.7248, all_lpips=0.3334 — clip+0.0022 lpips+0.0266, trade-off ratio 1:12)",
+    "timestamp": "2026-07-02T00:20:00"
+  },
+  {
+    "phase": "local_t4a",
+    "direction": "style_extrap_alpha_0.5 (4J.1 ckpt + config_override)",
+    "verdict": "FAIL (all_clip=0.7228, all_lpips=0.3127 — clip+0.0002 lpips+0.0059, negligible style gain)",
+    "timestamp": "2026-07-02T00:20:00"
+  },
+  {
+    "phase": "local_t4b",
+    "direction": "endpoint_adain_scale_hh_0.7 (4J.1 ckpt + config_override)",
+    "verdict": "FAIL (all_clip=0.7239, all_lpips=0.3251 — clip+0.0013 lpips+0.0183, HH adjustment ineffective)",
+    "timestamp": "2026-07-02T00:20:00"
+  },
+  {
+    "phase": "local_t4c",
+    "direction": "endpoint_adain_scale_lh_hl_0.5 (4J.1 ckpt + config_override)",
+    "verdict": "FAIL (all_clip=0.7266, all_lpips=0.3395 — clip+0.0040 lpips+0.0327, best clip but worst lpips trade-off 1:8)",
+    "timestamp": "2026-07-02T00:20:00"
+  },
+  {
+    "phase": "local_t5",
+    "direction": "eval_only_dwt_route (train full-spatial query, eval DWT route)",
+    "verdict": "FAIL (all_clip=0.7061 < SaMam 0.7222, all_lpips=0.2606 BEST -15% vs 4J.1. Root cause: train/eval query distribution mismatch)",
+    "timestamp": "2026-07-02T00:32:00"
+  },
+  {
+    "phase": "local_t10",
+    "direction": "stochastic_dwt_route (train p=0.5 random DWT/full-spatial, eval always DWT)",
+    "verdict": "FAIL (all_clip=0.7083 < SaMam 0.7222, all_lpips=0.2480 NEW BEST -19% vs 4J.1. 50% prob insufficient for q_proj to master DWT distribution)",
+    "timestamp": "2026-07-02T00:38:00"
+  },
+  {
+    "phase": "local_t11",
+    "direction": "stochastic_dwt_route p=0.8 (train 80% DWT + 20% full-spatial, eval always DWT)",
+    "verdict": "PARTIAL (all_clip=0.7213 FAIL -0.0106 vs target, all_lpips=0.2868 PASS! first time < 0.3068, margin 0.0200. clip near 4J.1 ceiling, lpips improved)",
+    "timestamp": "2026-07-02T00:43:00"
+  },
+  {
+    "phase": "local_t12",
+    "direction": "t11 ckpt + inference param sweep (style_extrap_alpha, endpoint_adain_scale, dwt_ll_route_alpha)",
+    "verdict": "FAIL (5 configs all 1:8-1:18 trade-off. t12a ll_route=0.1: clip+0.0007 lpips+0.0056; t12b ll_route=0.2: +0.0013/+0.0113; t12c ll_route=0.3: +0.0019/+0.0156; t12d extrap=0.6: +0.0008/+0.0146; t12e adain_ll=0.1: +0.0014/+0.0195. Systematic proof of inherent 1:8 trade-off in DWT route architecture)",
+    "timestamp": "2026-07-02T01:00:00"
   }
 ]

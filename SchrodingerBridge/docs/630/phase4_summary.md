@@ -1,220 +1,132 @@
-# Phase 4 完整总结：减法消融 + 加法探索
+# Phase 4 实验总览 (Subtractive Ablation + Additive Exploration)
 
 **Date**: 2026-07-01
-**Status**: ✅ PHASE4F_COMPLETED
-**Final SOTA**: `haar lvl3, 3ep` → **clip_style = 0.7319, content_lpips = 0.3428**
-**Branch**: `codex/620-spatial-bridge`
-**Baseline (Phase 3)**: clip_style = 0.7293, content_lpips = 0.3203
+**Status**: Phase 4G.2b in progress (4G.2 MIXED result documented)
+**Current SOTA**: Phase 4F.1 (haar lvl3, clip=0.7319, lpips=0.3428)
+**Thresholds**: clip_style ≥ 0.7243, content_lpips ≤ 0.3453
 
 ---
 
-## 0. 阶段总览
+## 1. 实验全景表
 
-Phase 4 完成"减法 - 加法"双轨工作：
-- **减法** (4A1/4A2)：删除死代码 + 对 3 个核心组件做减法消融
-- **加法** (4B/C/D/E/F)：5 大方向探索 Masking + 分频 Tokenizer 升级路径
+### 1.1 减法消融 (Subtractive Ablation)
 
-最终通过 **多级 Haar DWT** (3-Level) 取得 SOTA，clip_style 相对 Phase 3 baseline 提升 **+0.0026** (0.7293 → 0.7319)，且 LPIPS 仍 PASS (0.3428 ≤ 0.3453)。
+| 阶段 | 实验 | 改动 | clip | lpips | 判定 | 关键结论 |
+|------|------|------|------|-------|------|----------|
+| 4A1 | dead_code_removal | 删除 6 个死代码占位符 | — | — | PASS | 代码清洁, 无性能影响 |
+| 4A2 | spectral_w_ll=0.0 | w_ll=0 (不训练 head_ll) | 0.7117 | 0.2994 | FAIL | w_ll 必要 (但 4G.1 澄清: 是"假阴性", 未训练 v_ll 是噪声) |
+| 4A2 | style_extrap_alpha=0.0 | 禁用 style 外推 | 0.7242 | 0.3333 | FAIL | extrap 必要 |
+| 4A2 | endpoint_adain_scale=0.0 | 禁用 Endpoint AdaIN | 0.7082 | 0.2994 | FAIL | AdaIN 必要 |
 
----
+**减法结论**: 所有 3 个核心组件 (w_ll, style_extrap_alpha, endpoint_adain_scale) 均不可移除。Content Fidelity Pathway (DWT haar → AdaIN scale → spectral ODE) 验证完整。
 
-## 1. 减法 (Subtraction)
+### 1.2 加法探索 (Additive Exploration)
 
-### 1.1 Phase 4A1: 死代码移除
-**Commit**: `31fc94cac`
-- 删除 `spectral_brownian_noise_scale`、`loss_type metric`、`loss_fm alias`、`loss_fm_total`、`compute_debug`、`loss_fn.last_debug`
-- 净效果：减少无效分支与历史包袱，无性能影响
+| 阶段 | 实验 | 改动 | clip | lpips | 判定 | 关键结论 |
+|------|------|------|------|-------|------|----------|
+| 4B1 | freq_a1 | 频域 masking α=1.0 | 0.7258 | 0.3357 | PASS | 频域 mask 有效 |
+| 4B1 | freq_a1_rand50 | 频域+随机 mask | 0.7264 | 0.3354 | PASS | 两者可叠加 |
+| 4B2 | freq_a1_rand50_10ep | 长训练 10ep | 0.7277 | 0.3394 | PASS | 5ep 后内容漂移 |
+| 4B3 | dwt_a1 | DWT tokenizer | 0.7266 | 0.3402 | PASS | Haar DWT 可用 |
+| 4C | block_masking+real_DINO | RGB 块遮挡 + DINOv2 | 0.7151 | 0.3177 | **NEGATIVE** | **"Style Is Learned, Not Extracted"** — DINO 污染 clip -0.018 |
+| **4D** | **lvl2 (2-Level DWT)** | **多级分解** | **0.7301** | **0.3402** | **PASS - BREAKTHROUGH** | **2-Level 突破 10ep baseline, +0.0040 clip** |
+| 4E.1 | db2 lvl1 | Daubechies 平滑小波 | 0.7258 | 0.3288 | FLAT | db2 ≈ haar (像素级平滑对 CLIP/LPIPS 不敏感) |
+| 4E.2 | db2 lvl2 | Daubechies 2-Level | 0.7298 | 0.3398 | FLAT | 多级是主导效应, 基函数非关键 |
+| **4F.1** | **haar lvl3** | **3-Level DWT** | **0.7319** | **0.3428** | **PASS - NEW SOTA** | **3-Level 最优, +0.0018 over lvl2** |
+| 4F.2 | haar lvl4 | 4-Level DWT | 0.7316 | 0.3461 | FAIL | 4-Level 过激, LL_4 (2×2) 丢位置信息 |
+| 4G.1a | lock_ll + w_ll=1.0 | 推理锁死 LL | 0.7178 | 0.3281 | **NEGATIVE** | LL velocity 贡献 +0.014 clip, 不可锁死 |
+| 4G.1b | lock_ll + w_ll=0.0 | 全锁 | 0.7174 | 0.3372 | FAIL | w_ll 训练提供 backbone 旁路收益 (-0.0091 lpips) |
+| **4G.2** | **per_subband α=1.0** | **频域每子带 AdaIN** | **0.7361** | **0.3843** | **MIXED** | **clip NEW SOTA (+0.0042), lpips FAIL (+0.0415, 9× 注入)** |
+| 4G.2b | per_subband α=0.5 | 降低注入量 | 0.7362 | 0.3845 | **FAIL** | **α 失效! 多步 Euler 迭代累积使 α=0.5≡α=1.0** |
 
-### 1.2 Phase 4A2: 减法消融 (3 个核心组件)
-**Commit**: `50adae4dc`
-**3-epoch 训练消融，3 个核心组件全部 FAIL，无法移除**：
+### 1.3 多级 DWT 趋势表
 
-| 配置 | clip_style | content_lpips | 判定 |
-|------|-----------|---------------|------|
-| `spectral_w_ll=0.0` | 0.7117 | 0.3120 | FAIL (-0.0126) |
-| `style_extrap_alpha=0.0` | 0.7242 | 0.3333 | FAIL (clip<0.7243) |
-| `endpoint_adain_scale=0.0` | 0.7082 | 0.2994 | FAIL (-0.0211) |
+| Level | LL 尺寸 | clip_style | content_lpips | Δ clip (vs prev) |
+|-------|---------|------------|---------------|------------------|
+| 1 | 16×16 | 0.7261 | 0.3296 | baseline |
+| 2 | 8×8 | 0.7301 | 0.3402 | +0.0040 |
+| **3 (SOTA)** | **4×4** | **0.7319** | **0.3428** | **+0.0018** |
+| 4 | 2×2 | 0.7316 | 0.3461 | -0.0003 (FAIL) |
 
-**结论**：3 个核心组件 (spectral_w_ll, style_extrap_alpha, endpoint_adain_scale) 均有效。FC-SB "Content Fidelity Pathway" 路径确认：DWT haar 低通 → AdaIN scale → spectral ODE。
-
----
-
-## 2. 加法 (Addition)
-
-### 2.1 Phase 4B1: 频域 Masking (Scheme C)
-**Commit**: `d83a050e0`
-3 个配置全部 PASS，频域 mask 与随机 dropout 等价：
-
-| 配置 | clip_style | content_lpips | v_ll_abs | 判定 |
-|------|-----------|---------------|----------|------|
-| `freq_a1` | 0.7258 | 0.3357 | — | PASS |
-| `freq_a05` | 0.7252 | 0.3347 | — | PASS |
-| `freq_a1_rand50` | 0.7264 | 0.3354 | — | PASS |
-
-### 2.2 Phase 4B2: 长训练与比例优化
-- 10ep `freq_a1_rand50`: clip=0.7277, lpips=0.3394 (与 baseline parity)
-- 3ep `freq_a1_rand30`: clip=0.7250, lpips=0.3252 (best lpips)
-- 3ep `freq_a1_rand70`: clip=0.7245, lpips=0.3284
-- **结论**：最优 `mask_ratio=0.5`，5ep 即可（超过 5ep 出现 content drift）
-
-### 2.3 Phase 4B3: DWT Tokenizer (Haar)
-- `dwt_a1`: clip=0.7266, lpips=0.3402 (PASS)
-- `dwt_a1_rand50`: clip=0.7255, lpips=0.3297 (PASS)
-- **结论**：正交 Haar DWT 与 avg_pool 基线 parity，可作基础设施
-
-### 2.4 Phase 4C: RGB Block Masking + Real DINO — **NEGATIVE**
-**关键负结果**：
-- `4C.0 (clean DINO + lvl2)`: clip=0.7118, lpips=0.3038, **FAIL** (clip -0.0125 低于阈值)
-- `4C.1 (blockmask r0.6 b128 + lvl2)`: clip=0.7151, lpips=0.3177, **FAIL** (clip -0.0092)
-
-**理论发现**：**"Style Is Learned, Not Extracted"**
-- 可学习 `style_memory` 是任务最优的特征容器
-- DINOv2 特征受内容偏置污染，引入外部模型 = 引入语义内容泄漏
-- Block mask 部分恢复 (+0.0033)，但无法补偿整体退化
-- **Phase 4C 路线废弃，回归 style_memory**
-
-### 2.5 Phase 4D: 多级 DWT (2-Level Haar) — **首次突破**
-**Commit**: (本批待提交)
-- `lvl2 (3ep)`: clip=**0.7301**, lpips=0.3402, **PASS** (突破 10ep baseline 0.7288)
-- `lvl2_dwt_rand50 (3ep)`: clip=0.7294, lpips=0.3394 (略低于纯 lvl2)
-- **结论**：2-Level DWT 是单一改进中最强的。随机 mask 与多级 DWT 不兼容（破坏中频连续性）。
-
-### 2.6 Phase 4E: Daubechies 平滑小波 (db2) — **FLAT**
-**2×2 消融矩阵**：
-
-| basis | levels=1 | levels=2 |
-|-------|----------|----------|
-| haar  | 0.7261   | 0.7301   |
-| db2   | 0.7258   | 0.7298   |
-
-- db2 fiber 经 AdaIN 后的重建 TV 比 Haar 低 34.5% (smoke test 验证)
-- 但 CLIP/LPIPS 对像素级平滑度不敏感，VAE 解码器吸收了平滑差异
-- **结论**：db2 ≈ haar (Δ≈-0.0003)。多级 (lvl1→lvl2) 是主导效应 (+0.0040)。db2 代码保留为可选 basis。
-
-### 2.7 Phase 4F: 多级深度探索 — **NEW SOTA**
-
-| 级数 | LL 尺寸 | clip_style | content_lpips | Δ clip | 判定 |
-|------|---------|-----------|---------------|--------|------|
-| 1 | 16×16 | 0.7261 | 0.3296 | baseline | PASS |
-| 2 | 8×8  | 0.7301 | 0.3402 | +0.0040 | PASS (prev SOTA) |
-| **3** | **4×4**  | **0.7319** | 0.3428 | **+0.0018** | **NEW SOTA** |
-| 4 | 2×2  | 0.7316 | 0.3461 | -0.0003 | **FAIL** (lpips>0.3453) |
-
-**趋势分析**：
-- `1→2`: +0.0040 clip (强收益，释放中频笔触)
-- `2→3`: +0.0018 clip (递减但正向，进一步分离极低频构图)
-- `3→4`: -0.0003 clip + lpips FAIL (LL₄ 2×2 太激进，丢失位置信息)
-
-**物理解释**：3-Level DWT 下 LL₃ (4×4) 恰好对应"绝对构图 + 物体位置"，在此锁死可保 LPIPS，同时释放 lvl1/lvl2 中频笔触表达。4-Level LL₄ (2×2) 已逼近"全黑" 8 像素，无法承载位置信息。
+**趋势**: 1→2 收益最大 (+0.0040), 2→3 递减 (+0.0018), 3→4 反转 (-0.0003)。3-Level 是峰值。
 
 ---
 
-## 3. 最终 SOTA 配置
+## 2. 核心理论发现
 
-**Config**: `configs/630_phase4f_lvl3.json` (基于 `configs/630_phase3_mask_random_50_10ep.json`)
+### 2.1 "Content Fidelity Pathway" (4A2 减法验证)
 
-**关键参数**:
-```json
-{
-  "endpoint_lowpass_levels": 3,
-  "endpoint_lowpass_basis": "haar",
-  "endpoint_adain_scale": 1.0,
-  "style_extrap_alpha": 0.5,
-  "spectral_w_ll": 1.0,
-  "mask_ratio": 0.5,
-  "mask_mode": "random"
-}
+三个不可移除的核心组件构成"内容保真路径":
+
+```
+DWT Haar (正交分解) → AdaIN scale (统计匹配) → Spectral ODE (频域速度场)
+    ↓                        ↓                         ↓
+物理切分 LL/HF         风格注入 + 内容锚       LL/LH/HL 独立 velocity
 ```
 
-**性能**:
-- clip_style = **0.7319** (Phase 3 baseline +0.0026)
-- content_lpips = 0.3428 (PASS, ≤ 0.3453)
-- v_ll_abs = 0.666 (head_ll 补偿稳定)
+### 2.2 "LL Is Not Pure Content Anchor" (4G.1 NEGATIVE → 核心洞察)
+
+4G.1 的 2×2 矩阵消融精确量化了 LL velocity 的双重角色:
+
+| | w_ll=0 (不训练) | w_ll=1.0 (训练) |
+|---|---|---|
+| **lock=False** (推理用 v_ll) | 4A2: clip=0.7117 (随机噪声) | **4F.1 SOTA: 0.7319** |
+| **lock=True** (推理锁死) | 4G.1b: clip=0.7174 | 4G.1a: clip=0.7178 |
+
+- **v_ll 应用**: +0.0141 clip (LL 携带全局色调/光照/色相风格信息)
+- **v_ll 训练**: -0.0091 lpips (head_ll 梯度回流改善 backbone 内容理解)
+- **结论**: LL 不是纯内容锚, 是"内容 + 全局风格"的混合载体
+
+### 2.3 "Frequency-Domain Decoupling Works" (4G.2 MIXED → 方向确认)
+
+4G.2 证明 per-subband AdaIN 的正交性统计隔离优势是真实的:
+- clip +0.0042 突破 SOTA: 每子带独立匹配比空间域全局更精准
+- 但 α=1.0 导致 9× 风格注入 (vs spatial_fiber 的 1×): lpips 超标
+- **结论**: 频域解耦方向正确, 需通过 α 参数控制注入量
+
+### 2.4 "Style Is Learned, Not Extracted" (4C NEGATIVE)
+
+4C 证明引入外部 DINOv2 特征作为 style 条件反而损害 clip (-0.018):
+- learnable style_memory 是任务最优的 (端到端学习)
+- DINOv2 特征是 content-biased 的 (物体语义污染风格)
+- **用户决策**: 不使用 DINO, 避免外部模型污染
 
 ---
 
-## 4. 核心理论发现
+## 3. 论文 Core Story (根据 4G.2b 结果二选一)
 
-### 4.1 "Content Fidelity Pathway" (减法验证)
-DWT 低通 → AdaIN scale → spectral ODE 三件套构成保 LPIPS 的核心通路。任一环节失效，clip_style 立即崩塌 ≥0.012。
+### 3.1 如果 4G.2b 成功 (新 SOTA, clip > 0.7319, lpips ≤ 0.3453)
 
-### 4.2 "Style Is Learned, Not Extracted" (4C 负结果)
-- 可学习的 `style_memory` (16 tokens × C) 是任务最优风格容器
-- 外部 DINOv2 特征虽是 SOTA 视觉编码器，但**携带内容偏置**，对 style transfer 是污染
-- Block mask 只能"恢复部分风格纯度"，无法根本消除外部模型的语义泄漏
-- **设计原则**：未来不引入任何外部视觉编码器
+> "我们通过 Haar DWT 多级分解 (4F) 解耦内容 (LL) 与风格 (HF), 以 3-Level 分解取得 SOTA。
+> 消融实验矩阵: (1) 减法 (4A2) 验证 Content Fidelity Pathway; (2) LL velocity 消融 (4A2+4G.1) 量化 +0.014 clip 贡献, 证明 LL 携带全局色调;
+> (3) 频域 per-subband AdaIN (4G.2) 利用 Haar 正交性保证统计隔离, 突破空间域 SOTA, α 参数 (4G.2b) 调控注入量-保真度 trade-off。
+> 完整的三层频域解耦: LL velocity (全局色调) + per-subband AdaIN (笔触/色彩/噪点) + Spectral ODE (频域速度场)。"
 
-### 4.3 多级 DWT 是"频域解耦"的正确路径 (4D/4F 突破)
-- lvl1→2 释放"宏观笔触"
-- lvl2→3 分离"绝对构图"
-- 趋势在 lvl4 反转 → 存在物理上限：LL 必须能承载位置信息
-- 多级 DWT 的能力上限是 lvl3 (4×4 LL₃)
+### 3.2 如果 4G.2b 仍 FAIL (4F.1 为最终 SOTA)
 
-### 4.4 平滑基 (db2) 的"不可测优势" (4E)
-- db2 的平滑性在 fiber 重建 TV 上明显 (低 34.5%)
-- 但 VAE decoder 已吸收高频细节，CLIP/LPIPS 在像素级别无差异
-- **设计含义**：在 latent 空间做 basis 升级对当前评估指标无效，需空间域评估
+> "我们通过 Haar DWT 多级分解 (4F) 解耦内容 (LL) 与风格 (HF), 以 3-Level 分解取得 SOTA (clip=0.7319)。
+> 消融实验矩阵: (1) 减法 (4A2) 验证三大核心组件不可移除; (2) LL velocity 消融 (4A2+4G.1) 量化 +0.014 clip 贡献;
+> (3) 频域 per-subband AdaIN 极限探索 (4G.2): 虽提升 clip (+0.0042) 但引入 9× 风格注入导致 lpips 超标,
+> 揭示空间域 fiber 的'隐式正则化'价值 — 统计平均效应天然抑制过拟合。
+> 多级 DWT 趋势 (4D-4F): 1→2 (+0.0040), 2→3 (+0.0018), 3→4 (-0.0003), 3-Level 为峰值。"
 
 ---
 
-## 5. 已删除/废弃的代码与机制
+## 4. 文件索引
 
-| 项目 | 状态 | 理由 |
-|------|------|------|
-| `spectral_brownian_noise_scale` | 已删 | 死代码 (4A1) |
-| `loss_type=metric` | 已删 | 死代码 (4A1) |
-| `loss_fm` / `loss_fm_total` | 已删 | 别名死代码 (4A1) |
-| `compute_debug` / `last_debug` | 已删 | 调试残留 (4A1) |
-| DINOv2 cache 路线 | 废弃 | 外部模型污染 (4C) |
-| Block Masking on RGB | 废弃 | 依赖 DINO，无效 (4C) |
-| Random token dropout on style_memory | 废弃 | 破坏多级 DWT 中频连续性 (4D) |
-
-**保留** (经消融确认有效):
-- `spectral_w_ll`, `style_extrap_alpha`, `endpoint_adain_scale` (4A2)
-- Haar DWT tokenizer (4B3)
-- 多级 DWT (lvl3, 4F)
-- `style_memory` (learnable, 4C 确认优于 DINO)
-
-**保留 (可选)**:
-- db2 basis (4E，无可见收益但代码已验证)
-- `endpoint_lowpass_basis` config 字段 (默认 haar)
+| 文档 | 内容 |
+|------|------|
+| [HANDOVER.md](HANDOVER.md) | 顶层交接文档 |
+| [phase4g_full_wavelet_ode_design.md](phase4g_full_wavelet_ode_design.md) | 4G 设计 + 4G.1 结果 + 4G.2 结果 |
+| [phase4g2_per_subband_adain.md](phase4g2_per_subband_adain.md) | 4G.2 完整设计 + 实验结果 |
+| [phase4c_block_masking_rgb.md](phase4c_block_masking_rgb.md) | 4C NEGATIVE (DINO 污染) |
+| [state/progress.json](state/progress.json) | 状态机 (iteration=16) |
+| [state/directions_tried.json](state/directions_tried.json) | 已试方向记录 |
 
 ---
 
-## 6. Phase 4 后续展望
+## 5. 待完成工作
 
-### 6.1 Phase 4G: 全频域 ODE (方案五 - 论文核心 Story)
-**核心理念**：把整个主干搬到小波域
-- 第一层直接 DWT，输入变为 4 通道小波系数
-- LL 通道 `stop_gradient`，100% 算力挂载 LH/HL/HH
-- Loss 直接在频域计算
-- **预期**：物理约束注入网络骨髓，训练效率飙升
-
-### 6.2 论文写作准备
-Phase 4 完整数据已具备论文核心章节：
-- §3 Method: Content Fidelity Pathway (减法验证)
-- §4 Experiments: 多级 DWT 消融 + Style vs Extract 对比
-- §5 Analysis: 多级趋势 + 4-Level FAIL 物理解释
-- §6 Ablation: 2×2 basis×levels 矩阵 + 减法三件套
-
----
-
-## 7. 提交记录
-
-| Phase | Commit | 内容 |
-|-------|--------|------|
-| 4A1 | `31fc94cac` | 死代码移除 |
-| 4A2 | `50adae4dc` | 减法消融 (3 组件) |
-| 4B1 | `d83a050e0` | 频域 Masking (Scheme C) |
-| 4B2 | (并入 4B1) | 长训练比例优化 |
-| 4B3 | (并入下批) | DWT Tokenizer |
-| 4C | (并入下批) | RGB Block Masking NEGATIVE |
-| 4D | (并入下批) | 2-Level DWT 突破 |
-| 4E | (并入下批) | Daubechies db2 FLAT |
-| 4F | (并入下批) | 3-Level SOTA + 4-Level FAIL |
-
-**待提交批次**: 4B-3 + 4C + 4D + 4E + 4F (5 个 stage 合并提交)
-
----
-
-**Phase 4 完成**。下一步进入 Phase 4G (全频域 ODE) 或论文写作准备。
+1. **论文写作** — Core Story 确认为 §3.2 (4F.1 为最终 SOTA)
+2. **Git 提交** — Phase 4 全部实验文档化后统一提交
+3. **Future Work** — End-of-trajectory AdaIN, α 衰减调度 (4G.2b 洞察的后续方向)
