@@ -59,12 +59,13 @@ def run_probe(*, device: str = "cpu", seed: int = 620) -> dict[str, object]:
         target_style_id=torch.tensor([0, 1], device=dev),
         conditioning={"target_style_dino_patches": style_patches},
     )
+    projected_target = objective.last_debug["projected_target"].to(dev)
     z_hat1 = objective.last_debug["z_hat1"].to(dev)
     z_low = _lowpass(z_hat1, objective.lowpass_kernel)
     c_low = _lowpass(content, objective.lowpass_kernel)
-    t_low = _lowpass(target, objective.lowpass_kernel)
+    t_low = _lowpass(projected_target, objective.lowpass_kernel)
     z_high = z_hat1 - z_low
-    t_high = target - t_low
+    t_high = projected_target - t_low
     expected = {
         "endpoint_low_to_source": (z_low - c_low).float().abs().mean(),
         "endpoint_low_to_target": (z_low - t_low).float().abs().mean(),

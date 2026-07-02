@@ -6,11 +6,11 @@
 % \DistinctFiveTimingTableLeibniz
 
 \newcommand{\HistoricalTimingTableLeibniz}{%
-\begin{table}[b]
+\begin{table}[t]
 \centering
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\caption{Historical CycleGAN-256 recorded operating-point cost. Training time is the wall-clock cost to the manuscript operating point; inference is the end-to-end runtime for the 750-image packet. This is recorded operating-point context, not a normalized time-to-quality comparison.}
+\caption{Historical strict-750 / 256$\times$256 recorded operating-point cost. Training time is the wall-clock cost to the manuscript operating point; inference is the end-to-end runtime for the 750-image protocol. This is recorded operating-point context, not a normalized time-to-quality comparison.}
 \label{tab:cost}
 \begin{tabular}{@{}lccc@{}}
 \toprule
@@ -26,10 +26,11 @@ LBM & \textbf{5.2 min} & 85.4 s & 114 \\
 }
 
 \newcommand{\DistinctFiveTimingTableLeibniz}{%
-\begin{center}
+\begin{table}[t]
+\centering
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\captionof{table}{Distinct5-WikiArt recorded operating-point cost under the reviewed full $5\times5$ / 750-output packet. Reported train time is cumulative training wall-clock to the shown checkpoint, with evaluation excluded. This is recorded operating-point cost, not a normalized time-to-quality comparison.}
+\caption{Distinct5-512 recorded operating-point cost under the reviewed full $5\times5$ / 750-output packet. Reported train time is cumulative training wall-clock to the shown checkpoint, with evaluation excluded. This is recorded operating-point cost, not a normalized time-to-quality comparison.}
 \label{tab:cost_distinct5}
 \begin{tabular}{@{}lcc@{}}
 \toprule
@@ -44,5 +45,5 @@ SaMST & e15 & 5.8 h \\
 
 \vspace{2pt}
 \parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} Distinct5 times are cumulative training wall only, with evaluation excluded. We intentionally omit a shared inference column because same-grade pure-generation timing is still incomplete for the active manuscript rows \texttt{SaMAM-2250} and \texttt{SaMST-e15}; leaving blanks would overstate closure. Post-2250 SaMAM timings are intentionally excluded.}
-\end{center}%
+\end{table}%
 }

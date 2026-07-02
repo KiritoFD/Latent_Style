@@ -36,7 +36,7 @@ The current paper-facing classifier probe uses all 5,000 train images and all 15
 \section{Main-Point Ledger}
 The compact artifact ledger is stored in:
 \begin{itemize}
-\item \texttt{aaai2027/main\_point\_artifact\_ledger.csv}
+\item \texttt{aaai2027/final/main\_point\_artifact\_ledger.csv}
 \end{itemize}
 This file ties each main manuscript point to its config or protocol file, eval root, target-pooled ArtFID recompute artifact, and auxiliary metrics table.
 
@@ -50,8 +50,8 @@ Point & Role & Config or Protocol & Main Eval Root / Artifact \\
 \midrule
 IDT & no-op floor & \texttt{idt\_5x5 summary} & \texttt{docs/experiments/idt\_eval\_20260602/distinct5\_512/idt\_5x5} \\
 LBM-K e1 & conservative anchor & \texttt{distinct5\_512\_ema\_variant\_k\_content\_adaptive\_vq\_queue\_e3.json} & \texttt{exp/distinct5\_512\_ema\_variant\_k\_content\_adaptive\_vq\_queue\_e3\_b44\_remote/full\_eval/epoch\_0001} \\
-LBM-Knee e13 & main closed point & \texttt{inmortal\_xpred\_kmanifold\_pattn\_anisostokes\_queue\_from\_pattn\_seed42\_b8a2.json} & \texttt{aaai2027/local\_eval/lbm\_knee\_e13\_artfid} \\
-LBM-PS-v2 e13 & style ceiling & \texttt{inmortal\_xpred\_kmanifold\_pattn\_stokes002\_from\_pattn\_seed42\_b16.json} & \texttt{aaai2027/local\_eval/pattn\_stokes002\_e13} \\
+LBM-Knee e13 & balanced promoted point & \texttt{inmortal\_xpred\_kmanifold\_pattn\_anisostokes\_queue\_from\_pattn\_seed42\_b8a2.json} & \texttt{final/main\_point\_artifact\_ledger.csv} \\
+LBM-PS-v2 e13 & high-style endpoint & \texttt{inmortal\_xpred\_kmanifold\_pattn\_stokes002\_from\_pattn\_seed42\_b16.json} & \texttt{final/main\_point\_artifact\_ledger.csv} \\
 SaMAM-2250 & negative compact baseline & \texttt{2026-06-04-samam-distinct5-valid-through-2250.md} & \texttt{artfid\_comparison\_points.remote bundle + visual alignment artifact} \\
 SaMST e15 & high-style baseline & \texttt{samst\_distinct5\_512\_real\_b2\_e15\_20260602/epoch\_0015 summary} & \texttt{Related\_Works/baseline\_pipeline/results/.../epoch\_0015} \\
 Seedream-4.5 & external large-prior reference & \texttt{assembly\_manifest.json} & \texttt{seedream45\_api/distinct5\_512\_seedream45\_windhub\_20260607\_repaired750} \\
@@ -99,13 +99,10 @@ This reproduces the trusted Distinct5 reference packets to rounding tolerance:
 \item SaMST e15 all-pairs: \texttt{395.7}
 \end{itemize}
 
-The current paper-facing recompute artifacts are:
+The current paper-facing recompute artifacts are summarized in:
 \begin{itemize}
-\item \texttt{aaai2027/local\_eval/lbm\_k\_e1\_artfid\_fast\_repro.json}
-\item \texttt{aaai2027/local\_eval/lbm\_knee\_e13\_artfid/aggregate\_targetwise\_artfid\_fast\_repro.json}
-\item \texttt{aaai2027/local\_eval/lbm\_psv2\_e13\_artfid\_fast\_repro.json}
-\item \texttt{aaai2027/tmp\_samst\_artfid\_fast\_repro3.json}
-\item \texttt{aaai2027/local\_eval/seedream\_repaired750\_artfid/aggregate\_targetwise\_artfid\_fast\_repro.json}
+\item \texttt{aaai2027/final/main\_point\_artifact\_ledger.csv}
+\item \texttt{aaai2027/final/distinct5\_aux\_artifact\_table.csv}
 \end{itemize}
 
 \section{Fixed-Rule Follow-Up Splits}
@@ -155,7 +152,7 @@ The non-CLIP style verification path uses the existing ConvNeXt-Tiny image class
 \begin{itemize}
 \item script: \texttt{src/utils/classify.py}
 \item output checkpoint: \texttt{aaai2027/distinct5\_convnext\_style\_classifier.pt}
-\item output report: \texttt{aaai2027/distinct5\_convnext\_style\_classifier\_report.json}
+\item output report: the current paper-facing summary is folded into \texttt{aaai2027/final/distinct5\_nonclip\_style\_probe.csv}
 \end{itemize}
 
 Training setup:
@@ -181,8 +178,7 @@ The paper-facing operating-point scoring script is:
 
 Outputs:
 \begin{itemize}
-\item \texttt{aaai2027/distinct5\_nonclip\_style\_probe.csv}
-\item \texttt{aaai2027/distinct5\_nonclip\_style\_probe.json}
+\item \texttt{aaai2027/final/distinct5\_nonclip\_style\_probe.csv}
 \end{itemize}
 
 \begin{table}[t]
@@ -206,7 +202,7 @@ Seedream-4.5 & 0.378 & 0.3758 & 0.4774 & -0.1016 \\
 \section{Row-Resampled IDT Bootstrap}
 The current paper keeps row-resampled transfer-only bootstrap as a narrow stability check rather than a full clustered uncertainty analysis. The extended artifact package is:
 \begin{itemize}
-\item \texttt{aaai2027/distinct5\_idt\_bootstrap\_extended.csv}
+\item \texttt{aaai2027/final/distinct5\_idt\_bootstrap\_extended.csv}
 \item \texttt{aaai2027/distinct5\_idt\_bootstrap\_extended.md}
 \end{itemize}
 
@@ -244,7 +240,7 @@ The main paper-facing scripts referenced by the current draft are:
 The current paper-facing Distinct5 checkpoints can be counted with:
 \begin{itemize}
 \item \texttt{tools/count\_paper\_point\_params.py}
-\item output: \texttt{aaai2027/paper\_point\_param\_counts.csv}
+\item output: \texttt{aaai2027/final/paper\_point\_param\_counts.csv}
 \end{itemize}
 
 Current reviewed counts:
@@ -287,12 +283,10 @@ A blinded A/B comparison packet has been prepared for the highest-value paper co
 
 Bundle contents:
 \begin{itemize}
-\item \texttt{aaai2027/blind\_pairwise\_v1/blind\_pairwise\_manifest.csv}
-\item \texttt{aaai2027/blind\_pairwise\_v1/blind\_pairwise\_rubric.md}
-\item \texttt{aaai2027/blind\_pairwise\_v1/exploratory\_blind\_audit.csv}
-\item \texttt{aaai2027/blind\_pairwise\_v1/exploratory\_blind\_audit.md}
-\item \texttt{aaai2027/blind\_pairwise\_v1/exploratory\_blind\_audit\_summary.csv}
-\item \texttt{aaai2027/blind\_pairwise\_v1/panels/}
+\item \texttt{aaai2027/final/blind\_pairwise\_README.md}
+\item \texttt{aaai2027/final/blind\_pairwise\_exploratory\_blind\_audit.csv}
+\item \texttt{aaai2027/final/blind\_pairwise\_exploratory\_blind\_audit.md}
+\item \texttt{aaai2027/final/blind\_pairwise\_exploratory\_blind\_audit\_summary.csv}
 \end{itemize}
 
 Each panel shows \texttt{Source | Candidate A | Candidate B | Target ref}, with randomized A/B order stored only in the manifest. This packet is ready for human or external VLM scoring. Local exploratory blind rubric notes and their summaries are kept only as internal supplementary support and are not promoted as a main paper claim surface.

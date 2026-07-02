@@ -135,6 +135,10 @@ case "$variant" in
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_targetlinear.json"
     default_run_name="620_targetlinear_swd8_sigma002_nfe8_b80"
     ;;
+  targetproj)
+    config_rel="SchrodingerBridge/configs/620_spatial_bridge_targetproj.json"
+    default_run_name="620_targetproj_swd8_sigma002_nfe8_b80"
+    ;;
   endpointlowhigh)
     config_rel="SchrodingerBridge/configs/620_spatial_bridge_targetlinear_endpointlowhigh.json"
     default_run_name="620_targetlinear_endpointlowhigh_swd8_sigma002_nfe8_b80"

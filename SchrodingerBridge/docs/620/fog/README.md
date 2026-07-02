@@ -11,6 +11,87 @@ Do not patch the 620 architecture speculatively. First locate where the whitenin
 - Generated transfers from the current 620 no-text local run look washed out, low-contrast, and close to an identity-like pale reconstruction.
 - User confirmed this was already present before the newer text branch, so text conditioning is not the primary suspect.
 
+## Quantitative Benchmark
+
+We now need a benchmark stricter than CLIP-S / LPIPS alone.
+
+The gating requirement for this phase is:
+
+- reduce 620 whitening / fogging until it is on the same order as the Seedream reference / IDT control level,
+- using an explicit image-space fog metric in addition to the latent-space probes.
+
+### WFI: Whitening / Fog Index
+
+We use:
+
+- `SchrodingerBridge/tools/probe_620_fog_whiteness_index.py`
+
+The current WFI packet includes:
+
+1. `contrast_ratio = luminance_std / luminance_mean`
+2. `dynamic_range = (p95 - p5) / (p95 + p5)`
+3. `saturation_mean`
+4. `edge_energy`
+5. `luminance_std`
+6. `wfi_score`
+
+where:
+
+- lower `wfi_score` is healthier,
+- higher contrast / range / saturation generally means less fog,
+- and we should compare not only pooled means, but also:
+  - `all_pairs`
+  - `identity`
+  - `style_transfer`
+
+because some target styles are naturally flatter or paler than others.
+
+### Seedream repaired750 reference
+
+Reference packet:
+
+- `G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\seedream45_api\distinct5_512_seedream45_windhub_20260607_repaired750`
+
+Reference experiment note:
+
+- `SchrodingerBridge/docs/experiments/2026-06-07-distinct5-seedream45-repaired750.md`
+
+On the current local WFI sample (`30` images from the repaired750 packet), we measured:
+
+- `avg_contrast_ratio ~= 0.4244`
+- `avg_dynamic_range ~= 0.6218`
+- `avg_saturation_mean ~= 0.3642`
+- `avg_luminance_std ~= 0.1950`
+- `avg_wfi_score ~= 0.1581`
+
+Interpretation:
+
+- this is our first practical "healthy image-space" baseline,
+- but it is still only a pooled sample baseline,
+- so the next stricter benchmark should compare:
+  - Seedream `identity`
+  - Seedream `style_transfer`
+  - 620 `identity`
+  - 620 `style_transfer`
+
+using the same WFI script over `metrics.csv`.
+
+### White/fog acceptance gate for this phase
+
+Before we resume broader 620 roadmap work such as:
+
+- adding text,
+- changing cross-attention forms,
+- or continuing broader DINO variants,
+
+we should first satisfy:
+
+1. 620 `identity` fog level is not materially worse than the Seedream / IDT reference bucket
+2. 620 `style_transfer` fog level is not materially worse than the Seedream healthy band for the same test distribution
+3. this is supported by both:
+   - image-space WFI
+   - latent-space endpoint probes
+
 ## Known Evidence
 
 ### Config facts
@@ -1599,3 +1680,225 @@ That points to a stronger head-local conditioning mechanism such as:
 
 - style-conditioned FiLM / AdaLN on the endpoint head trunk
 - or a style-actuated endpoint delta basis
+
+## 2026-06-20 FiLM Formal Result
+
+We ran the stronger FiLM endpoint-head branch formally on remote 3060 WSL:
+
+- run:
+  - `/mnt/i/Github/Latent_Style/exp/620_spatial_bridge/620_film_formal`
+- eval checkpoint used for diagnosis:
+  - `epoch_0005.pt`
+- remote probes:
+  - `remote_probe_film_formal_hypothesis_epoch5`
+  - `remote_probe_film_formal_fog_epoch5`
+
+### Formal eval summary
+
+From the remote `full_eval/epoch_0005/summary.json`:
+
+- `style_transfer clip_style ~= 0.6723`
+- `style_transfer clip_t ~= 0.2056`
+- `style_transfer content_lpips ~= 0.2915`
+- `style_transfer clip_s_delta_idt ~= 0.0324`
+
+So this branch is not strong enough to justify moving on to broader roadmap work yet.
+
+### Probe interpretation
+
+At `t = 0.0`:
+
+- `latent_alpha_mean ~= 0.1232`
+- `low_alpha_mean ~= 0.2222`
+- `high_alpha_mean ~= -0.0326`
+- `style_sensitivity_latent ~= 10.1141`
+- `endpoint_img_to_source_rms ~= 0.1978`
+- `endpoint_img_to_target_rms ~= 0.3019`
+
+Fog-path headline:
+
+- `endpoint_latent_high_vs_source_ratio ~= 1.0774`
+- `endpoint_img_grad_vs_source_ratio ~= 1.0415`
+- `endpoint_img_std_vs_source_ratio ~= 0.9320`
+
+Interpretation:
+
+- FiLM does **not** look like a dead style path
+- and it does **not** look like the endpoint is simply losing all contrast
+- instead, it is a clearer example of the deeper failure:
+  - style sensitivity is real
+  - endpoint statistics are not especially fog-starved
+  - but the endpoint is still not traveling far enough in the correct target-facing direction
+
+So this branch is rejected as a whitening fix.
+
+It is better summarized as:
+
+- "not foggy enough to explain the whole failure"
+- but still "not target-facing enough to solve transfer"
+
+## 2026-06-20 Direction-Loss Smoke Result
+
+We then tested a probe-aligned directional loss branch:
+
+- config:
+  - `SchrodingerBridge/configs/620_spatial_bridge_targetlinear_direction.json`
+- smoke checkpoint:
+  - `/mnt/i/Github/Latent_Style/exp/620_spatial_bridge/620_targetlinear_direction_swd8_sigma002_nfe8_b16_smoke/epoch_0001.pt`
+- probe:
+  - `remote_probe_targetlinear_direction_epoch1`
+
+Headline at `t = 0.0`:
+
+- `latent_alpha_mean ~= -0.0066`
+- `low_alpha_mean ~= -0.0125`
+- `high_alpha_mean ~= 0.0002`
+- `style_sensitivity_latent ~= 0.0020`
+- `endpoint_img_to_source_rms ~= 0.0209`
+- `endpoint_img_to_target_rms ~= 0.3676`
+
+Interpretation:
+
+- this smoke is too short to act as a final verdict on the loss idea,
+- but its current state is clearly unusable:
+  - endpoint is almost snapped back to source
+  - style sensitivity has nearly vanished
+
+So the current directional-loss smoke should **not** be treated as evidence of success.
+
+The correct operational read is:
+
+- the 4-step smoke is inconclusive as a long-run training verdict,
+- but the present implementation can already collapse into source-like motion with near-zero style actuation,
+- so it should not be promoted without a fuller rerun and stronger representation constraints.
+
+## DINO Status For This Phase
+
+Current evidence does **not** justify deleting DINO yet.
+
+Why:
+
+- the baseline bad branch still shows large `style_sensitivity_latent`
+- the FiLM branch also shows strong style sensitivity
+- therefore the style-conditioned DINO path is alive
+
+What current evidence does justify:
+
+- DINO does not automatically solve whitening
+- endpoint parameterization can waste the style signal and still land in a shrinkage solution
+
+So the present stance is:
+
+1. do **not** assume DINO is the root cause
+2. do **not** keep DINO by default forever
+3. after the whitening-focused endpoint redesign is tested, run an explicit keep-vs-cut comparison:
+   - `target_dino_patches`
+   - stronger latent-only / intrinsic alternative
+4. if DINO does not provide a clear improvement in:
+   - WFI
+   - `clip_t`
+   - `clip_s_delta_idt`
+   - or probe-side target-facing endpoint motion
+
+then it should be cut decisively
+
+## 2026-06-21: 基于数学理论的重设计
+
+### 理论诊断
+
+经过完整的数学分析循环（数学思考→实验→修正理论），达成以下结论：
+
+**SWD梯度平坦性**（已被推翻为主要原因）：
+- 梯度探针验证：$\nabla \mathrm{SWD}(v=0) = 0.044$，非零
+- 但 $\cos(\nabla \mathrm{SWD}, v_{\mathrm{target}}) = -0.024$（基本正交）
+- Loss landscape 极小值在 $s=1.0$（正确解），不在 $s=0.16$
+
+**修正后的根因：条件期望坍缩**：
+- gate=0.05 → style 信号太弱 → 模型学到 $E[v_{\mathrm{target}} | x, t]$ 而非 $v_{\mathrm{target}}(x, t, \mathrm{style})$
+- 不同 style 的 velocity 方向互相抵消，边际 velocity 幅度远小于 style-specific velocity
+- 形成"平凡解"吸引子：gate 小 → style 梯度小 → gate 不增长 → 正反馈锁死
+
+### 理论文档
+
+| 文档 | 路径 | 内容 |
+|------|------|------|
+| SWD梯度平坦性定理 | `theory/swd_flatness.md` | SWD梯度的分段常数性质，排序稳定性定理 |
+| 平凡解收敛性分析 | `theory/trivial_solution.md` | 为什么模型收敛到shrinkage解 |
+| SB动力学分析 | `theory/sb_dynamics.md` | 条件期望坍缩、style信号强度、相图分析 |
+| NSWD理论 | `theory/noisy_swd.md` | 噪声打破排序稳定性的数学原理 |
+
+### 修复方案（2026-06-21实施）
+
+| 优先级 | 修复 | 原理 | 实现 |
+|--------|------|------|------|
+| P0 | gate=0.3 | 增强style信号，打破条件期望坍缩 | model620.py: gate_init=0.3 |
+| P0 | 大容量endpoint head (3层, 无GroupNorm) | 表达能力+无动态范围压缩 | model620.py: 3层Conv+SiLU |
+| P1 | NSWD (σ=0.02) | 打破SWD梯度正交性 | losses620.py: noise_sigma |
+
+### Smoke Test 结果 (gate=0.3, epoch=1)
+
+**修复前后对比**：
+
+| 指标 | gate=0.05 (旧) | gate=0.3 (新) | 变化 |
+|------|---------------|---------------|------|
+| gate_value | 0.064 | **0.297** | **+365%** |
+| velocity_abs | 0.186 | **0.216** | **+16%** |
+| endpoint_pred_abs | 0.686 | 0.629 | -8% |
+| all_pairs clip_style | 0.700 | 0.696 | -1% |
+| clip_s_delta_idt | 0.060 | 0.056 | -7% |
+| content_lpips | 0.272 | 0.293 | +8% |
+| identity clip_style | 0.841 | 0.836 | -1% |
+
+**结论**：gate修复成功（gate值确认在0.3），velocity magnitude提升（shrinkage减少）。但1 epoch内style transfer质量未改善——符合理论预测：模型从phase 1（边际velocity）过渡到phase 2（style-specific velocity）需要更多训练。5-epoch训练已启动。
+
+**关键发现**：
+- `tswd=0.0000` 是占位符（losses620.py中terminal_swd恒为zero），不是bug
+- Base config中的 `style_cross_attn_gate_init: 0.05` 覆盖了代码默认值0.3——这是之前修复无效的根本原因
+- 已修复 `create_whitening_fix_configs.py` 在生成配置时显式设置gate=0.3
+
+## 2026-06-21: 探针揭示深层问题 + StyleFiLM实现
+
+### Velocity Direction 探针结果
+
+在gate=0.3修复后，alpha从0.16提升到0.605（+278%），但风格迁移质量仍未改善。深入探针发现：
+
+- **cos_sim(v(style_1), v(style_2)) = 0.9995** — 模型输出几乎相同的velocity方向，无论style输入是什么
+- 问题不是velocity magnitude太小，而是velocity DIRECTION不随style变化
+
+### 根因：Cross-Attention平均化瓶颈
+
+Cross-attention的数学形式：
+$$\text{CA}(x, S) = \text{softmax}(Q(x) \cdot K(S)^T / \sqrt{d}) \cdot V(S)$$
+
+$Q(x)$ 由content决定，对256个style tokens产生相似的softmax分布。$V(S)$ 的加权和在不同style之间几乎不变，导致模型学到的是对style的边缘期望而非条件于特定style的velocity。
+
+### StyleFiLM：绕过Cross-Attention的Style注入
+
+**数学定义**：
+$$\text{FiLM}(x; s) = (1 + \gamma(s)) \odot x + \beta(s)$$
+
+其中 $\gamma(s), \beta(s) \in \mathbb{R}^C$ 由MLP从style_global预测，提供通道级特征调制。
+
+**关键设计**：
+- 在每个SpatialBridgeBlock620中，cross-attention shortcut之后、FFN之前插入FiLM
+- Zero-init确保训练开始时FiLM=identity
+- Per-block独立FiLM，不同深度学习不同层次的style调制
+- 直接梯度路径：$\partial\mathcal{L}/\partial\theta_{\text{style}} \propto \partial\mathcal{L}/\partial v \cdot \partial\gamma/\partial\theta_{\text{style}}$（绕过softmax）
+
+**理论文档**：`theory/style_film.md`
+
+### 代码改动
+
+| 文件 | 改动 |
+|------|------|
+| `blocks620.py` | 添加 `film_enabled` 参数、FiLM投影层、forward接受 `style_global` |
+| `model620.py` | 读取 `style_film_enabled` 配置，传递 `style_global` 到blocks |
+| `config_schema.py` | 添加 `style_film_enabled: bool = False` |
+| `create_whitening_fix_configs.py` | 添加 `620_film_gate03_smoke` 变体 |
+
+### 预期验证指标
+
+- `film_gamma_abs` / `film_beta_abs`：从0开始增长（FiLM被激活）
+- cos_sim(v1, v2)：目标从0.9995降到<0.95
+- WFI：保持不恶化
+- 监控 `film_enabled` debug字段
