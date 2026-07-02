@@ -365,11 +365,13 @@ def test_no_dead_wct_match_subband_function():
 
 
 def test_no_dead_import():
-    """spectral_losses620 must not import idwt2_haar (unused after suggestion 4)."""
+    """spectral_losses620 imports idwt2_haar for Plan B (structure_aligned_target)."""
     import spectral_losses620 as mod
 
     src = open(mod.__file__).read()
-    assert "idwt2_haar" not in src, "idwt2_haar import should be removed"
+    # 630 Phase 72 Plan B: idwt2_haar is re-imported and used for x₁* construction
+    assert "from spectral620 import dwt2_haar, idwt2_haar" in src, "idwt2_haar import missing"
+    assert src.count("idwt2_haar") >= 2, "idwt2_haar imported but not used"
 
 
 def test_t11_inference_end_to_end():
@@ -464,6 +466,59 @@ def test_zero_step_wct_alpha_zero_is_noop():
     # alpha=0 should be a no-op
     assert torch.allclose(out_disabled, out_a0, atol=1e-6), \
         "alpha=0 should be equivalent to disabled"
+
+
+def test_structure_aligned_target_config_field_exists():
+    """Plan B: BridgeConfig.structure_aligned_target field exists (default False)."""
+    cfg = BridgeConfig()
+    assert hasattr(cfg, "structure_aligned_target"), "structure_aligned_target missing"
+    assert cfg.structure_aligned_target is False, "default should be False"
+
+
+def test_structure_aligned_target_changes_loss():
+    """Plan B: structure_aligned_target=True constructs x₁* (LL from content, not style)."""
+    torch.manual_seed(0)
+    mcfg, bcfg = _make_t11_cfg()
+    bridge = _make_bridge(mcfg, bcfg)
+    bridge.train()
+
+    from config_schema import DataConfig, ExperimentConfig, TrainingConfig
+    dc = DataConfig()
+    tc = TrainingConfig(batch_size=2)
+    ecfg = ExperimentConfig(model=mcfg, bridge=bcfg, data=dc, training=tc)
+
+    B, C, H, W = 2, 4, 32, 32
+    content = torch.randn(B, C, H, W)
+    target_style = torch.randn(B, C, H, W)
+    target_style_id = torch.tensor([0, 1])
+
+    # Disabled: original target = target_style
+    obj_disabled = SpectralODEObjective620(ecfg)
+    metrics_disabled = obj_disabled.compute(
+        bridge, content=content, target_style=target_style,
+        target_style_id=target_style_id,
+    )
+
+    # Enabled: x₁* = IDWT(LL_content, LH_style, HL_style, HH_style)
+    bcfg.structure_aligned_target = True
+    ecfg_aligned = ExperimentConfig(model=mcfg, bridge=bcfg, data=dc, training=tc)
+    obj_aligned = SpectralODEObjective620(ecfg_aligned)
+    metrics_aligned = obj_aligned.compute(
+        bridge, content=content, target_style=target_style,
+        target_style_id=target_style_id,
+    )
+
+    # LL loss should be ~0 when structure_aligned (target_delta LL ≈ 0)
+    ll_disabled = float(metrics_disabled["loss_fm_spectral_ll"])
+    ll_aligned = float(metrics_aligned["loss_fm_spectral_ll"])
+    assert ll_aligned < ll_disabled + 1e-4, \
+        f"Plan B LL loss ({ll_aligned:.6f}) should be ~0, < disabled ({ll_disabled:.6f})"
+
+    # Overall loss should differ (different target → different LH/HL too)
+    loss_disabled = float(metrics_disabled["loss"])
+    loss_aligned = float(metrics_aligned["loss"])
+    assert abs(loss_aligned - loss_disabled) > 1e-6, \
+        "Plan B should produce different loss than original"
 
 
 if __name__ == "__main__":
