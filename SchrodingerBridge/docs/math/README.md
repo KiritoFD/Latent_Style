@@ -12,10 +12,10 @@
 |------|------|------|
 | **核心理论 (本文)** | `docs/math/README.md` | FC-SB 完整理论框架 (本文 §1-§11) |
 | 详细公式 | `docs/72/02_theory.md` | Schrödinger Bridge SDE + Haar DWT 推导 + 1:8 trade-off 系统证明 |
-| 历史 OT 探索 | `docs/620/OT.md` + `docs/620/math.md` | Phase OT 失败分析 (已废弃, 仅供历史追溯) |
-| Fiber Bundle | `docs/612-phase2/FIBER_BUNDLE_DESIGN.md` | 早期 fiber bundle 设计 (未采用, 历史) |
-| 619 理论验证 | `docs/619/model/04_theoretical_validation_and_gradient_dynamics.md` | 早期梯度动态分析 (pre-FC-SB) |
-| 622 统一模型 | `docs/622/history/10_unified_mathematical_model.md` | 622 时代统一数学模型 (已被 FC-SB 取代) |
+| 历史 OT 探索 | `docs/archive/620/OT.md` + `docs/archive/620/math.md` | Phase OT 失败分析 (已废弃, 仅供历史追溯) |
+| Fiber Bundle | `docs/archive/612-phase2/FIBER_BUNDLE_DESIGN.md` | 早期 fiber bundle 设计 (未采用, 历史) |
+| 619 理论验证 | `docs/archive/619/model/04_theoretical_validation_and_gradient_dynamics.md` | 早期梯度动态分析 (pre-FC-SB) |
+| 622 统一模型 | `docs/archive/622/history/10_unified_mathematical_model.md` | 622 时代统一数学模型 (已被 FC-SB 取代) |
 
 ---
 
@@ -437,13 +437,13 @@ FC-SB 完整解耦架构
 
 | 文档 | 时代 | 状态 |
 |------|------|------|
-| `docs/620/OT.md` | 620 OT 时代 | 已废弃 (OT 失败, 转 SB) |
-| `docs/620/math.md` | 620 OT 数学 | 已废弃 |
-| `docs/620/theory/` | 620 fog 理论 | 已废弃 (fog 实验失败) |
-| `docs/612-phase2/FIBER_BUNDLE_DESIGN.md` | 612 fiber bundle | 未采用 |
-| `docs/619/model/04_theoretical_validation_and_gradient_dynamics.md` | 619 早期 | pre-FC-SB |
-| `docs/622/history/10_unified_mathematical_model.md` | 622 统一模型 | 已被 FC-SB 取代 |
-| `docs/622/FC.md` | 622 FC 早期 | 已被 FC-SB 整合 |
+| `docs/archive/620/OT.md` | 620 OT 时代 | 已废弃 (OT 失败, 转 SB) |
+| `docs/archive/620/math.md` | 620 OT 数学 | 已废弃 |
+| `docs/archive/620/theory/` | 620 fog 理论 | 已废弃 (fog 实验失败) |
+| `docs/archive/612-phase2/FIBER_BUNDLE_DESIGN.md` | 612 fiber bundle | 未采用 |
+| `docs/archive/619/model/04_theoretical_validation_and_gradient_dynamics.md` | 619 早期 | pre-FC-SB |
+| `docs/archive/622/history/10_unified_mathematical_model.md` | 622 统一模型 | 已被 FC-SB 取代 |
+| `docs/archive/622/FC.md` | 622 FC 早期 | 已被 FC-SB 整合 |
 
 ---
 
