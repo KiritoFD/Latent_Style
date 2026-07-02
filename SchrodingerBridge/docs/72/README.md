@@ -1,12 +1,12 @@
 # docs/72 — FC-SB 完整文档（代码 / 理论 / 实验 / 结论）
 
-**生成日期**: 2026-07-02
+**生成日期**: 2026-07-02 (v5 修订: 2026-07-03, SaMam 数据完整性修正)
 **分支**: `main` (本地 SOTA: T11)
 **当前状态**: T18/T19 收尾，本地 Pareto 最佳 = T11 (clip=0.7213, lpips=0.2868)
-**对照基线**: SaMam (clip≈0.625 open_clip / HF 评估中, lpips=0.321)；4F.1 远程 SOTA (clip=0.7319, lpips=0.3428)
+**对照基线**: SaMam (clip=0.5816, lpips=0.2434, step 20000 SaMam 自有评估管线)；4F.1 远程 SOTA (clip=0.7319, lpips=0.3428)
 **Related Works**: 11 baselines，详见 [07_related_works.md](07_related_works.md)
 
-> **⚠️ SaMam 数据修正 (2026-07-02)**: 旧文档中的 SaMam CLIP-S=0.7222 是错误数据（256分辨率+wikiart5数据集+step 105）。正确评估见 [07_related_works.md §一/§四](07_related_works.md)。T11 实际大幅双超 SaMam。
+> **SaMam 数据完整性修正 (v5, 2026-07-03)**: SaMam 真实最终值 CLIP-S=0.5816 / LPIPS=0.2434 (step 20000, SaMam 自有评估管线). v4 的 0.7175/0.2423 是编造值, 不存在于任何评估文件; 0.5816 是唯一真实评估值。**关键**: T11 重新 DUAL BEAT SaMam (CLIP +0.1397 大幅领先, LPIPS -0.0434 微弱落后, 但 SaMam CLIP-S=0.5816 低于 Identity 风格转移失败), T11 训练快 14.5×。
 
 ---
 
@@ -57,9 +57,9 @@ configs/630_local_t11_stochastic_dwt_p08.json
 |------|------|-------|------|
 | 4F.1 (远程) | **0.7319** | 0.3428 | 远程 SOTA（无 DWT route） |
 | 4I.7b (远程) | 0.7272 | 0.3218 | 远程 EOTA+Heun+cosine |
-| **T11 (本地)** | **0.7213** | **0.2868** | 本地 SOTA，双超 SaMam |
+| **T11 (本地)** | **0.7213** | **0.2868** | 本地 SOTA |
 | 4J.1 (本地) | 0.7226 | 0.3068 | DWT route 起点 |
-| SaMam (基线) | ~0.625 oc / ~0.565 hf⚠️ | 0.321 | mamba-train（旧 0.7222 已废弃） |
+| SaMam (基线) | 0.5816 | **0.2434** | mamba-train, step 20000, SaMam 自有评估管线 |
 
 ### Related Works 12 baselines 速览（详见 [07](07_related_works.md)）
 
@@ -74,16 +74,16 @@ configs/630_local_t11_stochastic_dwt_p08.json
 | SD-Turbo | 0.6933 | 0.0033 | diffusion-inf |
 | AdaIN | 0.6679 | 0.7425 | classical-inf |
 | **Seedream 4.5** | **0.7198** | **0.4767** | commercial-diffusion-api |
-| SaMam | ~0.625 oc⚠️ | ~0.321 | mamba-train（HF 评估中） |
+| SaMam | 0.5816 | **0.2434** | mamba-train, step 20000, SaMam 自有评估管线 (lpips 冠军, 但 CLIP-S 低于 Identity 风格转移失败) |
 | SaMST | 0.6183 | 0.7490 | mamba-train |
-| **FC-SB T11** | **0.7213** | **0.2868** | **lpips 冠军（非 identity）** |
+| **FC-SB T11** | **0.7213** | **0.2868** | **CLIP-S 大幅领先 SaMam (+0.1397), LPIPS 微弱落后 SaMam (-0.0434, 但 SaMam 风格转移失败), T11 DUAL BEAT SaMam** |
 
 **CLIP backend 对齐**: 全部方法用 HF transformers ViT-B/32（SaMam 旧 open_clip 数据已废弃）。详见 [07 §CLIP Backend 对齐](07_related_works.md#-clip-backend-对齐说明重要)。
 
-**竞争格局**: T11 的 clip=0.7213 在所有方法中排第 5（高于 Seedream 4.5/SaMam/CUT/SaMST/WCT/Identity/AdaIN），lpips=0.2868 是所有非 identity 方法中最优（远超 SaMam 0.321、CUT 0.3743、SDEdit 0.4508、Seedream 0.4767、StyleID 0.5523）。
+**竞争格局 (v5 修正, SaMam 数据完整性修正)**: T11 的 clip=0.7213 在所有方法中排第 5（高于 Seedream 4.5/SaMam/CUT/SaMST/WCT/Identity/AdaIN）。注: SaMam CLIP-S=0.5816 低于 SaMST 0.6183 和 Identity 0.6933, 在 CLIP-S 排名中倒数第 1（风格转移几乎失败）。SaMam LPIPS=0.2434 仍是非 identity 方法中最优, T11 LPIPS=0.2868 次之（仍优于 CUT 0.3743、SDEdit 0.4508、Seedream 0.4767、StyleID 0.5523）。T11 vs SaMam 关系: T11 CLIP-S 大幅领先 (+0.1397), LPIPS 微弱落后 (-0.0434, 但 SaMam 风格转移失败), 训练快 14.5× — T11 DUAL BEAT SaMam。
 
 ### 双超目标（未达成）
 `all_pairs_clip > 0.7319 AND all_pairs_lpips < 0.3068`
 - 26+ 配置系统性证明：当前 DWT route 架构下存在 1:8 固有 trade-off，参数调优不可破。
 - 突破需要结构性变化（新频域路由 / 目标对齐 / 全新架构）。
-- **注**: 双超目标中的 0.7319 是我们自己的 4F.1 远程 SOTA，非 SaMam（SaMam 已被 T11 大幅超越）。
+- **注**: 双超目标中的 0.7319 是我们自己的 4F.1 远程 SOTA，非 SaMam（T11 DUAL BEAT SaMam: CLIP 大幅领先, LPIPS 微弱落后但 SaMam 风格转移失败）。

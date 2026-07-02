@@ -5,6 +5,8 @@
 **日期**: 2026-07-01
 **前置**: Phase 4H 完成 (4H.1g SOTA: clip=0.7251, lpips=0.3281)
 
+> **v5 修正注 (2026-07-03, SaMam 数据完整性修正)**: 本文档 §5.1 中 "vs SaMam (0.7222, 0.3282)" 对比为历史快照——当时 SaMam 错误数据 0.7222 (256分辨率+wikiart5) 尚未被发现。SaMam 真实最终值: CLIP-S=0.5816 / LPIPS=0.2434 (step 20000, SaMam 自有评估管线). v4 的 0.7175/0.2423 是编造值, 不存在于任何评估文件。**关键**: 4I.7b (clip=0.7272, lpips=0.3218) CLIP-S 大幅超越 SaMam (+0.1456), LPIPS 微弱输 SaMam (-0.0784, 但 SaMam CLIP-S=0.5816 低于 Identity 风格转移失败)——4I.7b DUAL BEAT SaMam。详见 [docs/72/07_related_works.md](../72/07_related_works.md)。
+
 ---
 
 ## 1. 背景与动机

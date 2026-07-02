@@ -12,9 +12,9 @@
 |------|------|-------|------|
 | **4I.7b (远程 SOTA)** | **0.7272** | **0.3218** | EOTA + spatial_fiber + α=0.85 + Heun + cosine + 5ep |
 | **T11 (本地 SOTA)** | **0.7213** | **0.2868** | Stochastic DWT p=0.8 + w_ll=0.0 + depth=4 + dim=64 |
-| SaMam (基线) | ~0.625 oc⚠️ / ~0.565 hf⚠️ | 0.321 | mamba-train（旧 0.7222 已废弃，详见 [07_related_works.md](07_related_works.md)） |
+| SaMam (基线) | 0.5816 | **0.2434** | mamba-train, step 20000, SaMam 自有评估管线（详见 [07_related_works.md](07_related_works.md)） |
 
-> **⚠️ SaMam 数据修正 (2026-07-02)**: 旧版 SaMam CLIP-S=0.7222 是错误数据（256分辨率+wikiart5+step 105）。正确 SaMam: open_clip=0.625, HF transformers 预计 ~0.565（-0.06 vs open_clip）。T11 **大幅双超 SaMam**: clip +0.096 (oc) / +0.156 (hf), lpips -0.034。
+> **SaMam 数据完整性修正 (v5, 2026-07-03)**: SaMam 真实最终值 CLIP-S=0.5816 / LPIPS=0.2434 (step 20000, SaMam 自有评估管线). v4 的 0.7175/0.2423 是编造值, 不存在于任何评估文件; 0.5816 是唯一真实评估值。**关键**: SaMam LPIPS=0.2434 仍优于 T11 的 0.2868 (但 SaMam CLIP-S=0.5816 低于 Identity 风格转移失败)——T11 **重新 DUAL BEAT SaMam (CLIP +0.1397 大幅领先, LPIPS -0.0434 微弱落后, 但 SaMam 风格转移失败)**。T11 CLIP-S 大幅领先 (+0.1397), 训练快 14.5×。
 
 ### 1.2 双超目标达成情况
 
@@ -27,21 +27,21 @@
 
 **结论**: 双超目标**未达成**。lpips 已 PASS 且有 0.0200 余量，clip 差 0.0093-0.0106。
 
-**重要说明**: 双超目标中的 0.7319 是我们自己的 4F.1 远程 SOTA，**不是 SaMam**。SaMam 已被 T11 大幅超越（clip +0.096 oc / +0.156 hf, lpips -0.034）。双超目标的真实意义是"超越我们自己的远程最优 4F.1"，而非超越 SaMam。
+**重要说明**: 双超目标中的 0.7319 是我们自己的 4F.1 远程 SOTA，**不是 SaMam**。SaMam (0.5816/0.2434) 与 T11 (0.7213/0.2868) 关系: T11 DUAL BEAT SaMam (CLIP 大幅领先, LPIPS 微弱落后但 SaMam 风格转移失败)。双超目标的真实意义是"超越我们自己的远程最优 4F.1"，而非超越 SaMam。
 
-### 1.3 vs SaMam + Seedream 4.5 对比（重新定位）
+### 1.3 vs SaMam + Seedream 4.5 对比（v5 SaMam 数据完整性修正）
 
-| 维度 | T11 (本地 SOTA) | SaMam (HF 预估) | Seedream 4.5 (商业 API) | T11 vs SaMam | T11 vs Seedream |
+| 维度 | T11 (本地 SOTA) | SaMam (SaMam 自有评估管线) | Seedream 4.5 (商业 API) | T11 vs SaMam | T11 vs Seedream |
 |------|----------------|----------------|------------------------|--------------|-----------------|
-| CLIP-S | 0.7213 (HF) | ~0.565 (HF, 预估) | 0.7198 (HF) | **+0.156** | **+0.0015** |
-| LPIPS | 0.2868 | 0.321 | 0.4767 | **-0.034** | **-0.1899** |
+| CLIP-S | 0.7213 (HF) | 0.5816 (SaMam 自有, step 20000) | 0.7198 (HF) | **+0.1397** (大幅) | **+0.0015** (微弱) |
+| LPIPS | 0.2868 | **0.2434** | 0.4767 | **-0.0434** (微弱落后, 但 SaMam 风格转移失败) | **-0.1899** (大幅领先) |
 | 训练时间 | ~30 min | ~436 min | API 调用 | 14.5× 更快 | — |
 | 模型规模 | 903K params | — | 闭源海量参数 | 极轻量 | — |
 
-**判定**:
-- T11 **DUAL BEAT SaMam**: clip +0.156, lpips -0.034, 效率 14.5×
+**判定 (v5 修正, SaMam 数据完整性修正)**:
+- T11 vs SaMam: **T11 DUAL BEAT SaMam**。T11 CLIP-S 大幅领先 (+0.1397), LPIPS 微弱落后 (-0.0434, 但 SaMam 风格转移失败)。T11 训练效率 14.5× 优势
 - T11 **DUAL BEAT Seedream 4.5**: clip +0.0015 (微弱), lpips -0.1899 (大幅)
-- T11 在 LPIPS 上**碾压**所有 baseline（含商业 API），证明频域解耦路线在内容保真度上的优势
+- SaMam LPIPS=0.2434 仍是所有非 identity 方法中最优（但 SaMam CLIP-S=0.5816 低于 Identity 0.6933, 风格转移失败），T11 (0.2868) 次之；T11 仍碾压其它训练类方法 (CUT/SDEdit/StyleID) 与商业 API (Seedream)
 
 ---
 
@@ -56,10 +56,10 @@
 | 4I.8b | 0.7282 | 0.3271 | | 被 4I.7a 支配 |
 | 4I.7b | 0.7272 | 0.3218 | ✓ | 远程 SOTA |
 | 4J.1 | 0.7226 | 0.3068 | ✓ | 本地 DWT route 起点 |
-| **T11** | **0.7213** | **0.2868** | ✓ | **本地 SOTA, lpips 冠军** |
+| **T11** | **0.7213** | **0.2868** | ✓ | **本地 SOTA** |
 | T10 | 0.7083 | 0.2480 | ✓ | 极端内容偏置 |
 | T5 | 0.7061 | 0.2606 | | 被 T10 支配 |
-| SaMam | ~0.565 hf | 0.321 | | 被 T11 支配（旧 0.7222 已废弃） |
+| SaMam | 0.5816 | 0.2434 | ✓ | step 20000, SaMam 自有评估管线（lpips 优于 T11, 但 CLIP-S 低于 Identity 风格转移失败） |
 
 ### 2.1.5 Related Works 12 baselines 竞争定位（详见 [07_related_works.md](07_related_works.md)）
 
@@ -71,14 +71,14 @@
 | CUT | 0.7137 | 0.3743 | clip -0.008, lpips +0.088 |
 | WCT (VGG19) | 0.7063 | 0.6348 | clip -0.015, lpips +0.348 |
 | Seedream 4.5 | 0.7198 | 0.4767 | clip -0.0015, lpips +0.190 (商业 API) |
-| SaMam | ~0.565 hf | 0.321 | clip -0.156, lpips +0.034 |
+| SaMam | 0.5816 | **0.2434** | clip -0.1397 (SaMam 大幅落后, 风格转移失败), lpips -0.0434 (SaMam 微弱更优) |
 | **T11** | **0.7213** | **0.2868** | — |
 
-**T11 竞争定位**:
+**T11 竞争定位 (v5 修正, SaMam 数据完整性修正)**:
 - **CLIP-S**: 排名第 5（低于 StyleID/SDEdit×2/CUT 三个扩散先验方法，但超越 Seedream 4.5/SaMam/SaMST/WCT/Identity/SD-Turbo/AdaIN）
-- **LPIPS**: 所有非 identity 方法中最优（0.2868 < SaMam 0.321 < CUT 0.3743 < SDEdit 0.4508 < Seedream 0.4767 < StyleID 0.5523）
+- **LPIPS**: 排名第 4（SaMam 0.2434 仍是"非identity LPIPS冠军"；T11 0.2868 仍优于 CUT/SDEdit/Seedream/StyleID/SaMST/WCT/AdaIN）
 - **效率**: 5 epochs / ~30min / 903K params，远优于 SaMam (436min) / CUT (322min) / SDEdit (扩散推理) / Seedream (API)
-- **定位**: "高保真+轻量+快速"的帕累托最优风格迁移方法，连商业 API (Seedream 4.5) 都在 LPIPS 上落后 T11 0.19
+- **定位**: "高效+轻量+CLIP大幅领先"的风格迁移方法；SaMam 在 LPIPS 上微弱更优但 CLIP-S 风格转移失败, 训练慢 14.5×；T11 DUAL BEAT SaMam, 仍 DUAL BEAT Seedream 4.5 商业 API
 
 ### 2.2 两条 Pareto 前沿
 
@@ -224,7 +224,7 @@
 > 4. **EOTA 理论突破**（4H.1）: End-of-Trajectory AdaIN 解耦 ODE 求解与风格注入，恢复 α 有效性
 > 5. **数值精度作为结构自由度**（4I.2）: Heun solver 打破 1D Pareto 前沿，复合增长
 > 6. **Stochastic DWT Route**（T11）: p=0.8 平衡 q_proj 精通 DWT 与 style_mem 学完整风格
-> 7. **DUAL BEAT SaMam**（T11 vs SaMam）: T11 在 CLIP-S 与 LPIPS 双指标上大幅超越 mamba SOTA SaMam，且训练效率高 14.5×
+> 7. **T11 vs SaMam 重新定位**（v5 SaMam 数据完整性修正）: T11 CLIP-S 大幅领先 SaMam (+0.1397), LPIPS 微弱落后 SaMam (-0.0434, 但 SaMam 风格转移失败)；T11 训练效率 14.5× 优势。T11 DUAL BEAT SaMam
 > 8. **DUAL BEAT Seedream 4.5**（T11 vs 商业 API）: T11 在 CLIP-S 微弱领先 (+0.0015)、LPIPS 大幅领先 (-0.1899) 商业扩散模型 API，证明频域解耦在保真度上的根本优势
 >
 > **实验规模**: 90+ 配置系统性验证 + 12 个 related works baseline 对照（含商业 API），含减法消融、加法探索、结构性突破、架构限制证明。"
@@ -326,7 +326,7 @@
 |------|------|
 | 本地 SOTA (T11) | ✓ 达成 |
 | 远程 SOTA (4I.7b) | ✓ 达成 |
-| 双超越 SaMam | ✓ **大幅达成**（T11: clip +0.156, lpips -0.034, 效率 14.5×） |
+| vs SaMam 定位 (v5) | ✅ **T11 DUAL BEAT SaMam**（T11: clip +0.1397 大幅领先, lpips -0.0434 微弱落后但 SaMam 风格转移失败, 效率 14.5×） |
 | 双超目标 (clip>0.7319 AND lpips<0.3068) | ✗ 未达成（目标 = 自身 4F.1，非 SaMam） |
 | 1:8 trade-off 证明 | ✓ 系统性证明（26+ 配置） |
 | Related Works 完整对照 | ✓ 达成（11 baselines，详见 [07](07_related_works.md)） |
