@@ -335,33 +335,6 @@ CLIP-S is the cosine similarity between CLIP ViT-B/32 embeddings of the output a
 
 All trainable baselines are trained to convergence on the same Distinct5 training set. Training times: CUT, $322.6$ min on an RTX 3090; SaMam, $436$ min ($20{,}000$ steps) on an RTX 3090; SaMST, $39.5$ min on an RTX 3090. SFM trains in $3.08$ min on a single RTX 3060 (12\,GB).
 
-\subsection{Per-Domain Results}
-\label{sec:perdomain}
-
-Table~\ref{tab:matrix_supp} reproduces the full $5\times5$ transfer matrix of the main paper (Table~5). Diagonal entries are identity (no transfer); off-diagonals are cross-domain transfers.
-
-\begin{table}[h]
-\centering
-\caption{$5\times5$ transfer matrix: CLIP-S (left) and LPIPS (right) for every (source, target) pair. ER=Early Renaissance, Imp=Impressionism, Min=Minimalism, Roc=Rococo, Uki=Ukiyo-e.}
-\label{tab:matrix_supp}
-\footnotesize
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}l|ccccc|ccccc@{}}
-\toprule
-& \multicolumn{5}{c|}{CLIP-S $\uparrow$ (target $\to$)} & \multicolumn{5}{c}{LPIPS $\downarrow$ (target $\to$)} \\
-Src $\downarrow$ & ER & Imp & Min & Roc & Uki & ER & Imp & Min & Roc & Uki \\
-\midrule
-ER  & .831 & .673 & .706 & .743 & .682 & .223 & .232 & .601 & .221 & .220 \\
-Imp & .666 & .822 & .748 & .724 & .699 & .247 & .248 & .625 & .247 & .253 \\
-Min & .634 & .674 & .860 & .637 & .680 & .192 & .195 & .356 & .189 & .205 \\
-Roc & .712 & .682 & .667 & .816 & .659 & .248 & .263 & .584 & .233 & .251 \\
-Uki & .679 & .692 & .753 & .707 & .886 & .186 & .202 & .590 & .182 & .180 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Per-target-domain averages (column averages of Table~\ref{tab:matrix_supp}) are: Early Renaissance $0.7045$ / $0.2190$; Impressionism $0.7085$ / $0.2281$; Minimalism $0.7467$ / $0.5511$; Rococo $0.7254$ / $0.2143$; Ukiyo-e $0.7213$ / $0.2216$. The Minimalism column shows the asymmetry discussed in Section~E: base locking limits global tone shift, so the model over-writes high-frequency structure, inflating LPIPS.
-
 \section{Failure Cases and Limitations}
 \label{sec:failures}
 

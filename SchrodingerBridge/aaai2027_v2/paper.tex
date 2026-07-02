@@ -98,15 +98,14 @@ AdaIN matches diagonal covariance; WCT matches full covariance via whitening-and
 \label{fig:framework}
 \end{figure}
 
-\subsection{Problem Setup}
+\subsection{Setup}
 
 Let $x_c \in \mathbb{R}^{H \times W \times 3}$ be a content image and $s \in \{1,\ldots,K\}$ a target style domain. We learn a mapping $G_\theta(x_c, s) = \mathcal{D}(\hat z_s)$ where $\mathcal{D}$ is a frozen VAE decoder and $\hat z_s$ is a stylized latent. We work in the latent space of a pre-trained SDXL VAE: $z_c = \mathcal{E}(x_c) \in \mathbb{R}^{4 \times 32 \times 32}$. The transport is a deterministic ODE (rectified flow) from $z_0 = z_c$ to $z_1 \sim p_{\text{style}}$.
 
 \paragraph{Why latent space?}
-We operate in the SDXL VAE latent space rather than pixel space for two reasons. First, the $4\times32\times32$ latent reduces training cost by roughly $192\times$ compared to $512\times512$ pixels, making consumer-grade training feasible. Second, and more importantly, the VAE's compressed representation provides a more semantically meaningful feature space for style representation. Pixel-space features are dominated by low-level texture and color statistics that entangle with content, whereas VAE latents abstract away low-level detail and expose style-relevant semantic structure. This is consistent with the finding that latent diffusion models produce more coherent image synthesis than pixel-space diffusion at equal compute~\cite{rombach2022highresolution}. Operating in latent space therefore both reduces cost and improves the quality of style representation.
+We operate in the SDXL VAE latent space rather than pixel space for two reasons. First, the $4\times32\times32$ latent reduces training cost by roughly $192\times$ compared to $512\times512$ pixels, making consumer-grade training feasible. Second, the VAE's compressed representation provides a more semantically meaningful feature space for style. Pixel-space features are dominated by low-level texture and color statistics that entangle with content, whereas VAE latents abstract away low-level detail and expose style-relevant semantic structure. Latent diffusion produces more coherent synthesis than pixel-space diffusion at equal compute~\cite{rombach2022highresolution}.
 
-\subsection{Flow Matching on the Latent}
-
+\paragraph{Flow matching.}
 We learn a velocity field $v_\theta(z_t, t, s)$ with $t \in [0,1]$. The training target is the rectilinear interpolation
 \begin{equation}
 z_t = (1-t)\,z_0 + t\,z_1, \qquad u_t = z_1 - z_0,
@@ -120,9 +119,46 @@ At inference, we integrate the ODE with an 8-step Heun solver (second-order Rung
 \begin{equation}
 z_{t+\Delta t} = z_t + \tfrac{\Delta t}{2}\big[v_\theta(z_t, t, s) + v_\theta(z_t + \Delta t \, v_\theta(z_t, t, s),\, t{+}\Delta t,\, s)\big].
 \end{equation}
-Heun gives a structural degree of freedom that Euler does not: in our ablations, switching Euler$\to$Heun improves CLIP-S by +0.0056 at fixed $\alpha$, and switching Heun$\to$RK4 adds nothing (saturation). The order of the solver is therefore a Pareto-breaking knob, while schedule shape, $\alpha$, and capacity are not.
+Heun gives a structural degree of freedom that Euler does not: switching Euler$\to$Heun improves CLIP-S by +0.0056 at fixed $\alpha$, and switching Heun$\to$RK4 adds nothing (saturation). The solver order is a Pareto-breaking knob; schedule shape, $\alpha$, and capacity are not.
 
-\subsection{Haar Wavelet Decomposition}
+\subsection{Why Euclidean Fails}
+\label{sec:attractor}
+
+We diagnose why the Euclidean approach fails before presenting our spectral solution. Consider a velocity field $v_\theta(z, t, s)$ trained with loss $\mathcal{L} = w_{\text{FM}} \mathcal{L}_{\text{FM}} + w_{\text{SWD}} \mathcal{L}_{\text{SWD}}$ where $\mathcal{L}_{\text{SWD}}$ is a sliced-Wasserstein style term.
+
+\begin{definition}[Degeneration manifold]
+\label{def:attractor}
+The \emph{degeneration manifold} is the set of parameters on which the velocity field is style-independent:
+\begin{equation}
+\mathcal{M}_0 = \big\{\theta \,:\, v_\theta(z, t, s) = \bar v_\theta(z, t) = \mathbb{E}_{s \sim p(s)}[v_\theta(z, t, s)] \;\;\forall s, z, t\big\}.
+\end{equation}
+Equivalently, $\nabla_s v_\theta(z,t,s)|_{\theta\in\mathcal{M}_0} = 0$: the Jacobian of $v_\theta$ with respect to the style variable vanishes identically.
+\end{definition}
+
+\begin{theorem}[$\mathcal{M}_0$ is a local minimum under multiplicative attenuation]
+\label{thm:attractor}
+Assume the loss decomposes as $\mathcal{L} = w_{\text{FM}} \mathcal{L}_{\text{FM}} + w_{\text{SWD}} \mathcal{L}_{\text{SWD}}$ with $w_{\text{FM}} \gg w_{\text{SWD}}$, and that three multiplicative attenuation factors act on the style gradient: a scalar gate $g(\theta)\in[0,1]$, an attention entropy factor $h(\theta)\in[0,1]$ (with $h=1$ uniform), and a normalization washout factor $n(\theta)\in[0,1]$. Let $\kappa(\theta) = g(\theta)\,h(\theta)\,n(\theta)$. If at $\theta_0\in\mathcal{M}_0$:
+\begin{enumerate}
+\item[(i)] $\kappa(\theta_0) \leq \sqrt{w_{\text{SWD}}/w_{\text{FM}}}$ (style gradient too small to overcome content gradient),
+\item[(ii)] the Hessian $\nabla^2_{\theta_\perp} \mathcal{L}_{\text{FM}}|_{\theta_0}$ is positive definite on the normal bundle $T_{\theta_0}^\perp \mathcal{M}_0$ (content loss is locally strictly convex in the escape direction),
+\item[(iii)] $\nabla^2 \mathcal{L}_{\text{SWD}}|_{\theta_0}$ has operator norm $\leq \kappa(\theta_0)\,\|\nabla^2 \mathcal{L}_{\text{FM}}\|$ (style loss is flat near $\mathcal{M}_0$),
+\end{enumerate}
+then $\theta_0$ is a strict local minimum of $\mathcal{L}$. The basin of attraction has radius $\Theta(\kappa(\theta_0))$.
+\end{theorem}
+\begin{proof}[Proof sketch]
+By (i), $\|\nabla_\theta \mathcal{L}_{\text{SWD}}\| \leq \kappa\,\|\nabla_\theta \mathcal{L}_{\text{FM}}\|$ at $\theta_0$, so the total gradient $\nabla \mathcal{L} = w_{\text{FM}}\nabla\mathcal{L}_{\text{FM}} + w_{\text{SWD}}\nabla\mathcal{L}_{\text{SWD}}$ is dominated by $w_{\text{FM}}\nabla\mathcal{L}_{\text{FM}}$, which vanishes on $\mathcal{M}_0$ by definition. By (ii), the second variation $\delta^2 \mathcal{L}_{\text{FM}} > 0$ on $T^\perp\mathcal{M}_0$; by (iii), $\delta^2 \mathcal{L}_{\text{SWD}}$ is a bounded perturbation that does not flip the sign of $\delta^2\mathcal{L}$ within radius $O(\kappa)$. Hence $\delta^2\mathcal{L} > 0$ in a neighborhood of $\theta_0$ on $T^\perp\mathcal{M}_0$, making $\theta_0$ a strict local min. Full proof in the supplement.\qed
+\end{proof}
+
+In our Euclidean baseline, the three factors are measured empirically: gate $g\approx 0.05$, attention $h\approx 1$ (uniform), normalization $n\approx 0.32$ (GroupNorm washout). Their product $\kappa \approx 0.016$ matches the observed residual style coefficient, and the ratio $w_{\text{SWD}}/w_{\text{FM}} = 0.01/1.0$ gives $\sqrt{w_{\text{SWD}}/w_{\text{FM}}} = 0.1 \gg \kappa$, so condition (i) holds. The attractor is multiplicative, so removing any single mechanism (e.g., increasing the gate initialization) is cancelled by the others. The Euclidean regime is therefore structurally bounded at CLIP-S $\approx 0.7175$: no reweighting of the three attenuations escapes the manifold, because their product stays below the style-gradient threshold.
+
+\begin{proposition}[Wavelet escape]
+\label{prop:escape}
+Under the spectral wavelet decomposition, the content gradient $\nabla_\theta \mathcal{L}_{\text{FM}}$ flows through the LL subband and the style gradient $\nabla_\theta \mathcal{L}_{\text{SWD}}$ flows through LH/HL/HH. By Proposition~\ref{prop:decouple} these subspaces are orthogonal, so the Hessian $\nabla^2\mathcal{L}$ block-diagonalizes: $\nabla^2\mathcal{L} = \text{blkdiag}(\nabla^2_{\text{LL}}\mathcal{L}_{\text{FM}},\, \nabla^2_{\text{HF}}\mathcal{L}_{\text{SWD}})$. The cross term $\nabla^2_{\text{LL, HF}}\mathcal{L}$ vanishes, condition (ii) of Theorem~\ref{thm:attractor} no longer binds the HF block, and $\mathcal{M}_0$ ceases to be a critical manifold of $\mathcal{L}_{\text{wavelet}}$.
+\end{proposition}
+
+The wavelet decomposition of the next section provides this escape.
+
+\subsection{Spectral Decomposition}
 
 We apply a single-level 2D Haar wavelet transform to $z_t$, producing four subbands at half resolution. For each $2\times2$ patch $(a,b,c,d)$:
 \begin{equation}
@@ -205,41 +241,6 @@ For $n\geq 2$, $r_n$ is convex and decreasing on $[0,1]$ with $r_n(0)=1$, $r_n(1
 The cross-attention layer that routes style tokens into the velocity field can operate either on the full latent (Euclidean query) or on the high-frequency tokens only (wavelet query). At inference we always use the wavelet query. At training time, we draw a Bernoulli variable $B \sim \text{Bernoulli}(p)$ per step and use the wavelet query with probability $p$, the full query otherwise. We set $p=0.8$.
 
 The rationale is a train--test distribution mismatch: if $p=1.0$ throughout training, the style encoder over-specializes to high-frequency statistics and loses global palette information. If $p=0.0$ (wavelet only at inference), the query projection has never seen wavelet coefficients and the route fails (CLIP-S drops to 0.7061). The sweep $p \in \{0.0, 0.5, 0.8, 1.0\}$ gives CLIP-S $\in \{0.7061, 0.7083, 0.7213, 0.7226\}$ and LPIPS $\in \{0.2606, 0.2480, 0.2868, 0.3068\}$. $p=0.8$ is the unique point where both metrics pass the dual threshold.
-
-\subsection{The Degeneration Attractor}
-\label{sec:attractor}
-
-To explain why the wavelet decomposition is necessary at all, we characterize the failure mode of the Euclidean approach. Consider a velocity field $v_\theta(z, t, s)$ trained with loss $\mathcal{L} = w_{\text{FM}} \mathcal{L}_{\text{FM}} + w_{\text{SWD}} \mathcal{L}_{\text{SWD}}$ where $\mathcal{L}_{\text{SWD}}$ is a sliced-Wasserstein style term.
-
-\begin{definition}[Degeneration manifold]
-\label{def:attractor}
-The \emph{degeneration manifold} is the set of parameters on which the velocity field is style-independent:
-\begin{equation}
-\mathcal{M}_0 = \big\{\theta \,:\, v_\theta(z, t, s) = \bar v_\theta(z, t) = \mathbb{E}_{s \sim p(s)}[v_\theta(z, t, s)] \;\;\forall s, z, t\big\}.
-\end{equation}
-Equivalently, $\nabla_s v_\theta(z,t,s)|_{\theta\in\mathcal{M}_0} = 0$: the Jacobian of $v_\theta$ with respect to the style variable vanishes identically.
-\end{definition}
-
-\begin{theorem}[$\mathcal{M}_0$ is a local minimum under multiplicative attenuation]
-\label{thm:attractor}
-Assume the loss decomposes as $\mathcal{L} = w_{\text{FM}} \mathcal{L}_{\text{FM}} + w_{\text{SWD}} \mathcal{L}_{\text{SWD}}$ with $w_{\text{FM}} \gg w_{\text{SWD}}$, and that three multiplicative attenuation factors act on the style gradient: a scalar gate $g(\theta)\in[0,1]$, an attention entropy factor $h(\theta)\in[0,1]$ (with $h=1$ uniform), and a normalization washout factor $n(\theta)\in[0,1]$. Let $\kappa(\theta) = g(\theta)\,h(\theta)\,n(\theta)$. If at $\theta_0\in\mathcal{M}_0$:
-\begin{enumerate}
-\item[(i)] $\kappa(\theta_0) \leq \sqrt{w_{\text{SWD}}/w_{\text{FM}}}$ (style gradient too small to overcome content gradient),
-\item[(ii)] the Hessian $\nabla^2_{\theta_\perp} \mathcal{L}_{\text{FM}}|_{\theta_0}$ is positive definite on the normal bundle $T_{\theta_0}^\perp \mathcal{M}_0$ (content loss is locally strictly convex in the escape direction),
-\item[(iii)] $\nabla^2 \mathcal{L}_{\text{SWD}}|_{\theta_0}$ has operator norm $\leq \kappa(\theta_0)\,\|\nabla^2 \mathcal{L}_{\text{FM}}\|$ (style loss is flat near $\mathcal{M}_0$),
-\end{enumerate}
-then $\theta_0$ is a strict local minimum of $\mathcal{L}$. The basin of attraction has radius $\Theta(\kappa(\theta_0))$.
-\end{theorem}
-\begin{proof}[Proof sketch]
-By (i), $\|\nabla_\theta \mathcal{L}_{\text{SWD}}\| \leq \kappa\,\|\nabla_\theta \mathcal{L}_{\text{FM}}\|$ at $\theta_0$, so the total gradient $\nabla \mathcal{L} = w_{\text{FM}}\nabla\mathcal{L}_{\text{FM}} + w_{\text{SWD}}\nabla\mathcal{L}_{\text{SWD}}$ is dominated by $w_{\text{FM}}\nabla\mathcal{L}_{\text{FM}}$, which vanishes on $\mathcal{M}_0$ by definition. By (ii), the second variation $\delta^2 \mathcal{L}_{\text{FM}} > 0$ on $T^\perp\mathcal{M}_0$; by (iii), $\delta^2 \mathcal{L}_{\text{SWD}}$ is a bounded perturbation that does not flip the sign of $\delta^2\mathcal{L}$ within radius $O(\kappa)$. Hence $\delta^2\mathcal{L} > 0$ in a neighborhood of $\theta_0$ on $T^\perp\mathcal{M}_0$, making $\theta_0$ a strict local min. Full proof in the supplement.\qed
-\end{proof}
-
-In our Euclidean baseline, the three factors are measured empirically: gate $g\approx 0.05$, attention $h\approx 1$ (uniform), normalization $n\approx 0.32$ (GroupNorm washout). Their product $\kappa \approx 0.016$ matches the observed residual style coefficient, and the ratio $w_{\text{SWD}}/w_{\text{FM}} = 0.01/1.0$ gives $\sqrt{w_{\text{SWD}}/w_{\text{FM}}} = 0.1 \gg \kappa$, so condition (i) holds. The attractor is multiplicative, so removing any single mechanism (e.g., increasing the gate initialization) is cancelled by the others. The Euclidean regime is therefore structurally bounded at CLIP-S $\approx 0.7175$: no reweighting of the three attenuations escapes the manifold, because their product stays below the style-gradient threshold.
-
-\begin{proposition}[Wavelet escape]
-\label{prop:escape}
-Under the spectral decomposition of Section~\ref{sec:baselock}, the content gradient $\nabla_\theta \mathcal{L}_{\text{FM}}$ flows through the LL subband and the style gradient $\nabla_\theta \mathcal{L}_{\text{SWD}}$ flows through LH/HL/HH. By Proposition~\ref{prop:decouple} these subspaces are orthogonal, so the Hessian $\nabla^2\mathcal{L}$ block-diagonalizes: $\nabla^2\mathcal{L} = \text{blkdiag}(\nabla^2_{\text{LL}}\mathcal{L}_{\text{FM}},\, \nabla^2_{\text{HF}}\mathcal{L}_{\text{SWD}})$. The cross term $\nabla^2_{\text{LL, HF}}\mathcal{L}$ vanishes, condition (ii) of Theorem~\ref{thm:attractor} no longer binds the HF block, and $\mathcal{M}_0$ ceases to be a critical manifold of $\mathcal{L}_{\text{wavelet}}$.
-\end{proposition}
 
 \subsection{Architecture and Training}
 
@@ -402,52 +403,6 @@ The capacity knobs (depth, dim, gate) all move the operating point along a singl
 \paragraph{Why capacity maps to the 1:8 line.}
 On the degeneration manifold $\mathcal{M}_0$ (Definition~\ref{def:attractor}), the velocity field factorizes as $v_\theta(z,t,s) = \bar v(z,t) + \kappa(\theta)\,\delta v_s(z,t)$, where $\kappa(\theta) = g\,h\,n$ is the multiplicative attenuation of Theorem~\ref{thm:attractor}. The content-preservation term $\mathcal{L}_{\text{FM}}$ is independent of $\kappa$; the style term $\mathcal{L}_{\text{SWD}}$ scales as $\kappa^2$. Reducing capacity (e.g., depth 4$\to$2) reduces $\|\delta v_s\|$ by a factor $\beta$, which reduces CLIP-S by $O(\beta)$ and reduces LPIPS by $O(\beta)$ as well (less style injection $\Rightarrow$ less content distortion). The ratio $\Delta\text{LPIPS}/\Delta\text{CLIP-S} \approx 8$ is therefore the ratio of the two loss curvatures on $\mathcal{M}_0$, not a property of any specific knob. This is why \emph{every} capacity knob traces the same line: they all perturb $\kappa$, and $\kappa$ is the only degree of freedom on $\mathcal{M}_0$. The wavelet decomposition escapes this by moving the model off $\mathcal{M}_0$ entirely (Proposition~\ref{prop:escape}), making $\kappa$ irrelevant.
 
-\subsection{Per-Domain Results}
-
-\begin{table}[t]
-\centering
-\caption{Per-target-domain CLIP-S and LPIPS (column averages of the 5$\times$5 transfer matrix; 30 source images $\times$ 5 source domains = 150 pairs per target). $\Delta_{\text{idt}}$ is the gap to the identity (self-reconstruction) ceiling. SFM generalizes across all five domains with low variance on brushwork domains.}
-\label{tab:domain}
-\small
-\begin{tabular}{@{}lcccc@{}}
-\toprule
-Target domain & CLIP-S $\uparrow$ & LPIPS $\downarrow$ & IDT CLIP-S & $\Delta_{\text{idt}}$ \\
-\midrule
-Early Renaissance & 0.7045 & 0.2190 & 0.8311 & $-$0.1267 \\
-Impressionism & 0.7085 & 0.2281 & 0.8224 & $-$0.1139 \\
-Minimalism & 0.7467 & 0.5511 & 0.8598 & $-$0.1130 \\
-Rococo & 0.7254 & 0.2143 & 0.8163 & $-$0.0909 \\
-Ukiyo-e & 0.7213 & 0.2216 & 0.8865 & $-$0.1652 \\
-\midrule
-Average & 0.7213 & 0.2868 & 0.8432 & $-$0.1219 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[t]
-\centering
-\caption{5$\times$5 transfer matrix: CLIP-S (left) and LPIPS (right) for every (source, target) pair. Diagonal entries are identity (no transfer); off-diagonals are cross-domain transfers. The asymmetric difficulty of transferring \emph{to} Minimalism vs.\ \emph{from} Minimalism is visible.}
-\label{tab:matrix}
-\footnotesize
-\setlength{\tabcolsep}{2.5pt}
-\begin{tabular}{@{}l|ccccc|ccccc@{}}
-\toprule
-& \multicolumn{5}{c|}{CLIP-S $\uparrow$ (target $\to$)} & \multicolumn{5}{c}{LPIPS $\downarrow$ (target $\to$)} \\
-Src $\downarrow$ & ER & Imp & Min & Roc & Uki & ER & Imp & Min & Roc & Uki \\
-\midrule
-ER & .831 & .673 & .706 & .743 & .682 & .223 & .232 & .601 & .221 & .220 \\
-Imp & .666 & .822 & .748 & .724 & .699 & .247 & .248 & .625 & .247 & .253 \\
-Min & .634 & .674 & .860 & .637 & .680 & .192 & .195 & .356 & .189 & .205 \\
-Roc & .712 & .682 & .667 & .816 & .659 & .248 & .263 & .584 & .233 & .251 \\
-Uki & .679 & .692 & .753 & .707 & .886 & .186 & .202 & .590 & .182 & .180 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Tables~\ref{tab:domain}--\ref{tab:matrix} reveal a sharp asymmetry between \emph{brushwork} domains (Impressionism, Ukiyo-e) and the \emph{minimal} domain (Minimalism). As targets, brushwork domains receive CLIP-S $0.7149$ at LPIPS $0.2249$, indicating that real brushstroke direction and edge sharpness are transferred while content is preserved near the identity level (LPIPS $\approx 0.22$ vs.\ identity $\approx 0.20$). Minimalism, whose style is largely low-frequency color blocking, receives a higher CLIP-S ($0.7467$) but at LPIPS $0.5511$ --- base locking limits the model's ability to shift global tone, so the model compensates by over-writing high-frequency structure, which inflates LPIPS. This is the intended trade-off: SFM is designed for real-texture transfer, not for global palette replacement.
-
-The asymmetry reverses when Minimalism is the source: per-source averages are CLIP-S $0.6970$ and LPIPS $0.2271$ (best content preservation, weakest style projection), because Minimalism source images carry little brushwork signal to begin with. Ukiyo-e as a source gives the strongest style projection (CLIP-S $0.7434$, LPIPS $0.2680$), consistent with its distinctive flat-plane brushwork. The hardest transfer pair is Minimalism $\to$ Early Renaissance (CLIP-S $0.6341$); the easiest non-identity pair is Ukiyo-e $\to$ Minimalism (CLIP-S $0.7526$), reflecting that Minimalism's simple style is easy to match once the source carries a strong style signature.
-
 \section{Discussion and Limitations}
 
 \paragraph{Why does it train in 3 minutes?}
@@ -457,7 +412,7 @@ Not because the model is small (903K params), and not because the data is small 
 AdaIN and WCT in Euclidean space shift the global mean and covariance of the entire feature map, which manifests as a color filter. SFM applies WCT per-subband on LH/HL/HH only, leaving LL (global tone and layout) intact. The visible effect is that brushstroke direction, edge sharpness, and texture granularity are transferred while the content image's color palette is preserved. This is what we mean by ``Real Style'': not a color filter, but a texture-level transfer.
 
 \paragraph{Limitations.}
-(1) The style is domain-level, not per-image: SFM transfers the \emph{style distribution} of a domain, not the unique brushwork of a single painting. Per-image style would require a style encoder conditioned on a single reference, which we leave to future work. (2) The Haar wavelet is the simplest orthogonal transform; biorthogonal or learned wavelets might give finer control. (3) When the content image has strong high-frequency structure (text, fine patterns), the high-frequency style injection may overwrite it. (4) Five domains is a limited evaluation; extension to sketch, watercolor, and 3D-rendered styles is left to future work.
+(1) The style is domain-level, not per-image: SFM transfers the \emph{style distribution} of a domain, not the unique brushwork of a single painting. Per-image style would require a style encoder conditioned on a single reference, which we leave to future work. (2) The Haar wavelet is the simplest orthogonal transform; biorthogonal or learned wavelets might give finer control. (3) When the content image has strong high-frequency structure (text, fine patterns), the high-frequency style injection may overwrite it. (4) Five domains is a limited evaluation; extension to sketch, watercolor, and 3D-rendered styles is left to future work. (5) Transferring to Minimalism, whose style is largely low-frequency color blocking, is harder because base locking limits global tone shift; this is the intended trade-off for real-texture transfer.
 
 \section{Conclusion}
 
