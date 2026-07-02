@@ -1,0 +1,17 @@
+{
+  "directions": [
+    {
+      "id": "v2_baseline",
+      "timestamp": "2026-07-03T11:30:00+08:00",
+      "summary": "Complete rewrite from scratch with Affordable Real Style Transfer narrative",
+      "outcome": "6 pages, 0 warnings, committed b6262f042",
+      "key_changes": ["new title", "Pareto deadlock framing", "degeneration attractor", "wavelet escape", "base locking", "fiber flow", "EOTA", "stochastic routing"]
+    }
+  ],
+  "next_direction_constraints": [
+    "Must deepen math (not just describe): formal attractor definition, fiber bundle math, convergence argument",
+    "Must expand experiments: per-domain analysis, ablation insight, efficiency analysis",
+    "Must NOT add new concepts; only formalize existing phenomena with rigorous math",
+    "Must reach 7 pages main text (currently 6)"
+  ]
+}
