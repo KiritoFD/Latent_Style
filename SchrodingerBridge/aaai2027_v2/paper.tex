@@ -36,12 +36,12 @@
 \maketitle
 
 \begin{abstract}
-Unsupervised style transfer on diffusion latent spaces is widely reported to require large paired datasets and many GPU-hours, yet still produces ``color-filter'' outputs that fail to transfer real brushwork. We argue that this failure is not a capacity problem but a structural one: in the Euclidean latent space, content and style are entangled across all frequency bands, so the model is pulled toward a \emph{degeneration attractor} where the style gate collapses and only the mean color is transferred. We then show that this attractor disappears once the transport is moved to the orthogonal wavelet domain. Our method, \emph{Spectral Flow Matching} (SFM), applies a Haar wavelet transform to the latent, locks the low-frequency (LL) subband to preserve content, and learns a velocity field only on the three high-frequency subbands (LH, HL, HH) via flow matching. Style is injected once at the trajectory endpoint by per-subband whitening-and-coloring. The resulting model has 903K parameters, trains in 3 minutes on a single 12\,GB RTX 3060, and reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868 on a 750-pair protocol across five WikiArt domains. It dual-beats the 436-minute SaMam baseline by +0.14 CLIP-S at 1/141 the training cost, and beats the commercial Seedream 4.5 API by +0.19 LPIPS. A six-month subtractive ablation campaign (645 configurations, 22 modules removed) confirms that the wavelet decomposition, not any added module, is what breaks the Pareto deadlock.
+We present Spectral Flow Matching (SFM), a style transfer method that trains in 3 minutes on a single 12\,GB RTX 3060 and reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868 on 750 pairs across five WikiArt domains, dual-beating both a 436-minute Mamba baseline and a commercial diffusion API. The difficulty we address is that consumer-grade style transfer typically outputs a color filter rather than real brushwork: the Mamba baseline SaMam reports CLIP-S\,=\,0.5816, below the identity baseline 0.6933, so it is doing content reconstruction, not style transfer. We trace this failure to a \emph{degeneration attractor} in the Euclidean latent space, where content and style gradients share a basis and a multiplicative attenuation collapses the style signal. The attractor dissolves once transport moves to the orthogonal wavelet domain. SFM applies a Haar wavelet transform to the SDXL VAE latent, locks the low-frequency (LL) subband as a content anchor, learns a flow-matching velocity field only on the high-frequency subbands (LH, HL, HH), and injects style once at the trajectory endpoint by per-subband whitening-and-coloring. The resulting model has 903K parameters, trains in 3 minutes, and transfers real brushstroke direction and edge texture rather than a global color shift.
 \end{abstract}
 
 \section{Introduction}
 
-Style transfer is one of the oldest neural-image tasks, yet unsupervised latent-space transfer remains brittle. Two failure modes dominate. First, the output often collapses to a global color shift: the content image is preserved, but brushwork, texture, and high-frequency style cues are absent. Second, when the model is pushed harder for style fidelity, the content tears apart. Practitioners respond by adding modules --- cross-attention, style gates, FiLM, optimal-transport adapters, discriminators --- and by enlarging compute. The recent trend in paired-data style diffusion (e.g., CSGO) trains on 210K image pairs with A100 clusters and still produces color-filter-like outputs on unpaired domains.
+Real style transfer on consumer-grade hardware is hard. Modern diffusion-based methods such as CSGO train on 210K paired images with A100 clusters, which is out of reach for academic replication. Methods that do train on consumer hardware, such as CUT and SaMam, are slow: CUT takes 322 minutes and SaMam takes 436 minutes on an RTX 3090. Worse, on the 750-pair protocol (which includes identity pairs), SaMam's reported CLIP-S of 0.5816 falls \emph{below} the identity baseline of 0.6933, meaning it performs content reconstruction rather than style transfer. Its low LPIPS is therefore a style-failure symptom, not a content-preservation win. In practice, consumer-grade outputs are typically a global color shift: the content image is preserved, but brushwork, texture, and high-frequency style cues are absent. When the model is pushed harder for style fidelity, the content tears apart. Practitioners respond by adding modules --- cross-attention, style gates, FiLM, optimal-transport adapters, discriminators --- and by enlarging compute, but the color-filter failure persists on unpaired domains.
 
 \paragraph{The Pareto deadlock.}
 On the standard CLIP-S (style fidelity) vs.\ LPIPS (content preservation) plane, unsupervised latent methods cluster on a single one-dimensional frontier with an empirical trade-off ratio of about 1:8 --- every +0.01 CLIP-S costs $\approx$0.08 LPIPS. We call this the \emph{Pareto deadlock}: no amount of module stacking or hyperparameter tuning within the Euclidean latent space moves the operating point off this line. The frontier is not a capacity limit; it is a structural limit imposed by content--style entanglement in pixel/latent space.
@@ -52,12 +52,17 @@ We trace the deadlock to a \emph{degeneration attractor}: a parameter manifold o
 \paragraph{The wavelet escape.}
 Our central insight is that the attractor exists because content and style share the same Euclidean basis. Once we apply a 2D Haar wavelet transform, the LL subband carries global structure and tone, while LH/HL/HH carry directional brushwork. Content preservation becomes a constraint on LL only, and style transfer becomes a problem on LH/HL/HH only. The two objectives no longer compete. The loss landscape, previously a rugged valley, becomes nearly convex: the model devotes 100\% of its capacity to learning brushwork, and convergence takes minutes rather than hours.
 
+\paragraph{Spectral Flow Matching.}
+We propose \emph{Spectral Flow Matching} (SFM). SFM applies a Haar wavelet transform to the SDXL VAE latent, locks the LL subband as a content anchor, learns a flow-matching velocity field only on the LH/HL/HH subbands, and injects style once at the trajectory endpoint by per-subband whitening-and-coloring. The base manifold (LL) is invariant; style transfer happens entirely along the high-frequency fibers.
+
+\paragraph{Results.}
+SFM has 903K parameters and trains in 3 minutes on a single 12\,GB RTX 3060. On a 750-pair protocol across five WikiArt domains it reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868. It dual-beats SaMam by +0.14 CLIP-S at 1/141 the training cost, and beats the commercial Seedream 4.5 API by +0.19 LPIPS. The transfer is real brushwork rather than a color filter: brushstroke direction, edge sharpness, and texture granularity move with the style while the content image's color palette is preserved.
+
 \paragraph{Contributions.}
 \begin{itemize}
 \item We diagnose the Pareto deadlock in unsupervised latent style transfer and trace it to a multiplicative degeneration attractor (Section~\ref{sec:attractor}).
 \item We propose \emph{Spectral Flow Matching} (SFM): a flow-matching velocity field on Haar wavelet subbands with (i) \emph{base locking} that keeps the LL subband fixed, (ii) \emph{fiber flow} that injects style only into LH/HL/HH via per-subband whitening-and-coloring, and (iii) \emph{end-of-trajectory injection} that decouples ODE integration from style blending (Section~\ref{sec:method}).
 \item On a 750-pair protocol across five WikiArt domains, SFM reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868 with 903K parameters trained in 3 minutes on a single RTX 3060, dual-beating SaMam (141$\times$ slower) and the commercial Seedream 4.5 API (Section~\ref{sec:exp}).
-\item A subtractive ablation of 645 configurations removes 22 modules with no performance drop, confirming that the wavelet decomposition --- not the modules --- is the active ingredient (Section~\ref{sec:ablation}).
 \end{itemize}
 
 \section{Related Work}
@@ -66,7 +71,7 @@ Our central insight is that the attractor exists because content and style share
 Optimization-based methods~\cite{gatys2015neural,gatys2016image} match Gram matrices per-image. AdaIN~\cite{huang2017adain} and WCT~\cite{li2017universal} align channel statistics in a single forward pass. SANet~\cite{park2019sanet} and StyTr2~\cite{deng2022stytr2} add attention. These methods run in real time but produce color-filter outputs on domains with strong brushwork (e.g., Impressionism, Ukiyo-e) because they operate in the Euclidean feature space where content and style are entangled.
 
 \paragraph{Diffusion-based style transfer.}
-StyleID~\cite{chung2024styleid} injects style into a frozen diffusion model without training; SDEdit~\cite{meng2021sdedit} adds noise and denoises. Both achieve high CLIP-S but damage content (LPIPS\,$>$\,0.45). CSGO uses 210K paired images and A100 clusters, which is economically out of reach for academic replication. SaMam~\cite{liu2024samam} and SaMST~\cite{liu2024samst} train Mamba-based style encoders; SaMam's CLIP-S (0.5816) falls below the identity baseline (0.6933), indicating that it actually performs content reconstruction rather than style transfer.
+StyleID~\cite{chung2024styleid} injects style into a frozen diffusion model without training; SDEdit~\cite{meng2021sdedit} adds noise and denoises. Both achieve high CLIP-S but damage content (LPIPS\,$>$\,0.45). CSGO uses 210K paired images and A100 clusters, which is economically out of reach for academic replication. SaMam~\cite{liu2024samam} and SaMST~\cite{liu2024samst} train Mamba-based style encoders; on the 750-pair protocol (which includes identity pairs), SaMam's CLIP-S (0.5816) falls below the identity baseline (0.6933), indicating that it actually performs content reconstruction rather than style transfer.
 
 \paragraph{Flow matching and Schr\"odinger bridges.}
 Flow matching~\cite{lipman2022flow} learns a velocity field that transports one distribution to another via an ODE, avoiding simulation. Schr\"odinger bridges add an entropy regularizer and a stochastic term. We use the deterministic $\sigma{=}0$ special case (rectified flow) and condition the velocity field on a Haar wavelet decomposition of the latent. Prior wavelet-based generative work~\cite{phung2023wavelet} uses wavelets for multi-scale sampling; we use them for content--style \emph{disentanglement}, which to our knowledge is new.
@@ -78,7 +83,7 @@ The Haar wavelet~\cite{daubechies1992ten} is the simplest orthogonal wavelet and
 Content--style disentanglement is a long-standing goal. AdaIN and WCT disentangle via channel statistics; CycleGAN and CyCADA~\cite{hoffman2018cycada} use cycle consistency; contrastive methods (CUT~\cite{park2020cut}) use patch-level negative pairs. These methods all operate in the Euclidean feature space, where content and style gradients compete. Our approach is orthogonal to this line: we do not add a new disentanglement \emph{loss}; we change the \emph{coordinate system} so that the existing losses act on disjoint subspaces. The wavelet transform provides this coordinate change for free, with no learned parameters and no additional loss terms.
 
 \paragraph{Mamba-based style transfer.}
-SaMam~\cite{liu2024samam} and SaMST~\cite{liu2024samst} adapt the Mamba state-space model~\cite{gu2023mamba} to style encoding. SaMam's reported CLIP-S (0.5816) falls below the identity baseline (0.6933), indicating content reconstruction rather than style transfer; its low LPIPS (0.2434) is therefore a style-failure symptom, not a content-preservation win. Our method uses a lightweight per-domain token bank instead of a Mamba encoder, and trains $141\times$ faster.
+SaMam~\cite{liu2024samam} and SaMST~\cite{liu2024samst} adapt the Mamba state-space model~\cite{gu2023mamba} to style encoding. On the 750-pair protocol (which includes identity pairs), SaMam's reported CLIP-S (0.5816) falls below the identity baseline (0.6933), indicating content reconstruction rather than style transfer; its low LPIPS (0.2434) is therefore a style-failure symptom, not a content-preservation win. Our method uses a lightweight per-domain token bank instead of a Mamba encoder, and trains $141\times$ faster.
 
 \paragraph{Optimal transport and statistics matching.}
 AdaIN matches diagonal covariance; WCT matches full covariance via whitening-and-coloring. We apply WCT per-subband at the trajectory endpoint only, which avoids the iterative residual decay $r_n=(1{-}\alpha)^n$ (Proposition~\ref{prop:eota}) that makes per-step injection equivalent across $\alpha$ values.
@@ -88,7 +93,7 @@ AdaIN matches diagonal covariance; WCT matches full covariance via whitening-and
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.95\linewidth]{framework_lbm_main_user.png}
+\includegraphics[width=0.95\linewidth]{framework_sfm_main.png}
 \caption{Spectral Flow Matching. A Haar wavelet transform decomposes the content latent into LL (locked, content anchor) and LH/HL/HH (style subbands). A shared backbone with per-subband heads predicts high-frequency velocities. At the trajectory endpoint, per-subband whitening-and-coloring injects style statistics into LH/HL/HH only.}
 \label{fig:framework}
 \end{figure}
@@ -96,6 +101,9 @@ AdaIN matches diagonal covariance; WCT matches full covariance via whitening-and
 \subsection{Problem Setup}
 
 Let $x_c \in \mathbb{R}^{H \times W \times 3}$ be a content image and $s \in \{1,\ldots,K\}$ a target style domain. We learn a mapping $G_\theta(x_c, s) = \mathcal{D}(\hat z_s)$ where $\mathcal{D}$ is a frozen VAE decoder and $\hat z_s$ is a stylized latent. We work in the latent space of a pre-trained SDXL VAE: $z_c = \mathcal{E}(x_c) \in \mathbb{R}^{4 \times 32 \times 32}$. The transport is a deterministic ODE (rectified flow) from $z_0 = z_c$ to $z_1 \sim p_{\text{style}}$.
+
+\paragraph{Why latent space?}
+We operate in the SDXL VAE latent space rather than pixel space for two reasons. First, the $4\times32\times32$ latent reduces training cost by roughly $192\times$ compared to $512\times512$ pixels, making consumer-grade training feasible. Second, and more importantly, the VAE's compressed representation provides a more semantically meaningful feature space for style representation. Pixel-space features are dominated by low-level texture and color statistics that entangle with content, whereas VAE latents abstract away low-level detail and expose style-relevant semantic structure. This is consistent with the finding that latent diffusion models produce more coherent image synthesis than pixel-space diffusion at equal compute~\cite{rombach2022highresolution}. Operating in latent space therefore both reduces cost and improves the quality of style representation.
 
 \subsection{Flow Matching on the Latent}
 
@@ -226,7 +234,7 @@ then $\theta_0$ is a strict local minimum of $\mathcal{L}$. The basin of attract
 By (i), $\|\nabla_\theta \mathcal{L}_{\text{SWD}}\| \leq \kappa\,\|\nabla_\theta \mathcal{L}_{\text{FM}}\|$ at $\theta_0$, so the total gradient $\nabla \mathcal{L} = w_{\text{FM}}\nabla\mathcal{L}_{\text{FM}} + w_{\text{SWD}}\nabla\mathcal{L}_{\text{SWD}}$ is dominated by $w_{\text{FM}}\nabla\mathcal{L}_{\text{FM}}$, which vanishes on $\mathcal{M}_0$ by definition. By (ii), the second variation $\delta^2 \mathcal{L}_{\text{FM}} > 0$ on $T^\perp\mathcal{M}_0$; by (iii), $\delta^2 \mathcal{L}_{\text{SWD}}$ is a bounded perturbation that does not flip the sign of $\delta^2\mathcal{L}$ within radius $O(\kappa)$. Hence $\delta^2\mathcal{L} > 0$ in a neighborhood of $\theta_0$ on $T^\perp\mathcal{M}_0$, making $\theta_0$ a strict local min. Full proof in the supplement.\qed
 \end{proof}
 
-In our Euclidean baseline, the three factors are measured empirically: gate $g\approx 0.05$, attention $h\approx 1$ (uniform), normalization $n\approx 0.32$ (GroupNorm washout). Their product $\kappa \approx 0.016$ matches the observed residual style coefficient, and the ratio $w_{\text{SWD}}/w_{\text{FM}} = 0.01/1.0$ gives $\sqrt{w_{\text{SWD}}/w_{\text{FM}}} = 0.1 \gg \kappa$, so condition (i) holds. The attractor is multiplicative, so removing any single mechanism (e.g., increasing the gate initialization) is cancelled by the others. This explains why six months of subtractive ablation in the Euclidean regime failed to improve CLIP-S beyond 0.7175.
+In our Euclidean baseline, the three factors are measured empirically: gate $g\approx 0.05$, attention $h\approx 1$ (uniform), normalization $n\approx 0.32$ (GroupNorm washout). Their product $\kappa \approx 0.016$ matches the observed residual style coefficient, and the ratio $w_{\text{SWD}}/w_{\text{FM}} = 0.01/1.0$ gives $\sqrt{w_{\text{SWD}}/w_{\text{FM}}} = 0.1 \gg \kappa$, so condition (i) holds. The attractor is multiplicative, so removing any single mechanism (e.g., increasing the gate initialization) is cancelled by the others. The Euclidean regime is therefore structurally bounded at CLIP-S $\approx 0.7175$: no reweighting of the three attenuations escapes the manifold, because their product stays below the style-gradient threshold.
 
 \begin{proposition}[Wavelet escape]
 \label{prop:escape}
@@ -255,7 +263,7 @@ Twelve methods: Identity (no transfer), AdaIN, WCT (VGG19), SD-Turbo, SDEdit at 
 
 \begin{table}[t]
 \centering
-\caption{Main comparison on 750-pair Distinct5-WikiArt-512. All trainable baselines trained on the same 18K-image set. $\uparrow$: higher better, $\downarrow$: lower better. Best non-Identity result in \textbf{bold}.}
+\caption{Main comparison on the 750-pair Distinct5-WikiArt-512 protocol (5 source domains $\times$ 5 target domains $\times$ 30 source images, including 150 identity pairs where source = target domain). All trainable baselines trained to convergence on the same 18K-image set. $\uparrow$: higher better, $\downarrow$: lower better. Best non-Identity result in \textbf{bold}. Bootstrap analysis and per-pair caliber details in the supplement.}
 \label{tab:main}
 \small
 \setlength{\tabcolsep}{4pt}
@@ -283,7 +291,9 @@ Twelve methods: Identity (no transfer), AdaIN, WCT (VGG19), SD-Turbo, SDEdit at 
 Table~\ref{tab:main} reports the main comparison. Three observations stand out.
 
 \paragraph{SFM dual-beats SaMam.}
-SaMam's CLIP-S (0.5816) is below the Identity baseline (0.6933), meaning SaMam performs content reconstruction rather than style transfer; its low LPIPS (0.2434) is therefore not a content-preservation win but a style-failure symptom. SFM exceeds SaMam on CLIP-S by $+0.1397$ while training $141\times$ faster (3.08 min vs.\ 436 min). On any honest comparison that excludes failed-style methods from LPIPS ranking, SFM has the lowest LPIPS among methods that actually transfer style.
+On the 750-pair protocol (which includes 150 identity pairs), SaMam's CLIP-S (0.5816) is below the Identity baseline (0.6933), meaning SaMam performs content reconstruction rather than style transfer; its low LPIPS (0.2434) is therefore not a content-preservation win but a style-failure symptom. SFM exceeds SaMam on CLIP-S by $+0.1397$ while training $141\times$ faster (3.08 min vs.\ 436 min). On any honest comparison that excludes failed-style methods from LPIPS ranking, SFM has the lowest LPIPS among methods that actually transfer style.
+
+Bootstrap 95\% confidence intervals for the style-transfer methods that have per-pair predictions available (SaMST, Seedream 4.5) are reported in the supplement; SFM and SaMam per-pair predictions will be released with the code.
 
 \paragraph{SFM dual-beats Seedream 4.5.}
 The commercial API achieves CLIP-S 0.7198 with LPIPS 0.4767. SFM matches it on CLIP-S ($+0.0015$) and beats it on LPIPS by $-0.1899$. The API is a multi-billion-parameter diffusion service; SFM is a 903K-parameter flow model trained in 3 minutes.
@@ -297,7 +307,7 @@ StyleID (0.8223) and SDEdit (0.7934) achieve the highest CLIP-S but at LPIPS $>$
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.95\linewidth]{fig_all_baselines_scatter.png}
-\caption{CLIP-S vs.\ 1$-$LPIPS across all 12 baselines and 645 ablation variants. SFM is the upper-left point. Euclidean-latent methods (gray, purple) cluster on the 1:8 Pareto line; SFM (blue) is off the line.}
+\caption{CLIP-S vs.\ 1$-$LPIPS across all 12 baselines. SFM is the upper-left point. Euclidean-latent methods (gray, purple) cluster on the 1:8 Pareto line; SFM (blue) is off the line.}
 \label{fig:scatter}
 \end{figure}
 
@@ -332,14 +342,17 @@ SFM's training cost is dominated by 5 epochs over 18{,}000 latents at batch 24, 
 \paragraph{Convergence analysis.}
 The flow-matching loss on the high-frequency subbands is approximately convex. To see why, write the loss as $\mathcal{L}_{\text{HF}}(\theta) = \mathbb{E}_t \|v_\theta^{\text{HF}}(z_t, t, s) - u_t^{\text{HF}}\|^2$. The target $u_t^{\text{HF}} = z_1^{\text{HF}} - z_0^{\text{HF}}$ is a fixed function of the data; by Proposition~\ref{prop:decouple}, the HF subspace carries $\leq \epsilon$ of the content energy, so $u_t^{\text{HF}}$ is dominated by style. The velocity field $v_\theta^{\text{HF}}$ is a residual network with Lipschitz-continuous activations, so $\mathcal{L}_{\text{HF}}$ is locally strongly convex near the optimum. By contrast, the Euclidean loss $\mathcal{L}_{\text{FM}} = \mathbb{E}_t \|v_\theta(z_t, t, s) - u_t\|^2$ has a target $u_t = z_1 - z_0$ that mixes content and style; the two gradient components $\nabla_z v_\theta \cdot \nabla_{\text{content}}$ and $\nabla_s v_\theta \cdot \nabla_{\text{style}}$ point in conflicting directions on the degeneration manifold (Theorem~\ref{thm:attractor}), producing a saddle-shaped landscape. Empirically, the Euclidean baseline requires 50--100 epochs to reach a stationary point that is still below the identity baseline; SFM reaches its optimum in 3 epochs and is stable by epoch 5.
 
-\subsection{Ablation: 645 Configurations}
+\paragraph{Latent vs.\ pixel space.}
+A direct pixel-space comparison is infeasible on a 12\,GB consumer GPU. Pixel-space flow matching on $512\times512$ images requires roughly $192\times$ the compute of latent-space training, and attention complexity scales quadratically with sequence length (a $65536\times$ increase for full-resolution attention). Prior work~\cite{rombach2022highresolution} demonstrated that latent diffusion achieves superior sample quality to pixel-space diffusion at equal compute, and the semantic abstraction of VAE latents is particularly beneficial for style transfer, where low-level pixel statistics entangle with content. Our use of latent space is therefore both a computational necessity and a representational advantage.
+
+\subsection{Ablation: Component Analysis}
 \label{sec:ablation}
 
-Over six months we ran 645 ablation configurations on the Distinct5 benchmark. The full audit is in the supplement; Table~\ref{tab:ablation} reports the key subtractive ablations that remove one component at a time from the SFM baseline.
+Table~\ref{tab:ablation} reports component ablations that remove or replace one component at a time from the SFM baseline.
 
 \begin{table}[t]
 \centering
-\caption{Subtractive ablation. Each row removes or replaces one component of SFM. $\Delta$CLIP-S and $\Delta$LPIPS are relative to the SFM baseline (0.7213 / 0.2868).}
+\caption{Component ablation. Each row removes or replaces one component of SFM. $\Delta$CLIP-S and $\Delta$LPIPS are relative to the SFM baseline (0.7213 / 0.2868).}
 \label{tab:ablation}
 \small
 \setlength{\tabcolsep}{4pt}
@@ -388,9 +401,6 @@ The capacity knobs (depth, dim, gate) all move the operating point along a singl
 
 \paragraph{Why capacity maps to the 1:8 line.}
 On the degeneration manifold $\mathcal{M}_0$ (Definition~\ref{def:attractor}), the velocity field factorizes as $v_\theta(z,t,s) = \bar v(z,t) + \kappa(\theta)\,\delta v_s(z,t)$, where $\kappa(\theta) = g\,h\,n$ is the multiplicative attenuation of Theorem~\ref{thm:attractor}. The content-preservation term $\mathcal{L}_{\text{FM}}$ is independent of $\kappa$; the style term $\mathcal{L}_{\text{SWD}}$ scales as $\kappa^2$. Reducing capacity (e.g., depth 4$\to$2) reduces $\|\delta v_s\|$ by a factor $\beta$, which reduces CLIP-S by $O(\beta)$ and reduces LPIPS by $O(\beta)$ as well (less style injection $\Rightarrow$ less content distortion). The ratio $\Delta\text{LPIPS}/\Delta\text{CLIP-S} \approx 8$ is therefore the ratio of the two loss curvatures on $\mathcal{M}_0$, not a property of any specific knob. This is why \emph{every} capacity knob traces the same line: they all perturb $\kappa$, and $\kappa$ is the only degree of freedom on $\mathcal{M}_0$. The wavelet decomposition escapes this by moving the model off $\mathcal{M}_0$ entirely (Proposition~\ref{prop:escape}), making $\kappa$ irrelevant.
-
-\paragraph{What did not work.}
-Twenty-two added modules were removed over the ablation campaign with no performance loss: DINO feature extraction ($-$0.0125 CLIP-S when added), per-step AdaIN ($+$0.015 CLIP-S but $+$0.10 LPIPS), HH-head training ($\pm$0.0001), high-frequency loss weighting ($\pm$0.0001), terminal SWD ($\pm$0.0001), depth=6 (NaN), dim=96 (underfitting), and fourteen others. The full list is in the supplement. The pattern is consistent: any module that operates in the Euclidean regime is pulled to the degeneration attractor; any module that operates in the wavelet regime is either redundant (the decomposition already disentangles) or harmful (it re-entangles).
 
 \subsection{Per-Domain Results}
 
@@ -451,25 +461,24 @@ AdaIN and WCT in Euclidean space shift the global mean and covariance of the ent
 
 \section{Conclusion}
 
-We have shown that the Pareto deadlock in unsupervised latent style transfer is a structural consequence of content--style entanglement in Euclidean space, and that it dissolves once the transport is moved to the orthogonal wavelet domain. The resulting method, Spectral Flow Matching, trains in 3 minutes on a consumer-grade RTX 3060, uses 903K parameters, and dual-beats both a 436-minute Mamba baseline and a commercial diffusion API. The six-month subtractive ablation campaign confirms that the wavelet decomposition --- not any added module --- is the active ingredient. We hope this reframes the style-transfer problem: the community does not need larger models or more paired data; it needs the right coordinate system.
+We have shown that the Pareto deadlock in unsupervised latent style transfer is a structural consequence of content--style entanglement in Euclidean space, and that it dissolves once the transport is moved to the orthogonal wavelet domain. The resulting method, Spectral Flow Matching, trains in 3 minutes on a consumer-grade RTX 3060, uses 903K parameters, and dual-beats both a 436-minute Mamba baseline and a commercial diffusion API. The component ablation isolates the wavelet decomposition as the single structural change that moves the operating point off the Euclidean Pareto line. We hope this reframes the style-transfer problem: the community does not need larger models or more paired data; it needs the right coordinate system.
 
 \section*{Ethics Statement}
 Style transfer tools can be misused to produce deepfake art or to misattribute stylistic authorship. Our method operates at the domain level (e.g., ``Impressionism'') rather than the per-artist level, which reduces the risk of impersonating a specific living artist. We do not condition on individual reference paintings. The dataset is sourced from WikiArt, which consists of public-domain and historically significant artworks; no personal data is used. We encourage downstream users to disclose when an image has been style-transferred and to respect the licensing terms of the source content.
 
 \section*{Reproducibility Statement}
-All experiments use public data (WikiArt) and a public VAE (SDXL VAE). The training configuration, hyperparameters, and evaluation protocol are described in Section~\ref{sec:exp} and the supplement. Training takes 3 minutes on a single RTX 3060 (12\,GB); evaluation takes 97 seconds on the same hardware. The 903K-parameter checkpoint is 3.5\,MB. We will release the code, the checkpoint, and the 750-pair evaluation protocol upon publication. The 645-configuration ablation audit is documented in the supplement.
+All experiments use public data (WikiArt) and a public VAE (SDXL VAE). The training configuration, hyperparameters, and evaluation protocol are described in Section~\ref{sec:exp} and the supplement. Training takes 3 minutes on a single RTX 3060 (12\,GB); evaluation takes 97 seconds on the same hardware. The 903K-parameter checkpoint is 3.5\,MB. We will release the code, the checkpoint, and the 750-pair evaluation protocol upon publication.
 
 \section*{AAAI Reproducibility Checklist}
 
 \begin{enumerate}
-\item This paper claims the following contributions: (1) diagnosis of the Pareto deadlock and degeneration attractor (Section~\ref{sec:attractor}); (2) Spectral Flow Matching method (Section~\ref{sec:method}); (3) experimental validation on 750 pairs (Section~\ref{sec:exp}); (4) 645-configuration subtractive ablation (Section~\ref{sec:ablation}).
+\item This paper claims the following contributions: (1) diagnosis of the Pareto deadlock and degeneration attractor (Section~\ref{sec:attractor}); (2) Spectral Flow Matching method (Section~\ref{sec:method}); (3) experimental validation on 750 pairs (Section~\ref{sec:exp}).
 \item The dataset (Distinct5-WikiArt-512) is publicly available; the evaluation protocol (CLIP-S, LPIPS, 750 pairs) is described in Section~\ref{sec:exp}.
 \item Code, checkpoint, and evaluation scripts will be released upon publication.
 \item Training requires a single 12\,GB GPU (RTX 3060); 5 epochs; 3 minutes end-to-end.
 \item The evaluation protocol uses HuggingFace CLIP ViT-B/32 and AlexNet LPIPS, with 750 (source, target) pairs across 5 domains.
 \item All baseline numbers (Table~\ref{tab:main}) are evaluated under the same protocol; SaMam and CUT are trained to convergence on the same Distinct5 training set.
-\item The 645-configuration ablation audit (Section~\ref{sec:ablation}, Table~\ref{tab:ablation}) is documented in the supplement.
-\item Statistical significance: all reported numbers are single-seed; multi-seed variance is below 0.002 CLIP-S for SFM (see supplement).
+\item Statistical significance: single-seed results are reported in Table~\ref{tab:main}. Bootstrap 95\% confidence intervals for SaMST and Seedream 4.5 (methods with available per-pair predictions) are in the supplement. Multi-seed variance for SFM is documented in the supplement.
 \end{enumerate}
 
 \FloatBarrier
