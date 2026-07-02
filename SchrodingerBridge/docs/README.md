@@ -71,7 +71,7 @@
 
 | 数据源 | 路径 | 说明 |
 |--------|------|------|
-| 12 baseline 统一评估结果 | `exp/exp_baselines/baseline_v2/eval/unified_results.json` | SaMam 真实值 0.5816/0.2434@step20000（v4 的 0.7175/0.2423 是编造值，已修正） |
+| 12 baseline 统一评估结果 | `exp/baseline/v2/eval/unified_results.json` | SaMam 真实值 0.5816/0.2434@step20000（v4 的 0.7175/0.2423 是编造值，已修正） |
 | 远程实验清单 | `docs/exp/remote_experiments.md` | M3 产出 |
 | 本地实验清单 | `docs/exp/local_experiments.md` | M7 产出 |
 | 实验脉络审计 | `docs/exp/experiment_audit.md` | M23 产出 |
@@ -95,7 +95,7 @@
 
 ## 5. 文档维护原则
 
-1. **新增实验**: 放入对应 `exp/exp_ours/{early|phase4|local_t}/`，更新 `docs/exp/local_experiments.md` 或 `remote_experiments.md`
+1. **新增实验**: 放入对应 `exp/FCSB/{early|phase4|local_t}/`，更新 `docs/exp/local_experiments.md` 或 `remote_experiments.md`
 2. **新增 baseline**: 更新 `unified_results.json` + `docs/baseline/README.md` + `docs/72/07_related_works.md`
 3. **数值变更**: 任何数值变更需在所有主线文档同步更新
 4. **旧文档归档**: 不再维护的文档移到 `docs/archive/`，git commit 保留历史
