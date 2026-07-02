@@ -2,7 +2,7 @@
 
 **生成时间**: 2026-07-03
 **核查范围**: 12 个 baseline (论文 AAAI 2027 对比用) 的评估协议一致性 + 训练类 baseline 收敛证据
-**数据真相源**: `exp/exp_baselines/baseline_v2/eval/unified_results.json`
+**数据真相源**: `exp/baseline/v2/eval/unified_results.json`
 
 ---
 
@@ -45,7 +45,7 @@
 
 ## 2. unified_results.json 与评估文件值核对
 
-**数据源**: `exp/exp_baselines/baseline_v2/eval/unified_results.json`
+**数据源**: `exp/baseline/v2/eval/unified_results.json`
 
 | Baseline | unified_results.json | 评估文件实际值 | 一致性 |
 |----------|---------------------|----------------|--------|
@@ -155,12 +155,12 @@
 
 ### 5.3 数据真相源优先级
 
-1. `exp/exp_baselines/baseline_v2/eval/unified_results.json` (最高优先级, v5 已修正)
+1. `exp/baseline/v2/eval/unified_results.json` (最高优先级, v5 已修正)
 2. `docs/exp/samam_data_integrity_audit.md` (SaMam 81 ckpt 详细审计)
 3. `docs/archive/experiments/samst_distinct5_converged_notice_20260604.md` (SaMST 收敛判定)
 4. `docs/72/07_related_works.md` (12 baseline 完整指标表)
-5. `exp/exp_baselines/baseline_v2/baseline_summary_table.csv` (⚠️ SaMam 旧值未更新, 历史保留)
-6. `exp/exp_baselines/baseline_v2/baseline_conclusions.md` (⚠️ SaMam 旧值未更新, 历史保留)
+5. `exp/baseline/v2/baseline_summary_table.csv` (⚠️ SaMam 旧值未更新, 历史保留)
+6. `exp/baseline/v2/baseline_conclusions.md` (⚠️ SaMam 旧值未更新, 历史保留)
 
 ---
 
@@ -173,5 +173,5 @@
 | [`docs/exp/remote_experiments.md`](../exp/remote_experiments.md) | 远程 I 盘 baseline 评估实验清单 (含 CUT 训练时长缺失说明 §4) |
 | [`docs/72/07_related_works.md`](../72/07_related_works.md) | 12 baseline 完整指标表 + CLIP backend 对齐说明 |
 | [`docs/archive/Related/baseline_methods_catalog.md`](../archive/Related/baseline_methods_catalog.md) | 各 baseline 论文/代码/训练协议目录 |
-| [`exp/exp_baselines/baseline_v2/eval/unified_results.json`](../../exp/exp_baselines/baseline_v2/eval/unified_results.json) | 12 baseline 统一评估结果 (数据真相源) |
-| [`exp/exp_baselines/baseline_v2/baseline_conclusions.md`](../../exp/exp_baselines/baseline_v2/baseline_conclusions.md) | Baseline 复现结论 (注: SaMam 旧值未更新) |
+| [`exp/baseline/v2/eval/unified_results.json`](../../exp/baseline/v2/eval/unified_results.json) | 12 baseline 统一评估结果 (数据真相源) |
+| [`exp/baseline/v2/baseline_conclusions.md`](../../exp/baseline/v2/baseline_conclusions.md) | Baseline 复现结论 (注: SaMam 旧值未更新) |
