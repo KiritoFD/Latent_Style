@@ -162,16 +162,16 @@ g:\GitHub\Latent_Style\SchrodingerBridge\exp\
 | docs/72/05_conclusions.md | Section 1.1/1.2/1.3/2.1/2.1.5/5.1/8.2 (7 处编辑) |
 | docs/72/04_design_ideas.md | Section 2.6 (4I.7b 双超越声明修正) |
 | docs/72/README.md | Header + SOTA 表 + 12 baseline 速览 + 竞争格局 |
-| docs/630/phase4i10_probe_breakthrough.md | 头部加 v5 修正注 (SaMam 数据完整性修正) |
-| docs/630/phase4i11_per_subband_wct.md | 头部加 v5 修正注 (SaMam 数据完整性修正) |
-| docs/630/phase4i_structural_breakthrough.md | 头部加 v5 修正注 (SaMam 数据完整性修正) |
+| docs/archive/630/phase4i10_probe_breakthrough.md | 头部加 v5 修正注 (SaMam 数据完整性修正) |
+| docs/archive/630/phase4i11_per_subband_wct.md | 头部加 v5 修正注 (SaMam 数据完整性修正) |
+| docs/archive/630/phase4i_structural_breakthrough.md | 头部加 v5 修正注 (SaMam 数据完整性修正) |
 
 ### 4.3 保留的历史 state 文件（append-only, 不修改）
 
 | 文件 | 说明 |
 |------|------|
-| `docs/630/state/progress.json` | Phase 4 历史 state, 含 SaMam 旧 0.7222 引用, 保留作为历史追溯 |
-| `docs/630/state/findings.jsonl` | Phase 4 历史 findings log, append-only |
+| `docs/archive/630/state/progress.json` | Phase 4 历史 state, 含 SaMam 旧 0.7222 引用, 保留作为历史追溯 |
+| `docs/archive/630/state/findings.jsonl` | Phase 4 历史 findings log, append-only |
 | `.trae/autoresearch/cleanup/state/progress.json` | 本次 cleanup task 的 state |
 | `.trae/autoresearch/cleanup/state/findings.jsonl` | 本次 cleanup task 的 findings log |
 

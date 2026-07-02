@@ -1,0 +1,314 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Experiment Results Dashboard — Pareto Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 20px;
+  }
+  h1 { color: #58a6ff; font-size: 1.6em; margin-bottom: 6px; }
+  h2 { color: #8b949e; font-size: 1.0em; font-weight: 400; margin-bottom: 16px; }
+  .chart-container { position: relative; width: 100%; max-width: 1100px; height: 560px; margin-bottom: 32px; }
+  table { border-collapse: collapse; width: 100%; max-width: 1100px; font-size: 0.82em; }
+  th { background: #161b22; color: #58a6ff; padding: 8px 10px; text-align: left; border-bottom: 1px solid #30363d; }
+  td { padding: 6px 10px; border-bottom: 1px solid #21262d; }
+  tr:hover { background: #161b22; }
+  .highlight { background: #1c2d1c; }
+  .method-lbm { color: #f85149; }
+  .method-620 { color: #bc8cff; }
+  .method-samam { color: #58a6ff; }
+  .method-samst { color: #3fb950; }
+  .method-idt { color: #d2a8ff; }
+  .legend { display: flex; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.88em; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .section-title { color: #58a6ff; font-size: 1.15em; margin: 24px 0 10px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; font-weight: 600; }
+  .badge-best { background: #238636; color: #fff; }
+  .badge-formal { background: #1f6feb; color: #fff; }
+  .badge-smoke { background: #484f58; color: #c9d1d9; }
+</style>
+</head>
+<body>
+
+<h1>Experiment Results — Pareto Frontier</h1>
+<h2>clip_style (X) vs 1-LPIPS (Y) &nbsp;|&nbsp; Higher is better for both &nbsp;|&nbsp; distinct5_512 + wikiart512</h2>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#f85149"></div> LANCET/LBM</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#bc8cff"></div> LANCET/620</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#58a6ff"></div> SaMAM</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div> SaMST</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#d2a8ff"></div> IDT</div>
+  <div class="legend-item"><div class="legend-dot" style="background:transparent;border:2px dashed #8b949e"></div> IDT floor (0.6399)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:transparent;border:2px solid #f0883e"></div> SeeDiem ref</div>
+</div>
+
+<div class="chart-container">
+  <canvas id="paretoChart"></canvas>
+</div>
+
+<div class="section-title">Top Results per Method</div>
+<table id="summaryTable">
+  <thead>
+    <tr>
+      <th>Rank</th><th>Method</th><th>Experiment</th><th>Dataset</th><th>Epoch</th>
+      <th>clip_style</th><th>1-LPIPS</th><th>clip_&#916;_idt</th><th>Eval</th><th>Notes</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const DATA = [
+  // LANCET/LBM - distinct5_512
+  {method:"LANCET/LBM",group:"manual",name:"h0_vertical_fm",dataset:"distinct5_512",epoch:13,clip_style:0.6693,clip_s_delta_idt:0.0293,clip_t:null,content_lpips:0.2862,one_minus_lpips:0.7138,eval_type:"best_manual",notes:"manual baseline run"},
+  {method:"LANCET/LBM",group:"manual",name:"h0_vertical_fm",dataset:"distinct5_512",epoch:17,clip_style:0.6662,clip_s_delta_idt:0.0263,clip_t:null,content_lpips:0.3004,one_minus_lpips:0.6996,eval_type:"latest_manual",notes:"manual latest epoch"},
+  {method:"LANCET/LBM",group:"ot_rerun_auto",name:"h0_vertical_fm",dataset:"distinct5_512",epoch:7,clip_style:0.6609,clip_s_delta_idt:0.0210,clip_t:0.2148,content_lpips:0.3647,one_minus_lpips:0.6353,eval_type:"auto",notes:""},
+  {method:"LANCET/LBM",group:"ot_rerun_auto",name:"h1_linear_fm",dataset:"distinct5_512",epoch:5,clip_style:0.6495,clip_s_delta_idt:0.0095,clip_t:0.2111,content_lpips:0.4627,one_minus_lpips:0.5373,eval_type:"auto",notes:""},
+  {method:"LANCET/LBM",group:"ot_rerun_auto",name:"h2_euclidean_ot",dataset:"distinct5_512",epoch:6,clip_style:0.6621,clip_s_delta_idt:0.0222,clip_t:0.2140,content_lpips:0.3515,one_minus_lpips:0.6485,eval_type:"auto",notes:""},
+  {method:"LANCET/LBM",group:"ot_rerun_auto",name:"h3_sde_noise",dataset:"distinct5_512",epoch:6,clip_style:0.6617,clip_s_delta_idt:0.0218,clip_t:0.2133,content_lpips:0.3431,one_minus_lpips:0.6569,eval_type:"auto",notes:""},
+  {method:"LANCET/LBM",group:"ot_rerun_auto",name:"h4_unbalanced_ot",dataset:"distinct5_512",epoch:6,clip_style:0.6615,clip_s_delta_idt:0.0216,clip_t:0.2132,content_lpips:0.3480,one_minus_lpips:0.6520,eval_type:"auto",notes:""},
+  {method:"LANCET/LBM",group:"ot_rerun_auto",name:"h5_topogate_attention",dataset:"distinct5_512",epoch:7,clip_style:0.6623,clip_s_delta_idt:0.0224,clip_t:0.2150,content_lpips:0.3650,one_minus_lpips:0.6350,eval_type:"auto",notes:""},
+  {method:"LANCET/LBM",group:"ot_rerun_auto",name:"h6_combined_topogate",dataset:"distinct5_512",epoch:6,clip_style:0.6619,clip_s_delta_idt:0.0220,clip_t:0.2137,content_lpips:0.3465,one_minus_lpips:0.6535,eval_type:"auto",notes:""},
+  // LANCET/620
+  {method:"LANCET/620",group:"spatial620",name:"620_base_swd8_sigma002_nfe8_b80_smoke",dataset:"distinct5_512",epoch:1,clip_style:0.7039,clip_s_delta_idt:0.0640,clip_t:null,content_lpips:0.2862,one_minus_lpips:0.7138,eval_type:"smoke",notes:"best smoke epoch1"},
+  {method:"LANCET/620",group:"spatial620",name:"620_base_swd8_sigma002_nfe8_b80",dataset:"distinct5_512",epoch:8,clip_style:0.7055,clip_s_delta_idt:0.0656,clip_t:null,content_lpips:0.2899,one_minus_lpips:0.7101,eval_type:"formal",notes:"swd8 base"},
+  {method:"LANCET/620",group:"spatial620",name:"620_base_epoch0008_nfe8_sigma002",dataset:"distinct5_512",epoch:8,clip_style:0.7055,clip_s_delta_idt:0.0655,clip_t:null,content_lpips:0.2899,one_minus_lpips:0.7101,eval_type:"formal",notes:"swd8 base epoch8"},
+  {method:"LANCET/620",group:"spatial620",name:"620_adapter_swd12_sigma002_nfe8_b64",dataset:"distinct5_512",epoch:8,clip_style:0.7046,clip_s_delta_idt:0.0647,clip_t:null,content_lpips:0.2916,one_minus_lpips:0.7084,eval_type:"formal",notes:"adapter swd12"},
+  {method:"LANCET/620",group:"spatial620",name:"620_adapter_swd12_sigma002_nfe8_b80_smoke",dataset:"distinct5_512",epoch:1,clip_style:0.7050,clip_s_delta_idt:0.0651,clip_t:null,content_lpips:0.2926,one_minus_lpips:0.7074,eval_type:"smoke",notes:""},
+  {method:"LANCET/620",group:"spatial620",name:"620_gate12_adapter_swd12_sigma002_nfe8_b64",dataset:"distinct5_512",epoch:8,clip_style:0.7045,clip_s_delta_idt:0.0646,clip_t:null,content_lpips:0.2918,one_minus_lpips:0.7082,eval_type:"formal",notes:"gate12 adapter"},
+  {method:"LANCET/620",group:"spatial620",name:"620_gate12_adapter_swd12_sigma002_nfe8_b64_smoke",dataset:"distinct5_512",epoch:1,clip_style:0.7051,clip_s_delta_idt:0.0652,clip_t:null,content_lpips:0.2830,one_minus_lpips:0.7170,eval_type:"smoke",notes:""},
+  {method:"LANCET/620",group:"spatial620",name:"620_gate12_endpoint_diag_b64_smoke_smoke",dataset:"distinct5_512",epoch:1,clip_style:0.7052,clip_s_delta_idt:0.0653,clip_t:null,content_lpips:0.2830,one_minus_lpips:0.7170,eval_type:"smoke",notes:""},
+  {method:"LANCET/620",group:"spatial620",name:"620_contentkv_gate12_adapter_swd12_sigma002_nfe8_b64_smoke",dataset:"distinct5_512",epoch:1,clip_style:0.7044,clip_s_delta_idt:0.0645,clip_t:null,content_lpips:0.2857,one_minus_lpips:0.7143,eval_type:"smoke",notes:"content kv gate"},
+  {method:"LANCET/620",group:"spatial620",name:"620_moe_swd12_sigma002_nfe8_b64",dataset:"distinct5_512",epoch:8,clip_style:0.7048,clip_s_delta_idt:0.0649,clip_t:null,content_lpips:0.2906,one_minus_lpips:0.7094,eval_type:"formal",notes:"moe"},
+  {method:"LANCET/620",group:"spatial620",name:"620_moe_swd12_sigma002_nfe8_b64_smoke",dataset:"distinct5_512",epoch:1,clip_style:0.7037,clip_s_delta_idt:0.0638,clip_t:null,content_lpips:0.2802,one_minus_lpips:0.7198,eval_type:"smoke",notes:""},
+  {method:"LANCET/620",group:"spatial620",name:"620_lowmix05_diag_b64_smoke",dataset:"distinct5_512",epoch:1,clip_style:0.7059,clip_s_delta_idt:0.0660,clip_t:null,content_lpips:0.3492,one_minus_lpips:0.6508,eval_type:"smoke",notes:"lowmix diagonal"},
+  {method:"LANCET/620",group:"spatial620",name:"620_lowmix05_gate12_adapter_swd12_sigma002_nfe8_b64",dataset:"distinct5_512",epoch:8,clip_style:0.7008,clip_s_delta_idt:0.0609,clip_t:null,content_lpips:0.3387,one_minus_lpips:0.6613,eval_type:"formal",notes:"lowmix gate12"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd12_epoch0008_hash_nfe8_sigma002",dataset:"distinct5_512",epoch:8,clip_style:0.7056,clip_s_delta_idt:0.0657,clip_t:null,content_lpips:0.2968,one_minus_lpips:0.7032,eval_type:"formal",notes:"swd12 hash eval"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd12_epoch0008_nfe8_sigma002",dataset:"distinct5_512",epoch:8,clip_style:0.7055,clip_s_delta_idt:0.0656,clip_t:null,content_lpips:0.2968,one_minus_lpips:0.7032,eval_type:"formal",notes:"swd12 base"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd12_epoch0008_nfe16_sigma002",dataset:"distinct5_512",epoch:8,clip_style:0.7055,clip_s_delta_idt:0.0656,clip_t:null,content_lpips:0.2971,one_minus_lpips:0.7029,eval_type:"formal",notes:"swd12 nfe16"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd12_epoch0008_nfe4_sigma002",dataset:"distinct5_512",epoch:8,clip_style:0.7056,clip_s_delta_idt:0.0656,clip_t:null,content_lpips:0.2966,one_minus_lpips:0.7034,eval_type:"formal",notes:"swd12 nfe4"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd12_epoch0008_nfe8_sigma000",dataset:"distinct5_512",epoch:8,clip_style:0.7052,clip_s_delta_idt:0.0653,clip_t:null,content_lpips:0.2962,one_minus_lpips:0.7038,eval_type:"formal",notes:"swd12 sigma=0"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd12_sigma002_nfe8_b80",dataset:"distinct5_512",epoch:8,clip_style:0.7056,clip_s_delta_idt:0.0657,clip_t:null,content_lpips:0.2968,one_minus_lpips:0.7032,eval_type:"formal",notes:"swd12 b80"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd4_epoch0008_nfe8_sigma002",dataset:"distinct5_512",epoch:8,clip_style:0.7049,clip_s_delta_idt:0.0650,clip_t:null,content_lpips:0.2794,one_minus_lpips:0.7206,eval_type:"formal",notes:"swd4"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd4_sigma002_nfe8_b80",dataset:"distinct5_512",epoch:8,clip_style:0.7050,clip_s_delta_idt:0.0651,clip_t:null,content_lpips:0.2794,one_minus_lpips:0.7206,eval_type:"formal",notes:"swd4 b80"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd16_sigma002_nfe8_b64",dataset:"distinct5_512",epoch:8,clip_style:0.7046,clip_s_delta_idt:0.0647,clip_t:null,content_lpips:0.3058,one_minus_lpips:0.6942,eval_type:"formal",notes:"swd16"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd16_sigma002_nfe8_b64_smoke",dataset:"distinct5_512",epoch:1,clip_style:0.7053,clip_s_delta_idt:0.0654,clip_t:null,content_lpips:0.2901,one_minus_lpips:0.7099,eval_type:"smoke",notes:""},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd16_gate15_vlen0.04_smoke",dataset:"distinct5_512",epoch:10,clip_style:0.7050,clip_s_delta_idt:0.0651,clip_t:null,content_lpips:0.2858,one_minus_lpips:0.7142,eval_type:"smoke",notes:"gate15 vlen"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd16_lr1e4_vlen0.04_smoke",dataset:"distinct5_512",epoch:10,clip_style:0.7040,clip_s_delta_idt:0.0640,clip_t:null,content_lpips:0.2828,one_minus_lpips:0.7172,eval_type:"smoke",notes:"lr1e4"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd16_nfe16_vlen0.04_smoke",dataset:"distinct5_512",epoch:10,clip_style:0.7046,clip_s_delta_idt:0.0647,clip_t:null,content_lpips:0.2874,one_minus_lpips:0.7126,eval_type:"smoke",notes:"nfe16 vlen"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd16_vlen0.04_smoke",dataset:"distinct5_512",epoch:10,clip_style:0.7048,clip_s_delta_idt:0.0648,clip_t:null,content_lpips:0.2882,one_minus_lpips:0.7118,eval_type:"smoke",notes:"vlen0.04"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd16_vlen0.2_smoke",dataset:"distinct5_512",epoch:10,clip_style:0.7038,clip_s_delta_idt:0.0638,clip_t:null,content_lpips:0.3047,one_minus_lpips:0.6953,eval_type:"smoke",notes:"vlen0.2"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd20_vlen0.04_smoke",dataset:"distinct5_512",epoch:1,clip_style:0.7006,clip_s_delta_idt:0.0606,clip_t:null,content_lpips:0.2750,one_minus_lpips:0.7250,eval_type:"smoke",notes:"swd20 e1"},
+  {method:"LANCET/620",group:"spatial620",name:"620_swd20_vlen0.04_b48_smoke",dataset:"distinct5_512",epoch:10,clip_style:0.7038,clip_s_delta_idt:0.0639,clip_t:null,content_lpips:0.2679,one_minus_lpips:0.7321,eval_type:"smoke",notes:"swd20 best lpips"},
+  // LANCET/LBM - wikiart512
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_spectral_stat_full_adapt_e2_b48",dataset:"wikiart512",epoch:2,clip_style:0.8007,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3780,one_minus_lpips:null,eval_type:"quick_eval_n6_strength1p25",notes:"BEST clip_style on wikiart512"},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_spectral_guard_from_spectral_e2_b48",dataset:"wikiart512",epoch:2,clip_style:0.8003,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3718,one_minus_lpips:null,eval_type:"quick_eval_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_truegrad_tokenbudget_full_e1_b32",dataset:"wikiart512",epoch:1,clip_style:0.7990,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3091,one_minus_lpips:null,eval_type:"quick_eval_trueint_n6",notes:"best content preservation"},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_lowfreq_moment_hfguard_e2_from_spectral_b48",dataset:"wikiart512",epoch:2,clip_style:0.7988,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3457,one_minus_lpips:null,eval_type:"eval_quick_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_relative_margin005_e1_from_spectral_b48",dataset:"wikiart512",epoch:1,clip_style:0.7987,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3523,one_minus_lpips:null,eval_type:"quick_eval_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_relative_margin_e1_from_spectral_b48",dataset:"wikiart512",epoch:1,clip_style:0.7984,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3550,one_minus_lpips:null,eval_type:"quick_eval_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_spatial_atom_tokonly_e1_b32",dataset:"wikiart512",epoch:1,clip_style:0.7983,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3076,one_minus_lpips:null,eval_type:"quick_eval_trueint_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_tokenbudget_gradfix_tokonly_e1_b16",dataset:"wikiart512",epoch:1,clip_style:0.7982,clip_s_delta_idt:null,clip_t:null,content_lpips:0.2990,one_minus_lpips:null,eval_type:"quick_eval_trueint_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_tokenizer_owned_spatial_tokonly_e1_b32",dataset:"wikiart512",epoch:1,clip_style:0.7981,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3087,one_minus_lpips:null,eval_type:"quick_eval_trueint_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_lowspatial_guard_e1_from_spectral_b48",dataset:"wikiart512",epoch:1,clip_style:0.7979,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3411,one_minus_lpips:null,eval_type:"quick_eval_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_spatial_proto_blend025_guard_e1_b48",dataset:"wikiart512",epoch:1,clip_style:0.7978,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3274,one_minus_lpips:null,eval_type:"eval_quick_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_lowfreq_moment_hfguard_tsw12_e1_b48",dataset:"wikiart512",epoch:1,clip_style:0.7978,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3278,one_minus_lpips:null,eval_type:"eval_quick_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_deltafreq_high05_recover_e2_b48",dataset:"wikiart512",epoch:2,clip_style:0.7970,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3320,one_minus_lpips:null,eval_type:"eval_quick_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_lowfreq_moment_hfguard_tsw8_e1_b48",dataset:"wikiart512",epoch:1,clip_style:0.7970,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3080,one_minus_lpips:null,eval_type:"eval_quick_n6",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_direct_atom_residual_continue_e12_from_e8_b48",dataset:"wikiart512",epoch:12,clip_style:0.7934,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3777,one_minus_lpips:null,eval_type:"full_eval_epoch0012_b4",notes:""},
+  {method:"LANCET/LBM",group:"wikiart512",name:"wikiart512_ema_direct_atom_residual_e8_b48",dataset:"wikiart512",epoch:8,clip_style:0.7889,clip_s_delta_idt:null,clip_t:null,content_lpips:0.3597,one_minus_lpips:null,eval_type:"full_eval_latent_original",notes:""},
+  // SaMAM
+  {method:"SaMAM",group:"samam",name:"samam_latent_distinct5_512_convergence_best",dataset:"distinct5_512",epoch:1000,clip_style:0.7017,clip_s_delta_idt:null,clip_t:0.2745,content_lpips:null,one_minus_lpips:null,eval_type:"eval_bundle_fast_step1000",notes:"SaMAM best convergence"},
+  {method:"SaMAM",group:"samam",name:"samam_distinct5_512_mamba_b6_seg250_diag",dataset:"distinct5_512",epoch:3000,clip_style:0.6978,clip_s_delta_idt:null,clip_t:0.3221,content_lpips:null,one_minus_lpips:null,eval_type:"eval_curve_step3000",notes:"SaMAM long run"},
+  {method:"SaMAM",group:"samam",name:"samam_latent_distinct5_512_samecost_20260606_162933",dataset:"distinct5_512",epoch:110,clip_style:0.6637,clip_s_delta_idt:null,clip_t:0.7043,content_lpips:null,one_minus_lpips:null,eval_type:"eval_bundle_fast_step0110",notes:"SaMAM same-cost best"},
+  {method:"SaMAM",group:"samam",name:"samam_latent_distinct5_512_samecost_20260606_155105",dataset:"distinct5_512",epoch:50,clip_style:0.6520,clip_s_delta_idt:null,clip_t:0.8460,content_lpips:null,one_minus_lpips:null,eval_type:"eval_bundle_fast_step0050",notes:""},
+  {method:"SaMAM",group:"samam",name:"samam_latent_distinct5_512_samecost_20260606_133730",dataset:"distinct5_512",epoch:50,clip_style:0.6236,clip_s_delta_idt:null,clip_t:0.7345,content_lpips:null,one_minus_lpips:null,eval_type:"eval_bundle_fast_step0050",notes:""},
+  // SaMST
+  {method:"SaMST",group:"samst",name:"samst_latent_distinct5_512_convergence_best",dataset:"distinct5_512",epoch:300,clip_style:0.7057,clip_s_delta_idt:null,clip_t:0.8375,content_lpips:null,one_minus_lpips:null,eval_type:"eval_bundle_fast_batch300",notes:"SaMST best convergence"},
+  {method:"SaMST",group:"samst",name:"samst_latent_distinct5_512_samecost_20260606_172021",dataset:"distinct5_512",epoch:50,clip_style:0.6977,clip_s_delta_idt:null,clip_t:0.8659,content_lpips:null,one_minus_lpips:null,eval_type:"eval_bundle_fast_batch050",notes:"SaMST same-cost"},
+  {method:"SaMST",group:"samst",name:"samst_latent_distinct5_512_convergence_20260606_214051",dataset:"distinct5_512",epoch:1050,clip_style:0.6826,clip_s_delta_idt:null,clip_t:0.8320,content_lpips:null,one_minus_lpips:null,eval_type:"eval_bundle_fast_batch1050",notes:""},
+  {method:"SaMST",group:"samst",name:"samst_distinct5_512_wsl_stepalign40_remote_20260605_r1",dataset:"distinct5_512",epoch:40,clip_style:0.6615,clip_s_delta_idt:null,clip_t:0.7430,content_lpips:null,one_minus_lpips:null,eval_type:"eval_step_000040",notes:"SaMST step-aligned"},
+  {method:"SaMST",group:"samst",name:"samst_latent_distinct5_512_samecost_20260606_041227",dataset:"distinct5_512",epoch:50,clip_style:0.6104,clip_s_delta_idt:null,clip_t:0.7296,content_lpips:null,one_minus_lpips:null,eval_type:"eval_bundle_fast_batch050",notes:"SaMST same-cost low"},
+  // IDT
+  {method:"idt",group:"idt",name:"wikiart_stress2_5x5_idt",dataset:"distinct5_512",epoch:null,clip_style:0.7393,clip_s_delta_idt:null,clip_t:null,content_lpips:null,one_minus_lpips:null,eval_type:"",notes:"IDT stress2 5 styles"},
+  {method:"idt",group:"idt",name:"wikiart_stress1_5x5_idt",dataset:"distinct5_512",epoch:null,clip_style:0.7268,clip_s_delta_idt:null,clip_t:null,content_lpips:null,one_minus_lpips:null,eval_type:"",notes:"IDT stress1 5 styles"},
+  {method:"idt",group:"idt",name:"Ablate43_L03_IDT_MassiveReturn",dataset:"unknown",epoch:60,clip_style:0.6736,clip_s_delta_idt:0.8760,clip_t:0.3342,content_lpips:0.3325,one_minus_lpips:null,eval_type:"full_eval",notes:"IDT ablation"}
+];
+
+const METHOD_COLORS = {
+  'LANCET/LBM': '#f85149',
+  'LANCET/620': '#bc8cff',
+  'SaMAM': '#58a6ff',
+  'SaMST': '#3fb950',
+  'idt': '#d2a8ff'
+};
+
+// Build scatter datasets — only points with valid one_minus_lpips (distinct5_512 chart)
+const scatterData = DATA.filter(d => d.one_minus_lpips != null).map(d => ({
+  x: d.clip_style,
+  y: d.one_minus_lpips,
+  method: d.method,
+  name: d.name,
+  epoch: d.epoch,
+  dataset: d.dataset,
+  clip_s_delta_idt: d.clip_s_delta_idt,
+  eval_type: d.eval_type,
+  notes: d.notes
+}));
+
+const datasets = Object.entries(METHOD_COLORS).map(([method, color]) => ({
+  label: method,
+  data: scatterData.filter(d => d.method === method),
+  backgroundColor: color + 'cc',
+  borderColor: color,
+  borderWidth: 1.5,
+  pointRadius: 6,
+  pointHoverRadius: 9,
+  pointStyle: 'circle'
+}));
+
+// Baselines
+const idtFloorPlugin = {
+  id: 'idtFloor',
+  afterDraw(chart) {
+    const ctx = chart.ctx;
+    const xAxis = chart.scales.x;
+    const yAxis = chart.scales.y;
+    const xPos = xAxis.getPixelForValue(0.6399);
+    // IDT floor vertical dashed line
+    ctx.save();
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = '#8b949e';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xPos, yAxis.top);
+    ctx.lineTo(xPos, yAxis.bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '11px -apple-system, sans-serif';
+    ctx.fillText('IDT floor 0.6399', xPos + 4, yAxis.top + 14);
+    // SeeDiem reference point
+    const sdX = xAxis.getPixelForValue(0.692);
+    const sdY = yAxis.getPixelForValue(1 - 0.4923);
+    ctx.beginPath();
+    ctx.arc(sdX, sdY, 8, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#f0883e';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.fillStyle = '#f0883e';
+    ctx.font = '11px -apple-system, sans-serif';
+    ctx.fillText('SeeDiem', sdX + 12, sdY + 4);
+    ctx.restore();
+  }
+};
+
+const ctx = document.getElementById('paretoChart').getContext('2d');
+new Chart(ctx, {
+  type: 'scatter',
+  data: { datasets },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        title: { display: true, text: 'CLIP Style', color: '#c9d1d9', font: { size: 13 } },
+        min: 0.61, max: 0.72,
+        grid: { color: '#21262d' },
+        ticks: { color: '#8b949e' }
+      },
+      y: {
+        title: { display: true, text: '1 - LPIPS (content preservation)', color: '#c9d1d9', font: { size: 13 } },
+        min: 0.50, max: 0.76,
+        grid: { color: '#21262d' },
+        ticks: { color: '#8b949e' }
+      }
+    },
+    plugins: {
+      legend: { labels: { color: '#c9d1d9', usePointStyle: true, pointStyle: 'circle' } },
+      tooltip: {
+        backgroundColor: '#161b22ee',
+        titleColor: '#58a6ff',
+        bodyColor: '#c9d1d9',
+        borderColor: '#30363d',
+        borderWidth: 1,
+        callbacks: {
+          title: (items) => items[0].raw.name,
+          label: (item) => {
+            const d = item.raw;
+            return [
+              `Method: ${d.method}`,
+              `Epoch: ${d.epoch ?? 'N/A'}`,
+              `CLIP Style: ${d.x.toFixed(4)}`,
+              `1-LPIPS: ${d.y.toFixed(4)}`,
+              `clip_Δ_idt: ${d.clip_s_delta_idt?.toFixed(4) ?? 'N/A'}`,
+              `Eval: ${d.eval_type}`,
+              d.notes ? `Notes: ${d.notes}` : ''
+            ].filter(Boolean);
+          }
+        }
+      }
+    }
+  },
+  plugins: [idtFloorPlugin]
+});
+
+// Build summary table — top results per method on distinct5_512
+const methods = ['LANCET/LBM', 'LANCET/620', 'SaMAM', 'SaMST', 'idt'];
+const topByMethod = methods.map(m => {
+  const rows = DATA.filter(d => d.method === m && d.dataset === 'distinct5_512');
+  rows.sort((a, b) => b.clip_style - a.clip_style);
+  return rows.slice(0, 3);
+}).flat();
+
+const tbody = document.querySelector('#summaryTable tbody');
+let rank = 1;
+topByMethod.forEach(d => {
+  const isBest = d.name === '620_swd20_vlen0.04_b48_smoke' || d.name === 'wikiart512_ema_spectral_stat_full_adapt_e2_b48';
+  const evalBadge = d.eval_type === 'formal' ? '<span class="badge badge-formal">formal</span>'
+    : d.eval_type === 'smoke' ? '<span class="badge badge-smoke">smoke</span>' : '';
+  const tr = document.createElement('tr');
+  if (isBest) tr.classList.add('highlight');
+  const methodClass = 'method-' + d.method.toLowerCase().replace(/[\/]/g, '');
+  tr.innerHTML = `
+    <td>${rank++}</td>
+    <td class="${methodClass}">${d.method}</td>
+    <td>${d.name}${isBest ? ' <span class="badge badge-best">BEST</span>' : ''}</td>
+    <td>${d.dataset}</td>
+    <td>${d.epoch ?? '-'}</td>
+    <td>${d.clip_style.toFixed(4)}</td>
+    <td>${d.one_minus_lpips != null ? d.one_minus_lpips.toFixed(4) : '-'}</td>
+    <td>${d.clip_s_delta_idt != null ? d.clip_s_delta_idt.toFixed(4) : '-'}</td>
+    <td>${evalBadge}</td>
+    <td>${d.notes}</td>`;
+  tbody.appendChild(tr);
+});
+
+// Add wikiart512 best as special row
+const wikiBest = DATA.find(d => d.name === 'wikiart512_ema_spectral_stat_full_adapt_e2_b48');
+if (wikiBest) {
+  const tr = document.createElement('tr');
+  tr.classList.add('highlight');
+  tr.innerHTML = `
+    <td>*</td>
+    <td class="method-lancetlbm">LANCET/LBM</td>
+    <td>${wikiBest.name} <span class="badge badge-best">BEST wikiart512</span></td>
+    <td>${wikiBest.dataset}</td>
+    <td>${wikiBest.epoch}</td>
+    <td>${wikiBest.clip_style.toFixed(4)}</td>
+    <td>-</td>
+    <td>-</td>
+    <td></td>
+    <td>${wikiBest.notes}</td>`;
+  tbody.appendChild(tr);
+}
+</script>
+</body>
+</html>

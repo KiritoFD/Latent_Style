@@ -255,8 +255,8 @@ CLIP-Content（内容相似度）从 0.5728 (step 250) 持续上升到 0.9047 (s
 - `docs/72/04_design_ideas.md` — 1 处
 - `docs/72/README.md` — 8 处
 - `docs/exp/README.md` — 11 处
-- `docs/630/phase4i10_probe_breakthrough.md` — 1 处
-- `docs/630/phase4i11_per_subband_wct.md` — 1 处
-- `docs/630/phase4i_structural_breakthrough.md` — 1 处
+- `docs/archive/630/phase4i10_probe_breakthrough.md` — 1 处
+- `docs/archive/630/phase4i11_per_subband_wct.md` — 1 处
+- `docs/archive/630/phase4i_structural_breakthrough.md` — 1 处
 
 **总计**: 10 个文件, 62+ 处修正

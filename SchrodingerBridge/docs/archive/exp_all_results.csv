@@ -1,0 +1,69 @@
+﻿method,group,experiment_name,dataset,epoch,clip_style,clip_s_delta_idt,clip_t,content_lpips,one_minus_lpips,eval_type,timestamp,source,notes
+LANCET/LBM,manual,h0_vertical_fm,distinct5_512,13,0.6693,0.0293,,0.2862,0.7138,best_manual,,dashboard_best,manual baseline run
+LANCET/LBM,manual,h0_vertical_fm,distinct5_512,17,0.6662,0.0263,,0.3004,0.6996,latest_manual,,dashboard_latest,manual latest epoch
+LANCET/LBM,ot_rerun_auto,h0_vertical_fm,distinct5_512,7,0.6609,0.0210,0.2148,0.3647,0.6353,auto,,dashboard,
+LANCET/LBM,ot_rerun_auto,h1_linear_fm,distinct5_512,5,0.6495,0.0095,0.2111,0.4627,0.5373,auto,,dashboard,
+LANCET/LBM,ot_rerun_auto,h2_euclidean_ot,distinct5_512,6,0.6621,0.0222,0.2140,0.3515,0.6485,auto,,dashboard,
+LANCET/LBM,ot_rerun_auto,h3_sde_noise,distinct5_512,6,0.6617,0.0218,0.2133,0.3431,0.6569,auto,,dashboard,
+LANCET/LBM,ot_rerun_auto,h4_unbalanced_ot,distinct5_512,6,0.6615,0.0216,0.2132,0.3480,0.6520,auto,,dashboard,
+LANCET/LBM,ot_rerun_auto,h5_topogate_attention,distinct5_512,7,0.6623,0.0224,0.2150,0.3650,0.6350,auto,,dashboard,
+LANCET/LBM,ot_rerun_auto,h6_combined_topogate,distinct5_512,6,0.6619,0.0220,0.2137,0.3465,0.6535,auto,,dashboard,
+LANCET/620,spatial620,620_base_swd8_sigma002_nfe8_b80_smoke,distinct5_512,1,0.7039,0.0640,,0.2862,0.7138,smoke,,dashboard,best smoke epoch1
+LANCET/620,spatial620,620_base_swd8_sigma002_nfe8_b80,distinct5_512,8,0.7055,0.0656,,0.2899,0.7101,formal,,dashboard,swd8 base
+LANCET/620,spatial620,620_base_epoch0008_nfe8_sigma002,distinct5_512,8,0.7055,0.0655,,0.2899,0.7101,formal,,dashboard,swd8 base epoch8
+LANCET/620,spatial620,620_adapter_swd12_sigma002_nfe8_b64,distinct5_512,8,0.7046,0.0647,,0.2916,0.7084,formal,,dashboard,adapter swd12
+LANCET/620,spatial620,620_adapter_swd12_sigma002_nfe8_b80_smoke,distinct5_512,1,0.7050,0.0651,,0.2926,0.7074,smoke,,dashboard,
+LANCET/620,spatial620,620_gate12_adapter_swd12_sigma002_nfe8_b64,distinct5_512,8,0.7045,0.0646,,0.2918,0.7082,formal,,dashboard,gate12 adapter
+LANCET/620,spatial620,620_gate12_adapter_swd12_sigma002_nfe8_b64_smoke,distinct5_512,1,0.7051,0.0652,,0.2830,0.7170,smoke,,dashboard,
+LANCET/620,spatial620,620_gate12_endpoint_diag_b64_smoke_smoke,distinct5_512,1,0.7052,0.0653,,0.2830,0.7170,smoke,,dashboard,
+LANCET/620,spatial620,620_contentkv_gate12_adapter_swd12_sigma002_nfe8_b64_smoke,distinct5_512,1,0.7044,0.0645,,0.2857,0.7143,smoke,,dashboard,content kv gate
+LANCET/620,spatial620,620_moe_swd12_sigma002_nfe8_b64,distinct5_512,8,0.7048,0.0649,,0.2906,0.7094,formal,,dashboard,moe
+LANCET/620,spatial620,620_moe_swd12_sigma002_nfe8_b64_smoke,distinct5_512,1,0.7037,0.0638,,0.2802,0.7198,smoke,,dashboard,
+LANCET/620,spatial620,620_lowmix05_diag_b64_smoke,distinct5_512,1,0.7059,0.0660,,0.3492,0.6508,smoke,,dashboard,lowmix diagonal
+LANCET/620,spatial620,620_lowmix05_gate12_adapter_swd12_sigma002_nfe8_b64,distinct5_512,8,0.7008,0.0609,,0.3387,0.6613,formal,,dashboard,lowmix gate12
+LANCET/620,spatial620,620_swd12_epoch0008_hash_nfe8_sigma002,distinct5_512,8,0.7056,0.0657,,0.2968,0.7032,formal,,dashboard,swd12 hash eval
+LANCET/620,spatial620,620_swd12_epoch0008_nfe8_sigma002,distinct5_512,8,0.7565,0.0656,,0.2968,0.7032,formal,,dashboard,swd12 base
+LANCET/620,spatial620,620_swd12_epoch0008_nfe16_sigma002,distinct5_512,8,0.7055,0.0656,,0.2971,0.7029,formal,,dashboard,swd12 nfe16
+LANCET/620,spatial620,620_swd12_epoch0008_nfe4_sigma002,distinct5_512,8,0.7056,0.0656,,0.2966,0.7034,formal,,dashboard,swd12 nfe4
+LANCET/620,spatial620,620_swd12_epoch0008_nfe8_sigma000,distinct5_512,8,0.7052,0.0653,,0.2962,0.7038,formal,,dashboard,swd12 sigma=0
+LANCET/620,spatial620,620_swd12_sigma002_nfe8_b80,distinct5_512,8,0.7056,0.0657,,0.2968,0.7032,formal,,dashboard,swd12 b80
+LANCET/620,spatial620,620_swd4_epoch0008_nfe8_sigma002,distinct5_512,8,0.7049,0.0650,,0.2794,0.7206,formal,,dashboard,swd4
+LANCET/620,spatial620,620_swd4_sigma002_nfe8_b80,distinct5_512,8,0.7050,0.0651,,0.2794,0.7206,formal,,dashboard,swd4 b80
+LANCET/620,spatial620,620_swd16_sigma002_nfe8_b64,distinct5_512,8,0.7046,0.0647,,0.3058,0.6942,formal,,dashboard,swd16
+LANCET/620,spatial620,620_swd16_sigma002_nfe8_b64_smoke,distinct5_512,1,0.7053,0.0654,,0.2901,0.7099,smoke,,dashboard,
+LANCET/620,spatial620,620_swd16_gate15_vlen0.04_smoke,distinct5_512,10,0.7050,0.0651,,0.2858,0.7142,smoke,,dashboard,gate15 vlen
+LANCET/620,spatial620,620_swd16_lr1e4_vlen0.04_smoke,distinct5_512,10,0.7040,0.0640,,0.2828,0.7172,smoke,,dashboard,lr1e4
+LANCET/620,spatial620,620_swd16_nfe16_vlen0.04_smoke,distinct5_512,10,0.7046,0.0647,,0.2874,0.7126,smoke,,dashboard,nfe16 vlen
+LANCET/620,spatial620,620_swd16_vlen0.04_smoke,distinct5_512,10,0.7048,0.0648,,0.2882,0.7118,smoke,,dashboard,vlen0.04
+LANCET/620,spatial620,620_swd16_vlen0.2_smoke,distinct5_512,10,0.7038,0.0638,,0.3047,0.6953,smoke,,dashboard,vlen0.2
+LANCET/620,spatial620,620_swd20_vlen0.04_smoke,distinct5_512,1,0.7006,0.0606,,0.2750,0.7250,smoke,,dashboard,swd20 e1
+LANCET/620,spatial620,620_swd20_vlen0.04_b48_smoke,distinct5_512,10,0.7038,0.0639,,0.2679,0.7321,smoke,,dashboard,swd20 best lpips
+LANCET/LBM,wikiart512,wikiart512_ema_spectral_stat_full_adapt_e2_b48,wikiart512,2,0.8007,,,0.3780,,quick_eval_n6_strength1p25,2026-06-01,remote_csv,BEST clip_style on wikiart512
+LANCET/LBM,wikiart512,wikiart512_ema_spectral_guard_from_spectral_e2_b48,wikiart512,2,0.8003,,,0.3718,,quick_eval_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_truegrad_tokenbudget_full_e1_b32,wikiart512,1,0.7990,,,0.3091,,quick_eval_trueint_n6,2026-06-01,remote_csv,best content preservation
+LANCET/LBM,wikiart512,wikiart512_ema_lowfreq_moment_hfguard_e2_from_spectral_b48,wikiart512,2,0.7988,,,0.3457,,eval_quick_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_relative_margin005_e1_from_spectral_b48,wikiart512,1,0.7987,,,0.3523,,quick_eval_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_relative_margin_e1_from_spectral_b48,wikiart512,1,0.7984,,,0.3550,,quick_eval_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_spatial_atom_tokonly_e1_b32,wikiart512,1,0.7983,,,0.3076,,quick_eval_trueint_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_tokenbudget_gradfix_tokonly_e1_b16,wikiart512,1,0.7982,,,0.2990,,quick_eval_trueint_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_tokenizer_owned_spatial_tokonly_e1_b32,wikiart512,1,0.7981,,,0.3087,,quick_eval_trueint_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_lowspatial_guard_e1_from_spectral_b48,wikiart512,1,0.7979,,,0.3411,,quick_eval_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_spatial_proto_blend025_guard_e1_b48,wikiart512,1,0.7978,,,0.3274,,eval_quick_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_lowfreq_moment_hfguard_tsw12_e1_b48,wikiart512,1,0.7978,,,0.3278,,eval_quick_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_deltafreq_high05_recover_e2_b48,wikiart512,2,0.7970,,,0.3320,,eval_quick_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_lowfreq_moment_hfguard_tsw8_e1_b48,wikiart512,1,0.7970,,,0.3080,,eval_quick_n6,2026-06-01,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_direct_atom_residual_continue_e12_from_e8_b48,wikiart512,12,0.7934,,,0.3777,,full_eval_epoch0012_b4,,remote_csv,
+LANCET/LBM,wikiart512,wikiart512_ema_direct_atom_residual_e8_b48,wikiart512,8,0.7889,,,0.3597,,full_eval_latent_original,,remote_csv,
+SaMAM,samam,samam_latent_distinct5_512_convergence_best,distinct5_512,1000,0.7017,,0.2745,,eval_bundle_fast_step1000,2026-06-07,remote_csv,SaMAM best convergence
+SaMAM,samam,samam_distinct5_512_mamba_b6_seg250_diag,distinct5_512,3000,0.6978,,0.3221,,eval_curve_step3000,2026-06-03,remote_csv,SaMAM long run
+SaMAM,samam,samam_latent_distinct5_512_samecost_20260606_162933,distinct5_512,110,0.6637,,0.7043,,eval_bundle_fast_step0110,2026-06-07,remote_csv,SaMAM same-cost best
+SaMAM,samam,samam_latent_distinct5_512_samecost_20260606_155105,distinct5_512,50,0.6520,,0.8460,,eval_bundle_fast_step0050,2026-06-07,remote_csv,
+SaMAM,samam,samam_latent_distinct5_512_samecost_20260606_133730,distinct5_512,50,0.6236,,0.7345,,eval_bundle_fast_step0050,2026-06-07,remote_csv,
+SaMST,samst,samst_latent_distinct5_512_convergence_best,distinct5_512,300,0.7057,,0.8375,,eval_bundle_fast_batch300,2026-06-07,remote_csv,SaMST best convergence
+SaMST,samst,samst_latent_distinct5_512_samecost_20260606_172021,distinct5_512,50,0.6977,,0.8659,,eval_bundle_fast_batch050,2026-06-07,remote_csv,SaMST same-cost
+SaMST,samst,samst_latent_distinct5_512_convergence_20260606_214051,distinct5_512,1050,0.6826,,0.8320,,eval_bundle_fast_batch1050,2026-06-06,remote_csv,
+SaMST,samst,samst_distinct5_512_wsl_stepalign40_remote_20260605_r1,distinct5_512,40,0.6615,,0.7430,,eval_step_000040,2026-06-05,remote_csv,SaMST step-aligned
+SaMST,samst,samst_latent_distinct5_512_samecost_20260606_041227,distinct5_512,50,0.6104,,0.7296,,eval_bundle_fast_batch050,2026-06-06,remote_csv,SaMST same-cost low
+idt,idt,wikiart_stress2_5x5_idt,distinct5_512,,0.7393,,,,,2026-06-06,remote_csv,IDT stress2 5 styles
+idt,idt,wikiart_stress1_5x5_idt,distinct5_512,,0.7268,,,,,2026-06-07,remote_csv,IDT stress1 5 styles
+idt,idt,Ablate43_L03_IDT_MassiveReturn,unknown,60,0.6736,0.8760,0.3342,0.3325,,full_eval,2026-04-03,remote_csv,IDT ablation

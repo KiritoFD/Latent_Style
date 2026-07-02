@@ -82,7 +82,7 @@
 
 ### 3.2 SaMST (mamba-train) — ✅ 收敛证据完整
 
-**收敛测试文档**: `docs/experiments/samst_distinct5_converged_notice_20260604.md`
+**收敛测试文档**: `docs/archive/experiments/samst_distinct5_converged_notice_20260604.md`
 
 | 项 | 值 |
 |---|---|
@@ -157,7 +157,7 @@
 
 1. `exp/exp_baselines/baseline_v2/eval/unified_results.json` (最高优先级, v5 已修正)
 2. `docs/exp/samam_data_integrity_audit.md` (SaMam 81 ckpt 详细审计)
-3. `docs/experiments/samst_distinct5_converged_notice_20260604.md` (SaMST 收敛判定)
+3. `docs/archive/experiments/samst_distinct5_converged_notice_20260604.md` (SaMST 收敛判定)
 4. `docs/72/07_related_works.md` (12 baseline 完整指标表)
 5. `exp/exp_baselines/baseline_v2/baseline_summary_table.csv` (⚠️ SaMam 旧值未更新, 历史保留)
 6. `exp/exp_baselines/baseline_v2/baseline_conclusions.md` (⚠️ SaMam 旧值未更新, 历史保留)
@@ -169,9 +169,9 @@
 | 文档 | 内容 |
 |------|------|
 | [`docs/exp/samam_data_integrity_audit.md`](../exp/samam_data_integrity_audit.md) | SaMam 81 checkpoint 完整曲线 + 编造值调查 |
-| [`docs/experiments/samst_distinct5_converged_notice_20260604.md`](../experiments/samst_distinct5_converged_notice_20260604.md) | SaMST e5/e15 plateau 收敛判定 |
+| [`docs/archive/experiments/samst_distinct5_converged_notice_20260604.md`](../archive/experiments/samst_distinct5_converged_notice_20260604.md) | SaMST e5/e15 plateau 收敛判定 |
 | [`docs/exp/remote_experiments.md`](../exp/remote_experiments.md) | 远程 I 盘 baseline 评估实验清单 (含 CUT 训练时长缺失说明 §4) |
 | [`docs/72/07_related_works.md`](../72/07_related_works.md) | 12 baseline 完整指标表 + CLIP backend 对齐说明 |
-| [`docs/Related/baseline_methods_catalog.md`](../Related/baseline_methods_catalog.md) | 各 baseline 论文/代码/训练协议目录 |
+| [`docs/archive/Related/baseline_methods_catalog.md`](../archive/Related/baseline_methods_catalog.md) | 各 baseline 论文/代码/训练协议目录 |
 | [`exp/exp_baselines/baseline_v2/eval/unified_results.json`](../../exp/exp_baselines/baseline_v2/eval/unified_results.json) | 12 baseline 统一评估结果 (数据真相源) |
 | [`exp/exp_baselines/baseline_v2/baseline_conclusions.md`](../../exp/exp_baselines/baseline_v2/baseline_conclusions.md) | Baseline 复现结论 (注: SaMam 旧值未更新) |
