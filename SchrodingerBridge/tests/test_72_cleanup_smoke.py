@@ -326,6 +326,34 @@ def test_apply_endpoint_adain_per_subband_wct_with_ll_scale():
     assert torch.isfinite(out).all()
 
 
+def test_apply_endpoint_adain_ll_ycbcr_mode():
+    """Plan H (T26): per_subband_wct_ll_ycbcr mode — luma/chroma decorrelation on LL."""
+    torch.manual_seed(0)
+    mcfg, bcfg = _make_t11_cfg()
+    bridge = _make_bridge(mcfg, bcfg)
+    bridge.eval()
+
+    B, C, H, W = 2, 4, 32, 32
+    h = torch.randn(B, C, H, W)
+    style_latent = torch.randn(1, C, H, W)
+
+    out = bridge._apply_endpoint_adain(
+        h, style_latent=style_latent,
+        adain_mode="per_subband_wct_ll_ycbcr", lowpass_levels=1, lowpass_basis="haar",
+        style_extrap_alpha=0.0,
+        adain_scale_ll=0.5, adain_scale_lh=1.0, adain_scale_hl=1.0, adain_scale_hh=1.0,
+        endpoint_adain_scale=1.0,
+    )
+    assert out.shape == h.shape
+    assert torch.isfinite(out).all()
+    # Luma preservation check: content luma (channel-mean) should be nearly unchanged
+    y_in = h.mean(dim=1, keepdim=True)
+    y_out = out.mean(dim=1, keepdim=True)
+    # scale_ll=0.5 -> ll_K = 0.5*orig + 0.5*matched, luma should drift < 0.2 abs
+    luma_drift = (y_out - y_in).abs().max().item()
+    assert luma_drift < 0.3, f"Plan H luma drift too large: {luma_drift}"
+
+
 def test_losses_compute_clean():
     """SpectralODEObjective620.compute works without removed endpoint-style loss."""
     torch.manual_seed(0)

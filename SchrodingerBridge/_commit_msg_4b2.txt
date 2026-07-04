@@ -1,0 +1,9 @@
+Phase 4B-2: long train + mask_ratio refinement
+
+10-epoch freq_a1_rand50: clip=0.7277 lpips=0.3394 (parity with Phase 3 10ep baseline).
+U-shaped content drift: 5ep optimal (lpips=0.3269), 10ep degrades.
+mask_ratio sweep (3ep): rand30 clip=0.7250 lpips=0.3252 (best content),
+rand50 clip=0.7264 lpips=0.3354 (best style, inverted-U peak),
+rand70 clip=0.7245 lpips=0.3284 (over-masked).
+head_ll compensation universal: v_ll=0.56-0.73 across all configs.
+Optimal config: alpha=1.0, mask_ratio=0.5, train 5ep.

@@ -1,0 +1,26 @@
+{
+  "_base": "630_phase4j1_dwt_route.json",
+  "model": {
+    "dwt_route_train_prob": 0.8
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_t11_stochastic_dwt_p08",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 24,
+    "cudnn_benchmark": false,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "data": {
+    "pairing_cache_active_topk": 0
+  },
+  "ablation": {
+    "name": "local_t11_stochastic_dwt_p08",
+    "axis": "dwt_route_train_prob",
+    "stage": "local_t11",
+    "notes": "T11: Stochastic DWT Route p=0.8 sweep. 训练时 80% DWT + 20% 全空间, 推理时始终 DWT. 基于 T10(p=0.5) 失败根因: 50% 概率不足以让q_proj精通DWT分布. T11 提高到 80%, 让 q_proj 主要学习 DWT 系数 (保留 4J.1 的 clip 能力), 但保留 20% 全空间 query 让 style_mem 学到更完整风格. 假设: clip 接近或超过 4J.1 (0.7226), lpips 因 LL bypass 保持低位. 目标: all_pairs_clip>0.7319 AND all_pairs_lpips<0.3068."
+  }
+}

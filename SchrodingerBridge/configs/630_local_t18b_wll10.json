@@ -1,0 +1,31 @@
+{
+  "_base": "630_phase4j1_dwt_route.json",
+  "model": {
+    "dwt_route_train_prob": 0.8
+  },
+  "bridge": {
+    "spectral_w_ll": 1.0,
+    "spectral_w_lh": 1.0,
+    "spectral_w_hl": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_t18b_wll10",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 48,
+    "cudnn_benchmark": false,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "data": {
+    "pairing_cache_active_topk": 0
+  },
+  "ablation": {
+    "name": "local_t18b_wll10",
+    "axis": "spectral_w_ll",
+    "stage": "local_t18",
+    "notes": "T18b: 完全恢复LL velocity训练(w_ll=1.0). 与T18a(w_ll=0.5)对照, 测试LL训练强度的边际效应. batch=48."
+  }
+}

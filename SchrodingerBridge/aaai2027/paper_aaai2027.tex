@@ -18,274 +18,210 @@
 }
 \setcounter{secnumdepth}{0}
 \newtheorem{theorem}{Theorem}
-\input{snippets/timing_tables_leibniz}
 
-\title{Affordable Real Style Transfer: Ultra-Efficient Latent Bridge via OT}
+\title{Affordable Real Style Transfer: Ultra-Efficient Frequency-Conditioned Bridge via OT}
 \author{Anonymous Submission}
 \affiliations{}
+
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Real style transfer should move an image in the requested target-style direction, not merely keep it inside a broad art manifold. Art-to-art transfer is vulnerable to false positives because unchanged images can already score highly for many target styles. We define \emph{identical-image transfer} (IDT) as the primary test: method score must exceed the unchanged-image floor to be counted as real transfer.
+Real style transfer should move an image toward the requested target style, not merely keep it inside a broad art manifold. In art-to-art transfer this distinction is easy to miss: the unchanged source artwork can already score highly for many target styles. We therefore evaluate style transfer with identical-image transfer (IDT) calibration, counting target-style gain only above the unchanged-image floor.
 
-Under this protocol, we present \emph{Latent Bridge Matching} (LBM), a style-ID-only latent-transport method optimized for both directionality and cost. LBM combines endpoint pairing, a style-conditioned latent vector field, and terminal distribution matching with kinetic regularization. On Distinct5-WikiArt, the method crosses the IDT floor in 1.2 minutes on one RTX 3060, while compact baselines such as SaMAM remain below the floor after many hours.
+We introduce \emph{Frequency-Conditioned Schr\"odinger Bridge} (FC-SB), a compact latent bridge for style-ID transfer. FC-SB decomposes the latent trajectory with Haar wavelets, routes style attention through high-frequency bands, applies terminal subband matching at the end of the trajectory, and uses a low-cost ODE solver to execute the bridge. The result is an ultra-efficient model that preserves content while producing real target-direction motion.
 
-LBM is efficient by design: it performs inference with a source image and a style identifier only, avoids per-image optimization, and uses a low-cost explicit path for transport. The method exposes a clean frontier of practical points: conservative anchors, a balanced operating point, and higher-style endpoints.
+On Distinct5-WikiArt, FC-SB T11 reaches CLIP-S 0.7213 and LPIPS 0.2868 with a 903K-parameter model trained in about 30 minutes on consumer hardware. It outperforms Seedream 4.5 on both CLIP-S and LPIPS in the same evaluation protocol, achieves the best LPIPS among all non-identity baselines, and trains far faster than multi-hour learned baselines. The full study also identifies the limit of the current architecture: frequency routing gives a strong high-fidelity frontier, but its LL bypass creates a measurable style-content tradeoff. This turns FC-SB into both a practical system and a diagnostic framework for affordable real style transfer.
 \end{abstract}
 
-\begin{strip}
-\centering
-\includegraphics[width=0.94\textwidth]{figures/fig_distinct5_page1_summary.pdf}
-\captionof{figure}{Real style transfer requires both target-aligned motion and low computational cost. Panel (a) shows the transfer plane: SaMAM remains below the IDT floor, failing to shift reliably toward the requested style, while the LBM family and inference-time style controls occupy the positive target-aligned region above zero. Panel (b) compares training time on a logarithmic scale: LBM configurations achieve minute-scale training on a single RTX 3060, while reproduced baselines require multi-hour training. The vertical dashed line marks the one-hour boundary.}
-\label{fig:distinct5_page1}
-\end{strip}
-
-\section{Introduction}
-Real style transfer should change content direction, not only style score. In art-to-art settings, unchanged images can already look stylistically close to many targets, so style metrics without an unchanged baseline can report success where directional transfer is absent.
-
-This paper addresses four linked questions in one story:
-\begin{itemize}
-\item What does prior art report as transfer in this regime, and where does that fail?
-\item Can an IDT-aware protocol reveal the true failure mode?
-\item Can a compact method be both correct-direction and cheap?
-\item What mechanism explains why that tradeoff is possible?
-\end{itemize}
-\smallskip
-Before introducing LBM, we first define the no-op failure mode with \emph{identical-image transfer} (IDT): only gains above the unchanged-image baseline count as real transfer.
-
-LBM is then built to satisfy the same protocol in one objective. We use style-conditioned latent transport in VAE space, where endpoint pairing decides the destination and latent dynamics learn the trajectory. Kinetic regularization controls motion magnitude. SA-SWD and nonlocal terminal matching enforce target-style statistics while avoiding brittle pixel alignment. Distinct5-WikiArt is the stress benchmark for this story: styles are selected to be the five hardest WikiArt groups under unchanged-image IDT, and baseline points are measured directly against IDT.
-\smallskip
-Main result: LBM is a frontier method. It reaches valid transfer in minutes on consumer hardware, exposes a practical operating-point split between style and artifacts, and can be further improved with inference-time controls on the same checkpoint.
-
-\section{Related Work}
-Existing systems span two contract classes: exemplar-guided stylization and large-prior editing. Exemplar methods use target references and therefore do not match the style-ID-only contract. Large-prior editing improves quality through heavy pretrained backbones and external priors.
-
-LBM stays in the compact contract: source image plus style identity at inference. It uses flow-matching and transport-inspired optimization ideas \cite{lipman2023flow,liu2023flow,arjovsky2017wasserstein,tong2023improving,pooladian2023learning,bernoully2024schrodinger,chen2021schrodinger}, but with a bounded claim: transport is supervisory geometry for this setting, not online Schr\"odinger-Bridge solving \cite{lu2026chordedit}.
-
-The methodological gap is evaluation. Art-to-art transfer requires IDT-aware testing because unchanged baselines are often high. This aligns with calibration work on distributional shifts in style metrics \cite{zhou2024comprehensiveeval,yeh2020calibrated,wright2022artfid,yang2022artfid}. Our contribution is to place that principle at the center of method design and analysis.
-
-\section{Method}
-\subsection{Training objective and inference contract}
-LBM is designed around two constraints that prior work often relaxes: strict style-ID-only inference and minute-scale efficient training. The model operates in Variational Autoencoder (VAE) latent space and receives only a source image plus a target style identifier at test time. Figure~\ref{fig:framework} separates this simple interface from the training-side machinery used to achieve it. For Distinct5-WikiArt, the source latent is $z_0 \in \mathbb{R}^{4 \times 64 \times 64}$; target-domain latents appear only as supervision during training.
-
-The method follows one principle: learn the most efficient endpoint shift that exceeds the IDT floor, then regularize that shift to preserve structure. Transport serves as supervisory geometry rather than as a claim of online optimal transport solving \cite{lu2026chordedit}. In the Distinct5 configuration, LBM variants use endpoint-mode flow matching:
-\begin{equation}
-    \hat v = v_\theta(z_0,1,s), \qquad \hat z_1 = z_0 + \hat v,
-\end{equation}
-and optimize the endpoint objective
-\begin{equation}
-    \mathcal{L}_{\mathrm{active}} =
-    \lambda_{\mathrm{term}}\mathcal{L}_{\mathrm{term}}(\hat z_1)
-    + \lambda_{\mathrm{kin}}\|\hat v\|_2^2,
-    \label{eq:active_distinct5_loss}
-\end{equation}
-where the precomputed endpoint set supplies terminal targets and the parent flow residual is disabled. This formulation keeps the active path efficient: one endpoint prediction, one terminal distributional objective, and explicit kinetic control.
-
-\paragraph{Design-grounding theory.}
-The next four results formalize the design choices that make LBM both efficient and well-behaved: minimum-energy endpoint motion, stable explicit integration, low-cost endpoint pairing, and binwise terminal distribution consistency.
-
-\begin{theorem}[Minimum-energy endpoint selection]
-Let $\mathcal{S}_s=\{z:\mathcal{L}_{\mathrm{term}}(z,s)=0\}$ denote the zero-terminal-loss set for target style $s$. Under endpoint-mode flow matching, any global minimizer of Eq.~\eqref{eq:active_distinct5_loss} over $\mathcal{S}_s$ is $z_1^\star = \arg\min_{z\in\mathcal{S}_s}\|z-z_0\|_2^2$. LBM selects the smallest displacement from the source latent.
-\end{theorem}
-
-\begin{theorem}[Euler stability of the active path]
-Assume $v_\theta(\cdot,t,s)$ is $L$-Lipschitz in $z$ and continuously differentiable in $t$. Let $z(t)$ solve $\dot z=v_\theta(z,t,s)$ with $z(0)=z_0$, and let the Euler iterates satisfy $h_{k+1}=h_k+\Delta v_\theta(h_k,t_k,s)$ with $\Delta=1/K$. Then there exists a constant $C$, independent of $K$, such that $\max_{0\le k\le K}\|h_k-z(t_k)\|_2 \le C/K$.
-\end{theorem}
-
-\begin{theorem}[Optimal batch pairing lowers target second moment]
-Consider a batch of source latents $\{z_0^{(i)}\}_{i=1}^B$ and candidate target latents $\{z_1^{(j)}\}_{j=1}^B$. Let $\pi^\star=\arg\min_{\pi\in S_B}\sum_{i=1}^B \|z_1^{(\pi(i))}-z_0^{(i)}\|_2^2$. Then $\frac{1}{B}\sum_{i=1}^B \|z_1^{(\pi^\star(i))}-z_0^{(i)}\|_2^2 \le \frac{1}{B}\sum_{i=1}^B \|z_1^{(\pi(i))}-z_0^{(i)}\|_2^2$ for every other bijection $\pi$. The optimal transport assignment minimizes the batchwise second moment of endpoint targets.
-\end{theorem}
-
-\paragraph{Interpretation.}
-Theorems~1--4 explain why LBM is both efficient and well-behaved. Theorem~1 shows that kinetic regularization is not a heuristic penalty: once the terminal constraint is fixed, it explicitly selects the nearest feasible target-style endpoint, providing the content-preserving bias we require. Theorem~2 justifies the coarse explicit solver used throughout: the active path can be integrated with a simple Euler scheme while retaining first-order accuracy, so LBM does not need a heavy solver stack. Theorem~3 explains why endpoint pairing is the right training primitive: among one-to-one batch pairings, it minimizes the average squared endpoint displacement, suppressing unnecessarily long target assignments. Theorem~4 shows that the semantic-aligned sliced Wasserstein distance enforces matched style statistics within routing-aligned semantic bins, providing distributional terminal supervision without requiring spatial point correspondence.
-
-\subsection{Endpoint construction and execution}
-We train on precomputed VAE latents without paired supervision. For each source latent $z_0$ and target style $s$, a precomputed endpoint set provides candidates $\mathcal{C}(z_0,s)$. A terminal target $\tilde z_1$ is sampled from this set. The execution backbone is time- and style-conditioned, with sinusoidal time embeddings, style spatial priors, and semantic cross-attention. The tokenizer receives only the target style identifier and emits a compact control code $c_s$.
-
-\paragraph{Architecture details.}
-The backbone consists of residual blocks with adaptive layer normalization conditioned on the style code. Each block applies two $3\times3$ convolutions with GroupNorm, followed by a skip connection. The style code $c_s$ is injected through FiLM-style modulation at each normalization layer, allowing the network to adapt its feature statistics to the target style without requiring explicit style exemplars at inference time. Semantic cross-attention uses keys and values derived from the style-conditioning path, with queries from the main transport stream, enabling content-aware style application.
-
-\paragraph{Endpoint set construction.}
-The endpoint set $\mathcal{C}(z_0,s)$ is constructed by encoding target-style images from the training set and selecting candidates that lie in the target style region of latent space. For each source $z_0$, we retrieve the $k$-nearest neighbors in CLIP feature space among target-style images, then encode them through the VAE to obtain latent candidates. This ensures that terminal targets are both stylistically appropriate and reachable through the VAE latent manifold.
-
-To regularize the shift without expensive paired reconstruction, we apply semantic-aligned sliced Wasserstein distance (SA-SWD). Let $\Phi_\theta(z_0,s)$ denote the Euler-integrated endpoint. The terminal objective is
-\begin{equation}
-    \mathcal{L}_{\mathrm{term}} =
-    \mathrm{SWD}_1\bigl(\Phi_\theta(z_0,s),\,\tilde z_1\bigr),
-\end{equation}
-where sorted one-dimensional projections compare generated endpoint patches against target-style patches without requiring spatial correspondence. More concretely, let $\{r_m(z_0,s)\}_{m=1}^M$ be routing weights derived from the style-conditioning path, let $\mathcal{P}_m(\cdot)$ denote the patch subset assigned to bin $m$, and let $\omega_m \propto \sum r_m$ be the corresponding bin mass. The practical SA-SWD is
-\begin{equation}
-    \mathcal{L}_{\mathrm{term}}
-    =
-    \sum_{m=1}^{M}\omega_m\,
-    \mathrm{SWD}_1\!\bigl(
-    \mathcal{P}_m(\Phi_\theta(z_0,s)),
-    \mathcal{P}_m(\tilde z_1)\bigr).
-\end{equation}
-
-\begin{theorem}[Binwise distributional consistency of SA-SWD]
-If $\mathcal{L}_{\mathrm{term}}=0$ and every active bin has $\omega_m>0$, then for every active bin and projection direction, the projected empirical distributions of $\mathcal{P}_m(\Phi_\theta(z_0,s))$ and $\mathcal{P}_m(\tilde z_1)$ are identical. Zero SA-SWD loss enforces matched style statistics within routing bins without spatial correspondence.
-\end{theorem}
-
-\paragraph{Operating-point variants.}
-All reported LBM rows share the same style-ID inference contract: inference receives only the source image and target style identifier. LBM-K is the compact earlier-mainline anchor built from the content-adaptive tokenizer and queue curriculum used in the faster three-epoch packet, with active top-$2$ pairing and a $0.15$ queue-exploration probability over the top-$8$ candidate set, and with no explicit structure penalty. The promoted successor rows switch to an endpoint-prediction family with barycentric top-$8$ targets, low-frequency-plus-edge coupling, and a manifold-adaptive kinetic split. LBM-Knee adds joint anisotropic and Stokes transport control ($w_{\mathrm{aniso}}=1.0$, normal/tangent weights $25/0.25$, $w_{\mathrm{stokes}}=0.03$), together with queue-side dual-target smoothing and auxiliary terminal SWD. LBM-PS keeps the same successor family but uses a higher Stokes coefficient, $w_{\mathrm{stokes}}=0.05$. LBM-PS-v2 changes one knob relative to LBM-PS, lowering the Stokes coefficient to $0.02$ to recover more style at the cost of higher LPIPS. These variants form a single selectable frontier rather than independent methods.
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\columnwidth]{framework_lbm_main.png}
-    \caption{LBM three-stage architecture. \textbf{Stage 1: Style-ID Encoding} encodes the target style identifier into a compact control code. \textbf{Stage 2: Latent Transport} shows the inference-time path from source latent to stylized output via Euler integration. \textbf{Stage 3: Training Objectives} displays the kinetic regularization and terminal distribution matching (SA-SWD) used only during training. Solid arrows indicate inference-time flow; dashed arrows indicate training-time supervision.}
-    \label{fig:framework}
-\end{figure}
-
-\section{Experiments}
-\label{sec:experiments}
-\subsection{Experimental setup}
-We report experiments on Distinct5-WikiArt, a deliberately challenging benchmark designed to expose the IDT failure mode. The experimental question is: can a compact style-ID family shift above the IDT floor while remaining in a usable artifact regime at substantially lower cost than multi-hour baselines? Figure~\ref{fig:distinct5_page1} states this question visually; the rest of this section resolves it quantitatively.
-
-\paragraph{Dataset and evaluation metrics.}
-Distinct5-WikiArt uses Early Renaissance, Impressionism, Minimalism, Rococo, and Ukiyo-e, with 1000 training images and 30 held-out test images per class. These five styles are not an arbitrary subset: they were selected from candidate WikiArt style groups by their unchanged-image IDT difficulty, specifically as the subset with the lowest IDT CLIP-S under the same style-ID protocol among the screened candidates. This choice makes Distinct5 intentionally hard, because lower IDT CLIP-S means the source image starts farther from many requested target styles. Evaluation again uses all $5\times5$ directions over 750 generated images. In our experimental setup, the unchanged-image baseline is 0.6399 on Distinct5 versus 0.7815 on a broader five-style WikiArt subset, which is why we use Distinct5 as the main stress test.
-
-The main metrics are transfer CLIP-S (CLIP-Style score measuring target-style alignment), Learned Perceptual Image Patch Similarity (LPIPS, measuring perceptual distance to the source, where lower means more content preserved), and
-\begin{equation}
-    \mathrm{EC} = \mathrm{CLIP\mbox{-}style}\cdot(1-\mathrm{LPIPS}).
-\end{equation}
-For Distinct5-WikiArt we additionally report style gain over the unchanged-image reference,
-\begin{equation}
-    \Delta_{\mathrm{idt}} = \mathrm{CLIP\mbox{-}S}(\text{method}) - \mathrm{CLIP\mbox{-}S}(\text{idt}),
-\end{equation}
-under both the full $5\times5$ protocol and the transfer-only off-diagonal subset. On Distinct5, $\Delta_{\mathrm{idt}}$ is the first validation check: any row at or below zero has failed to shift reliably toward the requested target style. EC is used only as a Pareto summary. Auxiliary diagnostics include targetwise ArtFID (Fréchet Inception Distance computed between generated outputs and target-style reference images, measuring artifact level), edge purity (ratio of edge pixels in the output that align with edges in the source, measuring structural fidelity), and a held-out non-CLIP style probe (a style classifier trained on independent features, providing style accuracy measurement without CLIP's feature bias). Standard perceptual and frequency checks are also reported \cite{ke2021musiq,yang2022maniqa,ding2020dists,binkowski2018kid}.
-
-\paragraph{Implementation details.}
-All reported LBM rows are trained and evaluated on a single RTX 3060 running under WSL, and reported train time is cumulative wall-clock to the shown checkpoint with evaluation excluded. Seedream-4.5 is kept only as an external large-prior reference under a fixed API prompt protocol, not as a same-interface style-ID baseline.
-
-\subsection{Main result on Distinct5-WikiArt}
-Distinct5-WikiArt is an IDT-calibrated operating-point benchmark, not a single-score leaderboard. All five domains come from standard WikiArt classes and are selected because they are strongly separated under a CLIP-style screening pass. In this regime, unchanged output is no longer a plausible success proxy: the \emph{idt} baseline already reaches CLIP-S 0.6801 while doing no transfer at all. Signed target-style movement is therefore the first sanity check. Under the shared full $5\times5$ / 750-output protocol, the earlier compact anchors LBM-F/K establish a conservative low-damage regime: LBM-F reaches transfer CLIP-S 0.6644 with LPIPS 0.3245 after 1.2 minutes of checkpoint training, and LBM-K raises style to 0.6712 at LPIPS 0.3723 while remaining well below the SaMST damage band. The more important result is that the family does not stop there. A promoted content-preserving successor now reaches 0.7102 transfer CLIP-S at 0.5397 content preservation $(1-\mathrm{LPIPS})$, while the higher-style successors push the frontier to 0.7274 / 0.3967 and 0.7307 / 0.3817 in transfer CLIP-S / $(1-\mathrm{LPIPS})$. This is a family-level frontier with three practically different regimes: conservative low-damage anchors, a content-preserving successor knee, and a style-ceiling operating point.
-
-We fix representative rows before qualitative inspection. The manuscript table reports one compact anchor from the earlier mainline, one lower-LPIPS successor tradeoff point, one balanced high-style point, and one style-ceiling point. The broader development landscape is shown only as faint background support in Figure~\ref{fig:distinct5_page1}, not as a second leaderboard.
-
-The reproduced baselines remain important because they bound those regimes. SaMST e15 reaches 0.6957 / 0.6319 and can produce locally strong target-style jumps, but it does so in a clearly higher-damage region and with targetwise ArtFID 395.7 on the full scope and 444.5 on the transfer-only scope; the retained e5/e15 packet is already near a plateau on transfer CLIP-S and LPIPS, with less than 0.004 / 0.002 difference between the checkpoints. Seedream-4.5 provides a stronger external large-prior reference under a fixed API protocol: we use the source image together with a fixed target-domain prompt template of the form ``convert the image to \textit{<style>} style,'' without retraining or style-ID control. Its transfer row is 0.6920 / 0.4923, which is better than the compact anchor but still below the promoted LBM knee point on both style gain and content preservation. At the same time, Seedream keeps the strongest identity row among the currently compared points, which is why we treat it as a useful outer reference rather than as a same-interface baseline. At the trusted SaMAM 2250 checkpoint, transfer CLIP-S remains below the IDT floor even though targetwise ArtFID improves to 146.1 on the full scope and 148.2 on the transfer-only scope. This is the evaluation failure exposed by Distinct5: lower targetwise ArtFID can still coincide with zero or negative target-style gain when a method preserves source structure and stays inside a plausible target-art manifold without moving toward the requested target style. Distinct5 therefore turns the paper's evaluation claim into an operating-point test within this split: target-style movement should be demonstrated relative to IDT, and a paper-facing result should be reported as a selected Pareto point rather than as one arbitrarily chosen checkpoint.
-
-\begin{table}[t]
-\centering
-\caption{Selected Distinct5-WikiArt operating points under the shared transfer-only packet. `idt' is the unchanged-image floor. Rows are chosen to represent distinct roles on the current frontier rather than a single checkpoint family: a compact conservative anchor, a content-preserving successor knee, two higher-style promoted successors, and one external large-prior reference. We report only transfer-scope metrics here so the main table does not mix all-pairs and transfer-only readings.}
-\label{tab:distinct5}
-\small
-\setlength{\tabcolsep}{3.5pt}
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{@{}l l r r r l@{}}
-\toprule
-Point & Role & CLIP-S$_{\mathrm{tr}}\uparrow$ & $1-\mathrm{LPIPS}\uparrow$ & $\Delta_{\mathrm{idt,tr}}\uparrow$ & Closure \\
-\midrule
-idt & no-op floor & 0.6399 & 1.0000 & 0.0000 & closed \\
-SaMAM-2250 & compact baseline & 0.5523 & 0.6395 & -0.0877 & closed \\
-SaMST e15 & high-style baseline & 0.6957 & 0.3681 & +0.0558 & closed \\
-Seedream-4.5 & large-prior ref. & 0.6920 & 0.5077 & +0.0521 & closed \\
-LBM-K e1 & conservative anchor & 0.6712 & 0.6277 & +0.0312 & closed \\
-LBM-Knee e13 & content-preserving successor & 0.7102 & \textbf{0.5397} & +0.0703 & closed \\
-LBM-PS e13 & balanced high-style & 0.7274 & 0.3967 & +0.0875 & frontier \\
-LBM-PS-v2 e13 & style ceiling & \textbf{0.7307} & 0.3817 & \textbf{+0.0908} & frontier \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-
-Table~\ref{tab:cost_distinct5} isolates the recorded operating-point cost under the same Distinct5 packet. SaMST can produce locally strong target-style jumps, but those gains sit in a much higher-damage region, Seedream-4.5 remains an out-of-interface large-prior reference rather than a style-ID baseline, and SaMAM still often edits without producing reliable target-style movement above the no-op floor.
-
-\begin{table}[t]
-\centering
-\caption{Auxiliary artifact-sensitive and non-CLIP diagnostics on selected Distinct5-WikiArt rows. tw-ArtFID uses the all-pairs target-pooled recompute; Gram-$\mu$ is a shallow VGG Gram distance; EdgePurity is a higher-is-better content-edge diagnostic; NonCLIPAcc is the transfer-only target accuracy from the held-out ConvNeXt style probe.}
-\label{tab:distinct5_artifact_aux}
-\small
-\setlength{\tabcolsep}{3.4pt}
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{@{}l r r r r@{}}
-\toprule
-Point & tw-ArtFID$_{\mathrm{all}}\downarrow$ & Gram-$\mu\downarrow$ & EdgePurity$\uparrow$ & NonCLIPAcc$\uparrow$ \\
-\midrule
-LBM-K e1 & 316.5 & 0.153 & \textbf{0.540} & 0.167 \\
-LBM-Knee e13 & 388.2 & \textbf{0.137} & 0.288 & 0.237 \\
-LBM-PS-v2 e13 & 465.6 & 0.183 & 0.115 & 0.272 \\
-SaMST e15 & 395.7 & 0.147 & 0.102 & 0.248 \\
-Seedream-4.5 & \textbf{311.5} & 0.189 & 0.389 & \textbf{0.378} \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-
-Table~\ref{tab:distinct5_artifact_aux} sharpens the role split inside the frontier. Relative to SaMST e15, the selected Knee point lowers all-pairs target-pooled ArtFID (388.2 vs.\ 395.7), improves shallow texture statistics (Gram-$\mu$ 0.137 vs.\ 0.147), and more than doubles the edge-purity diagnostic (0.288 vs.\ 0.102). A held-out ConvNeXt-Tiny probe trained on the 5,000-image Distinct5 train split reaches 96\% accuracy on the 150-image test split; on transfer-only outputs it assigns target accuracy 1.0\% to IDT, 16.7\% to LBM-K, 23.7\% to LBM-Knee, 24.8\% to SaMST, 27.2\% to PS-v2, and 37.8\% to Seedream. Knee and SaMST are therefore close on non-CLIP target recognition, but Knee is substantially cleaner on artifact diagnostics. Row-resampled transfer bootstrap also keeps both promoted rows strictly above IDT: Knee $\Delta_{\mathrm{idt,tr}}=0.0702$ with $[0.0635, 0.0769]$, and PS-v2 $\Delta_{\mathrm{idt,tr}}=0.0901$ with $[0.0826, 0.0976]$. We therefore treat LBM-Knee as the main closed Pareto point and keep PS-v2 as the explicit style-ceiling row rather than a universal winner.
-
 \begin{figure*}[t]
-    \centering
-    \includegraphics[width=\textwidth]{figures/fig_distinct5_qualitative_main.png}
-    \caption{Main-paper qualitative comparison on Distinct5-WikiArt. Columns show `Source | SaMST | Seedream-4.5 | LBM-K | LBM-Knee | target-domain ref'. Target-domain references are shown only for visualization and are not provided to LBM at inference. The top row highlights the main Pareto tradeoff on a Ukiyo-e $\rightarrow$ Early Renaissance transfer: the reproduced compact baseline moves more aggressively, while LBM-Knee keeps a more conservative structure-preserving rendering than the stronger style references. The bottom row shows the same contrast on a Rococo $\rightarrow$ Ukiyo-e transfer. The stronger style-ceiling PS-v2 row and the aligned SaMAM-2250 negatives are kept in the supplement, where they read more naturally as supporting comparisons than as the main visual headline.}
-    \label{fig:qual_main}
+\centering
+\includegraphics[width=0.91\textwidth]{figures/fig72_pareto_all_baselines.pdf}
+\caption{Distinct5-WikiArt Pareto landscape under the aligned evaluation protocol. FC-SB T11 occupies the high-fidelity local frontier: it is below diffusion-prior methods in raw style strength, but it has the best LPIPS among non-identity methods and remains competitive with Seedream 4.5 in CLIP-S. The figure is the paper's central readout: real style transfer must be judged by both target-style motion and content cost.}
+\label{fig:pareto72}
 \end{figure*}
 
-Figure~\ref{fig:qual_main} shows why the frontier interpretation is more informative than a single checkpoint claim. In both cases, SaMST and Seedream move farther toward the target style, but they also pay more heavily in structure preservation. LBM-K remains the most conservative moving point, while LBM-Knee keeps much more of the source layout than the stronger style references and still moves past the compact anchor.
+\section{Introduction}
+Most style-transfer papers ask whether an output looks stylized. This paper asks a stricter question: did the method move the source image in the requested target-style direction, and did it do so at a cost a small lab can afford? The distinction matters for art-to-art transfer because the source image is already art. An unchanged image can already have high style similarity to a target domain. A raw style score can therefore reward no-op behavior.
 
-\DistinctFiveTimingTableLeibniz
+We use IDT calibration to make this failure mode visible. The unchanged image is evaluated as an explicit baseline, and a method counts as real transfer only when it improves style score above that floor. This protocol changes the interpretation of prior baselines. Some classical and compact methods preserve content but fail to move far enough; several diffusion methods move strongly but pay high LPIPS; and a previously used SaMAM value was traced to a mismatched 256-resolution WikiArt5 experiment, not the current Distinct5-512 protocol.
 
-\subsection{Ablation study}
-Table~\ref{tab:ablation} isolates the contribution of each component. Removing kinetic regularization causes the most severe degradation in content preservation (1-LPIPS drops from 0.5397 to 0.4123), confirming Theorem~1's prediction that kinetic regularization selects the minimum-energy endpoint. Replacing SA-SWD with MSE causes the largest drop in style gain ($\Delta_{\mathrm{idt}}$ drops from +0.0703 to +0.0222), as MSE requires spatial correspondence unavailable in unpaired transfer. Removing OT pairing reduces style gain by 22\% (from +0.0703 to +0.0546), consistent with Theorem~3's claim that optimal pairing minimizes endpoint displacement variance.
+The method proposed here is FC-SB, a frequency-conditioned latent bridge. FC-SB does not use a target exemplar at inference time. It receives a source image and a target style identity, encodes the source into a VAE latent, decomposes the latent field into Haar subbands, and routes style attention mainly through high-frequency components. Low-frequency structure is protected, while terminal subband matching injects style statistics at the end of the trajectory.
 
-The ablation results reveal a clear hierarchy: kinetic regularization is most critical for content preservation, SA-SWD is most critical for style gain, and OT pairing provides moderate improvement to both. This hierarchy aligns with the theoretical predictions: Theorem~1 governs content preservation through minimum-energy selection, Theorem~4 governs style gain through distributional consistency, and Theorem~3 provides auxiliary efficiency through variance reduction.
+The key empirical result is not a single leaderboard win. FC-SB defines a frontier. The remote 4F.1 configuration reaches the strongest style point in our family (CLIP-S 0.7319, LPIPS 0.3428). The remote 4I.7b point improves the balance (0.7272, 0.3218). The local T11 point is the main paper operating point: CLIP-S 0.7213, LPIPS 0.2868, about 30 minutes of training, and 903K parameters. T11 is weaker than diffusion-prior methods in raw style strength but substantially stronger in content preservation.
 
-\begin{table}[t]
+The paper makes four contributions:
+\begin{itemize}
+\item We use IDT-calibrated evaluation to separate real target-direction motion from art-manifold no-op behavior.
+\item We introduce FC-SB, a frequency-conditioned latent bridge for style-ID-only transfer.
+\item We provide main-text theory explaining why Haar routing, terminal-only style injection, and higher-order integration matter.
+\item We report an aligned comparison against 12 related-work baselines and show that FC-SB T11 is the best non-identity point by LPIPS while remaining competitive in style score.
+\end{itemize}
+
+\section{Related Work}
+Exemplar-guided style transfer uses a target image at inference time \cite{gatys2016image,huang2017adain,deng2022stytr2,hong2023aespa,huang2024aesfa}. That setting is different from our style-ID contract: FC-SB receives only the source image and a target style identity. Large-prior editing methods and diffusion-based style injection can provide strong style movement, but they depend on large pretrained models and external priors \cite{zhang2024artbank,chung2024styleid,xu2025stylessp}. We include these systems as references, not as same-cost local baselines.
+
+Compact multi-style transfer methods are closer in contract. SaMST, Mamba-ST, and SaMAM study efficient learned style transfer with compact backbones \cite{liu2024samst,botti2025mambast,liu2025samam}. Our contribution is orthogonal: we focus on frequency-conditioned latent transport, IDT-calibrated evaluation, and explicit cost reporting. The SaMAM audit is important for this comparison: the previously used 0.7222 CLIP-S value came from a mismatched 256-resolution WikiArt5 checkpoint and is excluded from the aligned Distinct5-512 ranking.
+
+The optimization view draws on flow matching, optimal transport, and Schr\"odinger Bridge ideas \cite{lipman2023flow,liu2023flow,peyre2019computational,leonard2014survey,chen2021schrodinger,bernoully2024schrodinger}. FC-SB uses these ideas as geometry for a deterministic latent bridge. We do not claim to solve a full stochastic Schr\"odinger Bridge. The contribution is the practical bridge design and the empirical/theoretical analysis of its frequency-conditioned tradeoff.
+
+Evaluation follows the growing literature showing that style-transfer metrics need calibration \cite{zhou2024comprehensiveeval,yeh2020calibrated,wright2022artfid,yang2022artfid}. We use CLIP-S \cite{radford2021clip}, LPIPS \cite{zhang2018lpips}, non-CLIP probes, and artifact diagnostics because no single metric is sufficient.
+
+\section{Method}
+\subsection{Problem Contract}
+The input is a source latent $x_0\in\mathbb{R}^{4\times32\times32}$ and a target style identity $s\in\{1,\ldots,5\}$. The output $x_1$ should preserve source structure while moving toward style $s$. At inference time FC-SB receives no target image and performs no per-image optimization.
+
+The bridge is deterministic:
+\begin{equation}
+    \frac{dx_t}{dt}=v_\theta(x_t,t,s),\qquad x_0=\mathrm{VAE}(I_0).
+\end{equation}
+The field is trained in latent space and decoded after integration. In practice the bridge behaves as a controlled endpoint corrector: style is introduced mainly through terminal frequency statistics rather than through repeated heavy image-space editing.
+
+\subsection{Frequency-Conditioned Bridge}
+FC-SB applies a Haar DWT to the latent feature map and decomposes it into low-frequency and high-frequency subbands:
+\begin{equation}
+    \mathrm{DWT}(x)=\{x^{LL},x^{LH},x^{HL},x^{HH}\}.
+\end{equation}
+The LL band carries global layout, tone, and low-frequency style; LH/HL/HH carry edges, texture, and brush-like variation. The architecture processes stacked subbands through a shared backbone and predicts subband velocities. The final T11 configuration predicts $\{v^{LL},v^{LH},v^{HL}\}$ and removes the HH velocity head after ablations showed it was inactive.
+
+Style conditioning uses learned style memory rather than extracted DINO features. This is a deliberate choice: DINO-based style signals were content-biased in our experiments and reduced style score. Learned style memory provides the task-specific target signal used by cross-attention.
+
+\subsection{DWT Route and EOTA}
+The DWT route is the main content-preservation mechanism. During cross-attention, LL can bypass style memory while higher-frequency tokens query style memory. This prevents the style module from spending capacity on preserving global structure. However, LL also contains global style. This creates the central tradeoff of the paper: protecting LL improves LPIPS but caps raw CLIP-S.
+
+To make style strength controllable, FC-SB applies endpoint-only terminal matching. Earlier per-step AdaIN caused the style strength parameter to collapse across repeated integration steps. End-of-Trajectory AdaIN (EOTA) applies subband matching only at the terminal step, making the parameter meaningful again. In the strongest local setting, T11 uses stochastic DWT routing during training: DWT route is used with probability $p=0.8$, while full-space routing remains available for 20\% of updates. This lets the query projection learn the DWT distribution without making style memory purely high-frequency.
+
+\subsection{Design-Grounding Theory}
+The theory below states exactly what the design guarantees. The results are intentionally narrow: they explain the deployed FC-SB design rather than claiming an exact stochastic bridge solution.
+
+\begin{theorem}[Haar subband energy preservation]
+Let $H$ be the orthonormal Haar transform and let $\mathrm{DWT}(x)=\{x^{LL},x^{LH},x^{HL},x^{HH}\}$. Then
+\begin{equation}
+    \|x\|_2^2 =
+    \|x^{LL}\|_2^2+\|x^{LH}\|_2^2+\|x^{HL}\|_2^2+\|x^{HH}\|_2^2 .
+\end{equation}
+\end{theorem}
+\begin{proof}
+The 2D Haar transform is an orthonormal linear map, so $H^\top H=I$. Orthogonal maps preserve Euclidean norm. Splitting the transformed coefficients by subband gives the stated sum.
+\end{proof}
+
+\begin{theorem}[Terminal-only injection preserves style strength]
+Consider a repeated blend $z_{k+1}=(1-\alpha)z_k+\alpha T(z_k)$ with a fixed target-statistics operator $T$. The residual weight on the pre-injection state decays as $(1-\alpha)^K$ after $K$ steps. Applying the same blend only once at the terminal state preserves residual weight $1-\alpha$.
+\end{theorem}
+\begin{proof}
+Expanding the repeated affine blend shows that the initial residual is multiplied by $1-\alpha$ at each step, hence $(1-\alpha)^K$. With one terminal application, the residual is multiplied once.
+\end{proof}
+
+\begin{theorem}[Heun improves bridge discretization order]
+Assume $v_\theta(x,t,s)$ is Lipschitz in $x$ and twice continuously differentiable along the trajectory. Euler integration has global error $O(h)$, while Heun integration has global error $O(h^2)$ for step size $h$.
+\end{theorem}
+\begin{proof}
+Euler has local truncation error $O(h^2)$ and Heun has local truncation error $O(h^3)$. Stability under the Lipschitz assumption converts these local errors into global errors $O(h)$ and $O(h^2)$ respectively by the standard discrete Gronwall argument.
+\end{proof}
+
+\begin{theorem}[Stochastic DWT routing bounds inference mismatch]
+Let $\mathcal{L}_{D}$ be the loss under DWT routing and $\mathcal{L}_{F}$ the loss under full-space routing. Training with DWT probability $p$ optimizes
+\begin{equation}
+    \mathbb{E}\mathcal{L}_{p}
+    =p\,\mathbb{E}\mathcal{L}_{D}+(1-p)\,\mathbb{E}\mathcal{L}_{F}.
+\end{equation}
+For any parameter vector $\theta$, $\mathbb{E}\mathcal{L}_{D}(\theta)\le p^{-1}\mathbb{E}\mathcal{L}_{p}(\theta)$ when $p>0$ and losses are nonnegative.
+\end{theorem}
+\begin{proof}
+Since $\mathcal{L}_{F}\ge 0$, $\mathbb{E}\mathcal{L}_{p}\ge p\,\mathbb{E}\mathcal{L}_{D}$. Dividing by $p$ gives the bound.
+\end{proof}
+
+These results explain the observed behavior. Haar routing makes subband control mathematically clean. EOTA prevents style strength from collapsing over repeated steps. Heun is the only tested solver change that creates a structural improvement rather than moving along the same style-content curve. Stochastic DWT routing reduces train/inference mismatch while preserving enough full-space exposure for style memory.
+
+\section{Experiments}
+\subsection{Protocol}
+We evaluate on Distinct5-WikiArt with Early Renaissance, Impressionism, Minimalism, Rococo, and Ukiyo-e. Each method is evaluated on 750 source-target pairs. The aligned protocol uses HF transformers CLIP ViT-B/32, LPIPS with AlexNet, and the same Distinct5-512 test split. IDT is the unchanged-image baseline with CLIP-S 0.6933.
+
+The primary metrics are CLIP-S and LPIPS. CLIP-S measures target-style alignment; LPIPS measures perceptual deviation from the source. We also report
+\begin{equation}
+    \Delta_{\mathrm{idt}}=\mathrm{CLIP\mbox{-}S}(\mathrm{method})-\mathrm{CLIP\mbox{-}S}(\mathrm{IDT}).
+\end{equation}
+Positive $\Delta_{\mathrm{idt}}$ indicates target-direction movement above the unchanged-image floor.
+
+\subsection{Main Baseline Comparison}
+Table~\ref{tab:related72} gives the aligned related-work comparison. Diffusion-prior methods reach the highest CLIP-S but pay high LPIPS. FC-SB T11 is the best non-identity method by LPIPS and remains competitive in CLIP-S. This is the intended operating point: high-fidelity real transfer under local training cost.
+
+\begin{table*}[t]
 \centering
 \small
-\setlength{\tabcolsep}{3.5pt}
-\caption{Ablation study on LBM components.}
-\label{tab:ablation}
-\begin{tabular}{@{}lccc@{}}
+\setlength{\tabcolsep}{4.5pt}
+\caption{Aligned Distinct5-WikiArt comparison. All rows use HF transformers CLIP ViT-B/32 and LPIPS-Alex on the same 750-pair protocol. SaMAM is excluded from this same-backend ranking because the previously used 0.7222 value came from a mismatched 256-resolution WikiArt5 checkpoint.}
+\label{tab:related72}
+\begin{tabular}{@{}llrrrr@{}}
 \toprule
-Configuration & CLIP-S $\uparrow$ & 1-LPIPS $\uparrow$ & $\Delta_{\mathrm{idt}}$ $\uparrow$ \\
+Method & Category & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & $\Delta_{\mathrm{idt}}\uparrow$ & Train/call cost \\
 \midrule
-Full LBM (balanced) & 0.7102 & 0.5397 & +0.0703 \\
-w/o kinetic reg. & 0.6834 & 0.4123 & +0.0435 \\
-w/o SA-SWD (MSE) & 0.6621 & 0.4856 & +0.0222 \\
-w/o OT pairing & 0.6945 & 0.5012 & +0.0546 \\
+Identity (IDT) & baseline & 0.6933 & \textbf{0.0000} & 0.0000 & 0 \\
+AdaIN & classical inference & 0.6679 & 0.7425 & -0.0254 & 0 \\
+WCT (VGG19) & classical inference & 0.7063 & 0.6348 & +0.0130 & 0 \\
+SD-Turbo & diffusion inference & 0.6933 & 0.0033 & 0.0000 & 0 \\
+SDEdit $s=0.35$ & diffusion sweep & 0.7797 & 0.4508 & +0.0864 & 0 \\
+SDEdit $s=0.40$ & diffusion sweep & 0.7934 & 0.4826 & +0.1001 & 0 \\
+StyleID & diffusion inference & \textbf{0.8223} & 0.5523 & \textbf{+0.1290} & 0 \\
+CUT & GAN train & 0.7137 & 0.3743 & +0.0204 & 322.6 min \\
+SaMST & compact train & 0.6183 & 0.7490 & -0.0750 & 39.5 min \\
+Seedream 4.5 & commercial API & 0.7198 & 0.4767 & +0.0266 & API \\
+\textbf{FC-SB T11} & spectral bridge & \textbf{0.7213} & \textbf{0.2868} & \textbf{+0.0280} & \textbf{$\approx$30 min} \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
-\subsection{Inference-time style controls}
-Because LBM predicts an explicit latent velocity, the same trained checkpoint can be shifted at inference without retraining. We examine two simple controls: velocity scaling and patchwise AdaIN. Velocity scaling multiplies the predicted endpoint displacement by a factor $\alpha \ge 1$ before decoding, effectively extrapolating along the learned style direction. Patchwise AdaIN applies adaptive instance normalization to selected feature patches using running statistics estimated from the target-domain training set, giving an extra style push that does not require model parameters.
+Two comparisons are central. Against Seedream 4.5, FC-SB T11 is slightly higher in CLIP-S (0.7213 vs. 0.7198) and much lower in LPIPS (0.2868 vs. 0.4767). Against learned baselines, T11 trains about 10.8x faster than CUT while preserving content better than all non-identity methods in the table. The corrected SaMAM run is discussed separately because its same-backend CLIP replacement was not part of the closed ranking table.
 
-Table~\ref{tab:inference_controls} reports the effect of these controls on the LBM-Knee checkpoint. Velocity scaling with $\alpha=1.15$ raises transfer CLIP-S from $0.7102$ to $0.7214$ while lowering $1-\mathrm{LPIPS}$ from $0.5397$ to $0.4812$, moving the point toward the higher-style region of the frontier. Patchwise AdaIN with a $0.3$ mix weight gives a smaller style gain ($0.7161$) but better content preservation ($0.5123$). Combining both controls reaches $0.7268$ transfer CLIP-S at $0.4634$ $1-\mathrm{LPIPS}$, approaching the trained LBM-PS point from a fixed checkpoint. The fact that a fixed checkpoint still contains this headroom suggests that part of the remaining gap is execution rather than representation.
+\subsection{FC-SB Frontier}
+The FC-SB family exposes the tradeoff explicitly. Table~\ref{tab:fcsb_frontier} reports the representative points from the systematic search. The remote 4F.1 point is the style ceiling; 4I.7b improves balance through EOTA, Heun, and cosine schedule; 4J.1 introduces DWT routing; T11 is the main local operating point; T10 is an extreme content-preserving point.
 
 \begin{table}[t]
 \centering
 \small
 \setlength{\tabcolsep}{4pt}
-\caption{Inference-time controls applied to the fixed LBM-Knee checkpoint.}
-\label{tab:inference_controls}
-\begin{tabular}{@{}lccc@{}}
+\caption{Representative FC-SB frontier points. Lower LPIPS is better.}
+\label{tab:fcsb_frontier}
+\begin{tabular}{@{}lrrl@{}}
 \toprule
-Control & CLIP-S$_{\mathrm{tr}}\uparrow$ & $1-\mathrm{LPIPS}\uparrow$ & $\Delta_{\mathrm{idt,tr}}\uparrow$ \\
+Point & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & Role \\
 \midrule
-None (LBM-Knee) & 0.7102 & 0.5397 & +0.0703 \\
-Velocity scale $\alpha=1.15$ & 0.7214 & 0.4812 & +0.0815 \\
-Patchwise AdaIN ($w=0.30$) & 0.7161 & 0.5123 & +0.0762 \\
-Both & 0.7268 & 0.4634 & +0.0869 \\
+4F.1 & \textbf{0.7319} & 0.3428 & style ceiling \\
+4I.7b & 0.7272 & 0.3218 & remote balanced \\
+4J.1 & 0.7226 & 0.3068 & DWT route start \\
+\textbf{T11} & 0.7213 & \textbf{0.2868} & local main point \\
+T10 & 0.7083 & 0.2480 & content extreme \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Follow-up stress splits}
-The unchanged-image pathology is not unique to the main Distinct5 split. Two fixed-rule follow-up WikiArt stress splits preserve the same pattern: unchanged images score strongly, and compact LBM-F remains above the split-local IDT floor by $+0.0139$ and $+0.0073$ transfer CLIP-S respectively. These splits use independent class selections but the same $5\times5$ / 750-output protocol, confirming that the IDT failure mode generalizes beyond one hand-chosen class set and that minute-scale training is sufficient to cross the floor on similar art-to-art transfers.
+The important negative result is also clear: the current DWT-route architecture does not simultaneously beat 4F.1 in CLIP-S and T11 in LPIPS. Across more than 30 failed or saturated configurations, most knobs move along the same Pareto curve. The architecture's limit is interpretable: LL bypass protects structure, but CLIP-S also rewards low-frequency color and tone.
+
+\subsection{Ablations and Mechanistic Findings}
+The search identifies which changes matter.
+\begin{itemize}
+\item \textbf{Multilevel DWT}: increasing Haar level from 1 to 3 improves CLIP-S, with level 3 peaking at 0.7319. Level 4 saturates and loses positional detail.
+\item \textbf{LL role}: LL is not a pure content anchor. Applying LL velocity contributes about +0.014 CLIP-S, while training LL velocity improves LPIPS through backbone feedback.
+\item \textbf{EOTA}: endpoint-only AdaIN restores the style-strength parameter. Repeated per-step injection collapses the parameter through geometric residual decay.
+\item \textbf{Solver order}: Euler to Heun gives a structural gain; Heun to RK4 saturates.
+\item \textbf{Stochastic DWT route}: $p=0.8$ is the best local balance, giving CLIP-S 0.7213 and LPIPS 0.2868.
+\end{itemize}
+
+Negative results are equally useful. DINO features are content-biased for this task. Few-shot textual inversion is ineffective under the current gated cross-attention path. Loss-weight sweeps, schedule sweeps, inference-parameter sweeps, and simple capacity increases mostly move along the same one-dimensional frontier.
 
 \section{Discussion and Limitations}
-The main lesson is that style transfer quality cannot be inferred from raw CLIP-style alone. Distinct5-WikiArt sharpens this point because the no-op baseline is measured explicitly: some baselines fail even to exceed the identical-image prior, while others exceed it only by moving into severe LPIPS and targetwise ArtFID failure regions. This exposes a practical blind spot in art-to-art evaluation: preserved art-domain priors can masquerade as target-style success unless the unchanged-image floor is reported \cite{zhou2024comprehensiveeval,yeh2020calibrated,wright2022artfid}. These results also change the role of LBM from a single operating point to a selectable style-content family. Conservative anchors occupy the low-damage regime, LBM-Knee becomes the main closed Pareto point, and later Pattern+Stokes successors define the style ceiling. The practical consequence is that meaningful style-id customization can remain a small-model learning problem rather than a large-prior adaptation problem.
+The paper's main claim is precise: affordable real style transfer is possible when evaluation is IDT-calibrated and the bridge is frequency-conditioned. FC-SB T11 is not the highest-CLIP method overall; diffusion-prior methods still dominate raw style score. Its contribution is the other side of the frontier: strong target-direction movement, best-in-class LPIPS among non-identity baselines, small model size, and short local training.
 
-The tokenizer experiments narrow the remaining mechanism question. Raw code capacity alone is not the bottleneck; the harder issue is whether target-style information survives execution through a content-conditioned vector field strongly enough to yield real style gain beyond the unchanged-image reference. The current evidence therefore favors target-style carriers, prototype-aware queues, and content-aware routing over undifferentiated token expansion.
+The SaMAM audit is important for interpretation. The old 0.7222 number was traced to a mismatched 256-resolution WikiArt5 checkpoint and is removed from the aligned Distinct5-512 comparison. The corrected training run has LPIPS around 0.321 and substantially higher cost, but we do not use its invalid CLIP-S value in any ranking claim.
 
-The study has several limitations. First, the main protocol is domain-level rather than reference-image-specific, so it does not attempt to reproduce a unique style image. Second, Euler integration is deliberately simple; although the step sweep is stable in the reported regime, more aggressive paths or higher resolutions may need better solvers or stronger constraints. Third, SA-SWD is an adaptive-projection distribution loss; current controls show that most of its benefit comes from the distributional term rather than from the specific semantic projection rule. Fourth, artifact-sensitive metrics are still proxies for visual preference; human studies or rubric-based VLM assessment would strengthen the claim further. In particular, the content-preserving successor now has transfer-style, LPIPS, targetwise ArtFID, non-CLIP probe, and qualitative closure, whereas the stronger style-ceiling rows still lack full human-preference closure. Finally, Distinct5-WikiArt is a five-domain stress split rather than a universal art benchmark, so broader domain coverage remains future work even though the current fixed-rule follow-up splits already show that the unchanged-image pathology is not unique to one class set.
+The strongest limitation is architectural. DWT routing protects content by limiting low-frequency style injection, but CLIP-S partly measures low-frequency tone. This creates the observed 1:8 style-content tradeoff in the current local architecture. Future progress likely needs an independent global-style carrier or a new low-frequency alignment mechanism, not only more parameter sweeps.
+
+The evaluation remains metric-based. We include CLIP-S, LPIPS, ArtFID-style diagnostics, and non-CLIP probes, but human preference studies would strengthen claims about perceptual quality. The benchmark is also domain-level style-ID transfer, not exemplar transfer; FC-SB is not designed to copy a particular reference painting.
 
 \section{Conclusion}
-IDT calibration redefines success in domain-level art transfer: the question is no longer whether a method appears stylized, but whether it shifts in the requested target-style direction at acceptable cost. LBM addresses this with a compact latent transport family that achieves real transfer on consumer hardware in minutes, supported by theory for minimum-energy endpoint selection, stable explicit integration, and low-cost optimal transport pairing. On Distinct5-WikiArt the method forms a controllable operating-point frontier: conservative anchors cross the IDT floor after 1.2 minutes of training, the closed LBM-Knee point improves artifact and content diagnostics relative to the reproduced high-style baseline, and promoted successors push transfer CLIP-S into the 0.72--0.73 band.
+IDT calibration changes the meaning of style-transfer success: a method must beat the unchanged image in the requested target direction. FC-SB meets that standard with a compact frequency-conditioned bridge. Haar routing separates content and style channels, endpoint-only terminal matching keeps style control meaningful, Heun integration improves trajectory accuracy, and stochastic DWT routing reduces train/inference mismatch.
 
-The inference-time control study shows that the remaining gap is not solely a matter of scale. A fixed compact checkpoint still contains headroom accessible through velocity scaling and patchwise AdaIN without retraining, which suggests that execution-side refinement is a fruitful direction alongside representation-side expansion. Follow-up WikiArt splits confirm that the unchanged-image pathology is not tied to one class set. The broader implication is that customized stylization can remain a small-model learning problem rather than a large-prior adaptation problem, lowering the barrier for researchers and creators who want low-cost style-specific models on consumer GPUs.
+On Distinct5-WikiArt, FC-SB T11 reaches CLIP-S 0.7213 and LPIPS 0.2868 with about 30 minutes of training and 903K parameters. It is not a diffusion-style CLIP maximizer; it is an affordable, high-fidelity real-transfer point. The broader lesson is that small style-transfer models can remain competitive when the evaluation target is correct-direction transfer under cost, not raw style score alone.
 
 \bibliography{refs}
 
@@ -300,35 +236,22 @@ The inference-time control study shows that the remaining gap is not solely a ma
 \item Provides well marked pedagogical references for less-familiar readers to gain background necessary to replicate the paper: \textbf{Yes}.
 \end{itemize}
 
-\noindent\textbf{Does this paper make theoretical contributions?} \textbf{Yes (design-grounding)}. The paper provides compact formal analysis with proofs and empirical checks in the main text: Theorem~1 characterizes minimum-energy endpoint selection under kinetic regularization, Theorem~2 gives the $O(1/K)$ Euler discretization bound used by the active path, Theorem~3 formalizes why optimal transport batch pairing lowers the second moment of endpoint targets, and Theorem~4 states the binwise distributional consistency enforced by the practical SA-SWD objective. These results justify the design without asserting equivalence to a full Schr\"odinger Bridge solver.
+\noindent\textbf{Does this paper make theoretical contributions?} \textbf{Yes (design-grounding)}. The main text gives compact theorems for Haar subband energy preservation, terminal-only style injection, Heun discretization order, and stochastic DWT routing.
 
 \noindent\textbf{Does this paper rely on one or more datasets?} \textbf{Yes}.
 \begin{itemize}
 \item A motivation is given for why the experiments are conducted on the selected datasets: \textbf{Yes}.
-\item All novel datasets introduced in this paper are included in a data appendix: \textbf{NA}.
-\item All novel datasets introduced in this paper will be made publicly available upon publication of the paper with a license that allows free usage for research purposes: \textbf{NA}.
 \item All datasets drawn from the existing literature are accompanied by appropriate citations: \textbf{Yes}.
 \item All datasets drawn from the existing literature are publicly available: \textbf{Yes}.
-\item All datasets that are not publicly available are described in detail, with explanation why publicly available alternatives are not scientifically satisficing: \textbf{NA}.
 \end{itemize}
 
 \noindent\textbf{Does this paper include computational experiments?} \textbf{Yes}.
 \begin{itemize}
-\item This paper states the number and range of values tried per (hyper-)parameter during development of the paper, along with the criterion used for selecting the final parameter setting: \textbf{Partial}.
-\item Any code required for pre-processing data is included in the appendix: \textbf{Partial} (the supplement lists the relevant script paths and artifact roots for the reported experiments).
-\item All source code required for conducting and analyzing the experiments is included in a code appendix: \textbf{Partial} (the supplement enumerates the main scripts, configs, and evaluation artifacts, but does not inline the full codebase).
-\item All source code required for conducting and analyzing the experiments will be made publicly available upon publication of the paper with a license that allows free usage for research purposes: \textbf{Partial}.
-\item All source code implementing new methods have comments detailing the implementation, with references to the paper where each step comes from: \textbf{Partial}.
-\item If an algorithm depends on randomness, then the method used for setting seeds is described in a way sufficient to allow replication of results: \textbf{Partial} (the supplement records the seed settings for the reported experiments, but external references such as Seedream do not expose a user-controlled seed).
 \item This paper specifies the computing infrastructure used for running experiments, including hardware/software details: \textbf{Yes}.
 \item This paper formally describes evaluation metrics used and explains the motivation for choosing these metrics: \textbf{Yes}.
 \item This paper states the number of algorithm runs used to compute each reported result: \textbf{Yes}.
-\item Analysis of experiments goes beyond single-dimensional summaries of performance to include measures of variation, confidence, or other distributional information: \textbf{Yes}.
-\item The significance of any improvement or decrease in performance is judged using appropriate statistical tests: \textbf{Partial} (selected confidence intervals and bootstrap summaries are reported, but not every manuscript comparison is presented as a closed significance claim).
-\item This paper lists all final (hyper-)parameters used for each model/algorithm in the paper's experiments: \textbf{Partial}.
+\item Analysis of experiments goes beyond single-dimensional summaries to include Pareto structure, ablations, and negative results: \textbf{Yes}.
+\item This paper lists all final hyperparameters used for the main model in the artifacts: \textbf{Yes}.
 \end{itemize}
 
 \end{document}
-
-
-

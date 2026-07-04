@@ -1,0 +1,29 @@
+Phase 4B-3 + 4D: DWT tokenizer and multi-level 2-Level Haar lowpass
+
+Phase 4B-3 (DWT Tokenizer):
+- src/style_encoder620.py: add haar_dwt freq_mode in _apply_freq_lowpass
+- configs/630_phase4b3_dwt_a1.json + 630_phase4b3_dwt_a1_rand50.json
+- Results: dwt_a1 (3ep) clip=0.7266, dwt_a1_rand50 (3ep) clip=0.7255 (parity with avg_pool baseline)
+
+Phase 4D (Multi-Level 2-Level Haar DWT, user plan B2):
+- src/spectral620.py: add dwt2_haar_lowpass(x, levels) - N-level Haar DWT lowpass
+- src/spectral_bridge620.py: integrate_transport lp() reads endpoint_lowpass_levels
+- src/config_schema.py: add endpoint_lowpass_levels field (default 1)
+- configs/630_phase4d_lvl2.json + 630_phase4d_lvl2_dwt_rand50.json
+
+Results:
+- Phase 4D.1 lvl2 (3ep): clip=0.7301, lpips=0.3402 - BREAKTHROUGH!
+  Exceeds 10-epoch baseline (clip=0.7288). User's prediction was spot-on:
+  "lock LL2 (8x8), release 3 mid-freq (8x8), Clip_Style will be released."
+- Phase 4D.2 lvl2_dwt_rand50 (3ep): clip=0.7294, lpips=0.3394
+  (random_50 mask incompatible with multi-level DWT: breaks mid-freq continuity)
+
+Theoretical insight: 2-Level DWT releases mid-freq (macro-strokes) for AdaIN,
+while LL2 (8x8) locks absolute composition. Content Fidelity Pathway upgraded:
+  DWT lowpass (LL2, locks composition) -> Endpoint AdaIN (fiber includes mid-freq)
+  -> Spectral ODE low-freq path (head_ll compensation) -> style extrapolation
+
+Documentation:
+- docs/630/phase4b3_dwt_tokenizer.md (183 lines)
+- docs/630/phase4d_multi_level_dwt.md (226 lines)
+- docs/630/state/progress.json updated to iteration=10, status=PHASE4D_COMPLETED

@@ -1,0 +1,104 @@
+﻿python : 2026-07-02 13:21:07,323 - INFO - Device: cuda
+At line:15 char:3613
++ ... pgrep\bin'; python run.py --config configs/630_local_t11_long30ep.jso ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-07-02 13:2... - Device: cuda:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-07-02 13:21:07,324 - INFO - Seed: 42
+2026-07-02 13:21:07,333 - INFO - Loaded latent manifest cache: G:\GitHub\Latent_Style\Dataset\distinct5_512_latents_ema
+\train\.latent_cache\packed\manifest.json
+2026-07-02 13:21:07,333 - INFO - Loading latent dataset from G:\GitHub\Latent_Style\Dataset\distinct5_512_latents_ema\t
+rain
+2026-07-02 13:21:07,403 - INFO - Loaded packed latent cache: G:\GitHub\Latent_Style\Dataset\distinct5_512_latents_ema\t
+rain\.latent_cache\packed\packed\00_Early_Renaissance.pt
+2026-07-02 13:21:07,435 - INFO -   style=Early_Renaissance id=0 count=1000
+2026-07-02 13:21:07,509 - INFO - Loaded packed latent cache: G:\GitHub\Latent_Style\Dataset\distinct5_512_latents_ema\t
+rain\.latent_cache\packed\packed\01_Impressionism.pt
+2026-07-02 13:21:07,543 - INFO -   style=Impressionism id=1 count=1000
+2026-07-02 13:21:07,604 - INFO - Loaded packed latent cache: G:\GitHub\Latent_Style\Dataset\distinct5_512_latents_ema\t
+rain\.latent_cache\packed\packed\02_Minimalism.pt
+2026-07-02 13:21:07,636 - INFO -   style=Minimalism id=2 count=1000
+2026-07-02 13:21:07,709 - INFO - Loaded packed latent cache: G:\GitHub\Latent_Style\Dataset\distinct5_512_latents_ema\t
+rain\.latent_cache\packed\packed\03_Rococo.pt
+2026-07-02 13:21:07,736 - INFO -   style=Rococo id=3 count=1000
+2026-07-02 13:21:07,811 - INFO - Loaded packed latent cache: G:\GitHub\Latent_Style\Dataset\distinct5_512_latents_ema\t
+rain\.latent_cache\packed\packed\04_Ukiyo_e.pt
+2026-07-02 13:21:07,841 - INFO -   style=Ukiyo_e id=4 count=1000
+2026-07-02 13:21:07,841 - WARNING - pairing cache not found: G:\GitHub\Latent_Style\Dataset\distinct5_512_latents_ema\t
+rain\.latent_cache\prototype_pairing_top8.pt
+2026-07-02 13:21:07,849 - INFO - DataLoader | batch=24 workers=0 shuffle=False pin_memory=False persistent_workers=Fals
+e preload_to_gpu=False balanced_target=True pairing_cache=False pairing_mode=rank_stratified rank_schedule=fixed active
+_topk=0 min_topk=1 curriculum_epochs=0 rank_power=1.000 topk=8 explore=0.000/0 dual_mix=0.000/0 aux_topk=0
+2026-07-02 13:21:08,084 - INFO - Model params: 903,248
+2026-07-02 13:21:09,687 - INFO - No checkpoint found, start from scratch.
+2026-07-02 13:21:09,690 - INFO - Epoch 1 weight schedule: stage=0 w_content=0.0000 w_style=0.0000 w_style_strength_reg=
+0.0000 sigma=0.0000
+
+Epoch 1/30:   0%|          | 0/208 [00:00<?, ?it/s]
+Epoch 1/30:   0%|          | 0/208 [00:09<?, ?it/s, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.0000, t=0.4
+12, tswd=0.0000]
+Epoch 1/30:   0%|          | 1/208 [00:09<31:28,  9.12s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.000
+0, t=0.412, tswd=0.0000]
+Epoch 1/30:   1%|          | 2/208 [00:21<38:15, 11.15s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.000
+0, t=0.412, tswd=0.0000]
+Epoch 1/30:   1%|▏         | 3/208 [00:34<40:37, 11.89s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.000
+0, t=0.412, tswd=0.0000]
+Epoch 1/30:   2%|▏         | 4/208 [00:53<49:51, 14.66s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.000
+0, t=0.412, tswd=0.0000]
+Epoch 1/30:   2%|▏         | 5/208 [01:11<53:45, 15.89s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.000
+0, t=0.412, tswd=0.0000]
+Epoch 1/30:   3%|▎         | 6/208 [01:23<48:57, 14.54s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.000
+0, t=0.412, tswd=0.0000]
+Epoch 1/30:   3%|▎         | 7/208 [01:38<49:19, 14.72s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.000
+0, t=0.412, tswd=0.0000]
+Epoch 1/30:   4%|▍         | 8/208 [01:51<47:11, 14.16s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.000
+0, t=0.412, tswd=0.0000]
+Epoch 1/30:   4%|▍         | 9/208 [02:04<45:58, 13.86s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.000
+0, t=0.412, tswd=0.0000]
+Epoch 1/30:   5%|▍         | 10/208 [02:19<46:36, 14.12s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.00
+00, t=0.412, tswd=0.0000]
+Epoch 1/30:   5%|▌         | 11/208 [02:28<41:18, 12.58s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.00
+00, t=0.412, tswd=0.0000]
+Epoch 1/30:   6%|▌         | 12/208 [02:40<40:31, 12.41s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.00
+00, t=0.412, tswd=0.0000]
+Epoch 1/30:   6%|▋         | 13/208 [02:56<44:15, 13.62s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.00
+00, t=0.412, tswd=0.0000]
+Epoch 1/30:   7%|▋         | 14/208 [03:06<40:20, 12.48s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.00
+00, t=0.412, tswd=0.0000]
+Epoch 1/30:   7%|▋         | 15/208 [03:22<43:14, 13.44s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.00
+00, t=0.412, tswd=0.0000]
+Epoch 1/30:   8%|▊         | 16/208 [03:35<42:42, 13.35s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.00
+00, t=0.412, tswd=0.0000]
+Epoch 1/30:   8%|▊         | 17/208 [03:52<45:56, 14.43s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.00
+00, t=0.412, tswd=0.0000]
+Epoch 1/30:   9%|▊         | 18/208 [04:10<49:12, 15.54s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.00
+00, t=0.412, tswd=0.0000]
+Epoch 1/30:   9%|▉         | 19/208 [04:22<45:57, 14.59s/it, curv=0.0000, flow=2.5639, kin=0.0000, loss=2.5639, ot=0.00
+00, t=0.412, tswd=0.0000]
+Epoch 1/30:   9%|▉         | 19/208 [04:40<45:57, 14.59s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  10%|▉         | 20/208 [04:40<48:46, 15.57s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  10%|█         | 21/208 [04:59<51:44, 16.60s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  11%|█         | 22/208 [05:16<52:01, 16.78s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  11%|█         | 23/208 [05:36<54:40, 17.73s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  12%|█▏        | 24/208 [05:51<51:21, 16.75s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  12%|█▏        | 25/208 [06:09<52:07, 17.09s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  12%|█▎        | 26/208 [06:25<51:16, 16.90s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  13%|█▎        | 27/208 [06:46<54:31, 18.07s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  13%|█▎        | 28/208 [07:05<55:18, 18.43s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  14%|█▍        | 29/208 [07:18<50:09, 16.81s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  14%|█▍        | 30/208 [07:29<44:50, 15.11s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]
+Epoch 1/30:  15%|█▍        | 31/208 [07:46<45:43, 15.50s/it, curv=0.0000, flow=2.5647, kin=0.0000, loss=2.5647, ot=0.00
+00, t=0.481, tswd=0.0000]

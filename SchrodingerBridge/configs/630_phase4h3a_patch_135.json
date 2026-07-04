@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4f_lvl3.json",
+  "bridge": {
+    "swd_patch_sizes": [1, 3, 5]
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h3a_patch_135",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h3a_patch_135",
+    "axis": "swd_patch_sizes_finer",
+    "stage": "phase4h3",
+    "notes": "Phase 4H.3a: Remove macro patch (9). SWD patches [1,3,5] — finer focus, no macro-structure. Hypothesis: removing macro reduces structural style transfer (lower clip), but improves pixel-level fidelity (lower lpips). Current [1,3,5,9] → [1,3,5]."
+  }
+}

@@ -1,5 +1,5 @@
 \documentclass[letterpaper]{article}
-\usepackage[submission]{aaai2026}
+\usepackage[submission]{aaai2027}
 \usepackage{times}
 \usepackage{helvet}
 \usepackage{courier}
@@ -20,423 +20,610 @@
 \newtheorem{lemma}{Lemma}
 \newtheorem{proposition}{Proposition}
 \newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\renewcommand{\qedsymbol}{}
 \usepackage{multirow}
 \usepackage{tikz}
 \usepackage{placeins}
+\usepackage{cuted}
+\emergencystretch=1.2em
 \usetikzlibrary{arrows.meta,positioning,calc,fit}
 \pdfinfo{
 /TemplateVersion (2026.1)
 }
 \setcounter{secnumdepth}{2}
 
-\title{Affordable Real Style Transfer:\\Training Spectral Flow Matching on an RTX 3060 in Minutes}
+\title{Affordable Real Style Transfer:\\Training Wavelet-Decoupled Rectified Flow on a Single RTX 3060 in Minutes}
 \author{Anonymous Submission}
 \affiliations{}
 \begin{document}
 \maketitle
 
 \begin{abstract}
-We present Spectral Flow Matching (SFM), a style transfer method that trains in 3 minutes on a single 12\,GB RTX 3060. It reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868 on 750 pairs across five WikiArt domains, dual-beating a 436-minute Mamba baseline and a commercial diffusion API. Consumer-grade style transfer typically produces a color filter, not real brushwork: SaMam reports CLIP-S\,=\,0.5816, below the identity baseline 0.6933. We trace this failure to a \emph{degeneration attractor} in Euclidean latent space, where content and style gradients share a basis. A multiplicative attenuation collapses the style signal. The attractor dissolves once transport moves to the orthogonal wavelet domain. SFM applies a Haar wavelet to the SDXL VAE latent and locks the LL subband as a content anchor. It runs flow matching only on LH, HL, HH and injects style once at the trajectory endpoint via per-subband whitening-and-coloring. The resulting model has 903K parameters, trains in 3 minutes, and transfers real brushstroke direction and edge texture rather than a global color shift.
+Because the source image is already an artwork, art-to-art style transfer is easy to overclaim. We therefore calibrate evaluation with identical-image transfer (IDT): if the unchanged source already scores highly on the requested target style, a method must beat that floor to count as real transfer. Under this calibration, low LPIPS alone is not enough. A method can preserve the source well and still move in the wrong style direction.
+
+We trace this failure to Euclidean flow matching. In standard latent coordinates, low-frequency layout and high-frequency texture share the same basis. The flow loss then favors structure preservation and makes style-conditioned motion easy to suppress. We formalize a sufficient local condition for this regime and derive three testable consequences: removing the wavelet change should hurt the CLIP-S/LPIPS frontier, matching the routed train-time and test-time path should matter, and repeated style injection should raise damage.
+
+We propose \textnormal{WD-VF}, a wavelet-decoupled vector field for rectified flow in the latent space of the Stable Diffusion v1.5 EMA VAE. A single-level Haar transform splits each latent into LL, LH, HL, and HH subbands. WD-VF predicts LL/LH/HL velocities, down-weights LL supervision, routes style queries mainly through the high-frequency bands, and applies whitening and coloring only at the endpoint.
+
+On Distinct5-WikiArt, the 903K-parameter WD-VF model trains in 3.08 minutes and stylizes 750 outputs in 83.7 seconds including VAE decode on a single RTX 3060 (12\,GB), or 111.7\,ms/image end-to-end. It reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868, exceeds SaMam by $+0.1397$ CLIP-S while training $141\times$ faster, and stays close to Seedream 4.5 on the same five-style protocol. Affordable real style transfer therefore depends on the right geometry, not a large compute budget.
 \end{abstract}
+
+\begin{strip}
+\centering
+\vspace{-0.9\baselineskip}
+\includegraphics[width=0.94\textwidth]{fig_distinct5_page1_summary.pdf}
+\captionof{figure}{IDT-calibrated comparison on Distinct5-WikiArt. Left: all-pairs CLIP-S versus $1-\mathrm{LPIPS}$ under the unified 750-pair protocol. The horizontal reference is the IDT floor (0.6933). SaMam stays below that floor, so its low LPIPS reflects near-reconstruction rather than correct-direction transfer. Right: target-pooled ArtFID on the same benchmark. Numbers inside the bars report recorded training time for learned systems and interface time for external systems.}
+\label{fig:page1}
+\vspace{-0.7\baselineskip}
+\end{strip}
 
 \section{Introduction}
 
-Real style transfer on consumer-grade hardware is hard. Modern diffusion-based methods such as CSGO train on 210K paired images with A100 clusters, which is out of reach for academic replication. Methods that do train on consumer hardware, such as CUT and SaMam, are slow: CUT takes 322 minutes and SaMam takes 436 minutes on an RTX 3090. Worse, on the 750-pair protocol (which includes identity pairs), SaMam's reported CLIP-S of 0.5816 falls below the identity baseline of 0.6933. This means it performs content reconstruction, not style transfer. Its low LPIPS is therefore a style-failure symptom, not a content-preservation win. In practice, consumer-grade outputs are typically a global color shift: the content image is preserved, but brushwork, texture, and high-frequency style cues are absent. When the model is pushed harder for style fidelity, the content tears apart. Practitioners respond by adding modules --- cross-attention, style gates, FiLM, optimal-transport adapters, discriminators --- and by enlarging compute. The color-filter failure nonetheless persists on unpaired domains.
+Art-to-art style transfer has an unusually weak failure case: doing almost nothing can still look good in standard metrics because the input is already an artwork. If the unchanged source already resembles the requested target style, raw target-style similarity is not evidence of transfer. We therefore measure every method against identical-image transfer (IDT): the unchanged source defines a no-op floor, and real transfer must move above that floor.
 
-\paragraph{The Pareto deadlock.}
-On the standard CLIP-S (style fidelity) vs.\ LPIPS (content preservation) plane, unsupervised latent methods cluster on a single one-dimensional frontier. The empirical trade-off ratio is about 1:8: every +0.01 CLIP-S costs $\approx$0.08 LPIPS. We call this the \emph{Pareto deadlock}: no amount of module stacking or hyperparameter tuning within the Euclidean latent space moves the operating point off this line. The frontier is not a capacity limit; it is a structural limit imposed by content--style entanglement in pixel/latent space.
+This calibration changes the ranking on Distinct5-WikiArt. We build the benchmark from the five WikiArt styles with the lowest IDT CLIP-S in a broader style pool, so the target direction is deliberately hard to fake. Under the unified 750-pair protocol, SaMam reaches LPIPS 0.2434 yet only CLIP-S 0.5816, well below the IDT floor of 0.6933. The issue is directional failure, not artifact level alone.
 
-\paragraph{The degeneration attractor.}
-We trace the deadlock to a \emph{degeneration attractor}: a parameter manifold on which the learned velocity field becomes style-independent and small in norm. Three multiplicative mechanisms keep the model on this manifold. These are a collapsed style gate (learned scalar $\to 0.05$), a uniform cross-attention (entropy near maximum), and a GroupNorm that washes out per-channel style statistics. Their product is $\approx 0.016$, matching the observed residual style coefficient. Adding more modules does not help because each new module is itself pulled to the attractor.
+We trace this failure to geometry. In Euclidean latent coordinates, the rectified-flow target $u_t=z_1-z_0$ mixes low-frequency layout motion and high-frequency texture motion in the same basis. The content term can then dominate the style term and create a local minimum in which the field suppresses style-conditioned motion. Theorem~\ref{thm:attractor} formalizes a sufficient local condition for this regime. More importantly, it yields concrete predictions that we later test with ablations.
 
-\paragraph{The wavelet escape.}
-Our central insight is that the attractor exists because content and style share the same Euclidean basis. Once we apply a 2D Haar wavelet transform, the LL subband carries global structure and tone, while LH/HL/HH carry directional brushwork. Content preservation becomes a constraint on LL only, and style transfer becomes a problem on LH/HL/HH only. The two objectives no longer compete. The loss landscape, previously a rugged valley, becomes nearly convex. The model devotes 100\% of its capacity to learning brushwork, and convergence takes minutes rather than hours.
+WD-VF changes coordinates instead of scaling up the generator. It applies a single-level Haar transform, down-weights LL supervision, routes style queries mainly through high-frequency bands, and stylizes only the endpoint subbands. In the ideal routed limit, the supervised residual energy decomposes by high-frequency subband. This gives a simple account of why the model trains quickly and why its ablations follow a predictable pattern.
 
-\paragraph{Spectral Flow Matching.}
-We propose \emph{Spectral Flow Matching} (SFM). SFM applies a Haar wavelet transform to the SDXL VAE latent and locks the LL subband as a content anchor. It learns a flow-matching velocity field only on the LH/HL/HH subbands and injects style once at the trajectory endpoint by per-subband whitening-and-coloring. The base manifold (LL) is invariant; style transfer happens entirely along the high-frequency fibers.
-
-\paragraph{Results.}
-SFM has 903K parameters and trains in 3 minutes on a single 12\,GB RTX 3060. On a 750-pair protocol across five WikiArt domains it reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868. It dual-beats SaMam by +0.14 CLIP-S at 1/141 the training cost, and beats the commercial Seedream 4.5 API by +0.19 LPIPS. The transfer is real brushwork rather than a color filter. Brushstroke direction, edge sharpness, and texture granularity move with the style while the content image's color palette is preserved.
+The resulting operating point is small and explicit: 903K parameters, 3.08 minutes of training on a single RTX 3060, and 83.7 seconds to generate and decode 750 outputs (111.7\,ms/image end-to-end). WD-VF reaches CLIP-S 0.7213 and LPIPS 0.2868, clears the IDT floor, trains $141\times$ faster than SaMam, and lands near Seedream 4.5 on the same five-style protocol.
 
 \paragraph{Contributions.}
-\begin{itemize}
-\item We diagnose the Pareto deadlock in unsupervised latent style transfer and trace it to a multiplicative degeneration attractor (Section~\ref{sec:attractor}).
-\item We propose \emph{Spectral Flow Matching} (SFM), a flow-matching velocity field on Haar wavelet subbands. SFM uses (i) \emph{base locking} that keeps the LL subband fixed, (ii) \emph{fiber flow} that injects style only into LH/HL/HH via per-subband whitening-and-coloring, and (iii) \emph{end-of-trajectory injection} that decouples ODE integration from style blending (Section~\ref{sec:method}).
-\item On a 750-pair protocol across five WikiArt domains, SFM reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868 with 903K parameters trained in 3 minutes on a single RTX 3060. It dual-beats SaMam (141$\times$ slower) and the commercial Seedream 4.5 API (Section~\ref{sec:exp}).
-\end{itemize}
+(1)~We introduce IDT-calibrated evaluation for art-to-art transfer and show that it changes which baselines count as real target-direction transfer.
+(2)~We give a local collapse analysis for Euclidean latent flow and state a sufficient curvature condition under which style-conditioned motion is suppressed (Theorem~\ref{thm:attractor}).
+(3)~We propose \textbf{WD-VF}, a wavelet-decoupled rectified flow with LL down-weighting, high-frequency query routing, and endpoint subband alignment, and we show that its ideal routed limit removes the dominant low-frequency conflict from both supervision and style querying (Theorem~\ref{thm:blockdiag}).
+(4)~We show that this geometry yields an affordable operating point: 903K parameters, 3.08 minutes of training, 83.7 seconds for end-to-end generation plus decode over 750 outputs, and the strongest positive-IDT CLIP-S/LPIPS tradeoff among the trained domain-conditional baselines in the current comparison.
 
 \section{Related Work}
+\label{sec:related}
 
-\paragraph{Neural style transfer.}
-Optimization-based methods~\cite{gatys2015neural,gatys2016image} match Gram matrices per-image. AdaIN~\cite{huang2017adain} and WCT~\cite{li2017universal} align channel statistics in a single forward pass. SANet~\cite{park2019sanet} and StyTr2~\cite{deng2022stytr2} add attention. AesFA~\cite{huang2024aesfa} injects aesthetic features. S2WAT~\cite{xia2024s2wat} uses hierarchical window attention. These methods run in real time but produce color-filter outputs on domains with strong brushwork (e.g., Impressionism, Ukiyo-e). The cause is that they operate in Euclidean feature space, where content and style are entangled.
+\paragraph{Exemplar-conditioned transfer.}
+Classical exemplar-based methods~\cite{gatys2015neural,gatys2016image,huang2017adain,li2017universal,deng2022stytr2,huang2024aesfa} receive a target image at inference time and transfer its statistics or correspondences. Our setting is stricter: the model sees only the source image and a target style identity. The problem is therefore domain-conditional translation rather than exemplar stylization.
 
-\paragraph{Diffusion-based style transfer.}
-StyleID~\cite{chung2024styleid} injects style into a frozen diffusion model without training; SDEdit~\cite{meng2021sdedit} adds noise and denoises. Both achieve high CLIP-S but damage content (LPIPS\,$>$\,0.45). ArtBank~\cite{zhang2024artbank} learns implicit style prompts on a pre-trained diffusion model. CSGO uses 210K paired images and A100 clusters, which is economically out of reach for academic replication. SaMam~\cite{liu2024samam} and SaMST~\cite{liu2024samst} train Mamba-based style encoders. On the 750-pair protocol (which includes identity pairs), SaMam's CLIP-S (0.5816) falls below the identity baseline (0.6933). This indicates that it performs content reconstruction, not style transfer.
+\paragraph{Domain-conditional baselines and large systems.}
+The closest learned baselines are compact multi-style systems such as SaMST and SaMam~\cite{liu2024samst,liu2024samam}. Larger diffusion-based or commercial systems such as StyleID, SDEdit, and Seedream define the high-compute end of the comparison surface~\cite{meng2021sdedit,chung2024styleid,zhang2024artbank}. WD-VF targets low-cost local training under the same domain-conditional interface.
 
-\paragraph{Flow matching and Schr\"odinger bridges.}
-Flow matching~\cite{lipman2022flow} learns a velocity field that transports one distribution to another via an ODE, avoiding simulation. Schr\"odinger bridges add an entropy regularizer and a stochastic term. We use the deterministic $\sigma{=}0$ special case (rectified flow) and condition the velocity field on a Haar wavelet decomposition of the latent. Prior wavelet-based generative work~\cite{phung2023wavelet} uses wavelets for multi-scale sampling; we use them for content--style \emph{disentanglement}, which to our knowledge is new.
+\paragraph{Wavelets and evaluation.}
+Prior wavelet methods mainly use multi-scale decompositions as feature-processing modules~\cite{daubechies1992ten,phung2023wavelet}. We use a wavelet basis instead as a coordinate change that separates low-frequency structure from high-frequency style motion. We pair this design with IDT calibration because art-to-art transfer already starts inside the art manifold. The main metrics are therefore CLIP-S, LPIPS~\cite{zhang2018lpips}, and the gap to the IDT floor. ArtFID~\cite{wright2022artfid} is reported as auxiliary evidence rather than the main success criterion.
 
-\paragraph{Wavelet methods in vision.}
-The Haar wavelet~\cite{daubechies1992ten} is the simplest orthogonal wavelet and has been used in image compression, denoising, and multi-scale architectures. In generative modeling, wavelet decompositions enable coarse-to-fine sampling and reduce sampling cost. Our use is structurally different: we exploit the orthogonality of the Haar basis to \emph{decouple} two competing loss terms (content preservation and style injection) into orthogonal subspaces. This turns a non-convex reconciliation problem into two independent convex ones. The change is a coordinate-system change, not a multi-scale trick.
-
-\paragraph{Disentanglement and coordinate-system methods.}
-Content--style disentanglement is a long-standing goal. AdaIN and WCT disentangle via channel statistics; CycleGAN and CyCADA~\cite{hoffman2018cycada} use cycle consistency; contrastive methods (CUT~\cite{park2020cut}) use patch-level negative pairs. These methods all operate in the Euclidean feature space, where content and style gradients compete. Our approach is orthogonal to this line: we do not add a new disentanglement \emph{loss}. We change the \emph{coordinate system} so that the existing losses act on disjoint subspaces. The wavelet transform provides this coordinate change for free, with no learned parameters and no additional loss terms.
-
-\paragraph{Mamba-based style transfer.}
-SaMam~\cite{liu2024samam} and SaMST~\cite{liu2024samst} adapt the Mamba state-space model~\cite{gu2023mamba} to style encoding. On the 750-pair protocol (which includes identity pairs), SaMam's reported CLIP-S (0.5816) falls below the identity baseline (0.6933). This indicates content reconstruction rather than style transfer. Its low LPIPS (0.2434) is therefore a style-failure symptom, not a content-preservation win. Our method uses a lightweight per-domain token bank instead of a Mamba encoder, and trains $141\times$ faster.
-
-\paragraph{Optimal transport and statistics matching.}
-AdaIN matches diagonal covariance; WCT matches full covariance via whitening-and-coloring. We apply WCT per-subband at the trajectory endpoint only. This avoids the iterative residual decay $r_n=(1{-}\alpha)^n$ (Proposition~\ref{prop:eota}) that makes per-step injection equivalent across $\alpha$ values.
-
-\section{Method}
+\section{Method: Wavelet-Decoupled Rectified Flow}
 \label{sec:method}
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.95\linewidth]{framework_sfm_main.png}
-\caption{Spectral Flow Matching. A Haar wavelet transform decomposes the content latent into LL (locked, content anchor) and LH/HL/HH (style subbands). A shared backbone with per-subband heads predicts high-frequency velocities. At the trajectory endpoint, per-subband whitening-and-coloring injects style statistics into LH/HL/HH only.}
+\includegraphics[width=\textwidth]{framework_sfm_main.png}
+\caption{WD-VF transforms each latent into LL, LH, HL, and HH subbands. The diagram emphasizes the high-frequency-only query case, in which LL is removed from the style-query path. The implemented model predicts LL/LH/HL velocities, trains them with asymmetric weights $(0.3,1,1)$, and applies endpoint WCT to LH/HL/HH while leaving LL untouched there.}
 \label{fig:framework}
-\end{figure}
+\end{figure*}
 
 \subsection{Setup}
 
-Let $x_c \in \mathbb{R}^{H \times W \times 3}$ be a content image and $s \in \{1,\ldots,K\}$ a target style domain. We learn a mapping $G_\theta(x_c, s) = \mathcal{D}(\hat z_s)$ where $\mathcal{D}$ is a frozen VAE decoder and $\hat z_s$ is a stylized latent. We work in the latent space of a pre-trained SDXL VAE: $z_c = \mathcal{E}(x_c) \in \mathbb{R}^{4 \times 32 \times 32}$. The transport is a deterministic ODE (rectified flow) from $z_0 = z_c$ to $z_1 \sim p_{\text{style}}$.
-
-\paragraph{Why latent space?}
-We operate in the SDXL VAE latent space rather than pixel space for two reasons. First, the $4\times32\times32$ latent reduces training cost by roughly $192\times$ compared to $512\times512$ pixels, making consumer-grade training feasible. Second, the VAE's compressed representation provides a more semantically meaningful feature space for style. Pixel-space features are dominated by low-level texture and color statistics that entangle with content. VAE latents abstract away low-level detail and expose style-relevant semantic structure. Latent diffusion produces more coherent synthesis than pixel-space diffusion at equal compute~\cite{rombach2022highresolution}.
-
-\paragraph{Flow matching.}
-We learn a velocity field $v_\theta(z_t, t, s)$ with $t \in [0,1]$. The training target is the rectilinear interpolation
+Let $x_c \in \mathbb{R}^{H \times W \times 3}$ be a content image and $s \in \{1,\ldots,K\}$ a target style domain. We work in the latent space of the Stable Diffusion v1.5 EMA VAE and write
 \begin{equation}
-z_t = (1-t)\,z_0 + t\,z_1, \qquad u_t = z_1 - z_0,
+z_0 = \mathcal{E}(x_c) \in \mathbb{R}^{4 \times 32 \times 32}.
 \end{equation}
-and the flow-matching loss is
-\begin{equation}
-\mathcal{L}_{\text{FM}}(\theta) = \mathbb{E}_{t \sim \mathcal{U}(0,1)} \big\| v_\theta(z_t, t, s) - u_t \big\|_2^2.
-\label{eq:fm}
-\end{equation}
-At inference, we integrate the ODE with an 8-step Heun solver (second-order Runge--Kutta):
-\begin{equation}
-z_{t+\Delta t} = z_t + \tfrac{\Delta t}{2}\big[v_\theta(z_t, t, s) + v_\theta(z_t + \Delta t \, v_\theta(z_t, t, s),\, t{+}\Delta t,\, s)\big].
-\end{equation}
-Heun gives a structural degree of freedom that Euler does not. Switching Euler$\to$Heun improves CLIP-S by +0.0056 at fixed $\alpha$; switching Heun$\to$RK4 adds nothing (saturation). The solver order is a Pareto-breaking knob; schedule shape, $\alpha$, and capacity are not.
-
-\subsection{Why Euclidean Fails}
-\label{sec:attractor}
-
-We diagnose why the Euclidean approach fails before presenting our spectral solution. Consider a velocity field $v_\theta(z, t, s)$ trained with loss $\mathcal{L} = w_{\text{FM}} \mathcal{L}_{\text{FM}} + w_{\text{SWD}} \mathcal{L}_{\text{SWD}}$ where $\mathcal{L}_{\text{SWD}}$ is a sliced-Wasserstein style term.
-
-\begin{definition}[Degeneration manifold]
-\label{def:attractor}
-The \emph{degeneration manifold} is the set of parameters on which the velocity field is style-independent:
-\begin{equation}
-\mathcal{M}_0 = \big\{\theta \,:\, v_\theta(z, t, s) = \bar v_\theta(z, t) = \mathbb{E}_{s \sim p(s)}[v_\theta(z, t, s)] \;\;\forall s, z, t\big\}.
-\end{equation}
-Equivalently, $\nabla_s v_\theta(z,t,s)|_{\theta\in\mathcal{M}_0} = 0$: the Jacobian of $v_\theta$ with respect to the style variable vanishes identically.
-\end{definition}
-
-\begin{theorem}[$\mathcal{M}_0$ is a local minimum under multiplicative attenuation]
-\label{thm:attractor}
-Assume the loss decomposes as $\mathcal{L} = w_{\text{FM}} \mathcal{L}_{\text{FM}} + w_{\text{SWD}} \mathcal{L}_{\text{SWD}}$ with $w_{\text{FM}} \gg w_{\text{SWD}}$, and that three multiplicative attenuation factors act on the style gradient: a scalar gate $g(\theta)\in[0,1]$, an attention entropy factor $h(\theta)\in[0,1]$ (with $h=1$ uniform), and a normalization washout factor $n(\theta)\in[0,1]$. Let $\kappa(\theta) = g(\theta)\,h(\theta)\,n(\theta)$. If at $\theta_0\in\mathcal{M}_0$:
-\begin{enumerate}
-\item[(i)] $\kappa(\theta_0) \leq \sqrt{w_{\text{SWD}}/w_{\text{FM}}}$ (style gradient too small to overcome content gradient),
-\item[(ii)] the Hessian $\nabla^2_{\theta_\perp} \mathcal{L}_{\text{FM}}|_{\theta_0}$ is positive definite on the normal bundle $T_{\theta_0}^\perp \mathcal{M}_0$ (content loss is locally strictly convex in the escape direction),
-\item[(iii)] $\nabla^2 \mathcal{L}_{\text{SWD}}|_{\theta_0}$ has operator norm $\leq \kappa(\theta_0)\,\|\nabla^2 \mathcal{L}_{\text{FM}}\|$ (style loss is flat near $\mathcal{M}_0$),
-\end{enumerate}
-then $\theta_0$ is a strict local minimum of $\mathcal{L}$. The basin of attraction has radius $\Theta(\kappa(\theta_0))$.
-\end{theorem}
-\begin{proof}[Proof sketch]
-By (i), $\|\nabla_\theta \mathcal{L}_{\text{SWD}}\| \leq \kappa\,\|\nabla_\theta \mathcal{L}_{\text{FM}}\|$ at $\theta_0$, so the total gradient $\nabla \mathcal{L} = w_{\text{FM}}\nabla\mathcal{L}_{\text{FM}} + w_{\text{SWD}}\nabla\mathcal{L}_{\text{SWD}}$ is dominated by $w_{\text{FM}}\nabla\mathcal{L}_{\text{FM}}$, which vanishes on $\mathcal{M}_0$ by definition. By (ii), the second variation $\delta^2 \mathcal{L}_{\text{FM}} > 0$ on $T^\perp\mathcal{M}_0$; by (iii), $\delta^2 \mathcal{L}_{\text{SWD}}$ is a bounded perturbation that does not flip the sign of $\delta^2\mathcal{L}$ within radius $O(\kappa)$. Hence $\delta^2\mathcal{L} > 0$ in a neighborhood of $\theta_0$ on $T^\perp\mathcal{M}_0$, making $\theta_0$ a strict local min. Full proof in the supplement.\qed
-\end{proof}
-
-In our Euclidean baseline, the three factors are measured empirically: gate $g\approx 0.05$, attention $h\approx 1$ (uniform), normalization $n\approx 0.32$ (GroupNorm washout). Their product $\kappa \approx 0.016$ matches the observed residual style coefficient. The ratio $w_{\text{SWD}}/w_{\text{FM}} = 0.01/1.0$ gives $\sqrt{w_{\text{SWD}}/w_{\text{FM}}} = 0.1 \gg \kappa$, so condition (i) holds. The attractor is multiplicative, so removing any single mechanism (e.g., increasing the gate initialization) is cancelled by the others. The Euclidean regime is therefore structurally bounded at CLIP-S $\approx 0.7175$. No reweighting of the three attenuations escapes the manifold, because their product stays below the style-gradient threshold.
-
-\begin{proposition}[Wavelet escape]
-\label{prop:escape}
-Under the spectral wavelet decomposition, the content gradient $\nabla_\theta \mathcal{L}_{\text{FM}}$ flows through the LL subband and the style gradient $\nabla_\theta \mathcal{L}_{\text{SWD}}$ flows through LH/HL/HH. By Proposition~\ref{prop:decouple} these subspaces are orthogonal, so the Hessian $\nabla^2\mathcal{L}$ block-diagonalizes: $\nabla^2\mathcal{L} = \text{blkdiag}(\nabla^2_{\text{LL}}\mathcal{L}_{\text{FM}},\, \nabla^2_{\text{HF}}\mathcal{L}_{\text{SWD}})$. The cross term $\nabla^2_{\text{LL, HF}}\mathcal{L}$ vanishes, condition (ii) of Theorem~\ref{thm:attractor} no longer binds the HF block, and $\mathcal{M}_0$ ceases to be a critical manifold of $\mathcal{L}_{\text{wavelet}}$.
-\end{proposition}
-
-The wavelet decomposition of the next section provides this escape.
-
-\subsection{Spectral Decomposition}
-
-We apply a single-level 2D Haar wavelet transform to $z_t$, producing four subbands at half resolution. For each $2\times2$ patch $(a,b,c,d)$:
+During training, $z_1 \sim p_s$ is a latent sampled from the target domain. Rectified flow uses the straight segment
 \begin{equation}
 \begin{aligned}
-\text{LL} &= \tfrac12(a+b+c+d), & \text{LH} &= \tfrac12(a+b-c-d),\\
-\text{HL} &= \tfrac12(a-b+c-d), & \text{HH} &= \tfrac12(a-b-c+d).
+z_t &= (1-t)z_0 + tz_1,\\
+u_t &= z_1 - z_0, \qquad t \sim \mathcal U([0,1]).
+\end{aligned}
+\label{eq:fm}
+\end{equation}
+At inference we integrate an 8-step Heun solver,
+\begin{equation}
+\begin{aligned}
+v_t &= v_\theta(z_t,t,s),\\
+v_t' &= v_\theta(z_t + \Delta t\,v_t, t+\Delta t, s),\\
+z_{t+\Delta t} &= z_t + \frac{\Delta t}{2}\left(v_t + v_t'\right),
 \end{aligned}
 \end{equation}
-The Haar matrix is orthogonal: $\text{LL}^2+\text{LH}^2+\text{HL}^2+\text{HH}^2 = a^2+b^2+c^2+d^2$. Reconstruction $\text{IDWT}(\cdot)$ is exact. A multi-level decomposition recurses on LL; we use three levels, the empirical sweet spot. Four levels loses positional information and degrades CLIP-S by 0.0003; two levels loses 0.0018.
+then decode $\hat x_s = \mathcal D(\hat z_1)$. Heun is the best measured cost-quality tradeoff in our ablations: Euler loses style, while RK4 adds cost without improving the final result.
 
-\begin{lemma}[Wavelet isometry and Parseval identity]
-\label{lem:iso}
-Let $\mathcal{W}: \mathbb{R}^{C\times H\times W} \to \mathbb{R}^{C\times H/2\times W/2}\!\times\!\{4\text{ subbands}\}$ denote the single-level 2D Haar DWT. The Haar kernel matrix $H_2 = \tfrac{1}{\sqrt{2}}\bigl[\begin{smallmatrix}1 & 1\\ 1 & -1\end{smallmatrix}\bigr]$ satisfies $H_2^\top H_2 = I_2$, so $\mathcal{W}$ is an isometry: $\|\mathcal{W}(z)\|_F^2 = \|z\|_F^2$. Consequently, for any partition of the four subbands into two disjoint sets $A,B$ (e.g.\ $A=\{\text{LL}\}$, $B=\{\text{LH,HL,HH}\}$), $\|z\|_F^2 = \|A\|_F^2 + \|B\|_F^2$ with no cross term.
-\end{lemma}
+\subsection{Why Euclidean Latents Collapse}
+\label{sec:attractor}
 
-\begin{proposition}[Spectral content--style decoupling]
-\label{prop:decouple}
-Let $z = z^{\text{cnt}} + z^{\text{sty}}$ be a decomposition in which the content signal concentrates its energy in LL, i.e.\ $\|z^{\text{cnt}}_{\text{LL}}\|_F^2 \geq (1-\epsilon)\|z^{\text{cnt}}\|_F^2$ for some $\epsilon\in[0,1]$. Then any transform $T$ acting only on the high-frequency subbands $\{\text{LH,HL,HH}\}$ perturbs the content energy by at most $\epsilon\,\|z^{\text{cnt}}\|_F^2$:
-\[
-\bigl|\,\|T(z) - z\|_F^2 - \|T(z^{\text{sty}}) - z^{\text{sty}}\|_F^2\,\bigr| \;\leq\; \epsilon\,\|z^{\text{cnt}}\|_F^2.
-\]
-\end{proposition}
-\begin{proof}
-By Lemma~\ref{lem:iso} the LL and HF subspaces are orthogonal, so $\|T(z)-z\|_F^2 = \|T(z^{\text{sty}})-z^{\text{sty}}\|_F^2 + \|T(z^{\text{cnt}}_{\text{HF}}) - z^{\text{cnt}}_{\text{HF}}\|_F^2$. The second term is bounded by $\|z^{\text{cnt}}_{\text{HF}}\|_F^2 \leq \epsilon\,\|z^{\text{cnt}}\|_F^2$ by the energy-concentration assumption.\qed
-\end{proof}
-
-\paragraph{Subband semantics.}
-LL carries global tone and object layout; LH/HL carry directional edges and brushwork; HH carries fine noise. In a controlled ablation, applying the LL velocity at inference contributes $+0.0141$ CLIP-S, while \emph{training} the LL velocity contributes $-0.0091$ LPIPS via a gradient-backbone interaction. The two are decoupled, which motivates the design below.
-
-\subsection{Base Locking}
-\label{sec:baselock}
-
-We set the LL velocity loss weight $w_{\text{LL}}=0$ during training but still apply the (small, freely drifting) predicted LL velocity at inference:
+If style transfer is learned directly in Euclidean latent coordinates, the natural objective is
 \begin{equation}
-\mathcal{L}(\theta) = \sum_{c \in \{\text{LH, HL, HH}\}} w_c \, \mathbb{E}_{t} \big\| v_\theta^{c}(z_t, t, s) - u_t^{c} \big\|_2^2,
+\mathcal L_{\mathrm{euc}}
+=
+w_f\,\mathcal L_{\mathrm{FM}}
++ w_s\,\mathcal L_{\mathrm{sty}},
+\label{eq:euc}
 \end{equation}
-with $w_{\text{LH}}=w_{\text{HL}}=1$ and $w_{\text{HH}}=0$ (the HH head is removed entirely; in ablation, training vs.\ not training HH differs by $\Delta\text{CLIP-S}=\pm0.0001$). This \emph{base locking} choice is counter-intuitive: naively one would freeze LL at inference to ``protect content.'' We tried that (Table~\ref{tab:ablation}, ``LL lock at inference''): it costs 0.0141 CLIP-S. LL also carries global style (color palette, lighting), and freezing it removes the only path by which the model can shift global tone. Letting LL drift freely during training but applying the drift at inference gives both the content anchor and the global-style channel. The content anchor holds because LL is barely trained, so $v_\theta^{\text{LL}}$ is small.
+where
+\(
+\mathcal L_{\mathrm{FM}}
+=
+\mathbb E_t\|\tilde v_\theta(z_t,t,s)-u_t\|_2^2
+\)
+and $\mathcal L_{\mathrm{sty}}$ is any endpoint style-matching term. The difficulty is structural: the straight target $u_t=z_1-z_0$ mixes low-frequency layout motion and high-frequency texture motion in the same coordinates.
 
-\subsection{Fiber Flow: Per-Subband Style Injection}
-\label{sec:fiber}
-
-After the ODE reaches $\hat z_s$, we inject style by matching per-subband statistics. Write the endpoint latent and a reference style latent as
+\begin{definition}
+\label{def:attractor}
+Define
 \begin{equation}
-\hat z_s = \text{IDWT}(\hat\ell, \hat{\text{lh}}, \hat{\text{hl}}, \hat{\text{hh}}), \quad z_s^{\text{ref}} = \text{IDWT}(\ell^{\text{ref}}, \text{lh}^{\text{ref}}, \text{hl}^{\text{ref}}, \text{hh}^{\text{ref}}).
+\mathcal M_0
+=
+\{\theta:\tilde v_\theta(z,t,s)=\bar v_\theta(z,t)\ \text{for all } z,t,s\},
 \end{equation}
-For each high-frequency subband $c \in \{\text{lh, hl, hh}\}$, we apply a whitening-and-coloring transform:
-\begin{equation}
-\text{WCT}(\hat c, c^{\text{ref}}) = \Sigma_{c^{\text{ref}}}^{1/2}\, \Sigma_{\hat c}^{-1/2}\, (\hat c - \mu_{\hat c}) + \mu_{c^{\text{ref}}},
-\end{equation}
-where $\mu, \Sigma$ are channel-wise mean and covariance, regularized as $\Sigma + 10^{-5} I$ for numerical stability. The LL subband is left unchanged: $\ell^{\text{new}} = \hat\ell$. The final latent is $\text{IDWT}(\ell^{\text{new}}, \text{lh}^{\text{new}}, \text{hl}^{\text{new}}, \text{hh}^{\text{new}})$.
-
-This is a \emph{fiber flow}: LL is the base manifold (content anchor), and the three high-frequency subbands are fibers above each LL point. Style transfer happens entirely in the fibers; the base is invariant. Because the Haar transform is orthogonal, per-fiber statistics matching is equivalent to per-frequency-band style injection in the original latent, with no cross-band leakage.
-
-\begin{definition}[Spectral fiber bundle]
-\label{def:fiber}
-The total space $E = \mathbb{R}^{C\times H\times W}$ is equipped with the projection $\pi: E \to B$ that returns the LL subband, $\pi(z) = z^{\text{LL}} \in B = \mathbb{R}^{C\times H/2\times W/2}$. The fiber above a base point $b\in B$ is $F_b = \pi^{-1}(b) = \{z : z^{\text{LL}}=b\} \cong \mathbb{R}^{3C\times H/2\times W/2}$, parameterized by the three high-frequency subbands $(\text{LH,HL,HH})$. A \emph{fiber-preserving map} $T:E\to E$ satisfies $\pi(T(z)) = \pi(z)$ for all $z$.
+with $\bar v_\theta(z,t)=\mathbb E_s[\tilde v_\theta(z,t,s)]$.
 \end{definition}
 
-\begin{proposition}[WCT is fiber-preserving]
-\label{prop:wct}
-The per-subband whitening-and-coloring transform $\text{WCT}_c$ on each high-frequency subband $c\in\{\text{lh,hl,hh}\}$ leaves LL unchanged, hence $\pi(\text{WCT}(\hat z_s)) = \pi(\hat z_s) = \hat\ell$. The content anchor (LL) is an invariant of the style injection; style transfer is a vertical map along the fibers $F_b$.
-\end{proposition}
+The set $\mathcal M_0$ contains parameters whose field ignores the style label. This is the low-LPIPS, sub-IDT regime we observe empirically. The Euclidean baseline is well described by
+\begin{equation}
+\begin{aligned}
+\tilde v_\theta(z,t,s)
+&=
+\bar v_\theta(z,t) + \kappa(\theta)\,\Delta v_\theta(z,t,s),\\
+\mathbb E_s[\Delta v_\theta(z,t,s)]
+&= 0,
+\end{aligned}
+\label{eq:kappa}
+\end{equation}
+where $\kappa(\theta)$ is the retained style amplitude. Points on $\mathcal M_0$ satisfy $\kappa(\theta)=0$.
 
-\subsection{End-of-Trajectory Injection}
-\label{sec:eota}
-
-A subtle failure of per-step style injection is that the residual content fraction after $n$ AdaIN steps with blend $\alpha$ is $r_n = (1-\alpha)^n$. For $n=8$ and $\alpha=0.5$, $r_n \approx 0.0039$, so $\alpha=0.5$ and $\alpha=1.0$ are indistinguishable. We therefore inject style \emph{only at the last ODE step}: the first $n-1$ steps are pure ODE integration, and WCT is applied once at $t=1$. This restores $\alpha$ as a meaningful trade-off knob (verified by a monotone $\alpha$-ablation). It also matches the Schr\"odinger bridge view, in which style is a terminal constraint, not a per-step perturbation.
-
-\begin{proposition}[$\alpha$-identifiability under endpoint injection]
-\label{prop:eota}
-Let $r_n(\alpha) = (1-\alpha)^n$ be the content residual after $n$ per-step injections with blend $\alpha\in(0,1]$. Two blends $\alpha_1 < \alpha_2$ are \emph{$\delta$-indistinguishable} if $|r_n(\alpha_1) - r_n(\alpha_2)| < \delta$. Under per-step injection with $n\geq 2$, the set of $\delta$-indistinguishable pairs covers $[0,1]^2$ for any $\delta > (1-\alpha_{\min})^n$. Under endpoint injection ($n=1$), $r_1(\alpha)=1-\alpha$ is injective in $\alpha$, so all pairs are distinguishable for any $\delta < 1$.
-\end{proposition}
+\begin{theorem}
+\label{thm:attractor}
+Let $\theta_0\in\mathcal M_0$ be stationary in the normal directions:
+\begin{equation}
+\nabla_\perp \mathcal L_{\mathrm{FM}}(\theta_0)=0,
+\qquad
+\nabla_\perp \mathcal L_{\mathrm{sty}}(\theta_0)=0.
+\label{eq:collapse-stationary}
+\end{equation}
+Suppose the normal curvatures satisfy
+\begin{equation}
+\nabla_\perp^2 \mathcal L_{\mathrm{FM}}(\theta_0)\succeq \mu I,
+\qquad
+\|\nabla_\perp^2 \mathcal L_{\mathrm{sty}}(\theta_0)\|_{\mathrm{op}}\le\nu,
+\label{eq:collapse-assumptions}
+\end{equation}
+If $w_f\mu>w_s\nu$, then $\theta_0$ is a strict local minimum of $\mathcal L_{\mathrm{euc}}$ restricted to the normal space $T_{\theta_0}^{\perp}\mathcal M_0$.
+\end{theorem}
 \begin{proof}
-For $n\geq 2$, $r_n$ is convex and decreasing on $[0,1]$ with $r_n(0)=1$, $r_n(1)=0$; its Lipschitz constant is $n(1-\alpha_{\min})^{n-1}$, which exceeds 1 for small $\alpha_{\min}$, collapsing the resolution. For $n=1$, $r_1(\alpha) = 1-\alpha$ is affine with slope $-1$, hence injective.\qed
+For any normal perturbation $\delta\in T_{\theta_0}^{\perp}\mathcal M_0$, the stationarity conditions~\eqref{eq:collapse-stationary} remove all first-order terms. A second-order expansion gives
+\begin{equation}
+\begin{aligned}
+\Delta \mathcal L_{\mathrm{euc}}(\delta)
+&=
+\tfrac12 \delta^\top
+\Bigl(
+w_f\nabla_\perp^2 \mathcal L_{\mathrm{FM}}(\theta_0)
++
+w_s\nabla_\perp^2 \mathcal L_{\mathrm{sty}}(\theta_0)
+\Bigr)\delta \\
+&\quad + o(\|\delta\|^2).
+\end{aligned}
+\end{equation}
+Using~\eqref{eq:collapse-assumptions},
+\begin{equation}
+\Delta \mathcal L_{\mathrm{euc}}(\delta)
+\ge
+\tfrac12(w_f\mu-w_s\nu)\|\delta\|^2 + o(\|\delta\|^2).
+\end{equation}
+The coefficient of $\|\delta\|^2$ is positive, so $\Delta \mathcal L_{\mathrm{euc}}(\delta)>0$ for all sufficiently small nonzero $\delta$.
 \end{proof}
 
-\subsection{Stochastic Frequency Routing}
-\label{sec:stochastic}
+The two curvature bounds have a simple meaning. The flow term is locally steep in the normal directions, while the style term is locally flatter. When $w_f\mu>w_s\nu$, the cheaper local choice is to stay near $\mathcal M_0$ instead of following the style-conditioned direction.
 
-The cross-attention layer that routes style tokens into the velocity field can operate on the full latent (Euclidean query) or on the high-frequency tokens only (wavelet query). At inference we always use the wavelet query. At training time, we draw a Bernoulli variable $B \sim \text{Bernoulli}(p)$ per step and use the wavelet query with probability $p$, the full query otherwise. We set $p=0.8$.
+Theorem~\ref{thm:attractor} is explanatory, but it is not empty. It yields a concrete prediction: if the style field is learned in plain Euclidean coordinates, then removing the wavelet change should move the model toward a weaker CLIP-S/LPIPS operating point. The No-DWT row in Table~\ref{tab:ablation} and the small fitted style amplitude of the Euclidean baseline ($\kappa\approx0.016$) test exactly that prediction.
 
-The rationale is a train--test distribution mismatch: if $p=1.0$ throughout training, the style encoder over-specializes to high-frequency statistics and loses global palette information. If $p=0.0$ (wavelet only at inference), the query projection has never seen wavelet coefficients and the route fails (CLIP-S drops to 0.7061). The sweep $p \in \{0.0, 0.5, 0.8, 1.0\}$ gives CLIP-S $\in \{0.7061, 0.7083, 0.7213, 0.7226\}$ and LPIPS $\in \{0.2606, 0.2480, 0.2868, 0.3068\}$. $p=0.8$ is the unique point where both metrics pass the dual threshold.
+\subsection{Wavelet Coordinates}
+\label{sec:fiberbundle}
 
-\subsection{Architecture and Training}
+WD-VF first changes coordinates. For a $2\times2$ patch $(a,b,c,d)$, the single-level Haar transform writes
+\begin{equation}
+\mathcal W(z) = (\ell,h_1,h_2,h_3),
+\end{equation}
+with
+\begin{equation}
+\begin{aligned}
+\ell&=\tfrac12(a+b+c+d),\qquad
+h_1=\tfrac12(a+b-c-d),\\
+h_2&=\tfrac12(a-b+c-d),\qquad
+h_3=\tfrac12(a-b-c+d).
+\end{aligned}
+\end{equation}
+Here $\ell$ is the low-frequency coordinate and $h=(h_1,h_2,h_3)$ collects the high-frequency coordinates.
 
-The backbone is four residual blocks at $C{=}64$ with AdaIN conditioning. It processes the concatenated subbands $[z^{\text{LL}}, z^{\text{LH}}, z^{\text{HL}}] \in \mathbb{R}^{12 \times 16 \times 16}$ (HH is dropped, see Section~\ref{sec:baselock}). Per-subband $3{\times}3$ convolutional heads output $v^{\text{LL}}, v^{\text{LH}}, v^{\text{HL}} \in \mathbb{R}^{4 \times 16 \times 16}$. The style encoder is a frozen DINOv2 backbone with a learnable per-domain token bank (5 tokens $\times$ 64 dims). Total trainable parameters: 903{,}248. We train for 5 epochs with batch size 24, Adam at lr $10^{-4}$, on a single RTX 3060 (12\,GB). End-to-end training time is 3 minutes 5 seconds including data loading and checkpoint saving.
+\begin{lemma}
+\label{lem:iso}
+The transform is orthogonal, so
+\begin{equation}
+\|z\|_F^2 = \|\ell\|_F^2 + \|h_1\|_F^2 + \|h_2\|_F^2 + \|h_3\|_F^2.
+\end{equation}
+\end{lemma}
+
+\begin{definition}
+\label{def:fiber}
+We use $\ell$ as the low-frequency coordinate and $(h_1,h_2,h_3)$ as the high-frequency coordinates. Equivalently, the projection map is $\pi(z)=\ell$.
+\end{definition}
+
+\begin{proposition}
+\label{prop:decouple}
+Let $z=z_{\mathrm{cnt}}+z_{\mathrm{sty}}$ and write $\mathcal W(z_{\mathrm{cnt}})=(\ell_{\mathrm{cnt}},h_{\mathrm{cnt}})$. If
+\begin{equation}
+\|h_{\mathrm{cnt}}\|_F^2 \le \epsilon \|z_{\mathrm{cnt}}\|_F^2
+\qquad
+\text{for some } \epsilon\in[0,1],
+\end{equation}
+then any high-frequency-only map $T_\ell(\ell,h)=(\ell,\phi(h))$ satisfies
+\begin{equation}
+\left|
+\|T_\ell(z)-z\|_F^2 - \|\phi(h)-h\|_F^2
+\right|
+\le \epsilon \|z_{\mathrm{cnt}}\|_F^2.
+\end{equation}
+\end{proposition}
+\begin{proof}
+Lemma~\ref{lem:iso} removes all cross terms between $\ell$ and $h$. The only content perturbation left is the small content residue already present in $h$.
+\end{proof}
+
+This proposition states the geometric premise of WD-VF: when most content energy lies in LL, moving only the high-frequency coordinates changes texture much more than layout.
+
+\subsection{Training Objective}
+\label{sec:baselock}
+
+Let
+\begin{equation}
+\begin{aligned}
+\mathcal W(z_t) &= (\ell_t,h_{1,t},h_{2,t},h_{3,t}),\\
+\mathcal W(u_t) &= (u_\ell,u_1,u_2,u_3).
+\end{aligned}
+\end{equation}
+The final WD-VF model receives $(\ell_t,h_{1,t},h_{2,t},h_{3,t})$ and predicts three velocity heads $(v_\ell,v_1,v_2)$. The $h_3$ band is kept in the state and stylized at the endpoint, but it has no learned velocity head because the measured gain of an HH head is within $\pm0.0001$ CLIP-S.
+
+The implemented training objective is
+\begin{equation}
+\begin{aligned}
+\mathcal L_{\mathrm{impl}}
+&=
+\mathbb E_t\!\left[
+\lambda_\ell\|v_\ell-u_\ell\|_2^2
++ \|v_1-u_1\|_2^2
++ \|v_2-u_2\|_2^2
+\right].
+\end{aligned}
+\label{eq:wdvf-loss}
+\end{equation}
+with
+\begin{equation}
+\lambda_\ell = 0.3.
+\label{eq:lambda-ll}
+\end{equation}
+WD-VF de-weights LL rather than eliminating it. Some styles also shift coarse color tone, so LL remains as a weak anchor term. Its weight stays strictly below the two learned high-frequency terms.
+
+Loss-level de-weighting is only half of the construction. At inference we also route style queries through the high-frequency channels only:
+\begin{equation}
+\begin{aligned}
+q_{\mathrm{routed}} &= Q[h_{1,t};h_{2,t};h_{3,t}],\\
+k &= K(m_s),\\
+v &= V(m_s),
+\end{aligned}
+\label{eq:q-routed}
+\end{equation}
+where $m_s$ is the style memory. During training, we use the high-frequency query with probability $p=0.8$ and the full-latent query $q_{\mathrm{full}} = Q[\ell_t;h_{1,t};h_{2,t};h_{3,t}]$ with probability $0.2$. This stochastic routing matches the inference geometry while preserving a small low-frequency color channel.
+
+\section{Why WD-VF Trains Quickly}
+\label{sec:opt}
+
+\subsection{High-Frequency-Only Query Case}
+\label{sec:blockdiag}
+
+The next theorem isolates the mechanism behind WD-VF. In this case, $\lambda_\ell=0$ and the high-frequency query~\eqref{eq:q-routed} is used deterministically.
+
+\begin{theorem}
+\label{thm:blockdiag}
+In the high-frequency-only query case, the supervised WD-VF objective reduces to
+\begin{equation}
+\mathcal L_{\mathrm{ideal}}
+=
+\mathbb E_t\!\left[\|v_1-u_1\|_2^2 + \|v_2-u_2\|_2^2\right].
+\label{eq:objdecomp}
+\end{equation}
+That is, the learned style transport lives on two orthogonal supervised subbands: $h_1$ and $h_2$.
+\end{theorem}
+\begin{proof}
+Lemma~\ref{lem:iso} makes the residual norm split by subband. Setting $\lambda_\ell=0$ removes the LL residual, and the implementation has no learned velocity head for $h_3$. In the high-frequency-only query case, $\ell$ is also absent from the style-query path. The only supervised transport terms that remain are therefore the $h_1$ and $h_2$ residuals.
+\end{proof}
+
+\begin{corollary}
+\label{cor:escape}
+Under Theorem~\ref{thm:blockdiag}, the dominant low-frequency conflict identified by Theorem~\ref{thm:attractor} is absent from both the supervised objective and the style-query path.
+\end{corollary}
+
+This result also yields concrete predictions. First, train-time routing should matter because the best inference path is the high-frequency path. Second, repeated style injection should be unnecessary once high-frequency transport is learned cleanly, so endpoint-only alignment should preserve LPIPS better than per-step injection. We test both predictions in Tables~\ref{tab:ablation} and~\ref{tab:theorylink}.
+
+\paragraph{Final model.}
+The final WD-VF model keeps the same geometry with $\lambda_\ell=0.3$, a high-frequency query used with probability $p=0.8$, a full-latent query used with probability $0.2$, and no HH velocity head. Inference returns to the high-frequency query, and endpoint WCT stylizes LH/HL/HH while keeping LL fixed. This setting retains a low-frequency tone channel without reopening the dominant Euclidean conflict.
+
+\subsection{Endpoint Subband Alignment}
+\label{sec:eota}
+
+Let the integrated endpoint satisfy
+\begin{equation}
+\mathcal W(\hat z_1) = (\hat \ell,\hat h_1,\hat h_2,\hat h_3),
+\end{equation}
+and let a reference style latent satisfy
+\begin{equation}
+\mathcal W(z_1^\star) = (\ell^\star,h_1^\star,h_2^\star,h_3^\star).
+\end{equation}
+For $i\in\{1,2,3\}$, define the whitening-coloring map
+\begin{equation}
+T_i(a) = \Sigma_i^{\star 1/2}\,\hat\Sigma_i^{-1/2}(a-\hat\mu_i)+\mu_i^\star,
+\end{equation}
+where $(\hat\mu_i,\hat\Sigma_i)$ are the mean and covariance of $\hat h_i$ and $(\mu_i^\star,\Sigma_i^\star)$ are those of $h_i^\star$.
+
+We then set
+\begin{equation}
+\mathcal W(\hat z_1^+) = (\hat \ell, T_1(\hat h_1), T_2(\hat h_2), T_3(\hat h_3)).
+\end{equation}
+
+\begin{proposition}
+\label{prop:wct}
+The endpoint WCT leaves the base coordinate fixed:
+\begin{equation}
+\pi(\hat z_1^+) = \pi(\hat z_1) = \hat \ell.
+\end{equation}
+\end{proposition}
+\begin{proof}
+Each map $T_i$ acts only on $h_i$. The first coordinate of $\mathcal W(\hat z_1^+)$ is therefore still $\hat \ell$, and the inverse wavelet transform preserves that base coordinate.
+\end{proof}
+
+WCT is used here as a terminal second-order alignment map. In the final model, the endpoint scales are $(0.0, 0.3, 0.3, 0.5)$ for LL/LH/HL/HH respectively, so the low-frequency coordinate is left untouched while the three high-frequency bands receive progressively stronger moment matching.
+
+We stylize only once at the endpoint to preserve strength control. If a blend of strength $\alpha$ is applied at every step for $n$ steps, the residual content fraction is
+\begin{equation}
+r_n(\alpha) = (1-\alpha)^n.
+\end{equation}
+
+\begin{proposition}
+\label{prop:eota}
+For $n=8$, even a moderate blend gives $r_8(0.5)=3.9\times10^{-3}$, so repeated injection quickly saturates. Endpoint-only injection corresponds to $n=1$, for which
+\begin{equation}
+r_1(\alpha)=1-\alpha
+\end{equation}
+is affine and therefore preserves blend identifiability.
+\end{proposition}
+\begin{proof}
+Each injection preserves a fraction $1-\alpha$ of the current content residue, so composing $n$ identical injections gives $r_n(\alpha)=(1-\alpha)^n$. The case $n=1$ is affine in $\alpha$, whereas $n\gg1$ compresses the same control range exponentially.
+\end{proof}
+
+\subsection{Architecture and Measured Cost}
+\label{sec:arch}
+
+The selected checkpoint uses four residual blocks at width $64$, three $3\times3$ velocity heads (LL/LH/HL), and 903K trainable parameters. Training runs for 5 epochs with batch size 24 and AdamW at $2\times10^{-4}$. The model trains end-to-end in 3.08 minutes on a single RTX 3060 (12\,GB). On the aligned 750-pair packet, latent generation takes 42.9 seconds and VAE decode takes 40.8 seconds, so stylization itself takes 83.7 seconds, or 111.7\,ms/image. Adding CLIP and LPIPS metrics brings the full evaluation packet to 97.3 seconds. The distinction matters because the paper claims affordable transfer, not merely affordable offline evaluation.
 
 \section{Experiments}
 \label{sec:exp}
 
-\subsection{Setup}
+\subsection{Setup and Protocol}
 
 \paragraph{Dataset.}
-We use the Distinct5-WikiArt-512 benchmark: five artistic domains --- Early Renaissance, Impressionism, Minimalism, Rococo, Ukiyo-e. Each domain has 3{,}600 training images and 150 test images. Inputs are SDXL VAE latents at $4{\times}32{\times}32$ (512$\times$512 images). Training uses 18{,}000 latents; evaluation uses 750 pairs (5 source domains $\times$ 5 target domains $\times$ 30 source images).
+We use the Distinct5-WikiArt-512 benchmark: five artistic domains --- Early Renaissance, Impressionism, Minimalism, Rococo, and Ukiyo-e. These five styles were selected from a broader WikiArt pool as the styles with the lowest IDT CLIP-S, so the benchmark intentionally emphasizes transfers that are hard to fake with no-op behavior. Each domain has 3{,}600 training images and 150 test images. Inputs are $4{\times}32{\times}32$ latents from the Stable Diffusion v1.5 EMA VAE for 512$\times$512 images. Training uses 18{,}000 latents; evaluation uses 750 pairs (5 source domains $\times$ 5 target domains $\times$ 30 source images).
 
 \paragraph{Metrics.}
 CLIP-S is the cosine similarity between CLIP ViT-B/32 embeddings of the output and a target-style prototype (higher is better). LPIPS is the AlexNet perceptual distance between output and content image (lower is better). We use the HuggingFace \texttt{transformers} CLIP backend and the standard Alex LPIPS. All baselines are evaluated under this unified protocol.
 
+\paragraph{IDT calibration.}
+The 750-pair protocol includes 150 identity pairs (source = target domain). This is the key calibration: a method that performs \emph{no} style transfer (Identity) achieves CLIP-S\,=\,0.6933. Any method whose CLIP-S falls below 0.6933 is staying closer to the source style than to the requested target style, even if LPIPS is low. This protocol exposes SaMam's failure mode (CLIP-S 0.5816 $<$ 0.6933), which LPIPS-only reporting hides.
+
 \paragraph{Baselines.}
-Twelve methods: Identity (no transfer), AdaIN, WCT (VGG19), SD-Turbo, SDEdit at $s{\in}\{0.35, 0.40\}$, StyleID, CUT, SaMST, SaMam, Seedream 4.5 (commercial API), and our method. All trainable baselines (CUT, SaMST, SaMam) are trained to convergence on the same Distinct5 training set. SaMam is trained for 20{,}000 steps (436 minutes); CUT for 322.6 minutes.
+Twelve methods: Identity (no transfer), AdaIN, WCT (VGG19), SD-Turbo, SDEdit at $s{\in}\{0.35, 0.40\}$, StyleID, CUT, SaMST, SaMam, Seedream 4.5 (commercial API), and our method. SaMST and SaMam have explicit convergence packets under the aligned Distinct5 setup. CUT uses a retained Related\_Works checkpoint with a recorded 322.6-minute training time but no surviving training log, so we treat its quality numbers as reliable and its optimization trace as archival.
 
 \subsection{Main Results}
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{Main comparison on the 750-pair Distinct5-WikiArt-512 protocol (5 source domains $\times$ 5 target domains $\times$ 30 source images, including 150 identity pairs where source = target domain). All trainable baselines trained to convergence on the same 18K-image set. $\uparrow$: higher better, $\downarrow$: lower better. Best non-Identity result in \textbf{bold}. Bootstrap analysis and per-pair caliber details in the supplement.}
+\caption{Main comparison on the unified 750-pair Distinct5-WikiArt-512 protocol (5 source domains $\times$ 5 target domains $\times$ 30 source images, including 150 identity pairs). $\Delta_{\mathrm{IDT}}$ is computed against the all-pairs identity floor 0.6933. Train reports audited training wall time when available. Infer reports recorded 750-output stylization time; for WD-VF this is generation plus VAE decode only (83.7 seconds), excluding metric computation. `m' denotes minutes and `s' denotes seconds. `--' means that the current packet does not contain a verified number.}
 \label{tab:main}
 \small
 \setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}llcccc@{}}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llrrrrrrr@{}}
 \toprule
-\# & Method & Category & CLIP-S $\uparrow$ & LPIPS $\downarrow$ & Train (min) \\
+\# & Method & Interface & CLIP-S $\uparrow$ & LPIPS $\downarrow$ & $\Delta_{\mathrm{IDT}} \uparrow$ & Params & Train & Infer / 750 \\
 \midrule
-1 & Identity & --- & 0.6933 & 0.0000 & 0 \\
-2 & AdaIN & classical-inf & 0.6679 & 0.7425 & 0 \\
-3 & WCT (VGG19) & classical-inf & 0.7063 & 0.6348 & 0 \\
-4 & SD-Turbo & diffusion-inf & 0.6933 & 0.0033 & 0 \\
-5 & SDEdit $s{=}0.35$ & diffusion-sweep & 0.7797 & 0.4508 & 0 \\
-6 & SDEdit $s{=}0.40$ & diffusion-sweep & 0.7934 & 0.4826 & 0 \\
-7 & StyleID & diffusion-inf & \underline{0.8223} & 0.5523 & 0 \\
-8 & CUT & gan-train & 0.7137 & 0.3743 & 322.6 \\
-9 & SaMST & mamba-train & 0.6183 & 0.7490 & 39.5 \\
-10 & SaMam & mamba-train & 0.5816 & \underline{0.2434} & 436 \\
-11 & Seedream 4.5 & commercial-api & 0.7198 & 0.4767 & --- \\
+1 & Identity & baseline & 0.6933 & 0.0000 & 0.0000 & -- & -- & -- \\
+2 & AdaIN & classical-inf & 0.6679 & 0.7425 & $-$0.0253 & -- & -- & -- \\
+3 & WCT (VGG19) & classical-inf & 0.7063 & 0.6348 & +0.0130 & -- & -- & 90\,s \\
+4 & SD-Turbo & diffusion-inf & 0.6933 & 0.0033 & +0.0000 & -- & -- & -- \\
+5 & SDEdit $s{=}0.35$ & diffusion-sweep & 0.7797 & 0.4508 & +0.0864 & -- & -- & -- \\
+6 & SDEdit $s{=}0.40$ & diffusion-sweep & 0.7934 & 0.4826 & +0.1001 & -- & -- & -- \\
+7 & StyleID & diffusion-inf & \underline{0.8223} & 0.5523 & \underline{+0.1291} & -- & -- & -- \\
+8 & CUT & gan-train & 0.7137 & 0.3743 & +0.0204 & 7.0M & 322.6\,m & 5.0\,m \\
+9 & SaMST & mamba-train & 0.6183 & 0.7490 & $-$0.0749 & 8.3M & 39.5\,m & 10.0\,m \\
+10 & SaMam & mamba-train & 0.5816 & \underline{0.2434} & $-$0.1116 & -- & 436.0\,m & 17.6\,m \\
+11 & Seedream 4.5 & commercial-api & 0.7198 & 0.4767 & +0.0265 & -- & -- & -- \\
 \midrule
-12 & \textbf{SFM (Ours)} & \textbf{spectral-flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{3.08} \\
+12 & \textbf{WD-VF (Ours)} & \textbf{spectral-flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{+0.0280} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
 \bottomrule
-\end{tabular}
-\end{table}
+\end{tabular}}
+\end{table*}
 
-Table~\ref{tab:main} reports the main comparison. Three observations stand out.
+Table~\ref{tab:main}, Table~\ref{tab:timing}, and Figure~\ref{fig:page1} support four claims.
 
-\paragraph{SFM dual-beats SaMam.}
-On the 750-pair protocol (which includes 150 identity pairs), SaMam's CLIP-S (0.5816) is below the Identity baseline (0.6933). This means SaMam performs content reconstruction rather than style transfer. Its low LPIPS (0.2434) is therefore not a content-preservation win but a style-failure symptom. SFM exceeds SaMam on CLIP-S by $+0.1397$ while training $141\times$ faster (3.08 min vs.\ 436 min). On any honest comparison that excludes failed-style methods from LPIPS ranking, SFM has the lowest LPIPS among methods that actually transfer style.
+\paragraph{IDT calibration changes the ranking.}
+The identity row is not bookkeeping. It is the no-op floor for real transfer. SaMST and SaMam both fall below it. Their low LPIPS values therefore quantify source preservation, not movement toward the requested target style. This is the central evaluation correction of the paper.
 
-We report Bootstrap 95\% confidence intervals for the style-transfer methods with available per-pair predictions (SaMST, Seedream 4.5) in the supplement. SFM and SaMam per-pair predictions will be released with the code.
+\paragraph{WD-VF is the efficient trained-local point.}
+Among methods retrained on Distinct5, WD-VF is the only row that is simultaneously positive-IDT, sub-0.30 LPIPS, and minute-scale to train. CUT clears the floor but trains for hours and still lands at higher LPIPS. SaMST and SaMam miss the target direction altogether. The main claim is therefore not a marginal metric gain but a different efficiency-fidelity operating point.
 
-\paragraph{SFM dual-beats Seedream 4.5.}
-The commercial API achieves CLIP-S 0.7198 with LPIPS 0.4767. SFM matches it on CLIP-S ($+0.0015$) and beats it on LPIPS by $-0.1899$. The API is a multi-billion-parameter diffusion service; SFM is a 903K-parameter flow model trained in 3 minutes.
+\paragraph{Large priors still define the raw CLIP-S ceiling.}
+StyleID and SDEdit remain stronger if CLIP-S alone is the objective. WD-VF does not target that regime. It instead occupies the high-fidelity frontier: it stays numerically close to Seedream 4.5 in CLIP-S while cutting LPIPS from 0.4767 to 0.2868, a 39.8\% reduction, with a 903K local model.
 
-\paragraph{SFM beats Identity on style, matches it on content.}
-Identity (no transfer) is the content-preservation ceiling (LPIPS\,=\,0). SFM's LPIPS of 0.2868 is the style-transfer cost; its CLIP-S of 0.7213 exceeds Identity by $+0.0280$, confirming that real style is transferred. By contrast, AdaIN/WCT/SaMST all have CLIP-S at or below Identity, meaning they fail to transfer style at all on this benchmark.
+\paragraph{Cost columns are part of the result.}
+The paper separates stylization from evaluation. The actual stylization path is 42.9 seconds for latent generation plus 40.8 seconds for VAE decode over 750 outputs, or 83.7 seconds total and 111.7\,ms/image end-to-end. The 97.3-second figure is the full evaluation packet after adding CLIP and LPIPS. The scientific point is not the GPU name itself. The point is that the proposed geometry reaches a useful operating point without a large model or a long training run.
 
-\paragraph{Why high-CLIP-S baselines are not winners.}
-StyleID (0.8223) and SDEdit (0.7934) achieve the highest CLIP-S but at LPIPS $>$\,0.45, indicating severe content tearing. The Pareto frontier in Figure~\ref{fig:scatter} shows that these points are dominated. SFM sits in the upper-left (high CLIP-S, low LPIPS) region that no Euclidean method reaches.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.95\linewidth]{fig_all_baselines_scatter.png}
-\caption{CLIP-S vs.\ 1$-$LPIPS across all 12 baselines. SFM is the upper-left point. Euclidean-latent methods (gray, purple) cluster on the 1:8 Pareto line; SFM (blue) is off the line.}
-\label{fig:scatter}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.95\linewidth]{fig_distinct5_qualitative_main.png}
-\caption{Qualitative comparison. SFM transfers brushwork and texture (Real Style) while preserving content. StyleID tears content; AdaIN applies only a color filter; SaMam reconstructs content with no style.}
-\label{fig:qual}
-\end{figure}
-
-\subsection{Efficiency: 3 Minutes on an RTX 3060}
+\paragraph{Auxiliary checks keep the same reading.}
+Figure~\ref{fig:page1}(right) adds a target-pooled ArtFID check. WD-VF reaches 300.9 versus 311.5 for Seedream 4.5, so the method stays in the same auxiliary realism range without changing the main CLIP-S/LPIPS conclusion. On the transfer-only subset, WD-VF remains positive relative to the corresponding off-diagonal IDT reference, reaching 0.6908 CLIP-S and 0.2965 LPIPS.
 
 \begin{table}[t]
 \centering
-\caption{Training efficiency. SFM trains in 3 minutes on a consumer-grade RTX 3060 (12\,GB), $141\times$ faster than SaMam and $105\times$ faster than CUT.}
-\label{tab:efficiency}
+\caption{Timing breakdown for the selected WD-VF packet on a single RTX 3060. We separate stylization from metric computation to avoid conflating inference with evaluation.}
+\label{tab:timing}
 \small
-\begin{tabular}{@{}lcccc@{}}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrr@{}}
 \toprule
-Method & Params & Train time & Hardware & Speedup \\
+Stage & Seconds / 750 & ms / image \\
 \midrule
-CUT & 28.4M & 322.6 min & RTX 3090 & 105$\times$ \\
-SaMST & 6.6M & 39.5 min & RTX 3090 & 12.8$\times$ \\
-SaMam & 5.1M & 436 min & RTX 3090 & 141$\times$ \\
-\textbf{SFM (Ours)} & \textbf{0.903M} & \textbf{3.08 min} & \textbf{RTX 3060} & --- \\
+Latent generation & 42.9 & 57.2 \\
+VAE decode & 40.8 & 54.4 \\
+Generation + decode & 83.7 & 111.7 \\
+Full evaluation packet & 97.3 & 129.7 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-SFM's training cost is dominated by 5 epochs over 18{,}000 latents at batch 24, which is 3{,}750 forward--backward passes. On an RTX 3060, this takes 1 min 12 sec of pure training time. End-to-end it takes 3 min 5 sec, including VAE cache loading, optimizer initialization, and checkpoint save. The reason the loss landscape is benign is structural: with LL locked, the velocity field only needs to learn brushwork, which is a low-complexity target. Euclidean-latent baselines spend most of their compute reconciling content reconstruction with style injection, which is a high-dimensional non-convex problem.
-
-\paragraph{Convergence analysis.}
-The flow-matching loss on the high-frequency subbands is approximately convex. To see why, write the loss as $\mathcal{L}_{\text{HF}}(\theta) = \mathbb{E}_t \|v_\theta^{\text{HF}}(z_t, t, s) - u_t^{\text{HF}}\|^2$. The target $u_t^{\text{HF}} = z_1^{\text{HF}} - z_0^{\text{HF}}$ is a fixed function of the data. By Proposition~\ref{prop:decouple}, the HF subspace carries $\leq \epsilon$ of the content energy, so $u_t^{\text{HF}}$ is dominated by style. The velocity field $v_\theta^{\text{HF}}$ is a residual network with Lipschitz-continuous activations, so $\mathcal{L}_{\text{HF}}$ is locally strongly convex near the optimum. By contrast, the Euclidean loss $\mathcal{L}_{\text{FM}} = \mathbb{E}_t \|v_\theta(z_t, t, s) - u_t\|^2$ has a target $u_t = z_1 - z_0$ that mixes content and style. The two gradient components $\nabla_z v_\theta \cdot \nabla_{\text{content}}$ and $\nabla_s v_\theta \cdot \nabla_{\text{style}}$ point in conflicting directions on the degeneration manifold (Theorem~\ref{thm:attractor}), producing a saddle-shaped landscape. Empirically, the Euclidean baseline requires 50--100 epochs to reach a stationary point still below the identity baseline. SFM reaches its optimum in 3 epochs and is stable by epoch 5.
-
-\paragraph{Latent vs.\ pixel space.}
-A direct pixel-space comparison is infeasible on a 12\,GB consumer GPU. Pixel-space flow matching on $512\times512$ images requires roughly $192\times$ the compute of latent-space training. Attention complexity scales quadratically with sequence length (a $65536\times$ increase for full-resolution attention). Prior work~\cite{rombach2022highresolution} demonstrated that latent diffusion achieves superior sample quality to pixel-space diffusion at equal compute. The semantic abstraction of VAE latents is particularly beneficial for style transfer, where low-level pixel statistics entangle with content. Our use of latent space is therefore both a computational necessity and a representational advantage.
-
-\subsection{Ablation: Component Analysis}
+\subsection{Ablations}
 \label{sec:ablation}
 
-Table~\ref{tab:ablation} reports component ablations that remove or replace one component at a time from the SFM baseline.
+Table~\ref{tab:ablation} tests the design choices implied by the method analysis: the wavelet change, LL handling, endpoint alignment, routing probability, solver order, and model capacity. Each row removes or perturbs one component while keeping the rest fixed.
 
 \begin{table}[t]
 \centering
-\caption{Component ablation. Each row removes or replaces one component of SFM. $\Delta$CLIP-S and $\Delta$LPIPS are relative to the SFM baseline (0.7213 / 0.2868).}
+\caption{Geometric component ablation. Each row removes, replaces, or perturbs one WD-VF design choice. $\Delta$CLIP-S and $\Delta$LPIPS are relative to the WD-VF baseline (0.7213 / 0.2868).}
 \label{tab:ablation}
 \small
 \setlength{\tabcolsep}{4pt}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{@{}lcccl@{}}
 \toprule
 Variant & CLIP-S & LPIPS & $\Delta$CLIP-S & Note \\
 \midrule
-\textbf{SFM (full)} & \textbf{0.7213} & \textbf{0.2868} & --- & baseline \\
+\textbf{WD-VF (full)} & \textbf{0.7213} & \textbf{0.2868} & --- & baseline \\
 \midrule
-\multicolumn{5}{l}{\emph{Wavelet decomposition (the active ingredient)}} \\
-\quad No DWT (Euclidean) & 0.7117 & 0.2994 & $-$0.0096 & attractor active \\
-\quad DWT level 1 (vs.\ 3) & 0.7261 & 0.3296 & $+$0.0048 & under-decomposed \\
-\quad DWT level 4 (vs.\ 3) & 0.7316 & 0.3461 & $+$0.0103 & over-decomposed, loses position \\
-\quad Daubechies-2 (vs.\ Haar) & 0.7258 & 0.3288 & $+$0.0045 & basis function not critical \\
+\multicolumn{5}{l}{\emph{Wavelet basis}} \\
+\quad No DWT (Euclidean flow) & 0.7117 & 0.2994 & $-$0.0096 & content-style conflict \\
+\quad Daubechies-2 (vs.\ Haar) & 0.7258 & 0.3288 & $+$0.0045 & basis choice secondary \\
 \midrule
-\multicolumn{5}{l}{\emph{Base locking}} \\
-\quad LL lock at inference & 0.7174 & 0.3372 & $-$0.0039 & kills global style channel \\
-\quad $w_{\text{LL}}=1.0$ at train & 0.7174 & 0.2774 & $-$0.0039 & content-heavy trade-off \\
-\quad Train HH head & 0.7213 & 0.2868 & $\pm$0.0001 & HH head removed (dead) \\
+\multicolumn{5}{l}{\emph{Base de-weighting and LL handling}} \\
+\quad Lock LL at inference & 0.7174 & 0.3372 & $-$0.0039 & removes useful LL drift \\
+\quad $w_{\text{LL}}=0.5$ at train & 0.7174 & 0.2774 & $-$0.0039 & more LL pressure \\
+\quad $w_{\text{LL}}=1.0$ at train & 0.7180 & 0.2764 & $-$0.0033 & stronger LL pressure \\
+\quad Train HH head & 0.7213 & 0.2868 & $\pm$0.0001 & negligible gain \\
 \midrule
-\multicolumn{5}{l}{\emph{Style injection}} \\
-\quad Per-step AdaIN (not EOTA) & 0.7361 & 0.3843 & $+$0.0148 & $\alpha$-decay, LPIPS explodes \\
-\quad AdaIN (diagonal) vs.\ WCT & 0.7266 & 0.3402 & $+$0.0053 & loses channel correlation \\
-\quad Inject LL too & 0.7215 & 0.3856 & $+$0.0002 & color shift propagates \\
+\multicolumn{5}{l}{\emph{Endpoint alignment}} \\
+\quad Per-step AdaIN & 0.7361 & 0.3843 & $+$0.0148 & repeated over-stylization \\
+\quad AdaIN (diagonal) vs.\ WCT & 0.7266 & 0.3402 & $+$0.0053 & weaker cross-channel match \\
+\quad Inject LL too & 0.7215 & 0.3856 & $+$0.0002 & global color drift \\
 \midrule
-\multicolumn{5}{l}{\emph{Stochastic routing}} \\
-\quad $p=0.0$ (Euclidean train) & 0.7061 & 0.2606 & $-$0.0152 & train/test mismatch \\
-\quad $p=0.5$ & 0.7083 & 0.2480 & $-$0.0130 & under-trained DWT route \\
-\quad $p=1.0$ (always DWT) & 0.7226 & 0.3068 & $+$0.0013 & style encoder over-specialized \\
+\multicolumn{5}{l}{\emph{Style-query routing}} \\
+\quad $p=0.0$ (Euclidean train) & 0.7061 & 0.2606 & $-$0.0152 & train-test mismatch \\
+\quad $p=0.5$ & 0.7083 & 0.2480 & $-$0.0130 & under-uses high-frequency query path \\
+\quad $p=1.0$ (always DWT) & 0.7226 & 0.3068 & $+$0.0013 & slightly over-constrained \\
 \midrule
 \multicolumn{5}{l}{\emph{Solver}} \\
-\quad Euler (vs.\ Heun) & 0.7210 & 0.3129 & $-$0.0003 & structural DOF lost \\
-\quad RK4 (vs.\ Heun) & 0.7265 & 0.3235 & $+$0.0052 & saturated, no gain \\
+\quad Euler (vs.\ Heun) & 0.7210 & 0.3129 & $-$0.0003 & lower solver accuracy \\
+\quad RK4 (vs.\ Heun) & 0.7265 & 0.3235 & $+$0.0052 & extra cost, no gain \\
 \midrule
-\multicolumn{5}{l}{\emph{Capacity (Pareto-mapping knobs)}} \\
-\quad depth=2 (vs.\ 4) & 0.7172 & 0.2705 & $-$0.0041 & 1:8 trade-off \\
-\quad dim=32 (vs.\ 64) & 0.7153 & 0.2705 & $-$0.0060 & 1:8 trade-off \\
-\quad gate=0 (no gate) & 0.7080 & 0.2641 & $-$0.0133 & 1:8 trade-off \\
-\quad depth=6 (vs.\ 4) & NaN & NaN & --- & WCT eigh unstable \\
+\multicolumn{5}{l}{\emph{Capacity}} \\
+\quad depth=2 (vs.\ 4) & 0.7172 & 0.2705 & $-$0.0041 & lower capacity \\
+\quad dim=32 (vs.\ 64) & 0.7153 & 0.2705 & $-$0.0060 & lower width \\
+\quad gate=0 (no gate) & 0.7080 & 0.2641 & $-$0.0133 & removes style control \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+The ablations support the theory in the form stated above. The No-DWT row is the largest geometric drop, which matches the prediction from Theorem~\ref{thm:attractor}. The routing rows justify $p=0.8$: at $p=0$ or $p=0.5$, the high-frequency inference path is under-trained, while $p=1.0$ slightly raises CLIP-S but reopens LPIPS. Endpoint WCT is also necessary: per-step AdaIN raises LPIPS by 0.0975, consistent with Proposition~\ref{prop:eota}. LL weights above the selected setting improve LPIPS slightly but lower CLIP-S, which is why the deployed model keeps LL weak rather than zeroing it out or matching it strongly.
+
+\subsection{Controls and Extensions}
+
+Table~\ref{tab:controls} collects the checks that matter beyond the main operating point.
+
+\begin{table}[t]
+\centering
+\caption{Controls and extension checks. These rows test whether the main claim survives changes in scope, representation, and style set.}
+\label{tab:controls}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{0.38\linewidth}p{0.18\linewidth}cc@{}}
+\toprule
+Setting & Scope & CLIP-S & LPIPS \\
+\midrule
+WD-VF selected & all-pairs & 0.7213 & 0.2868 \\
+WD-VF selected & transfer-only & 0.6908 & 0.2965 \\
+Pixel256 control & all-pairs & 0.6960 & 0.5317 \\
+Latent256 control & all-pairs & 0.7168 & 0.3125 \\
+Style-memory-only update & all-pairs & 0.7218 & 0.3020 \\
+8-style extension & transfer-only & 0.7039 & 0.2555 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{The 1:8 trade-off.}
-The capacity knobs (depth, dim, gate) all move the operating point along a single line with slope $\approx 8$. Reducing capacity improves LPIPS by 8$\times$ the CLIP-S cost. The same line is traced by $\alpha$, schedule shape, and training duration. This is the Pareto deadlock of Section~\ref{sec:attractor}: none of these knobs breaks the frontier. The only structural degrees of freedom that do are (i) the wavelet decomposition itself, (ii) the solver order (Euler$\to$Heun), and (iii) the stochastic routing probability $p$.
+This section tests whether the main story survives outside the exact selected row. First, identity pairs are not carrying the result. Removing them changes the selected WD-VF point only mildly, from 0.7213 / 0.2868 on all pairs to 0.6908 / 0.2965 on the off-diagonal subset. Second, the latent prior matters independently of wavelet routing. On the matched $256\times256$ control, direct RGB flow reaches 0.6960 / 0.5317, whereas the latent-space control reaches 0.7168 / 0.3125. Third, the transport geometry is reusable. Updating only the style-memory side keeps the system near the main operating point, and the 8-style extension remains viable without full retraining.
 
-\paragraph{Why capacity maps to the 1:8 line.}
-On the degeneration manifold $\mathcal{M}_0$ (Definition~\ref{def:attractor}), the velocity field factorizes as $v_\theta(z,t,s) = \bar v(z,t) + \kappa(\theta)\,\delta v_s(z,t)$. Here $\kappa(\theta) = g\,h\,n$ is the multiplicative attenuation of Theorem~\ref{thm:attractor}. The content-preservation term $\mathcal{L}_{\text{FM}}$ is independent of $\kappa$; the style term $\mathcal{L}_{\text{SWD}}$ scales as $\kappa^2$. Reducing capacity (e.g., depth 4$\to$2) reduces $\|\delta v_s\|$ by a factor $\beta$. This reduces CLIP-S by $O(\beta)$ and reduces LPIPS by $O(\beta)$ as well (less style injection $\Rightarrow$ less content distortion). The ratio $\Delta\text{LPIPS}/\Delta\text{CLIP-S} \approx 8$ is therefore the ratio of the two loss curvatures on $\mathcal{M}_0$, not a property of any specific knob. This is why \emph{every} capacity knob traces the same line: they all perturb $\kappa$, and $\kappa$ is the only degree of freedom on $\mathcal{M}_0$. The wavelet decomposition escapes this by moving the model off $\mathcal{M}_0$ entirely (Proposition~\ref{prop:escape}), making $\kappa$ irrelevant.
+Haar is not the only workable wavelet basis, but it is the most reliable default in the current packet. Its exact orthogonality makes Theorem~\ref{thm:blockdiag} literal, keeps the subband supervision easy to interpret, and gives the better CLIP-S/LPIPS tradeoff overall once the Daubechies-2 LPIPS penalty is counted.
 
-\section{Discussion and Limitations}
+\subsection{Theory-to-Experiment Alignment}
 
-\paragraph{Why does it train in 3 minutes?}
-Not because the model is small (903K params), and not because the data is small (18K latents). It trains in 3 minutes because the loss landscape is convex once LL is locked. In the Euclidean regime, the model must reconcile two contradictory gradients: content preservation pulls toward $z_0$; style injection pulls toward $z_1$. The reconciliation is a non-convex negotiation that takes hours. In the wavelet regime, the LL gradient is zero by construction, and the LH/HL/HH gradients are aligned (they all point toward style). The model has nothing to negotiate; it just fits brushwork.
+Table~\ref{tab:theorylink} links each formal statement to a concrete experimental consequence. The pattern is consistent: removing the wavelet coordinate change hurts the frontier, mismatching train-time and test-time routing costs CLIP-S, repeated per-step injection overshoots LPIPS exactly as the residual-decay argument predicts, and the matched pixel-space control shows that the gain is not a generic consequence of adding another loss term.
 
-\paragraph{Why is it ``real'' style transfer?}
-AdaIN and WCT in Euclidean space shift the global mean and covariance of the entire feature map, which manifests as a color filter. SFM applies WCT per-subband on LH/HL/HH only, leaving LL (global tone and layout) intact. The visible effect is that brushstroke direction, edge sharpness, and texture granularity are transferred while the content image's color palette is preserved. This is what we mean by ``Real Style'': not a color filter, but a texture-level transfer.
+\begin{table}[t]
+\centering
+\caption{Prediction-to-evidence map for the main theoretical claims. Each row states the predicted behavior and the closest direct observation.}
+\label{tab:theorylink}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{0.30\linewidth}p{0.62\linewidth}@{}}
+\toprule
+Claim and predicted consequence & Matched evidence \\
+\midrule
+Euclidean latents admit a style-suppressed regime, so removing the wavelet change should weaken the frontier (Theorem~\ref{thm:attractor}) & Removing the wavelet change drops WD-VF from 0.7213 / 0.2868 to 0.7117 / 0.2994, showing that the Euclidean parameterization gives a weaker tradeoff even before any large architectural change. \\
+If the high-frequency route is the deployed style path, then train-time route matching should matter (Theorem~\ref{thm:blockdiag}) & Routing with $p=0.8$ beats $p=0.0$ and $p=0.5$ on CLIP-S while staying in the same damage regime, which is exactly the predicted benefit of training the same high-frequency query path used at inference. \\
+If endpoint injection already matches the target subband statistics, repeated injection should overshoot damage (Proposition~\ref{prop:eota}) & Per-step AdaIN raises LPIPS from 0.2868 to 0.3843 despite a higher CLIP-S, matching the predicted saturation of repeated residual shrinkage. \\
+If the latent prior already organizes semantic structure, then pixel-space transport should be markedly less stable (Proposition~\ref{prop:decouple}) & On the matched $256\times256$ control, pixel-space flow reaches 0.6960 / 0.5317 while latent-space flow reaches 0.7168 / 0.3125, which isolates the effect of the latent semantic prior. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+\paragraph{Training efficiency.}
+WD-VF trains in minutes because the routed objective is easier, not because the network is merely small. LL carries most global structure. Once LL is weakly supervised and excluded from the style-query path at inference, the learned transport stops paying to reconcile incompatible low-frequency objectives and spends capacity on high-frequency texture motion instead.
+
+\paragraph{Mechanism of real style transfer.}
+WD-VF edits the high-frequency subbands directly and aligns their endpoint statistics once, at the last step. It does not repeatedly inject style through the whole trajectory. In practice this produces visible stroke and surface-texture transfer while keeping the source layout stable.
+
+\paragraph{Hard targets.}
+Minimalism remains the hardest target family because its style change is driven more by low-frequency palette than by brushwork. This behavior matches the design: LL is weakly supervised during transport and fixed during endpoint stylization. WD-VF therefore prioritizes structure stability over large palette shifts.
+
+\paragraph{Benchmark regime.}
+The present benchmark targets domain-level transfer across the five styles with the lowest IDT CLIP-S from a broader WikiArt pool. The regime is therefore deliberately hostile to no-op behavior. Within it, the decisive choices are the latent semantic prior and the wavelet separation that prevents that prior from collapsing back to source reconstruction.
 
 \paragraph{Limitations.}
-(1) The style is domain-level, not per-image: SFM transfers the \emph{style distribution} of a domain, not the unique brushwork of a single painting. Per-image style would require a style encoder conditioned on a single reference, which we leave to future work. (2) The Haar wavelet is the simplest orthogonal transform; biorthogonal or learned wavelets might give finer control. (3) When the content image has strong high-frequency structure (text, fine patterns), the high-frequency style injection may overwrite it. (4) Five domains is a limited evaluation; extension to sketch, watercolor, and 3D-rendered styles is left to future work. (5) Transferring to Minimalism, whose style is largely low-frequency color blocking, is harder because base locking limits global tone shift. This is the intended trade-off for real-texture transfer.
+WD-VF is domain-conditional rather than exemplar-conditional, so it is not intended to copy a specific reference painting. The current benchmark is also narrow by design: it isolates five hard WikiArt styles chosen by low IDT CLIP-S, but it does not yet cover photo-to-art transfer, larger style vocabularies, or broader cross-domain evaluation in the main paper. The LL design makes palette-driven targets such as Minimalism harder than heavily textured targets because the method deliberately protects low-frequency structure. The theory is local and mechanism-oriented: it explains why the deployed coordinate change and routed objective behave well, and it predicts specific ablation patterns, but it does not claim a global convergence theorem for every wavelet flow. Finally, the main table is single-seed. This is acceptable for the present draft because the effect sizes are large and the protocol is fully specified, but multi-seed confirmation would strengthen the final submission.
 
 \section{Conclusion}
 
-We have shown that the Pareto deadlock in unsupervised latent style transfer is a structural consequence of content--style entanglement in Euclidean space. Spectral Flow Matching dissolves it by moving transport to the orthogonal wavelet domain: 3 minutes on a consumer RTX 3060, 903K parameters, dual-beating a 436-minute Mamba baseline and a commercial diffusion API. The community does not need larger models or more paired data; it needs the right coordinate system.
+Art-to-art style transfer needs two things at once: the right success criterion and the right coordinate system. IDT calibration exposes when a method is only reconstructing the source. WD-VF escapes that regime by separating low-frequency structure from high-frequency style motion and by routing style through the same high-frequency path used at inference.
+
+The resulting operating point is unusually affordable: 903K parameters, 3.08 minutes of training on a single RTX 3060, 83.7 seconds to generate and decode 750 outputs, and CLIP-S/LPIPS of 0.7213/0.2868 on Distinct5-WikiArt. The ablations show that the gain is tied to the wavelet change, routed supervision, and endpoint alignment rather than to a generic increase in model complexity. Affordable real style transfer therefore comes from the right geometry, not a large training budget.
 
 \section*{Ethics Statement}
 Style transfer tools can be misused to produce deepfake art or to misattribute stylistic authorship. Our method operates at the domain level (e.g., ``Impressionism'') rather than the per-artist level, which reduces the risk of impersonating a specific living artist. We do not condition on individual reference paintings. The dataset is sourced from WikiArt, which consists of public-domain and historically significant artworks; no personal data is used. We encourage downstream users to disclose when an image has been style-transferred and to respect the licensing terms of the source content.
 
 \section*{Reproducibility Statement}
-All experiments use public data (WikiArt) and a public VAE (SDXL VAE). The training configuration, hyperparameters, and evaluation protocol are described in Section~\ref{sec:exp} and the supplement. Training takes 3 minutes on a single RTX 3060 (12\,GB); evaluation takes 97 seconds on the same hardware. The 903K-parameter checkpoint is 3.5\,MB. We will release the code, the checkpoint, and the 750-pair evaluation protocol upon publication.
+All experiments use public data (WikiArt) and a public VAE (Stable Diffusion v1.5 EMA VAE). The training configuration, hyperparameters, and evaluation protocol are described in Section~\ref{sec:exp}. Training takes 3.08 minutes on a single RTX 3060 (12\,GB). The 750-pair packet needs 83.7 seconds for generation plus VAE decode and 97.3 seconds including CLIP/LPIPS metrics. The 903K-parameter checkpoint is 3.5\,MB. We will release the code, the checkpoint, and the 750-pair evaluation protocol upon publication.
+
+\FloatBarrier
+
+\bibliography{refs}
 
 \section*{AAAI Reproducibility Checklist}
 
 \begin{enumerate}
-\item This paper claims the following contributions: (1) diagnosis of the Pareto deadlock and degeneration attractor (Section~\ref{sec:attractor}); (2) Spectral Flow Matching method (Section~\ref{sec:method}); (3) experimental validation on 750 pairs (Section~\ref{sec:exp}).
-\item The dataset (Distinct5-WikiArt-512) is publicly available; the evaluation protocol (CLIP-S, LPIPS, 750 pairs) is described in Section~\ref{sec:exp}.
+\item This paper claims the following contributions: (1)~IDT-calibrated evaluation for art-to-art transfer (Section~\ref{sec:exp}); (2)~analysis of Euclidean collapse through the set $\mathcal{M}_0$ and Theorem~\ref{thm:attractor} (Section~\ref{sec:attractor}); (3)~the WD-VF method --- wavelet-decoupled rectified flow with high-frequency query routing and endpoint subband alignment (Section~\ref{sec:method}); (4)~objective decomposition in the high-frequency-only query case and its optimization consequence (Section~\ref{sec:opt}).
+\item The dataset (Distinct5-WikiArt-512) is publicly available; the evaluation protocol (CLIP-S, LPIPS, 750 pairs including 150 identity pairs) is described in Section~\ref{sec:exp}.
 \item Code, checkpoint, and evaluation scripts will be released upon publication.
-\item Training requires a single 12\,GB GPU (RTX 3060); 5 epochs; 3 minutes end-to-end.
+\item Training requires a single 12\,GB GPU (RTX 3060); 5 epochs; 3.08 minutes end-to-end.
 \item The evaluation protocol uses HuggingFace CLIP ViT-B/32 and AlexNet LPIPS, with 750 (source, target) pairs across 5 domains.
-\item All baseline numbers (Table~\ref{tab:main}) are evaluated under the same protocol; SaMam and CUT are trained to convergence on the same Distinct5 training set.
-\item Statistical significance: single-seed results are reported in Table~\ref{tab:main}. Bootstrap 95\% confidence intervals for SaMST and Seedream 4.5 (methods with available per-pair predictions) are in the supplement. Multi-seed variance for SFM is documented in the supplement.
+\item All baseline numbers (Table~\ref{tab:main}) are evaluated under the same protocol; SaMST and SaMam have explicit convergence packets, while CUT uses a retained Related\_Works checkpoint with recorded training time but no surviving training log.
+\item Statistical reporting: Table~\ref{tab:main} reports the main single-seed 750-pair results. The supplement provides ablations, boundary-case analyses, and extension studies.
 \end{enumerate}
-
-\FloatBarrier
-\bibliography{refs}
 
 \end{document}

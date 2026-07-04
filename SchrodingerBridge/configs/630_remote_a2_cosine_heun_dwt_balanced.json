@@ -1,0 +1,20 @@
+{
+  "_base": "630_remote_base_5style.json",
+  "model": {
+    "style_extrap_alpha": 0.5,
+    "solver_type": "heun",
+    "time_schedule": "cosine",
+    "cross_attn_dwt_route": true,
+    "endpoint_adain_mode": "per_subband_wct"
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/630_remote_a2_cosine_heun_dwt_balanced",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "remote_a2_cosine_heun_dwt_balanced",
+    "axis": "architecture_orthogonal_combo",
+    "stage": "remote_a2",
+    "notes": "A2(Arch): Cosine+Heun+DWT triple combo. Combines 4I.7a (best clip) + 4J.1 (best lpips). alpha=0.5 balanced. Expected: both metrics improve."
+  }
+}

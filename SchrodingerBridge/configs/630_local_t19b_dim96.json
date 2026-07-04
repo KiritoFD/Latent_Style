@@ -1,0 +1,27 @@
+{
+  "_base": "630_phase4j1_dwt_route.json",
+  "model": {
+    "dwt_route_train_prob": 0.8,
+    "base_dim": 96
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_t19b_dim96",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 24,
+    "cudnn_benchmark": false,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "data": {
+    "pairing_cache_active_topk": 0
+  },
+  "ablation": {
+    "name": "local_t19b_dim96",
+    "axis": "base_dim",
+    "stage": "local_t19",
+    "notes": "T19b: 增大模型宽度(base_dim 64→96). 更宽的style_mem提升风格容量, 可能编码更丰富全局风格. batch=24 (width+50%致params 2.25x). 4H.4f在EOTA框架下dim=96无效, 但在DWT route框架下未测过."
+  }
+}

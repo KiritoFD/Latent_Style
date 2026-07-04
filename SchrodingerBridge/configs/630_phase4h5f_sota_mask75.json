@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4h1g_eota_spatial_fiber_a08.json",
+  "model": {
+    "style_mask_ratio": 0.75
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h5f_sota_mask75",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h5f_sota_mask75",
+    "axis": "sota_plus_mask_increase",
+    "stage": "phase4h5",
+    "notes": "Phase 4H.5f: NEW SOTA (4H.1g) + mask_ratio=0.75 (from 0.5). More aggressive token dropout. Goal: test if stronger regularization improves content (lpips) at acceptable style cost."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "_base": "630_phase4h1c_eota_per_subband_a07.json",
+  "model": {
+    "endpoint_adain_scale": 0.7,
+    "endpoint_adain_scale_lh": 0.7,
+    "endpoint_adain_scale_hl": 0.7,
+    "endpoint_adain_scale_hh": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4i1d_eota_per_subband_hh_only",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4i1d_eota_per_subband_hh_only",
+    "axis": "multi_scale_alpha_hh_only",
+    "stage": "phase4i1d",
+    "notes": "Phase 4I.1d: EOTA + per_subband + multi-scale alpha (LH=0.7, HL=0.7, HH=1.0). KEY CONTROL: keep mid-freq alpha=0.7 (same as 4H.1c baseline), ONLY increase HH to 1.0. Tests if HH full replacement can boost style WITHOUT hurting content (since HH carries detail style with minimal content impact). If clip increases while lpips stays at 4H.1c level (0.3442), Pareto frontier is broken. Base: 4H.1c (clip=0.7280, lpips=0.3442)."
+  }
+}

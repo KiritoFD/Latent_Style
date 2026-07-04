@@ -1,0 +1,24 @@
+{
+  "_base": "630_phase4h1c_eota_per_subband_a07.json",
+  "model": {
+    "endpoint_adain_scale": 0.7,
+    "endpoint_adain_scale_lh": 0.5,
+    "endpoint_adain_scale_hl": 0.5,
+    "endpoint_adain_scale_hh": 0.9
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4i1a_eota_per_subband_multi_alpha",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4i1a_eota_per_subband_multi_alpha",
+    "axis": "multi_scale_alpha_structural_breakthrough",
+    "stage": "phase4i1a",
+    "notes": "Phase 4I.1a: EOTA + per_subband + multi-scale alpha (LH=0.5, HL=0.5, HH=0.9). STRUCTURAL BREAKTHROUGH attempt. Theory: single alpha forces all frequencies to trade off along the same 1D Pareto frontier. Multi-scale alpha introduces NEW degrees of freedom: LH/HL (mid-freq structure) use small alpha to preserve content, HH (high-freq detail) uses large alpha for strong style. HH carries detail style (brush edges) with minimal content impact. Base: 4H.1c (per_subband EOTA alpha=0.7, clip=0.7280, lpips=0.3442). Goal: break Pareto frontier, achieve BOTH higher clip AND lower lpips."
+  }
+}

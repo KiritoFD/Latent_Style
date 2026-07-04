@@ -1,0 +1,24 @@
+{
+  "_base": "630_phase4f_lvl3.json",
+  "model": {
+    "endpoint_lowpass_levels": 3,
+    "endpoint_adain_mode": "per_subband",
+    "endpoint_adain_scale": 1.0,
+    "endpoint_adain_only_last_step": true
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h1a_eota_per_subband",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h1a_eota_per_subband",
+    "axis": "end_of_trajectory_adain",
+    "stage": "phase4h1a",
+    "notes": "Phase 4H.1a: End-of-trajectory AdaIN (EOTA) + per_subband. Solves 4G.2b insight: multi-step Euler (num_steps=12) applies AdaIN each step, residual (1-alpha)^12 -> 0, alpha invalidated. EOTA: apply AdaIN ONLY at last step (i==steps-1), first N-1 steps are pure spectral Euler. Restores alpha effectiveness: single-step residual (1-alpha)^1. Test with per_subband mode (4G.2 clip SOTA 0.7361) + alpha=1.0. Goal: keep clip gain while controlling lpips to <=0.3453. Theory: decouple ODE solving from style injection. If PASS + clip>0.7319: new SOTA, paper Core Story upgraded to include EOTA insight."
+  }
+}

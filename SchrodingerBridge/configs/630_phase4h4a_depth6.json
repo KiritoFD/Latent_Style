@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4f_lvl3.json",
+  "model": {
+    "num_res_blocks": 6
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h4a_depth6",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h4a_depth6",
+    "axis": "model_depth_increase",
+    "stage": "phase4h4",
+    "notes": "Phase 4H.4a: Deeper backbone (num_res_blocks=6, current 4). Hypothesis: more depth → better style-content separation, higher clip. Risk: overfitting at 3ep, higher VRAM. Tests if current depth is suboptimal."
+  }
+}

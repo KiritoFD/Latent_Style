@@ -1,0 +1,23 @@
+{
+  "_base": "630_phase4h1c_eota_per_subband_a07.json",
+  "model": {
+    "style_freq_lowpass_alpha": 0.5,
+    "style_freq_lowpass_kernel": 5,
+    "style_freq_mode": "haar_dwt"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h5c_eota_a07_freq_lp",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h5c_eota_a07_freq_lowpass",
+    "axis": "eota_plus_frequency_masking",
+    "stage": "phase4h5",
+    "notes": "Phase 4H.5c: EOTA + alpha=0.7 + freq_lowpass_alpha=0.5 + haar_dwt. Triple combination: EOTA (terminal style injection) + per_subband (frequency-domain AdaIN) + freq_lowpass (frequency-aware token masking). Theoretically: 3 orthogonal style controls - WHEN (EOTA), WHERE (per_subband), WHAT (freq_lowpass)."
+  }
+}

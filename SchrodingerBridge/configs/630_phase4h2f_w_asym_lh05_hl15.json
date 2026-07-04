@@ -1,0 +1,23 @@
+{
+  "_base": "630_phase4f_lvl3.json",
+  "bridge": {
+    "spectral_w_ll": 0.3,
+    "spectral_w_lh": 0.5,
+    "spectral_w_hl": 1.5
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h2f_w_asym_lh05_hl15",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h2f_w_asym_lh05_hl15",
+    "axis": "loss_ratio_asymmetric_vertical",
+    "stage": "phase4h2",
+    "notes": "Phase 4H.2f: Asymmetric HF weights (w_lh=0.5, w_hl=1.5). HL=vertical edges (high-pass rows, low-pass cols). Hypothesis: vertical strokes/gravity may dominate some styles, so emphasizing HL may improve clip. Tests directional style transfer (complement of 4H.2e). Current 0.3:1.0:1.0 → 0.3:0.5:1.5."
+  }
+}

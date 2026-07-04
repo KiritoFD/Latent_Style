@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4f_lvl3.json",
+  "model": {
+    "num_res_blocks": 2
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h4b_depth2",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h4b_depth2",
+    "axis": "model_depth_reduce",
+    "stage": "phase4h4",
+    "notes": "Phase 4H.4b: Shallower backbone (num_res_blocks=2, current 4). Hypothesis: less depth → faster but worse style understanding (lower clip). Tests if current depth is necessary. If 2-block matches 4-block, model is over-parameterized."
+  }
+}

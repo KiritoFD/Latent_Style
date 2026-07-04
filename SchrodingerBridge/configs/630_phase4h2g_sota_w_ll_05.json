@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4h1g_eota_spatial_fiber_a08.json",
+  "bridge": {
+    "spectral_w_ll": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h2g_sota_w_ll_05",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h2g_sota_w_ll_05",
+    "axis": "sota_plus_w_ll_boost",
+    "stage": "phase4h2",
+    "notes": "Phase 4H.2g: NEW SOTA (4H.1g) + w_ll=0.5 (from 0.3). Increase LL loss weight. Goal: push lpips even lower (currently 0.3281) by strengthening content fidelity supervision."
+  }
+}

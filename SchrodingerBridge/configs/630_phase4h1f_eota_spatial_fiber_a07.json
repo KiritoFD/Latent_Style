@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4h1e_eota_spatial_fiber_a05.json",
+  "model": {
+    "endpoint_adain_scale": 0.7
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h1f_eota_spatial_fiber_a07",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h1f_eota_spatial_fiber_a07",
+    "axis": "eota_spatial_fiber_alpha_sweep",
+    "stage": "phase4h1f",
+    "notes": "Phase 4H.1f: EOTA + spatial_fiber + alpha=0.7. SWEET SPOT search for spatial_fiber path. 4H.1e (alpha=0.5): clip=0.7185 lpips=0.3095 (content BEST). 4F.1 (every-step alpha=1.0): clip=0.7319 lpips=0.3428. Linear interpolation predicts alpha=0.7 -> clip~0.7243 (threshold!) lpips~0.3238 (NEW SOTA?). CRITICAL experiment."
+  }
+}

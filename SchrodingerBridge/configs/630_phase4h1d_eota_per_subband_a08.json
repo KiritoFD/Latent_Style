@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4h1b_eota_per_subband_a05.json",
+  "model": {
+    "endpoint_adain_scale": 0.8
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h1d_eota_per_subband_a08",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h1d_eota_per_subband_a08",
+    "axis": "eota_alpha_sweep",
+    "stage": "phase4h1d",
+    "notes": "Phase 4H.1d: EOTA + per_subband + alpha=0.8. Alpha sweep upper bound. Linear interpolation predicts alpha=0.8 -> clip~0.732 lpips~0.361, near or above 4F.1 SOTA on clip but lpips still elevated. Tests if higher alpha recovers style at acceptable content cost."
+  }
+}

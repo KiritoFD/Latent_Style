@@ -1,0 +1,13 @@
+- [x] 本地GPU环境可用，run_evaluation.py可正常import和运行
+- [x] 本地distinct5_512数据集路径正确，包含5个风格子目录（Early_Renaissance/Impressionism/Minimalism/Rococo/Ukiyo_e）
+- [x] SaMAM/SaMST/SDEdit/SD-Turbo/AdaIN图片已从远程拉回本地且命名格式正确（每个方法750张）
+- [ ] S2WAT/StyleID图片已拉回本地
+- [x] tools/batch_reeval_baselines.py已更新指向本地路径
+- [x] Tier 1全部方法（SaMAM/SaMST/SDEdit/SD-Turbo/AdaIN）通过run_evaluation.py --reuse_generated本地评估完成
+- [ ] Tier 2全部方法（S2WAT/StyleID）本地评估完成
+- [x] Sanity check通过：本地评估与远程protocol_a_800的clip_style差异<5%
+- [x] CUT数据集问题已确认和标记（旧5x5风格集photo/monet/vangogh/cezanne/Hayao vs distinct5_512，不可直接用）
+- [x] 所有unified_reeval结果已写入docs/exp_unified.csv
+- [x] docs/exp_dashboard_v2.html已更新，基线方法在scatter chart中正确显示
+- [x] 基线方法与FC-SB方法在dashboard中可公平对比（同口径unified_reeval）
+- [x] 评估协议对齐验证：同一图片本地vs远程评估结果一致性确认

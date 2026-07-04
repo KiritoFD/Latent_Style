@@ -1,0 +1,24 @@
+docs: M22-M25 baseline核查/实验脉络/理论工具/数据集分类文档
+
+M22: baseline 数据完整性核查 (docs/baseline/README.md)
+- 12 baseline 评估协议一致性确认
+- SaMST e5/e15 plateau 收敛证据
+- SaMam 81 checkpoint 完整曲线
+- CUT 收敛证据缺失标记
+
+M23: 我们模型实验脉络梳理 (docs/exp/experiment_audit.md)
+- Early/Local T/Phase 4 全部实验审计
+- 5 个必须保留 SOTA ckpt (T11, 4F.1, 4I.2b, 4I.7b, 4J.1)
+- 无意义 ckpt 删除建议清单
+
+M24: 理论与工具文档框架
+- docs/math/README.md: FC-SB 完整理论 (SB+Haar DWT+EOTA+DWT Route+1:8 trade-off)
+- docs/tools/README.md: 数据集/评估协议/infra/调用命令/实验经验
+
+M25: 数据集分类索引
+- exp/distinct5/README.md: 主线 (论文用)
+- exp/wikiarts5/README.md: 历史 (不用于论文)
+- exp/fewshot6/README.md: Few-shot 探索
+- exp/256/README.md: 256 分辨率历史
+
+同步修正 SaMam v5 真实值 (0.5816/0.2434) 在 03/04/05/07 文档中

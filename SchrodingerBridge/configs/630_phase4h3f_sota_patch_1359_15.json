@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4h1g_eota_spatial_fiber_a08.json",
+  "bridge": {
+    "swd_patch_sizes": [1, 3, 5, 9, 15]
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h3f_sota_patch_1359_15",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h3f_sota_patch_1359_15",
+    "axis": "sota_patch_size_extra_macro",
+    "stage": "phase4h3",
+    "notes": "Phase 4H.3f: SOTA + swd_patch_sizes=[1,3,5,9,15] (added extra-macro 15). Tests if adding very large-scale patches improves global style composition matching. May help clip (better global style capture)."
+  }
+}

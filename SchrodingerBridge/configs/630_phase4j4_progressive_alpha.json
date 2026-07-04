@@ -1,0 +1,31 @@
+{
+  "_base": "630_phase4i7b_cosine_heun_a085_5ep.json",
+  "model": {
+    "endpoint_adain_mode": "per_subband_wct",
+    "endpoint_adain_only_last_step": true,
+    "endpoint_adain_scale": 0.5,
+    "endpoint_adain_scale_ll": 0.0,
+    "endpoint_adain_scale_lh": 0.3,
+    "endpoint_adain_scale_hl": 0.3,
+    "endpoint_adain_scale_hh": 0.5,
+    "style_extrap_alpha": 0.4,
+    "progressive_alpha_schedule": "cubic",
+    "progressive_alpha_power": 3.0
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4j4_progressive_alpha",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 24,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4j4_progressive_alpha",
+    "axis": "progressive_alpha_scheduling_inference",
+    "stage": "phase4j4",
+    "notes": "Phase 4J.4: Progressive Alpha Scheduling (方案 C). 推理侧结构性突破: α(t)=t^3 渐进注入, 替代 EOTA (最后一步强加 AdaIN). 理论: EOTA 保住 α 但破坏流平滑性; progressive 在每步按 α(t)=t^3 注入, t→0 不注入 (保内容), t→1 满强度 (强风格). 自动覆盖 only_last_step=False (强制每步模式). 完美承接 style_mem 提取的极致风格. 推理侧用 4I.11 SOTA (per_subband_wct + extrap04) 为基底."
+  }
+}

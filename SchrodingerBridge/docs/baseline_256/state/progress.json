@@ -1,0 +1,18 @@
+{
+  "iteration": 4,
+  "total_findings": 4,
+  "status": "complete",
+  "stale_count": 0,
+  "last_seen": "2026-07-04T13:17:00+08:00",
+  "current_milestone": "M8_final_report",
+  "milestones": {
+    "M1_env_probe": "done",
+    "M2_samst_256": "done",
+    "M3_samam_256": "done",
+    "M4_trainfree_256": "done",
+    "M5_ourmodel_256": "done",
+    "M6_compare": "done",
+    "M7_latent_migration": "skipped",
+    "M8_final_report": "done"
+  }
+}

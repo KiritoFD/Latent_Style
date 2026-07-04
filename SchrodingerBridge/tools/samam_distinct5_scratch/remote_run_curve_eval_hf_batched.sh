@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+source /home/xy/venvs/samam312/bin/activate
+cd /mnt/i/Github/Latent_Style
+
+export HF_ENDPOINT=https://hf-mirror.com
+export HF_HUB_ENABLE_HF_TRANSFER=0
+export HF_HOME=/mnt/i/Github/Latent_Style/eval_cache/hf
+export TRANSFORMERS_CACHE=/mnt/i/Github/Latent_Style/eval_cache/hf
+
+export PYTHONPATH=/mnt/i/Github/Latent_Style/Related_Works/repos/SaMam:/mnt/i/Github/Latent_Style
+
+TRAIN_OUT=/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote
+CKPT_DIR=$TRAIN_OUT/step_checkpoints
+OUTPUT_ROOT=$TRAIN_OUT/curve_eval_hf_750_batched
+IMAGE_ROOT=/mnt/i/wikiart_distinct5_samam_512_classview/test
+STYLE_NAMES="Early_Renaissance,Impressionism,Minimalism,Rococo,Ukiyo_e"
+
+EVAL_SCRIPT=/mnt/i/Github/Latent_Style/SchrodingerBridge/tools/samam_distinct5_scratch/eval_samam_curve_gpu_batched.py
+
+echo "=== SaMam distinct5_512 HF-CLIP curve eval (GPU-BATCHED, FAST) ==="
+echo "CKPT_DIR=$CKPT_DIR"
+echo "OUTPUT_ROOT=$OUTPUT_ROOT"
+echo "START=$(date -Iseconds)"
+echo "metric_batch_size=64 CLIP / 128 LPIPS + thread loading"
+
+echo "=== Checkpoints available ==="
+ls "$CKPT_DIR"/step-step=*.ckpt 2>/dev/null | wc -l
+
+# Run eval with GPU-batched script
+python "$EVAL_SCRIPT" \
+    --ckpt-dir "$CKPT_DIR" \
+    --image-root "$IMAGE_ROOT" \
+    --output-root "$OUTPUT_ROOT" \
+    --image-size 512 \
+    --max-src-per-style 30 \
+    --style-names "$STYLE_NAMES" \
+    --clip-backend transformers \
+    --metric-batch-size 64
+
+echo "END=$(date -Iseconds)"
+echo "EVAL_DONE_HF_BATCHED"
+echo "Results: $OUTPUT_ROOT/curve_metrics.csv"

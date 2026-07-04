@@ -1,0 +1,26 @@
+{
+  "_base": "630_phase4j1_dwt_route.json",
+  "model": {
+    "dwt_route_train_prob": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_t10_stochastic_dwt",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 24,
+    "cudnn_benchmark": false,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "data": {
+    "pairing_cache_active_topk": 0
+  },
+  "ablation": {
+    "name": "local_t10_stochastic_dwt",
+    "axis": "dwt_route_train_prob",
+    "stage": "local_t10",
+    "notes": "T10: Stochastic DWT Route. 训练时以p=0.5概率随机切换DWT route和全空间query, 推理时始终用DWT route. 解决T5分布不匹配: q_proj同时学习DWT系数和空间特征, style_mem同时学习高频和完整风格. 目标: all_pairs_clip>0.7319 AND all_pairs_lpips<0.3068 (双超4F.lvl3和4J.1). 直接对照4J.1(唯一差异: dwt_route_train_prob=0.5). 本地GPU batch_size=24响应用户反馈(显卡功率低), cudnn_benchmark=false防NaN."
+  }
+}

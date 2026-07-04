@@ -1,0 +1,27 @@
+{
+  "_base": "630_phase4j1_dwt_route.json",
+  "model": {
+    "dwt_route_train_prob": 0.8,
+    "num_res_blocks": 6
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_t19a_depth6",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 32,
+    "cudnn_benchmark": false,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "data": {
+    "pairing_cache_active_topk": 0
+  },
+  "ablation": {
+    "name": "local_t19a_depth6",
+    "axis": "num_res_blocks",
+    "stage": "local_t19",
+    "notes": "T19a: 增大模型深度(num_res_blocks 4→6). 更深的style cross-attention提升风格表达能力. batch=32 (depth+50%致VRAM增加). 4H.4e在EOTA框架下depth=6无效, 但在DWT route框架下未测过."
+  }
+}

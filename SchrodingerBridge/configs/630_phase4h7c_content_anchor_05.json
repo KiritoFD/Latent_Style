@@ -1,0 +1,22 @@
+{
+  "_base": "630_phase4h1c_eota_per_subband_a07.json",
+  "bridge": {
+    "w_content_lowpass_anchor": 0.5,
+    "content_anchor_lowpass_kernel": 9
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h7c_content_anchor_05",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h7c_content_anchor_05",
+    "axis": "content_anchor_loss_addition",
+    "stage": "phase4h7",
+    "notes": "Phase 4H.7c: EOTA + alpha=0.7 + w_content_lowpass_anchor=0.5. Add content lowpass anchor loss (was 0.0). Hypothesis: explicit lowpass anchor loss strengthens content preservation further. Tests if auxiliary content loss can push lpips below 4H.1b's 0.3226."
+  }
+}

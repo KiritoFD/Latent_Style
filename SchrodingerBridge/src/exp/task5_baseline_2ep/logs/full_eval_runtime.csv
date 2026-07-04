@@ -1,0 +1,3 @@
+checkpoint,output_dir,wall_sec,summary_wall_total_sec,timing_lancet_generation_sec,timing_lpips_sec,timing_clip_sec,generated_count,transfer_clip_style,transfer_content_lpips,allpairs_clip_style,allpairs_content_lpips
+epoch_0001.pt,exp\task5_baseline_2ep\full_eval\epoch_0001,81.49593199999799,66.53649710000172,17.215440999956627,0.0,0.0,0,0.6680899019042651,0.26047151108333333,0.7032689820130664,0.260605278008
+epoch_0002.pt,exp\task5_baseline_2ep\full_eval\epoch_0002,82.18553339999926,66.92135670000425,17.799908199980564,0.0,0.0,0,0.6723263745506605,0.2754011822833333,0.7062258388201396,0.27573988345333333

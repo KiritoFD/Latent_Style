@@ -1,0 +1,484 @@
+{
+  "early": {
+    "clean_base_v2_local": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "clean_base_v2_relu2": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "phase3_task2_p3d_contrastive_w01_margin01": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "phase3_task2_p3e_contrastive_w05_margin005": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task1_endpoint_film_baseline": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task1_endpoint_film_no_norm": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task3_baseline_1ep": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task3_combo_a_1ep": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task3_combo_b_3ep": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_style_strength_baseline_2ep": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_style_strength_w05_2ep": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_style_strength_w10_2ep": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/p2_long_10ep": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r1a_latent_baseline": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r1a_no_dino_minimal": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r1b_no_dino_nogn": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r1c_no_dino_fixedone": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r2a_with_film": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r2b_with_antiwhiten": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r3a_aggressive_antwhiten": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r3b_endpoint_antiwhiten": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r3c_optimal_5ep": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r4c_velocity_magnitude": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r4d1_velmag_high": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r6_pixel_color_fix": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    },
+    "task4_iter/r7_saturation_loss": {
+      "dataset": "wikiarts5",
+      "data_root": "F:\\wikiart_distinct5_samam_512_latents_ema\\train"
+    }
+  },
+  "phase4": {
+    "630_phase1d_verify": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase1d_verify_v2": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase2b_mask_random_50": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase2c_mask_random_75": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase2c_mask_shuffle_50": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase2c_mask_shuffle_75": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase3_mask_random_50_10ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4a2_adain_0": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4a2_extrap_0": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4a2_w_ll_0": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4b1_freq_a05": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4b1_freq_a1": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4b1_freq_a1_rand50": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4b2_freq_a1_rand30": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4b2_freq_a1_rand50_10ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4b2_freq_a1_rand70": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4b3_dwt_a1": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4b3_dwt_a1_rand50": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4c_blockmask_r60_b128_lvl2": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4c_dino_clean_lvl2": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4d_lvl2": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4d_lvl2_dwt_rand50": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4e_db2_lvl1": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4e_db2_lvl2": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4f_lvl3": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4f_lvl4": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4g1a_lock_ll": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4g1b_lock_ll_zero_wll": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4g2_per_subband": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4g2b_per_subband_a05": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h1a_eota_per_subband": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h1b_eota_per_subband_a05": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h1c_eota_per_subband_a07": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h1d_eota_per_subband_a08": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h1e_eota_spatial_fiber_a05": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h1f_eota_spatial_fiber_a07": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h1g_eota_spatial_fiber_a08": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h1g5ep_eota_spatial_fiber_a08": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h2h_sota_w_hf_15": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h2i_per_subband_a07_w_ll_05": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h3f_sota_patch_1359_15": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h4e_sota_depth6": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h4f_sota_dim96": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h4g_sota_dim96_5ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h5e_sota_mask25": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h5f_sota_mask75": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4h7d_sota_terminal_swd_03": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i10b_ept_t01": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i1a_eota_per_subband_multi_alpha": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i1d_eota_per_subband_hh_only": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i2a_sota_heun": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i2b_sota_heun_5ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i5a_sota_heun_cosine": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i5b_sota_heun_cosine_5ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i5c_sota_heun_rquad_5ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i6a_sota_rk4_5ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i7a_cosine_heun_a09_5ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i7b_cosine_heun_a085_5ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i8a_cosine_heun_a085_8ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i8b_warpcos_p08_a085_5ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4i9_wct_a085_5ep": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4j1_dwt_route": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4j2_wct_aligned": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4j3_fewshot_stylemem": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4j4_progressive_alpha": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4j5_wct_aligned_progressive": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_phase4j6_fewshot_popart": {
+      "dataset": "fewshot6",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/fewshot6_512_latents_ema/train"
+    },
+    "630_phase4j6_fewshot_popart_v2": {
+      "dataset": "fewshot6",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/fewshot6_512_latents_ema/train"
+    },
+    "630_phase4j6_fewshot_popart_v3": {
+      "dataset": "fewshot6",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/fewshot6_512_latents_ema/train"
+    }
+  },
+  "local_t": {
+    "630_local_r1_depth2": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_r2_dim32": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_r3_gate_init0": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t10_stochastic_dwt": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t11_stochastic_dwt_p08": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t13_ll_global_style_inject": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t14_casi": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t15_llgqca": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t16a_llgqca_gate02": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t16b_llgqca_gate03": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t16c_llgqca_gate05": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t18a_wll05": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t18b_wll10": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t19a_depth6": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t19b_dim96": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t20_structure_aligned_target": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t21_adaln_zero_ll": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t22_tone_bias": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t23_ll_mean_only": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t24_ll_std_only": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t25_ll_cov_only": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t26_ll_ycbcr": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t2_soft_ll_t2a": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    },
+    "630_local_t5_eval_only_dwt": {
+      "dataset": "distinct5",
+      "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+    }
+  }
+}

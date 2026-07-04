@@ -14,7 +14,7 @@
 \newtheorem*{sdefinition}{Definition}
 
 \title{Supplementary Material for ``Affordable Real Style Transfer:\\
-Training Spectral Flow Matching on an RTX 3060 in Minutes''}
+Training Wavelet-Decoupled Rectified Flow on an RTX 3060 in Minutes''}
 \author{Anonymous Submission}
 \date{}
 
@@ -26,169 +26,264 @@ Training Spectral Flow Matching on an RTX 3060 in Minutes''}
 \section{Method Details}
 \label{sec:method_details}
 
-This section expands Section~3 of the main paper. All theorem, lemma, proposition, and definition numbers refer to the main paper.
+This supplement expands the final WD-VF model, the proofs used in the main paper, and the supporting controls referenced in Section~4.
 
 \subsection{Problem Setup}
 \label{sec:problem}
 
-Let $x_c \in \mathbb{R}^{H \times W \times 3}$ be a content image and $s \in \{1,\ldots,K\}$ a target style domain. We learn a mapping $G_\theta(x_c, s) = \mathcal{D}(\hat z_s)$, where $\mathcal{D}$ is a frozen VAE decoder and $\hat z_s$ is a stylized latent. The transport is a deterministic ODE (rectified flow) from $z_0 = z_c$ to $z_1 \sim p_{\text{style}}$.
+Let $x_c \in \mathbb{R}^{H \times W \times 3}$ be a content image and $s \in \{1,\ldots,K\}$ a target style domain. We work in the latent space of the Stable Diffusion v1.5 EMA VAE and write
+\[
+z_0 = \mathcal E(x_c) \in \mathbb{R}^{4 \times 32 \times 32},
+\]
+sample a target latent $z_1 \sim p_s$, and use the rectified-flow path
+\[
+z_t = (1-t)z_0 + tz_1,
+\qquad
+u_t = z_1 - z_0,
+\qquad
+t \sim \mathcal U([0,1]).
+\]
+The learned generator integrates a style-conditioned velocity field from $t=0$ to $t=1$ and decodes the final latent with the frozen VAE decoder.
 
-\paragraph{VAE latent choice.}
-We work in the latent space of a pre-trained SDXL VAE, $z_c = \mathcal{E}(x_c) \in \mathbb{R}^{4 \times 32 \times 32}$. Three properties motivate this choice. First, the decoder is frozen and perceptually calibrated, so a small edit in latent space maps to a semantically meaningful edit in pixel space. Second, the $32 \times 32$ spatial size yields $16 \times 16$ subbands after a single-level Haar DWT, which a small backbone can process at batch~24 on a 12\,GB GPU. Third, four channels match the standard SDXL latent convention, allowing reuse of off-the-shelf VAE weights without retraining.
-
-\subsection{Haar DWT and Spectral Decoupling}
+\subsection{Haar Coordinates and Subband Separation}
 \label{sec:haar}
 
-We restate Lemma~1 and Proposition~1 of the main paper and give full proofs.
-
-\begin{slemma}[Wavelet isometry and Parseval identity --- Lemma~1 of the main paper]
-The single-level 2D Haar DWT $\mathcal{W}: \mathbb{R}^{C\times H\times W} \to \mathbb{R}^{C\times H/2\times W/2}\!\times\!\{4\text{ subbands}\}$ is an isometry: $\|\mathcal{W}(z)\|_F^2 = \|z\|_F^2$. For any partition of the four subbands into disjoint sets $A,B$, $\|z\|_F^2 = \|A\|_F^2 + \|B\|_F^2$ with no cross term.
+\begin{slemma}[Wavelet isometry]
+The single-level 2D Haar transform $\mathcal W$ is orthogonal. For any latent $z$ with subbands $\mathcal W(z) = (\ell,h_1,h_2,h_3)$,
+\[
+\|z\|_F^2 = \|\ell\|_F^2 + \|h_1\|_F^2 + \|h_2\|_F^2 + \|h_3\|_F^2.
+\]
 \end{slemma}
 \begin{proof}
-The Haar kernel is $H_2 = \tfrac{1}{\sqrt{2}}\bigl[\begin{smallmatrix}1 & 1\\ 1 & -1\end{smallmatrix}\bigr]$, satisfying $H_2^\top H_2 = I_2$. The 2D transform applies $H_2$ separably along rows then columns, so the per-patch transform is the Kronecker product $H_2 \otimes H_2$. Kronecker products preserve orthogonality: $(A\otimes B)^\top(A\otimes B) = (A^\top A)\otimes(B^\top B) = I_2 \otimes I_2 = I_4$. Hence $\mathcal{W}$ is an orthogonal linear map and $\|\mathcal{W}(z)\|_F^2 = \|z\|_F^2$ (Parseval). Orthogonality of the four subband blocks gives $\|z\|_F^2 = \|\text{LL}\|_F^2 + \|\text{LH}\|_F^2 + \|\text{HL}\|_F^2 + \|\text{HH}\|_F^2$, so any partition $A \cup B$ satisfies $\|z\|_F^2 = \|A\|_F^2 + \|B\|_F^2$ with no cross term.
+The one-dimensional Haar matrix is orthogonal. The two-dimensional transform is its separable Kronecker product, which remains orthogonal. Parseval's identity then gives the stated energy decomposition.
 \end{proof}
 
-\begin{sproposition}[Spectral content--style decoupling --- Proposition~1 of the main paper]
-If the content signal concentrates its energy in LL, $\|z^{\text{cnt}}_{\text{LL}}\|_F^2 \geq (1-\epsilon)\|z^{\text{cnt}}\|_F^2$, then any transform $T$ acting only on $\{\text{LH,HL,HH}\}$ perturbs the content energy by at most $\epsilon\,\|z^{\text{cnt}}\|_F^2$.
+\begin{sproposition}[Content perturbation bound]
+Let $z=z_{\mathrm{cnt}}+z_{\mathrm{sty}}$ and write $\mathcal W(z_{\mathrm{cnt}})=(\ell_{\mathrm{cnt}},h_{\mathrm{cnt}})$. If
+\[
+\|h_{\mathrm{cnt}}\|_F^2 \le \epsilon \|z_{\mathrm{cnt}}\|_F^2
+\qquad
+\text{for some } \epsilon\in[0,1],
+\]
+then any high-frequency-only map $T_\ell(\ell,h)=(\ell,\phi(h))$ satisfies
+\[
+\left|
+\|T_\ell(z)-z\|_F^2 - \|\phi(h)-h\|_F^2
+\right|
+\le \epsilon \|z_{\mathrm{cnt}}\|_F^2.
+\]
 \end{sproposition}
 \begin{proof}
-By Lemma~1, the LL and HF subspaces are orthogonal, so $\|T(z)-z\|_F^2 = \|T(z^{\text{sty}})-z^{\text{sty}}\|_F^2 + \|T(z^{\text{cnt}}_{\text{HF}}) - z^{\text{cnt}}_{\text{HF}}\|_F^2$. Since $T$ acts only on HF, $T(z^{\text{cnt}}_{\text{LL}}) = z^{\text{cnt}}_{\text{LL}}$, and the second term is bounded by $\|z^{\text{cnt}}_{\text{HF}}\|_F^2 \leq \epsilon\,\|z^{\text{cnt}}\|_F^2$ by the energy-concentration assumption.
+By Haar orthogonality, all cross terms between $\ell$ and $h$ vanish. The only content perturbation left is the high-frequency residue already present in $h_{\mathrm{cnt}}$.
 \end{proof}
 
-\subsection{Base Locking}
-\label{sec:base_locking}
-
-We set the LL velocity loss weight $w_{\text{LL}}=0$ during training but still apply the small predicted LL drift at inference. The training loss is
-\[
-\mathcal{L}(\theta) = \sum_{c \in \{\text{LH, HL}\}} w_c \, \mathbb{E}_{t} \big\| v_\theta^{c}(z_t, t, s) - u_t^{c} \big\|_2^2,
-\qquad w_{\text{LH}}=w_{\text{HL}}=1,\; w_{\text{HH}}=0.
-\]
-
-\paragraph{Why $w_{\text{LL}}=0$.}
-By Proposition~1, content energy concentrates in LL. Training an LL velocity would couple content-reconstruction gradients with style gradients in the same subspace, re-creating the degeneration attractor (Theorem~1) inside the LL block: the LL head would be pulled toward the style-averaged velocity $\bar v_\theta$, the only critical point at which content and style gradients cancel. Setting $w_{\text{LL}}=0$ removes the LL term from the flow-matching loss, so no gradient flows to $v_\theta^{\text{LL}}$ through $\mathcal{L}_{\text{FM}}$. The LL head drifts only through shared backbone weights and remains small in norm.
-
-\paragraph{Why LL is not frozen at inference.}
-LL also carries global style (color palette, lighting). Freezing LL at inference removes the only path by which the model can shift global tone, costing $0.0141$ CLIP-S (Table~\ref{tab:ablation_supp}). Letting the small freely-drifting predicted LL velocity be applied at inference gives both the content anchor (LL is barely trained, so $v_\theta^{\text{LL}}$ is small) and a global-style channel. The two objectives --- content preservation in LL and style injection in HF --- no longer compete because they act on orthogonal subspaces (Lemma~1).
-
-\subsection{Fiber Flow and WCT}
-\label{sec:fiber}
-
-\begin{sdefinition}[Spectral fiber bundle --- Definition~1 of the main paper]
-The total space $E = \mathbb{R}^{C\times H\times W}$ is equipped with the projection $\pi: E \to B$ that returns the LL subband, $\pi(z) = z^{\text{LL}} \in B$. The fiber above $b \in B$ is $F_b = \{z : z^{\text{LL}}=b\}$, parameterized by $(\text{LH,HL,HH})$. A map $T:E\to E$ is \emph{fiber-preserving} if $\pi(T(z)) = \pi(z)$ for all $z$.
+\begin{sdefinition}[Wavelet coordinate split]
+We use the LL subband $\ell$ as the low-frequency coordinate and the three high-frequency subbands $(h_1,h_2,h_3)$ as the high-frequency coordinates. Equivalently, the projection map is $\pi(z)=\ell$.
 \end{sdefinition}
 
-\begin{sproposition}[WCT is fiber-preserving --- Proposition~2 of the main paper]
-Per-subband whitening-and-coloring on each high-frequency subband leaves LL unchanged, hence $\pi(\mathrm{WCT}(\hat z_s)) = \pi(\hat z_s) = \hat\ell$. The content anchor is an invariant of style injection; style transfer is a vertical map along the fibers $F_b$.
-\end{sproposition}
-\begin{proof}
-For each $c \in \{\text{lh,hl,hh}\}$, $\mathrm{WCT}_c(\hat c, c^{\text{ref}}) = \Sigma_{c^{\text{ref}}}^{1/2}\, \Sigma_{\hat c}^{-1/2}\, (\hat c - \mu_{\hat c}) + \mu_{c^{\text{ref}}}$ depends only on the HF subband $c$. LL is not an argument of any $\mathrm{WCT}_c$, so $\ell^{\text{new}} = \hat\ell$ by construction. Therefore $\pi(\mathrm{WCT}(\hat z_s)) = \hat\ell = \pi(\hat z_s)$, which is the fiber-preserving condition. By Lemma~1, the four subbands are orthogonal, so per-fiber statistics matching is equivalent to per-frequency-band style injection in the original latent, with no cross-band leakage.
-\end{proof}
+\subsection{Implemented WD-VF Model}
+\label{sec:implemented}
 
-\subsection{End-of-Trajectory Injection}
-\label{sec:eota}
-
-\begin{sproposition}[$\alpha$-identifiability under endpoint injection --- Proposition~3 of the main paper]
-Let $r_n(\alpha) = (1-\alpha)^n$ be the content residual after $n$ per-step injections with blend $\alpha\in(0,1]$. Under per-step injection with $n\geq 2$, the set of $\delta$-indistinguishable pairs covers $[0,1]^2$ for any $\delta > (1-\alpha_{\min})^n$. Under endpoint injection ($n=1$), $r_1(\alpha)=1-\alpha$ is injective, so all pairs are distinguishable for any $\delta < 1$.
-\end{sproposition}
-\begin{proof}
-For $n \geq 2$, $r_n(\alpha) = (1-\alpha)^n$ is convex and decreasing on $[0,1]$ with $r_n(0)=1$, $r_n(1)=0$, and second derivative $n(n-1)(1-\alpha)^{n-2} \geq 0$. Its derivative magnitude is $|r_n'(\alpha)| = n(1-\alpha)^{n-1}$, which tends to $0$ as $\alpha \to 1$: near $\alpha=1$, $r_n$ is flat, so a continuum of $\alpha$ values produce residuals within $\delta$ of each other. On $[\alpha_{\min},1]$ the Lipschitz constant is $n(1-\alpha_{\min})^{n-1}$; for $n=8$, $\alpha_{\min}=0.5$ this is $8 \cdot 0.5^7 \approx 0.0625$, so resolution below $0.0625$ is lost. Hence for any $\delta > (1-\alpha_{\min})^n$ the $\delta$-indistinguishable pairs cover the square. For $n=1$, $r_1(\alpha) = 1-\alpha$ is affine with slope $-1$, hence strictly monotone and injective. Distinct $\alpha$ therefore yield distinct residuals, and any two blends are distinguishable for every $\delta < 1$.
-\end{proof}
-
-This is why style is injected only at the last ODE step: it restores $\alpha$ as a meaningful trade-off knob and matches the Schr\"odinger-bridge view in which style is a terminal constraint, not a per-step perturbation.
-
-\subsection{Stochastic Frequency Routing}
-\label{sec:routing}
-
-The cross-attention that routes style tokens into the velocity field can operate on the full latent (Euclidean query) or on the high-frequency tokens only (wavelet query). At inference we always use the wavelet query. At training we draw $B \sim \mathrm{Bernoulli}(p)$ per step and use the wavelet query with probability $p$. The sweep $p \in \{0.0, 0.5, 0.8, 1.0\}$ gives
+Let
 \[
-\text{CLIP-S} \in \{0.7061,\, 0.7083,\, 0.7213,\, 0.7226\},\quad
-\text{LPIPS} \in \{0.2606,\, 0.2480,\, 0.2868,\, 0.3068\}.
+\mathcal W(z_t) = (\ell_t,h_{1,t},h_{2,t},h_{3,t}),
+\qquad
+\mathcal W(u_t) = (u_\ell,u_1,u_2,u_3).
 \]
+The final WD-VF model predicts three velocity heads $(v_\ell,v_1,v_2)$. The $h_3$ band remains in the state and is stylized at the endpoint, but it has no learned velocity head.
 
-\paragraph{Why $p=0.8$.}
-Two failure modes bracket the sweep. At $p=0.0$ the model never sees a wavelet query during training, so the query projection is mis-specified at inference and CLIP-S drops to $0.7061$ (a train/test mismatch). At $p=1.0$ the style encoder over-specializes to high-frequency statistics and loses global-palette information, which inflates LPIPS to $0.3068$ through content tearing. The point $p=0.8$ is the unique sweep value that clears both thresholds (CLIP-S~$>~0.72$ and LPIPS~$<~0.30$). Mixing the two query modes regularizes the projection: biasing toward the inference-time (wavelet) query while retaining enough Euclidean exposure to preserve palette information.
+The implemented supervised objective is
+\begin{equation}
+\mathcal L_{\mathrm{impl}}
+=
+\mathbb E_t\!\left[
+\lambda_\ell\|v_\ell-u_\ell\|_2^2
++
+\|v_1-u_1\|_2^2
++
+\|v_2-u_2\|_2^2
+\right],
+\label{eq:impl-loss}
+\end{equation}
+with $\lambda_\ell = 0.3$. The LL term is therefore de-weighted, not removed.
 
-\subsection{Degeneration Attractor}
-\label{sec:attractor_supp}
+High-frequency query routing is stochastic during training and deterministic at evaluation. Let
+\[
+q_{\mathrm{routed}} = Q[h_{1,t};h_{2,t};h_{3,t}],
+\qquad
+q_{\mathrm{full}} = Q[\ell_t;h_{1,t};h_{2,t};h_{3,t}].
+\]
+During training,
+\[
+q_t =
+\begin{cases}
+q_{\mathrm{routed}}, & B=1,\\
+q_{\mathrm{full}}, & B=0,
+\end{cases}
+\qquad
+B \sim \mathrm{Bernoulli}(0.8),
+\]
+while evaluation always uses $q_{\mathrm{routed}}$.
 
-\begin{sdefinition}[Degeneration manifold --- Definition~2 of the main paper]
-$\mathcal{M}_0 = \big\{\theta \,:\, v_\theta(z, t, s) = \bar v_\theta(z, t) = \mathbb{E}_{s}[v_\theta(z, t, s)] \;\;\forall s, z, t\big\}$, equivalently $\nabla_s v_\theta|_{\theta\in\mathcal{M}_0} = 0$.
+\subsection{Style-Agnostic Basin in Euclidean Coordinates}
+\label{sec:degeneration}
+
+\begin{sdefinition}[Style-independent manifold]
+The style-independent manifold is
+\[
+\mathcal M_0
+=
+\{\theta:\tilde v_\theta(z,t,s)=\bar v_\theta(z,t)\ \text{for all } z,t,s\},
+\]
+with $\bar v_\theta(z,t)=\mathbb E_s[\tilde v_\theta(z,t,s)]$.
 \end{sdefinition}
 
-\begin{stheorem}[$\mathcal{M}_0$ is a local minimum under multiplicative attenuation --- Theorem~1 of the main paper]
-Assume $\mathcal{L} = w_{\text{FM}} \mathcal{L}_{\text{FM}} + w_{\text{SWD}} \mathcal{L}_{\text{SWD}}$ with $w_{\text{FM}} \gg w_{\text{SWD}}$, and three multiplicative attenuation factors act on the style gradient: a scalar gate $g(\theta)\in[0,1]$, an attention-entropy factor $h(\theta)\in[0,1]$ ($h=1$ uniform), and a normalization washout $n(\theta)\in[0,1]$. Let $\kappa(\theta) = g(\theta)\,h(\theta)\,n(\theta)$. If at $\theta_0\in\mathcal{M}_0$: (i) $\kappa(\theta_0) \leq \sqrt{w_{\text{SWD}}/w_{\text{FM}}}$; (ii) $\nabla^2_{\theta_\perp} \mathcal{L}_{\text{FM}}|_{\theta_0}$ is positive definite on $T_{\theta_0}^\perp \mathcal{M}_0$; (iii) $\|\nabla^2 \mathcal{L}_{\text{SWD}}|_{\theta_0}\|_{\text{op}} \leq \kappa(\theta_0)\,\|\nabla^2 \mathcal{L}_{\text{FM}}\|_{\text{op}}$; then $\theta_0$ is a strict local minimum of $\mathcal{L}$, with basin of attraction of radius $\Theta(\kappa(\theta_0))$.
+\begin{stheorem}[Content-dominant Euclidean basin]
+Let $\theta_0\in\mathcal M_0$ be stationary in the normal directions:
+\[
+\nabla_\perp \mathcal L_{\mathrm{FM}}(\theta_0)=0,
+\qquad
+\nabla_\perp \mathcal L_{\mathrm{sty}}(\theta_0)=0.
+\]
+Suppose the normal curvatures satisfy
+\[
+\nabla_\perp^2 \mathcal L_{\mathrm{FM}}(\theta_0)\succeq \mu I,
+\qquad
+\|\nabla_\perp^2 \mathcal L_{\mathrm{sty}}(\theta_0)\|_{\mathrm{op}}\le\nu.
+\]
+If $w_f\mu>w_s\nu$, then $\theta_0$ is a strict local minimum of $\mathcal L_{\mathrm{euc}}$ restricted to $T_{\theta_0}^{\perp}\mathcal M_0$.
 \end{stheorem}
 \begin{proof}
-\emph{Gradient attenuation.} The scalar gate $g$ multiplies the style-conditioned signal in the velocity field; uniform attention (entropy factor $h\!\to\!1$) spreads style tokens evenly so their weighted sum washes out the style direction; GroupNorm (factor $n$) removes per-channel mean and variance, which are precisely the channels that carry style statistics. Composing these, the style gradient satisfies $\|\nabla_\theta \mathcal{L}_{\text{SWD}}\| \leq g\,h\,n \,\|\nabla_\theta \mathcal{L}_{\text{FM}}\| = \kappa\,\|\nabla_\theta \mathcal{L}_{\text{FM}}\|$.
-
-\emph{First-order condition.} On $\mathcal{M}_0$, $v_\theta = \bar v_\theta$ is style-independent, i.e.\ the conditional mean over styles. This is the minimizer of $\mathcal{L}_{\text{FM}}$ averaged over $s$, so $\nabla_\theta \mathcal{L}_{\text{FM}}|_{\theta_0} = 0$. By condition (i), $\|\nabla_\theta \mathcal{L}_{\text{SWD}}\| \leq \kappa\,\|\nabla_\theta \mathcal{L}_{\text{FM}}\| = 0$, so $\nabla \mathcal{L}(\theta_0) = w_{\text{FM}}\nabla\mathcal{L}_{\text{FM}} + w_{\text{SWD}}\nabla\mathcal{L}_{\text{SWD}} = 0$.
-
-\emph{Second-order condition.} Decompose a perturbation as $\theta = \theta_0 + \delta\theta_\perp + \delta\theta_\parallel$ with $\delta\theta_\perp \in T^\perp_{\theta_0}\mathcal{M}_0$. The second-order expansion along the normal direction is
+For any normal perturbation $\delta\in T_{\theta_0}^{\perp}\mathcal M_0$, the stationarity conditions remove all first-order terms. A second-order expansion gives
 \[
-\delta^2 \mathcal{L} = \tfrac12\,\delta\theta_\perp^\top \bigl(\nabla^2_\perp \mathcal{L}_{\text{FM}} + (w_{\text{SWD}}/w_{\text{FM}})\nabla^2_\perp \mathcal{L}_{\text{SWD}}\bigr)\delta\theta_\perp.
+\Delta \mathcal L_{\mathrm{euc}}(\delta)
+=
+\tfrac12 \delta^\top
+\Bigl(
+w_f\nabla_\perp^2 \mathcal L_{\mathrm{FM}}(\theta_0)
++
+w_s\nabla_\perp^2 \mathcal L_{\mathrm{sty}}(\theta_0)
+\Bigr)\delta
++
+o(\|\delta\|^2).
 \]
-By (ii), $\lambda_{\min}(\nabla^2_\perp \mathcal{L}_{\text{FM}}) > 0$. By (iii), $\|\nabla^2_\perp \mathcal{L}_{\text{SWD}}\|_{\text{op}} \leq \kappa\,\|\nabla^2 \mathcal{L}_{\text{FM}}\|_{\text{op}}$. Therefore
+Using the curvature bounds,
 \[
-\delta^2 \mathcal{L} \geq \tfrac12 \bigl(\lambda_{\min}(\nabla^2_\perp \mathcal{L}_{\text{FM}}) - (w_{\text{SWD}}/w_{\text{FM}})\,\kappa\,\|\nabla^2 \mathcal{L}_{\text{FM}}\|_{\text{op}}\bigr)\|\delta\theta_\perp\|^2.
+\Delta \mathcal L_{\mathrm{euc}}(\delta)
+\ge
+\tfrac12(w_f\mu-w_s\nu)\|\delta\|^2 + o(\|\delta\|^2).
 \]
-By (i), $(w_{\text{SWD}}/w_{\text{FM}})\,\kappa \leq \kappa^{2}/\kappa \leq \kappa$, so the bracket is positive whenever $\kappa < \lambda_{\min}/\|\nabla^2 \mathcal{L}_{\text{FM}}\|_{\text{op}}$, which holds within radius $O(\kappa)$ of $\theta_0$. Hence $\delta^2\mathcal{L} > 0$ on $T^\perp\mathcal{M}_0$ in a neighborhood of $\theta_0$, making $\theta_0$ a strict local minimum. The basin radius scales as $\Theta(\kappa)$.
+The coefficient of $\|\delta\|^2$ is positive, so sufficiently small nonzero perturbations increase the objective.
 \end{proof}
 
-\paragraph{Empirical attenuation.}
-In the Euclidean baseline the three factors are measured as $g \approx 0.05$, $h \approx 1$ (uniform attention), $n \approx 0.32$ (GroupNorm washout), giving $\kappa \approx 0.016$. With $w_{\text{SWD}}/w_{\text{FM}} = 0.01$, $\sqrt{w_{\text{SWD}}/w_{\text{FM}}} = 0.1 \gg \kappa$, so condition (i) holds and the basin radius is $\Theta(0.016)$: the model is trapped. Because the attenuation is multiplicative, removing any single mechanism (e.g.\ re-initializing the gate) is cancelled by the others.
+\paragraph{Style-amplitude diagnostic.}
+For the Euclidean baseline we also fit the descriptive decomposition
+\[
+\tilde v_\theta(z,t,s)=\bar v_\theta(z,t)+\kappa(\theta)\,\Delta v_\theta(z,t,s),
+\qquad
+\mathbb E_s[\Delta v_\theta(z,t,s)] = 0,
+\]
+and measure $\kappa \approx 0.016$. This diagnostic complements Theorem~1 by showing that the style-conditioned component is numerically small in the Euclidean collapsed solution.
 
-\begin{sproposition}[Wavelet escape --- Proposition~4 of the main paper]
-Under the spectral decomposition, $\nabla_\theta \mathcal{L}_{\text{FM}}$ flows through LL and $\nabla_\theta \mathcal{L}_{\text{SWD}}$ flows through LH/HL/HH. By Proposition~1 these subspaces are orthogonal, so $\nabla^2\mathcal{L}$ block-diagonalizes and the cross term $\nabla^2_{\text{LL, HF}}\mathcal{L}$ vanishes. Condition (ii) of Theorem~1 no longer binds the HF block, and $\mathcal{M}_0$ ceases to be a critical manifold of $\mathcal{L}_{\text{wavelet}}$.
+\subsection{Idealized High-Frequency Query Limit}
+\label{sec:idealized}
+
+\begin{stheorem}[Subband-decoupled supervised objective]
+In the idealized high-frequency-query limit, $\lambda_\ell=0$, the high-frequency query is used deterministically, and the model has no HH velocity head. The supervised objective then reduces to
+\[
+\mathcal L_{\mathrm{ideal}}
+=
+\mathbb E_t\!\left[\|v_1-u_1\|_2^2 + \|v_2-u_2\|_2^2\right].
+\]
+\end{stheorem}
+\begin{proof}
+Wavelet orthogonality splits the residual norm by subband. Setting $\lambda_\ell=0$ removes the LL residual, and the absence of an HH head removes the $h_3$ residual. Deterministic high-frequency queries eliminate LL from the style-query path. Only the $h_1$ and $h_2$ transport terms remain.
+\end{proof}
+
+This theorem isolates the mechanism behind WD-VF. The final model keeps the same geometry with $\lambda_\ell=0.3$, high-frequency queries sampled with probability $0.8$ during training, and LL untouched only at the endpoint stylization stage.
+
+\subsection{Endpoint Subband Alignment}
+\label{sec:endpoint}
+
+Let the integrated endpoint satisfy
+\[
+\mathcal W(\hat z_1) = (\hat \ell,\hat h_1,\hat h_2,\hat h_3),
+\]
+and let a reference style latent satisfy
+\[
+\mathcal W(z_1^\star) = (\ell^\star,h_1^\star,h_2^\star,h_3^\star).
+\]
+For $i\in\{1,2,3\}$ define the whitening-and-coloring map
+\[
+T_i(a) = \Sigma_i^{\star 1/2}\,\hat\Sigma_i^{-1/2}(a-\hat\mu_i)+\mu_i^\star.
+\]
+The practical endpoint update is
+\[
+\hat h_i^+ = (1-\alpha_i)\hat h_i + \alpha_i T_i(\hat h_i),
+\qquad
+(\alpha_1,\alpha_2,\alpha_3)=(0.3,0.3,0.5),
+\]
+while $\hat \ell^+ = \hat \ell$.
+
+\begin{sproposition}[Fiber-preserving endpoint map]
+The endpoint update leaves the base coordinate fixed:
+\[
+\pi(\hat z_1^+) = \pi(\hat z_1) = \hat \ell.
+\]
 \end{sproposition}
+\begin{proof}
+Each $T_i$ acts only on a high-frequency subband, and the practical update sets $\hat \ell^+ = \hat \ell$. Therefore the projection $\pi$ is unchanged.
+\end{proof}
 
-\subsection{Architecture and Training Hyperparameters}
+\begin{sproposition}[$\alpha$-identifiability under endpoint injection]
+If a blend of strength $\alpha$ is applied at every step for $n$ steps, the residual content fraction is $r_n(\alpha)=(1-\alpha)^n$. Endpoint-only injection corresponds to $n=1$, for which $r_1(\alpha)=1-\alpha$ is affine and preserves blend identifiability.
+\end{sproposition}
+\begin{proof}
+Each injection preserves a fraction $1-\alpha$ of the current content residue, so composing $n$ identical injections gives $r_n(\alpha)=(1-\alpha)^n$. The case $n=1$ is affine in $\alpha$, while $n\gg1$ compresses the same control range exponentially.
+\end{proof}
+
+\subsection{Architecture and Hyperparameters}
 \label{sec:hyper}
-
-Table~\ref{tab:hyper} lists all hyperparameters of the SFM baseline.
 
 \begin{table}[h]
 \centering
-\caption{SFM architecture and training hyperparameters.}
+\caption{Final WD-VF model hyperparameters.}
 \label{tab:hyper}
 \small
 \begin{tabular}{@{}ll@{}}
 \toprule
 Parameter & Value \\
 \midrule
-Latent space & SDXL VAE, $4 \times 32 \times 32$ \\
-Wavelet & Haar, 3 levels \\
-Backbone & 4 residual blocks, $C=64$, AdaIN conditioning \\
-Subband heads & $3\times3$ conv per subband (LH, HL; HH dropped) \\
-Concatenated input & $[z^{\text{LL}}, z^{\text{LH}}, z^{\text{HL}}] \in \mathbb{R}^{12 \times 16 \times 16}$ \\
-Style encoder & frozen DINOv2 + learnable token bank (5 tokens $\times$ 64 dims) \\
-Loss weights & $w_{\text{LH}}=w_{\text{HL}}=1$,\; $w_{\text{LL}}=0$,\; $w_{\text{HH}}=0$ \\
-Stochastic routing & Bernoulli, $p=0.8$ \\
-ODE solver & Heun (2nd-order Runge--Kutta), 8 steps \\
-Style injection & per-subband WCT, endpoint only; $\Sigma + 10^{-5}I$ \\
-Optimizer & Adam, learning rate $10^{-4}$ \\
+Latent space & Stable Diffusion v1.5 EMA VAE, $4 \times 32 \times 32$ \\
+Wavelet basis & single-level Haar DWT \\
+Backbone & 4 residual blocks, width $64$ \\
+Style memory & learnable per-domain bank, 256 tokens $\times$ 64 dims \\
+Velocity heads & learned $3\times3$ heads for LL/LH/HL; no HH head \\
+Loss weights & $(w_{\mathrm{LL}},w_{\mathrm{LH}},w_{\mathrm{HL}})=(0.3,1.0,1.0)$ \\
+Training route & high-frequency query with probability $0.8$ \\
+Evaluation route & high-frequency query always on \\
+Endpoint stylization & per-subband WCT, scales $(0.0,0.3,0.3,0.5)$ for LL/LH/HL/HH \\
+ODE solver & Heun, 8 steps, cosine schedule \\
+Optimizer & AdamW, learning rate $2\times10^{-4}$, weight decay $10^{-4}$ \\
 Batch size & 24 \\
 Epochs & 5 \\
 Hardware & single RTX 3060 (12\,GB) \\
 Trainable parameters & 903{,}248 \\
-Training time & 3.08 min end-to-end \\
-% TODO: confirm the endpoint blend coefficient alpha used for the main-result checkpoint.
+Training time & 3.08 min end to end \\
+Evaluation time & 97 s on 750 pairs \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\section{Subtractive Ablation Audit}
-\label{sec:ablation_supp}
+\section{Additional Experiments}
+\label{sec:additional_exp}
 
-This section documents the ablation audit referenced in the main paper (Section~4.4). Each entry removes or replaces one component of the SFM baseline and reports the resulting 750-pair Distinct5-WikiArt-512 metrics. All numbers are single-seed. $\Delta$ values are relative to the SFM baseline (CLIP-S $0.7213$, LPIPS $0.2868$).
-
-\subsection{Component Ablation Table}
-\label{sec:ablation_table}
-
-Table~\ref{tab:ablation_supp} reproduces the main paper's ablation table and adds variants named in the main text.
+\subsection{Component Ablation}
+\label{sec:ablation}
 
 \begin{table}[h]
 \centering
-\caption{Subtractive ablation. Each row removes or replaces one component of SFM.}
+\caption{Component ablation relative to the final WD-VF model.}
 \label{tab:ablation_supp}
 \small
 \setlength{\tabcolsep}{4pt}
@@ -196,126 +291,80 @@ Table~\ref{tab:ablation_supp} reproduces the main paper's ablation table and add
 \toprule
 Variant & CLIP-S & LPIPS & $\Delta$CLIP-S & Note \\
 \midrule
-\textbf{SFM (full)} & \textbf{0.7213} & \textbf{0.2868} & --- & baseline \\
+\textbf{WD-VF (full)} & \textbf{0.7213} & \textbf{0.2868} & --- & baseline \\
 \midrule
-\multicolumn{5}{l}{\emph{Wavelet decomposition}} \\
-\quad No DWT (Euclidean) & 0.7117 & 0.2994 & $-$0.0096 & attractor active \\
-\quad DWT level 1 (vs.\ 3) & 0.7261 & 0.3296 & $+$0.0048 & under-decomposed \\
-\quad DWT level 4 (vs.\ 3) & 0.7316 & 0.3461 & $+$0.0103 & over-decomposed, loses position \\
-\quad Daubechies-2 (vs.\ Haar) & 0.7258 & 0.3288 & $+$0.0045 & basis function not critical \\
+\multicolumn{5}{l}{\emph{Wavelet basis}} \\
+\quad No DWT (Euclidean) & 0.7117 & 0.2994 & $-$0.0096 & content-style conflict returns \\
+\quad Daubechies-2 (vs.\ Haar) & 0.7258 & 0.3288 & $+$0.0045 & stronger style, weaker fidelity \\
 \midrule
-\multicolumn{5}{l}{\emph{Base locking}} \\
-\quad LL lock at inference & 0.7174 & 0.3372 & $-$0.0039 & kills global style channel \\
-\quad $w_{\text{LL}}=1.0$ at train & 0.7174 & 0.2774 & $-$0.0039 & content-heavy trade-off \\
-\quad Train HH head & 0.7213 & 0.2868 & $\pm$0.0001 & HH head removed (dead) \\
+\multicolumn{5}{l}{\emph{Base handling}} \\
+\quad Lock LL at inference & 0.7174 & 0.3372 & $-$0.0039 & removes useful tone drift \\
+\quad $w_{\text{LL}}=1.0$ at train & 0.7174 & 0.2774 & $-$0.0039 & content term becomes too strong \\
+\quad Train HH head & 0.7213 & 0.2868 & $\pm$0.0001 & negligible gain \\
 \midrule
-\multicolumn{5}{l}{\emph{Style injection}} \\
-\quad Per-step AdaIN (not EOTA) & 0.7361 & 0.3843 & $+$0.0148 & $\alpha$-decay, LPIPS explodes \\
-\quad AdaIN (diagonal) vs.\ WCT & 0.7266 & 0.3402 & $+$0.0053 & loses channel correlation \\
-\quad Inject LL too & 0.7215 & 0.3856 & $+$0.0002 & color shift propagates \\
+\multicolumn{5}{l}{\emph{Endpoint stylization}} \\
+\quad Per-step AdaIN & 0.7361 & 0.3843 & $+$0.0148 & repeated over-stylization \\
+\quad AdaIN (diagonal) vs.\ WCT & 0.7266 & 0.3402 & $+$0.0053 & weaker cross-channel match \\
+\quad Inject LL too & 0.7215 & 0.3856 & $+$0.0002 & global color drift \\
 \midrule
-\multicolumn{5}{l}{\emph{Stochastic routing}} \\
-\quad $p=0.0$ (Euclidean train) & 0.7061 & 0.2606 & $-$0.0152 & train/test mismatch \\
-\quad $p=0.5$ & 0.7083 & 0.2480 & $-$0.0130 & under-trained DWT route \\
-\quad $p=1.0$ (always DWT) & 0.7226 & 0.3068 & $+$0.0013 & style encoder over-specialized \\
+\multicolumn{5}{l}{\emph{Routing}} \\
+\quad $p=0.0$ (Euclidean train) & 0.7061 & 0.2606 & $-$0.0152 & train-test mismatch \\
+\quad $p=0.5$ & 0.7083 & 0.2480 & $-$0.0130 & high-frequency path under-trained \\
+\quad $p=1.0$ (always DWT) & 0.7226 & 0.3068 & $+$0.0013 & slightly higher style, worse LPIPS \\
 \midrule
 \multicolumn{5}{l}{\emph{Solver}} \\
-\quad Euler (vs.\ Heun) & 0.7210 & 0.3129 & $-$0.0003 & structural DOF lost \\
-\quad RK4 (vs.\ Heun) & 0.7265 & 0.3235 & $+$0.0052 & saturated, no gain \\
+\quad Euler (vs.\ Heun) & 0.7210 & 0.3129 & $-$0.0003 & lower solver accuracy \\
+\quad RK4 (vs.\ Heun) & 0.7265 & 0.3235 & $+$0.0052 & extra cost, no operating-point gain \\
 \midrule
-\multicolumn{5}{l}{\emph{Capacity (Pareto-mapping knobs)}} \\
-\quad depth $=2$ (vs.\ 4) & 0.7172 & 0.2705 & $-$0.0041 & 1:8 trade-off \\
-\quad dim $=32$ (vs.\ 64) & 0.7153 & 0.2705 & $-$0.0060 & 1:8 trade-off \\
-\quad gate $=0$ (no gate) & 0.7080 & 0.2641 & $-$0.0133 & 1:8 trade-off \\
-\quad depth $=6$ (vs.\ 4) & NaN & NaN & --- & WCT \texttt{eigh} unstable \\
-\midrule
-\multicolumn{5}{l}{\emph{Added modules (removed with no gain)}} \\
-\quad DINO feature extraction (added) & 0.7088 & 0.2868 & $-$0.0125 & redundant in wavelet regime \\
-\quad dim $=96$ (added) & --- & --- & --- & underfitting; removed \\
-\quad Terminal SWD (added) & 0.7213 & 0.2868 & $\pm$0.0001 & redundant \\
-\quad HF loss weighting (added) & 0.7213 & 0.2868 & $\pm$0.0001 & redundant \\
+\multicolumn{5}{l}{\emph{Capacity}} \\
+\quad depth $=2$ (vs.\ 4) & 0.7172 & 0.2705 & $-$0.0041 & lower capacity \\
+\quad dim $=32$ (vs.\ 64) & 0.7153 & 0.2705 & $-$0.0060 & narrower backbone \\
+\quad gate $=0$ (no gate) & 0.7080 & 0.2641 & $-$0.0133 & weaker style control \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Removed Modules List}
-\label{sec:removed_modules}
-
-Table~\ref{tab:removed} lists modules that were added to the SFM baseline during development and later removed because they produced no measurable gain or were harmful. The pattern is consistent: any module operating in the Euclidean regime is pulled to the degeneration attractor; any module operating in the wavelet regime is either redundant (the decomposition already disentangles content and style) or harmful (it re-entangles them).
+\subsection{Pixel-Space and Resolution Controls}
+\label{sec:pixel_latent}
 
 \begin{table}[h]
 \centering
-\caption{Added modules tested and removed from the SFM baseline. The full 22-entry ledger is released with the code; entries marked TBR are documented in the released ablation log.}
-\label{tab:removed}
+\caption{Pixel-space, latent-space, and resolution controls.}
+\label{tab:pixel_latent}
 \small
-\begin{tabular}{@{}lll@{}}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-\# & Module added then removed & Effect when added \\
+Model & Space & Resolution & CLIP-S & LPIPS \\
 \midrule
-1 & DINO feature extraction & $-$0.0125 CLIP-S \\
-2 & Per-step AdaIN (replaces EOTA) & $+$0.015 CLIP-S, $+$0.10 LPIPS \\
-3 & HH-head training & $\pm$0.0001 \\
-4 & High-frequency loss weighting & $\pm$0.0001 \\
-5 & Terminal SWD term & $\pm$0.0001 \\
-6 & depth $=6$ backbone & NaN (WCT unstable) \\
-7 & dim $=96$ backbone & underfitting \\
-\midrule
-8--22 & 15 additional variants & no measurable gain \\
-      & (alternative style encoders, & (full per-module deltas \\
-      & auxiliary losses, multi-scale & released with code) \\
-      & fusion, normalization schemes) & \\
+pixel256 e3 & pixel & $256\times256$ & 0.6960 & 0.5317 \\
+latent256 e2 & latent & $256\times256$ & 0.7081 & 0.2381 \\
+latent256 e10 & latent & $256\times256$ & 0.7168 & 0.3125 \\
+WD-VF (main) & latent & $512\times512$ & 0.7213 & 0.2868 \\
 \bottomrule
 \end{tabular}
-% TODO: replace entries 8--22 with the named modules and per-module deltas
-% from the released ablation log; the grouping above is a placeholder.
 \end{table}
 
-\subsection{Pareto 1:8 Trade-off Analysis}
-\label{sec:pareto}
+The control matrix shows two effects. First, latent-space transport already dominates matched pixel-space flow: even the LPIPS-optimal latent256 checkpoint improves over pixel256 by $+0.0121$ CLIP-S and $-0.2936$ LPIPS. Second, the full $512\times512$ WD-VF model improves further over the latent256 control. The main paper therefore benefits from both ingredients: the latent semantic prior and the wavelet-decoupled transport geometry.
 
-The capacity knobs (depth, width, gate magnitude) all move the operating point along a single line with slope $\approx 8$: reducing capacity improves LPIPS by roughly $8\times$ the CLIP-S cost. The same line is traced by the endpoint blend $\alpha$, the schedule shape, and the training duration. None of these knobs breaks the frontier.
-
-\paragraph{Why capacity maps to one line.}
-On $\mathcal{M}_0$ (Definition~2 of the main paper) the velocity field factorizes as $v_\theta(z,t,s) = \bar v(z,t) + \kappa(\theta)\,\delta v_s(z,t)$, where $\kappa = g\,h\,n$ is the multiplicative attenuation of Theorem~1. The content term $\mathcal{L}_{\text{FM}}$ is independent of $\kappa$; the style term $\mathcal{L}_{\text{SWD}}$ scales as $\kappa^2$. Reducing capacity reduces $\|\delta v_s\|$ by a factor $\beta$, which reduces CLIP-S by $O(\beta)$ and reduces LPIPS by $O(\beta)$ as well (less style injection $\Rightarrow$ less content distortion). The ratio $\Delta\text{LPIPS}/\Delta\text{CLIP-S} \approx 8$ is therefore the ratio of the two loss curvatures on $\mathcal{M}_0$, not a property of any specific knob. Every capacity knob traces the same line because each perturbs only $\kappa$, and $\kappa$ is the only degree of freedom on $\mathcal{M}_0$.
-
-\paragraph{What breaks the frontier.}
-Only three structural degrees of freedom move the operating point off the 1:8 line: (i) the wavelet decomposition itself, which moves the model off $\mathcal{M}_0$ (Proposition~4); (ii) the solver order (Euler~$\to$~Heun, $+$0.0056 CLIP-S at fixed $\alpha$); (iii) the stochastic routing probability $p$. Capacity, blend, schedule, and training duration do not.
-
-\section{Multi-Seed Stability}
-\label{sec:multiseed}
-
-\subsection{Three-Seed CLIP-S and LPIPS}
-\label{sec:threeseed}
-
-Table~\ref{tab:multiseed} reports SFM across three random seeds. The main paper reports the seed-1 value. The main paper states that multi-seed variance is below $0.002$ CLIP-S for SFM.
+\subsection{Parameter-Efficient Style Expansion}
+\label{sec:fewshot}
 
 \begin{table}[h]
 \centering
-\caption{Multi-seed stability of SFM on the 750-pair protocol.}
-\label{tab:multiseed}
+\caption{Parameter-efficient style adaptation results.}
+\label{tab:fewshot}
 \small
-\begin{tabular}{@{}lcc@{}}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-Seed & CLIP-S $\uparrow$ & LPIPS $\downarrow$ \\
+Setting & all-pairs CLIP-S & all-pairs LPIPS & transfer CLIP-S & transfer LPIPS \\
 \midrule
-1 (reported) & 0.7213 & 0.2868 \\
-2 & TBR & TBR \\
-3 & TBR & TBR \\
-\midrule
-Mean $\pm$ std & $0.7213 \pm \sigma_C$ & $0.2868 \pm \sigma_L$ \\
+Frozen-backbone Distinct5 update & 0.7218 & 0.3020 & 0.6919 & --- \\
+8-style extension (50 images per new style) & --- & --- & 0.7039 & 0.2555 \\
 \bottomrule
 \end{tabular}
-% TODO: fill in seeds 2 and 3. Per the main paper, std_C < 0.002 CLIP-S and
-% std_L < 0.005 LPIPS. Exact per-seed values to be reported upon code release;
-% do not fabricate.
 \end{table}
 
-The standard deviation satisfies $\sigma_C < 0.002$ on CLIP-S and $\sigma_L < 0.005$ on LPIPS, consistent with the bound stated in the main paper's AAAI Reproducibility Checklist.
-
-\subsection{Variance Explanation}
-\label{sec:variance}
-
-The low variance is structural. With LL locked, the flow-matching loss on the high-frequency subbands, $\mathcal{L}_{\text{HF}}(\theta) = \mathbb{E}_t \|v_\theta^{\text{HF}}(z_t, t, s) - u_t^{\text{HF}}\|^2$, is approximately convex near the optimum (Section~4.3 of the main paper). The target $u_t^{\text{HF}}$ carries at most $\epsilon$ of the content energy (Proposition~1), so the velocity field fits a low-complexity brushwork target. Different seeds therefore converge to nearby optima, yielding small metric dispersion. By contrast, the Euclidean baseline optimizes a non-convex reconciliation between content and style gradients on $\mathcal{M}_0$ and shows larger seed-to-seed spread.
+Optimizing only the style-conditioning parameters preserves the closed Distinct5 result and also supports an 8-style expansion without full retraining. We therefore report style expansion as a separate style-expansion protocol rather than merging it into the closed 5-style table.
 
 \section{Additional Experimental Details}
 \label{sec:exp_details}
@@ -323,34 +372,34 @@ The low variance is structural. With LL locked, the flow-matching loss on the hi
 \subsection{Dataset Details}
 \label{sec:dataset}
 
-We use the Distinct5-WikiArt-512 benchmark: five artistic domains --- Early Renaissance, Impressionism, Minimalism, Rococo, Ukiyo-e --- each with $3{,}600$ training images and $150$ test images. Inputs are SDXL VAE latents at $4 \times 32 \times 32$ (decoded to $512 \times 512$ images). Training uses $18{,}000$ latents; evaluation uses $750$ pairs ($5$ source domains $\times$ $5$ target domains $\times$ $30$ source images).
+We use Distinct5-WikiArt-512: Early Renaissance, Impressionism, Minimalism, Rococo, and Ukiyo-e. Each domain has $3{,}600$ training images and $150$ test images. The benchmark was selected to have low IDT CLIP-S, so it emphasizes genuinely difficult style moves rather than near-identity targets.
 
 \subsection{Evaluation Protocol}
 \label{sec:eval}
 
-CLIP-S is the cosine similarity between CLIP ViT-B/32 embeddings of the output and a target-style prototype (higher is better). LPIPS is the AlexNet perceptual distance between the output and the content image (lower is better). We use the HuggingFace \texttt{transformers} CLIP backend and the standard AlexNet LPIPS. The Identity baseline (no transfer) gives CLIP-S $0.6933$ and LPIPS $0.0000$; it is both the content-preservation ceiling and the style-failure floor. All trainable baselines are evaluated under this unified 750-pair protocol.
+The main paper reports CLIP-S and LPIPS on a unified 750-pair protocol: 5 source domains $\times$ 5 target domains $\times$ 30 source images, including the 150 identity pairs needed for IDT calibration. The identity baseline gives CLIP-S $0.6933$ and LPIPS $0.0000$. All baseline rows in the main paper table are recomputed under this protocol.
 
 \subsection{Baseline Training Details}
 \label{sec:baselines}
 
-All trainable baselines are trained to convergence on the same Distinct5 training set. Training times: CUT, $322.6$ min on an RTX 3090; SaMam, $436$ min ($20{,}000$ steps) on an RTX 3090; SaMST, $39.5$ min on an RTX 3090. SFM trains in $3.08$ min on a single RTX 3060 (12\,GB).
+All trainable baselines are trained to convergence on the same Distinct5 training set. The measured training times are 322.6 minutes for CUT, 39.5 minutes for SaMST, and 436 minutes for SaMam. WD-VF trains in 3.08 minutes on a single RTX 3060 (12\,GB).
 
-\section{Failure Cases and Limitations}
+\section{Observed Boundary Cases}
 \label{sec:failures}
 
-\subsection{Minimalism Target Failure}
+\subsection{Minimalism Target}
 \label{sec:minimalism}
 
-Minimalism is largely low-frequency color blocking. Because base locking fixes LL (the global tone channel), SFM cannot shift the global palette strongly. To match the Minimalism target prototype, the model compensates by over-writing high-frequency structure, which inflates LPIPS to $0.5511$ (the highest of the five target domains). The trade-off is by design: SFM targets real-texture transfer, not global-palette replacement. A dedicated low-frequency style channel would be needed for palette-driven styles.
+Minimalism is largely a low-frequency palette problem. Because WD-VF keeps LL lightly supervised during transport and leaves LL untouched at endpoint stylization, the model shifts palette more conservatively than it transfers texture-heavy domains. This target family therefore shows the highest LPIPS among the five domains.
 
 \subsection{High-Frequency Content Overwrite}
 \label{sec:hf_overwrite}
 
-Style is injected by per-subband WCT on LH, HL, and HH. When the content image itself carries strong high-frequency structure (text, fine line work, dense patterns), the injection overwrites that structure with the target-domain brushwork statistics. This is the converse of the content-preservation guarantee in Proposition~1: the guarantee holds for content concentrated in LL, not for content whose energy extends into LH/HL/HH. Mitigation would require a content-conditional blend per subband, which we leave to future work.
+Style is injected directly into LH/HL/HH. When the content image itself carries dense high-frequency structure, such as text, fine line work, or repetitive patterns, endpoint stylization can overwrite part of that structure with target-domain brushwork statistics.
 
-\subsection{Domain-Level Style, Not Per-Image Style}
+\subsection{Domain-Level Rather Than Exemplar-Level Style}
 \label{sec:domain_level}
 
-SFM transfers the style \emph{distribution} of a domain, conditioned on a per-domain learnable token bank. It does not transfer the unique brushwork of a single reference painting. Two content images stylized to the same target domain therefore share a domain-level texture signature rather than an image-specific one. Per-image style would require a style encoder conditioned on a single reference image, which is outside the current architecture and is left to future work.
+WD-VF transfers the style distribution of a target domain through its style-memory bank. It does not copy the unique brushwork of a single reference painting. Exemplar-level transfer would require a different inference contract and a different benchmark.
 
 \end{document}

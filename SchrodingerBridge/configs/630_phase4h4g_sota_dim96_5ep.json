@@ -1,0 +1,18 @@
+{
+  "_base": "630_phase4h4f_sota_dim96.json",
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h4g_sota_dim96_5ep",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h4g_sota_dim96_5ep",
+    "axis": "sota_wider_longer",
+    "stage": "phase4h4",
+    "notes": "Phase 4H.4g: NEW SOTA (4H.1g) + dim=96 + 5 epochs. Combines wider model (more capacity for style) with longer training (better convergence). Goal: push clip above 0.728 while keeping lpips below 0.335. Best candidate for new dominant SOTA."
+  }
+}
