@@ -285,7 +285,12 @@ Do not reopen related work or future work here.
 1. Rewrite the abstract from scratch.
 2. Compress the introduction to five short paragraphs plus contributions.
 3. Cut related work to three compact paragraphs.
-4. Rewrite the experiments prose so that it interprets the main table instead of repeating it.
-5. Remove or shrink the standalone timing table if the widened main table makes it redundant.
-6. Correct the ablation labels before any language polishing.
-7. Keep MUSIQ out of the body until verified data is in hand.
+4. Recast the mathematics by role:
+   - keep the Euclidean-collapse result as the only theorem-level explanatory claim;
+   - downgrade the routed-objective decomposition to lemma/proposition level;
+   - make every formal statement point to one explicit empirical consequence.
+5. Rewrite the experiments prose so that it interprets the main table instead of repeating it.
+6. Keep IDT framed as a benchmark calibration for this art-to-art setting, not as a universal threshold across datasets.
+7. Present the style-memory update and 8-style result as successful parameter-efficient extension evidence.
+8. Expand limitations into one serious paragraph: domain-conditional scope, narrow benchmark, palette-heavy styles, and single-seed reporting.
+9. Keep MUSIQ out of the body until verified data is in hand.
