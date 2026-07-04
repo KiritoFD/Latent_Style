@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.11)  4 JUL 2026 14:59
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.11)  4 JUL 2026 21:22
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -688,218 +688,81 @@ LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
 (Font)              scaled to size 9.0pt on input line 40.
 LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
 (Font)              scaled to size 10.0pt on input line 42.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 49.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 60.
 
 
 (c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 49.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 60.
 
 
 (c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-<fig_distinct5_page1_summary.pdf, id=4, 525.18167pt x 239.69626pt>
+<fig_distinct5_page1_summary.pdf, id=4, 685.98244pt x 230.19577pt>
 File: fig_distinct5_page1_summary.pdf Graphic file (type pdf)
 <use fig_distinct5_page1_summary.pdf>
-Package pdftex.def Info: fig_distinct5_page1_summary.pdf  used on input line 55
+Package pdftex.def Info: fig_distinct5_page1_summary.pdf  used on input line 70
 .
-(pdftex.def)             Requested size: 475.53783pt x 217.04497pt.
+(pdftex.def)             Requested size: 518.0324pt x 173.84416pt.
+
+Overfull \hbox (1.49994pt too wide) in paragraph at lines 68--75
+[]| [] 
+ []
+
 CUTED [- LAST -]
 Extra skip:0.0pt
-Left:179.24998pt/1.9485pt
-Right:185.44849pt/0.0pt
-Split: 182.34923pt
-Output:182.34923pt
+Left:191.24998pt/1.9485pt
+Right:193.44849pt/0.0pt
+Split: 192.34923pt
+Output:192.34923pt
 Pageshrink: 0.0pt
 Pagestretch: 0.0pt
 @colht:487.8225pt
-CUTED [output]: 182.34923pt
-CUTED [leftcolumn badness]: 69
-CUTED [rightcolumn badness]: 69
+CUTED [output]: 192.34923pt
+CUTED [leftcolumn badness]: 1
+CUTED [rightcolumn badness]: 5
 
+Underfull \vbox (badness 2903) has occurred while \output is active []
 
-LaTeX Warning: Optional argument of \twocolumn too tall on page 1(1column).
-
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
-Overfull \vbox (11.9718pt too high) has occurred while \output is active []
-
-
-[1{c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/202
-6/texmf-dist/fonts/enc/dvips/newtx/ntx-ec-tlf.enc}
+ [1{c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/20
+26/texmf-dist/fonts/enc/dvips/newtx/ntx-ec-tlf.enc}
 
 
 
  <./fig_distinct5_page1_summary.pdf>]
-Underfull \hbox (badness 10000) in paragraph at lines 83--84
- \T1/ntxtlf/b/n/10 Exemplar-conditioned trans-fer. \T1/ntxtlf/m/n/10 Clas-si-ca
-l exemplar-
- []
-
-<framework_sfm_main.png, id=101, 3244.12pt x 1202.4925pt>
+<framework_sfm_main.png, id=104, 3244.12pt x 1202.4925pt>
 File: framework_sfm_main.png Graphic file (type png)
 <use framework_sfm_main.png>
-Package pdftex.def Info: framework_sfm_main.png  used on input line 96.
+Package pdftex.def Info: framework_sfm_main.png  used on input line 154.
 (pdftex.def)             Requested size: 505.89pt x 187.50366pt.
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
-(Font)              scaled to size 10.95pt on input line 101.
+(Font)              scaled to size 10.95pt on input line 159.
 LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
-(Font)              scaled to size 10.95pt on input line 101.
+(Font)              scaled to size 10.95pt on input line 159.
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/it' will be
-(Font)              scaled to size 10.0pt on input line 144.
+(Font)              scaled to size 10.0pt on input line 209.
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/it' will be
-(Font)              scaled to size 7.0pt on input line 150.
+(Font)              scaled to size 7.0pt on input line 215.
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/it' will be
-(Font)              scaled to size 5.0pt on input line 150.
-[2] [3 <./framework_sfm_main.png (PNG copy)>]
-Overfull \hbox (1.41962pt too wide) detected at line 291
-[][][]
- []
+(Font)              scaled to size 5.0pt on input line 215.
 
-[4]
-LaTeX Font Info:    Trying to load font information for T1+pcr on input line 40
-9.
- (c:/texlive/2026/texmf-dist/tex/latex/psnfss/t1pcr.fd
+[2] [3 <./framework_sfm_main.png (PNG copy)>] [4]
+LaTeX Font Info:    Trying to load font information for T1+pcr on input line 54
+0.
+
+(c:/texlive/2026/texmf-dist/tex/latex/psnfss/t1pcr.fd
 File: t1pcr.fd 2001/06/04 font definitions for T1/pcr.
 )
-Underfull \hbox (badness 1242) in paragraph at lines 415--416
-\T1/ntxtlf/m/n/10 WCT (VGG19), SD-Turbo, SDEdit at $\OML/cmm/m/it/10 s[]\OMS/cm
-sy/m/n/10 f\OT1/cmr/m/n/10 0\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 35\OML/cmm/m/it/1
-0 ; \OT1/cmr/m/n/10 0\OML/cmm/m/it/10 :\OT1/cmr/m/n/10 40\OMS/cmsy/m/n/10 g$\T1
-/ntxtlf/m/n/10 ,
- []
-
+LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
+(Font)              scaled to size 7.0pt on input line 564.
 LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
-(Font)              scaled to size 9.0pt on input line 444.
-LaTeX Font Info:    Font shape `T1/ntxtlf/m/it' will be
-(Font)              scaled to size 9.0pt on input line 529.
-LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
-(Font)              scaled to size 6.0pt on input line 529.
-LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
-(Font)              scaled to size 5.0pt on input line 529.
-[5{c:/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc}]
-Underfull \hbox (badness 10000) in paragraph at lines 549--549
-[]\T1/ntxtlf/m/n/9 transfer-
- []
-
-
-Underfull \hbox (badness 5741) in paragraph at lines 552--552
-[]\T1/ntxtlf/m/n/9 Style-memory-only up-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 553--553
-[]\T1/ntxtlf/m/n/9 transfer-
- []
-
-[6]
-Underfull \hbox (badness 10000) in paragraph at lines 576--576
-[]\T1/ntxtlf/m/n/9 Euclidean la-tents
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 576--576
-\T1/ntxtlf/m/n/9 ad-mit a style-
- []
-
-
-Underfull \hbox (badness 6047) in paragraph at lines 576--576
-\T1/ntxtlf/m/n/9 so re-mov-ing the
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 576--576
-\T1/ntxtlf/m/n/9 wavelet change
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 576--576
-\T1/ntxtlf/m/n/9 fron-tier (The-o-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 577--577
-[]\T1/ntxtlf/m/n/9 If the high-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 577--577
-\T1/ntxtlf/m/n/9 frequency route
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 577--577
-\T1/ntxtlf/m/n/9 is the de-ployed
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 577--577
-\T1/ntxtlf/m/n/9 style path, then
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 577--577
-\T1/ntxtlf/m/n/9 train-time route
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 577--577
-\T1/ntxtlf/m/n/9 match-ing should
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 578--578
-[]\T1/ntxtlf/m/n/9 If end-point in-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 578--578
-\T1/ntxtlf/m/n/9 jec-tion al-ready
- []
-
-
-Underfull \hbox (badness 4886) in paragraph at lines 578--578
-\T1/ntxtlf/m/n/9 sub-band statis-tics,
- []
-
-
-Underfull \hbox (badness 7468) in paragraph at lines 578--578
-\T1/ntxtlf/m/n/9 re-peated in-jec-tion
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 578--578
-\T1/ntxtlf/m/n/9 should over-shoot
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 578--578
-\T1/ntxtlf/m/n/9 dam-age (Propo-si-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 579--579
-\T1/ntxtlf/m/n/9 al-ready or-ga-nizes
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 579--579
-\T1/ntxtlf/m/n/9 then pixel-space
- []
-
-
-Underfull \hbox (badness 2334) in paragraph at lines 596--597
- \T1/ntxtlf/b/n/10 Bench-mark regime. \T1/ntxtlf/m/n/10 The present bench-mark 
-tar-gets
- []
-
-[7] (./paper.bbl) [8] [9
-
-] (./paper.aux)
+(Font)              scaled to size 7.0pt on input line 583.
+ [5{c:/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc}]
+LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
+(Font)              scaled to size 9.0pt on input line 639.
+ [6] [7] (./paper.bbl) [8] (./paper.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2020/03/25>
@@ -910,13 +773,13 @@ LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
  ) 
 Here is how much of TeX's memory you used:
- 17920 strings out of 467525
- 348371 string characters out of 5423209
- 757986 words of memory out of 5000000
- 46484 multiletter control sequences out of 15000+600000
- 679766 words of font info for 79 fonts, out of 8000000 for 9000
+ 17918 strings out of 467525
+ 348343 string characters out of 5423209
+ 756969 words of memory out of 5000000
+ 46482 multiletter control sequences out of 15000+600000
+ 676905 words of font info for 78 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 89i,14n,117p,1032b,352s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 89i,13n,117p,580b,352s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/tex
 live/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026
 /texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb><c:/texlive/2026/texmf-dis
@@ -932,10 +795,10 @@ public/amsfonts/symbols/msbm10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/
 courier/ucrr8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmb.pf
 b><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmr.pfb><c:/texlive/202
 6/texmf-dist/fonts/type1/public/newtx/ztmri.pfb>
-Output written on paper.pdf (9 pages, 591486 bytes).
+Output written on paper.pdf (8 pages, 572941 bytes).
 PDF statistics:
- 210 PDF objects out of 1000 (max. 8388607)
- 87 compressed objects within 1 object stream
+ 211 PDF objects out of 1000 (max. 8388607)
+ 89 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  23 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import csv
+import math
+import re
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
-from matplotlib.lines import Line2D
 
 
 OUT_DIR = Path(__file__).resolve().parent
 DOC72_DIR = OUT_DIR.parent / "docs" / "72"
+SAMAM_CURVE_CSV = OUT_DIR.parent / "tools" / "samam_distinct5_scratch" / "curve_metrics_hf.csv"
 
 IDT_CLIP = 0.6933
 
@@ -38,6 +41,7 @@ def point(
     *,
     label: bool = False,
     display: str | None = None,
+    train_min: float | None = None,
 ) -> dict:
     return {
         "name": name,
@@ -47,6 +51,7 @@ def point(
         "x": 1.0 - lpips,
         "group": group,
         "label": label,
+        "train_min": train_min,
     }
 
 
@@ -56,43 +61,38 @@ BASELINES = [
     point("WCT", 0.7063, 0.6348, "classical", label=True),
     point("SD-Turbo", 0.6933, 0.0033, "diffusion"),
     point("StyleID", 0.8223, 0.5523, "diffusion", label=True),
-    point("CUT", 0.7137, 0.3743, "trained", label=True),
-    point("SaMST", 0.6183, 0.7490, "trained", label=True),
-    point("SaMam", 0.5816, 0.2434, "trained", label=True),
+    point("CUT", 0.7137, 0.3743, "trained", label=True, train_min=322.6),
+    point("SaMST", 0.6183, 0.7490, "trained", label=True, train_min=39.5),
+    point("SaMam", 0.5816, 0.2434, "trained", label=True, train_min=436.0),
     point("Seedream 4.5", 0.7198, 0.4767, "external", label=True),
 ]
 
 OURS_FRONTIER = [
-    point("T10", 0.7083, 0.2480, "ours", label=True, display="Fidelity-leaning"),
-    point("T11", 0.7213, 0.2868, "ours", label=True, display="WD-VF"),
-    point("4J.1", 0.7226, 0.3068, "ours", label=False),
-    point("4I.7b", 0.7272, 0.3218, "ours", label=True, display="Style-leaning"),
-    point("4F.1", 0.7319, 0.3428, "ours", label=True, display="Style max"),
+    point("T10", 0.7083, 0.2480, "ours", label=True, display="WD-VF", train_min=3.08),
+    point("T11", 0.7213, 0.2868, "ours", label=True, display="Ours", train_min=3.08),
 ]
 
 ALL_POINTS = BASELINES + OURS_FRONTIER
 
 GROUP_STYLE = {
-    "control": {"face": "#111111", "edge": "#111111", "marker": "o", "size": 220, "z": 5},
-    "classical": {"face": "#8FB8DE", "edge": "#35658A", "marker": "o", "size": 210, "z": 3},
-    "diffusion": {"face": "#E8B14C", "edge": "#9B6310", "marker": "o", "size": 230, "z": 3},
-    "trained": {"face": "#B0B7C3", "edge": "#4F5865", "marker": "o", "size": 235, "z": 4},
-    "external": {"face": "#8464B3", "edge": "#4E3A70", "marker": "D", "size": 250, "z": 4},
-    "ours": {"face": "#D6452F", "edge": "#7F1F10", "marker": "D", "size": 295, "z": 6},
+    "control": {"face": "#111111", "edge": "#111111", "marker": "o", "z": 5},
+    "classical": {"face": "#8FB8DE", "edge": "#35658A", "marker": "o", "z": 3},
+    "diffusion": {"face": "#E8B14C", "edge": "#9B6310", "marker": "o", "z": 3},
+    "trained": {"face": "#B0B7C3", "edge": "#4F5865", "marker": "o", "z": 4},
+    "external": {"face": "#8464B3", "edge": "#4E3A70", "marker": "o", "z": 4},
+    "ours": {"face": "#D6452F", "edge": "#7F1F10", "marker": "o", "z": 6},
 }
 
 LABEL_POS = {
-    "Identity": {"xytext": (-10, 12), "ha": "right", "va": "bottom", "arrow": False},
-    "WCT": {"xytext": (12, 10), "ha": "left", "va": "bottom", "arrow": False},
-    "StyleID": {"xytext": (0, 16), "ha": "center", "va": "bottom", "arrow": False},
-    "CUT": {"xytext": (0, -20), "ha": "center", "va": "top", "arrow": False},
+    "Identity": {"xytext": (0, 8), "ha": "center", "va": "bottom", "arrow": False},
+    "WCT": {"xytext": (14, 0), "ha": "left", "va": "center", "arrow": False},
+    "StyleID": {"xytext": (0, -8), "ha": "center", "va": "top", "arrow": False},
+    "CUT": {"xytext": (-6, 10), "ha": "right", "va": "bottom", "arrow": False},
     "SaMST": {"xytext": (12, 10), "ha": "left", "va": "bottom", "arrow": False},
-    "SaMam": {"xytext": (12, -18), "ha": "left", "va": "top", "arrow": False},
-    "Seedream 4.5": {"xytext": (10, 14), "ha": "left", "va": "bottom", "arrow": False},
-    "T10": {"xytext": (34, -16), "ha": "left", "va": "top", "arrow": True},
-    "T11": {"xytext": (52, 6), "ha": "left", "va": "bottom", "arrow": True},
-    "4I.7b": {"xytext": (34, 34), "ha": "left", "va": "bottom", "arrow": True},
-    "4F.1": {"xytext": (-22, 36), "ha": "center", "va": "bottom", "arrow": True},
+    "SaMam": {"xytext": (-8, 10), "ha": "right", "va": "bottom", "arrow": False},
+    "Seedream 4.5": {"xytext": (-6, 10), "ha": "right", "va": "bottom", "arrow": False},
+    "T10": {"xytext": (8, -2), "ha": "left", "va": "center", "arrow": False},
+    "T11": {"xytext": (0, 8), "ha": "center", "va": "bottom", "arrow": False},
 }
 
 ARTFID_BARS = [
@@ -130,6 +130,39 @@ def annotate_point(ax: plt.Axes, p: dict) -> None:
     text.set_path_effects([pe.withStroke(linewidth=1.6, foreground="white")])
 
 
+def load_samam_curve() -> list[tuple[float, float]]:
+    curve: list[tuple[float, float]] = []
+    step_re = re.compile(r"step_(\d+)")
+    with SAMAM_CURVE_CSV.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            image_dir = row.get("image_dir", "")
+            if not step_re.search(image_dir):
+                continue
+            lpips = float(row["content_lpips"])
+            clip = float(row["clip_style"])
+            curve.append((1.0 - lpips, clip))
+    return curve
+
+
+def bubble_size(p: dict) -> float:
+    t = p.get("train_min")
+    if t is None or t <= 0:
+        return math.pi * (2.8**2)
+    timed_values = [3.08, 39.5, 322.6, 436.0]
+    t_min = min(timed_values)
+    t_max = max(timed_values)
+    r_min = 2.8
+    r_max = 11.2
+    if t <= t_min:
+        radius = r_min
+    else:
+        radius = r_min + (r_max - r_min) * (
+            (math.log10(t) - math.log10(t_min)) / (math.log10(t_max) - math.log10(t_min))
+        )
+    return math.pi * (radius**2)
+
+
 def build_scatter(ax: plt.Axes) -> None:
     ax.axhspan(0.56, IDT_CLIP, color="#F4F5F8", zorder=0)
     ax.axhline(IDT_CLIP, color="#4C566A", lw=1.2, linestyle=(0, (3, 3)), zorder=1)
@@ -144,6 +177,8 @@ def build_scatter(ax: plt.Axes) -> None:
         ha="left",
     )
 
+    samam_curve = load_samam_curve()
+
     for group_name in ["classical", "diffusion", "trained", "external", "ours", "control"]:
         pts = [p for p in ALL_POINTS if p["group"] == group_name]
         if not pts:
@@ -152,7 +187,7 @@ def build_scatter(ax: plt.Axes) -> None:
         ax.scatter(
             [p["x"] for p in pts],
             [p["clip"] for p in pts],
-            s=style["size"],
+            s=[bubble_size(p) for p in pts],
             marker=style["marker"],
             facecolor=style["face"],
             edgecolor=style["edge"],
@@ -163,10 +198,28 @@ def build_scatter(ax: plt.Axes) -> None:
 
     frontier = sorted(OURS_FRONTIER, key=lambda p: p["x"])
     ax.plot(
+        [x for x, _ in samam_curve],
+        [y for _, y in samam_curve],
+        color="#5F89AE",
+        lw=1.55,
+        alpha=0.78,
+        zorder=4.2,
+    )
+    ax.scatter(
+        [x for x, _ in samam_curve],
+        [y for _, y in samam_curve],
+        s=12,
+        facecolor="#5F89AE",
+        edgecolor="none",
+        alpha=0.32,
+        zorder=4.2,
+    )
+
+    ax.plot(
         [p["x"] for p in frontier],
         [p["clip"] for p in frontier],
         color="#D6452F",
-        lw=2.0,
+        lw=1.8,
         alpha=0.92,
         zorder=5,
     )
@@ -200,14 +253,14 @@ def build_scatter(ax: plt.Axes) -> None:
     ax.annotate(
         "3.08 min, RTX 3060",
         xy=(t11["x"], t11["clip"]),
-        xytext=(52, 48),
+        xytext=(25, 48),
         textcoords="offset points",
-        ha="left",
+        ha="center",
         va="bottom",
-        fontsize=8.9,
+        fontsize=14.5,
         color="#7F1F10",
         bbox={
-            "boxstyle": "round,pad=0.18",
+            "boxstyle": "round,pad=0.35",
             "facecolor": "white",
             "edgecolor": "#E1C2BC",
             "linewidth": 0.7,
@@ -217,75 +270,31 @@ def build_scatter(ax: plt.Axes) -> None:
         zorder=7,
     )
 
+    sd_turbo = next(p for p in ALL_POINTS if p["name"] == "SD-Turbo")
+    ax.annotate(
+        "SD-Turbo",
+        xy=(sd_turbo["x"], sd_turbo["clip"]),
+        xytext=(0, -8),
+        textcoords="offset points",
+        ha="center",
+        va="top",
+        fontsize=8.9,
+        color="#8C5A09",
+        bbox={
+            "boxstyle": "round,pad=0.18",
+            "facecolor": "white",
+            "edgecolor": "#E2C899",
+            "linewidth": 0.7,
+            "alpha": 0.96,
+        },
+        zorder=7,
+    )
+
     ax.set_xlim(0.20, 1.02)
-    ax.set_ylim(0.56, 0.845)
+    ax.set_ylim(0.56, 0.829)
     ax.set_xlabel("Content fidelity (1 - LPIPS)")
     ax.set_ylabel("Style affinity (CLIP-S)")
     ax.grid(axis="both", color="#D6D9DF", alpha=0.55, linewidth=0.6)
-
-    legend_handles = [
-        Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="none",
-            markerfacecolor=GROUP_STYLE["control"]["face"],
-            markeredgecolor=GROUP_STYLE["control"]["edge"],
-            markersize=7.4,
-            label="IDT control",
-        ),
-        Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="none",
-            markerfacecolor=GROUP_STYLE["classical"]["face"],
-            markeredgecolor=GROUP_STYLE["classical"]["edge"],
-            markersize=7.4,
-            label="Classical",
-        ),
-        Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="none",
-            markerfacecolor=GROUP_STYLE["diffusion"]["face"],
-            markeredgecolor=GROUP_STYLE["diffusion"]["edge"],
-            markersize=7.4,
-            label="Large-prior diffusion",
-        ),
-        Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="none",
-            markerfacecolor=GROUP_STYLE["trained"]["face"],
-            markeredgecolor=GROUP_STYLE["trained"]["edge"],
-            markersize=7.4,
-            label="Trained baselines",
-        ),
-        Line2D(
-            [0],
-            [0],
-            marker="D",
-            color="none",
-            markerfacecolor=GROUP_STYLE["ours"]["face"],
-            markeredgecolor=GROUP_STYLE["ours"]["edge"],
-            markersize=7.6,
-            label="WD-VF",
-        ),
-    ]
-    leg = ax.legend(
-        handles=legend_handles,
-        loc="upper left",
-        frameon=True,
-        framealpha=0.94,
-        facecolor="white",
-        edgecolor="#D1D5DB",
-        borderpad=0.45,
-        handletextpad=0.45,
-    )
-    leg.set_zorder(10)
 
 
 def build_bars(ax: plt.Axes) -> None:
@@ -319,16 +328,17 @@ def build_bars(ax: plt.Axes) -> None:
             color="#2B2F38",
             fontweight="bold",
         )
-        label_color = "white" if y > 175 else "#1F2937"
+        label_color = "white"
         ax.text(
             x,
             max(18, y * 0.47),
             item["time"],
             ha="center",
             va="center",
-            fontsize=9.0,
+            fontsize=11.5,
             color=label_color,
             fontweight="bold",
+            fontname="Arial",
         )
 
     ax.text(
@@ -347,14 +357,14 @@ def main() -> None:
     fig, (ax_scatter, ax_bar) = plt.subplots(
         1,
         2,
-        figsize=(7.1, 3.15),
-        gridspec_kw={"width_ratios": [1.82, 1.0]},
+        figsize=(9.0, 3.15),
+        gridspec_kw={"width_ratios": [1.8, 1.2]},
     )
 
     build_scatter(ax_scatter)
     build_bars(ax_bar)
 
-    fig.subplots_adjust(left=0.075, right=0.995, top=0.985, bottom=0.17, wspace=0.18)
+    fig.subplots_adjust(left=0.022, right=0.995, top=0.985, bottom=0.17, wspace=0.28)
     DOC72_DIR.mkdir(parents=True, exist_ok=True)
 
     outputs = [
