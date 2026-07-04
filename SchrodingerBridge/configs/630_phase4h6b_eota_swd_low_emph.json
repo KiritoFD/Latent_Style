@@ -1,0 +1,22 @@
+{
+  "_base": "630_phase4h1c_eota_per_subband_a07.json",
+  "bridge": {
+    "spectral_swd_low_weight": 2.0,
+    "spectral_swd_high_weight": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h6b_eota_swd_low_emph",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h6b_eota_swd_low_emphasis",
+    "axis": "swd_low_high_weight_asymmetry",
+    "stage": "phase4h6",
+    "notes": "Phase 4H.6b: EOTA + alpha=0.7 + swd_low=2.0 swd_high=0.5. Emphasize low-frequency SWD (content structure) over high-frequency (texture). Hypothesis: with EOTA already controlling style, stronger low-freq SWD improves content preservation further. Tests the SWD frequency decomposition role."
+  }
+}

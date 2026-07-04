@@ -1,0 +1,50 @@
+{
+  "iteration": 8,
+  "status": "wct_complete_all_baselines_done",
+  "stale_count": 0,
+  "last_seen": "2026-07-01T17:20:00+08:00",
+  "all_baselines_complete": true,
+  "completed_methods": ["identity", "adain", "sdedit_str0.10", "sdedit_str0.20", "sdedit_str0.35", "sdedit_str0.40", "sdturbo", "styleid", "samst", "cut", "samam", "wct_vgg19"],
+  "failed_methods": ["s2wat", "wct_v32k"],
+  "total_methods": 12,
+  "key_results": {
+    "best_style": {"method": "styleid", "clip_style": 0.8223},
+    "best_content": {"method": "identity", "lpips": 0.0},
+    "best_balanced_training": {"method": "samam", "clip_style": 0.7222, "lpips": 0.3282},
+    "best_balanced_inference": {"method": "sdedit_str0.10", "clip_style": 0.7188, "lpips": 0.3183},
+    "best_classical_inference": {"method": "wct_vgg19", "clip_style": 0.7063, "lpips": 0.6348},
+    "worst": {"method": "samst", "clip_style": 0.6183, "delta_idt": -0.0216}
+  },
+  "training_times": {
+    "samst": {"train_min": 39.5, "infer_min": 10.0},
+    "samam": {"train_min": 209.2, "infer_min": 17.6},
+    "cut": {"train_min": 322.6, "infer_min": 5.0, "per_style_min": 64.5},
+    "wct_vgg19": {"train_min": 0.0, "infer_min": 1.5}
+  },
+  "deliverables": {
+    "unified_results": "exp/baseline_v2/eval/unified_results.json",
+    "conclusions": "exp/baseline_v2/baseline_conclusions.md",
+    "summary_csv": "exp/baseline_v2/baseline_summary_table.csv",
+    "findings": ".trae/autoresearch/baseline_repro/state/findings.jsonl"
+  },
+  "wct_findings": {
+    "wct_v32k_failed": "VGG-normalised encoder features too narrow (mean~0.006), AdaIN decoder cannot decode WCT features",
+    "wct_vgg19_succeeded": "VGG-19 ImageNet encoder features wide range (0-60), distinct per-style statistics, decoder output normal",
+    "scientific_insight": "WCT matches full covariance (vs AdaIN mean/std only). On WikiArt, VGG-normalised features have nearly identical statistics across styles, making AdaIN nearly identity. VGG-19 features show distinct per-style statistics, allowing WCT to achieve +0.0664 delta_idt over identity."
+  },
+  "survey_results": {
+    "aminer_token_configured": false,
+    "survey_method": "WebSearch + domain knowledge",
+    "candidate_missing_baselines": [
+      {"name": "Gatys NST", "venue": "CVPR 2016", "category": "optimization-based", "priority": "medium", "reason": "Foundational baseline; slow per-image optimization"},
+      {"name": "WCT", "venue": "CVPR 2017", "category": "inference-only", "priority": "high", "reason": "Standard inference-only companion to AdaIN", "status": "COMPLETED"},
+      {"name": "DreamStyler", "venue": "AAAI 2024", "category": "diffusion training-required", "priority": "high", "reason": "Recent AAAI 2024 diffusion-based, highly relevant"},
+      {"name": "InST", "venue": "SIGGRAPH 2023", "category": "diffusion inversion", "priority": "medium", "reason": "Inversion-based, important for comparison"},
+      {"name": "StyleAligned", "venue": "NeurIPS 2023", "category": "diffusion training-free", "priority": "medium", "reason": "Popular training-free diffusion method"},
+      {"name": "StyTr2", "venue": "AAAI 2022", "category": "transformer-based", "priority": "low", "reason": "Transformer-based style transfer"},
+      {"name": "ArtFlow", "venue": "CVPR 2021", "category": "flow-based", "priority": "low", "reason": "Invertible flow-based"},
+      {"name": "CycleGAN", "venue": "ICCV 2017", "category": "GAN unpaired", "priority": "low", "reason": "Predecessor of CUT in spirit"}
+    ]
+  },
+  "next_action": "all_core_baselines_complete_optional_further_reproduction"
+}

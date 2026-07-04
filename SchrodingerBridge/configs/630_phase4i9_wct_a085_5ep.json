@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4i7b_cosine_heun_a085_5ep.json",
+  "model": {
+    "endpoint_adain_mode": "spatial_fiber_wct"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4i9_wct_a085_5ep",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4i9_wct_a085_5ep",
+    "axis": "wct_covariance_matching",
+    "stage": "phase4i9",
+    "notes": "Phase 4I.9: WCT (Whitening and Coloring Transform) replaces AdaIN. Probe B diagnosis: AdaIN cov correction only 2.5%. WCT matches full covariance matrix. Inference-only change (training identical to 4I.7b). Target: break Pareto by improving clip via covariance matching while keeping lpips via lowpass lock."
+  }
+}

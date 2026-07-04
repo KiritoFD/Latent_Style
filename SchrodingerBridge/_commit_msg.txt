@@ -1,0 +1,22 @@
+Phase 72 Plan C/D/E/F/G + R1/R2/R3: 8 architecture experiments confirm 1:8 trade-off fundamental
+
+Plan C (T21) AdaLN-Zero on LL: clip=0.7174, lpips=0.2790 (NOT dual beat)
+Plan D (T22) Direct Tone Bias: clip=0.7150, lpips=0.2597 (NOT dual beat)
+Plan E (T23) Mean-Only LL AdaIN: clip=0.7215, lpips=0.3856 (LPIPS severely degraded)
+Plan F (T24) Std-Only LL AdaIN: clip=0.7172, lpips=0.2889 (both metrics worse)
+Plan G (T25) Cov-Only LL WCT: clip=0.7205, lpips=0.3069 (least harmful, still not dual beat)
+R1 depth=2: clip=0.7172, lpips=0.2705 (content-heavy trade-off)
+R2 dim=32: clip=0.7153, lpips=0.2705 (content-heavy trade-off)
+R3 gate=0: clip=0.7080, lpips=0.2641 (content-heavy trade-off)
+
+Conclusion: LL mean/std/covariance ALL harmful. T11 LL-lock (scale_ll=0.0) is
+the only optimal strategy. 1:8 trade-off confirmed from all angles.
+stale_count=8 -> FLAGGED_FOR_HUMAN_ATTENTION. Next: paradigm-level change (E2 YCbCr).
+
+Code changes:
+- blocks620.py: Plan C (ll_adaln_zero) + Plan D (ll_tone_bias) support
+- spectral_bridge620.py: 3 new endpoint modes + _wct_match_fiber_keep_mean helper
+- config_schema.py: ll_adaln_zero, ll_tone_bias, endpoint_adain_mode/scale_ll fields
+- 8 new configs (T21-T25, R1-R3)
+- findings.jsonl: 18 entries (3 new this session)
+- progress.json: iteration 7, stale_count=8

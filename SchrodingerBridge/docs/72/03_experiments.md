@@ -611,12 +611,12 @@
 |------|---------|------|
 | CLIP-S | 0.7213 | 第 5（低于 StyleID/SDEdit×2/CUT；高于 Seedream/SaMam/SaMST/WCT/IDT/SD-Turbo/AdaIN） |
 | LPIPS | 0.2868 | 第 4（**SaMam 0.2434 仍是"非identity LPIPS冠军"**；仅低于 IDT/SD-Turbo/SaMam） |
-| 训练时间 | ~30 min | **第 1**（最快，14.5× 优于 SaMam，10.8× 优于 CUT） |
+| 训练时间 | 3.08 min | **第 1**（最快，141× 优于 SaMam，104.7× 优于 CUT） |
 | 模型规模 | 903K params | 极轻量 |
 
 **关键判定 (v5 修正, SaMam 数据完整性修正)**:
-- T11 vs SaMam: **T11 重新 DUAL BEAT SaMam (CLIP +0.1397 大幅领先, LPIPS -0.0434 微弱落后, 但 SaMam 风格转移失败)**。T11 CLIP-S 大幅领先 SaMam (+0.1397), LPIPS 微弱落后 (-0.0434, 但 SaMam CLIP-S=0.5816 低于 Identity 风格转移失败)。T11 训练快 14.5×
-- T11 **DUAL BEAT Seedream 4.5**: clip +0.0015, lpips -0.1899（轻量模型战胜商业 API）
+- T11 vs SaMam: T11 的 CLIP-S 显著领先 SaMam (+0.1397)，LPIPS 仅高 0.0434，训练快 141×。按 IDT 校准，SaMam CLIP-S=0.5816 低于 Identity 0.6933，不应视为真实目标方向迁移成功。
+- T11 与 Seedream 4.5 在闭合 CLIP-S/LPIPS 协议下数值接近（clip +0.0015, lpips -0.1899），但 Seedream 仍应视为更强的外部大先验参考，而不是同成本基线。
 - T11 在 CLIP-S 上大幅超越 SaMam (+0.1397), 在 LPIPS 上微弱落后 SaMam (-0.0434, 但 SaMam 风格转移失败)，仍优于其它训练类方法（CUT 0.3743 / SDEdit 0.4508 / Seedream 0.4767 / StyleID 0.5523）
 - T11 在 CLIP-S 上无法匹敌扩散先验方法（StyleID 0.8223 / SDEdit 0.7934），但定位为"轻量+高保真+训练高效"路线
 

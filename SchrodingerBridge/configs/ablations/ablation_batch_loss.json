@@ -1,0 +1,46 @@
+{
+  "experiments": [
+    {
+      "name": "620_ablation_loss_swd0_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_loss_swd0_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_loss_swd2_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_loss_swd2_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_loss_swd8_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_loss_swd8_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_loss_swd16_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_loss_swd16_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_loss_nosigma_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_loss_nosigma_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_loss_edge0_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_loss_edge0_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    }
+  ]
+}

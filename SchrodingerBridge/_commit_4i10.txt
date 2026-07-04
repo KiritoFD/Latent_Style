@@ -1,0 +1,24 @@
+Phase 4I.10: DINO cleanup + probe diagnostic + structural breakthrough design
+
+DINO Cleanup (13 files):
+- Completely removed functional DINO references from src/
+- style_memory is now the sole style token path
+- dino_dim kept for checkpoint compatibility only
+
+Probe Diagnostic (tools/probe_spectral_global_bottleneck.py):
+- 5-dimension global bottleneck diagnosis combining MODEL.md theory
+- Critical: velocity field DEAD at t=0.5 (cos=0.01, structural ambiguity)
+- ODE trajectory useless (target_reach_ratio=0.0009)
+- AdaIN broken (mean -0.7%, cov_offdiag -8.9%, L2 to target +6.4)
+- Style sensitivity inverted (LL=0.62 should be low, LH/HL=0.20 should be high)
+
+WCT alpha=0.5 evaluation:
+- clip=0.7200, lpips=0.2971 (vs SaMam 0.7222, 0.3282)
+- lpips -9.5% (huge content win), clip -0.3% (slight style loss)
+
+Structural breakthrough design (docs/630/phase4i10_probe_breakthrough.md):
+- Direction 1: EPT (Endpoint Prediction Training) - eliminate dead midpoint
+- Direction 2: SSD (Style-Subband Decoupling) - fix inverted sensitivity
+- Direction 3: CAR (Covariance-Aware Refinement) - WCT at low alpha
+- Direction 4: BFR (Base-Fiber Realignment) - fix AdaIN pushing away
+- Recommended combo: CAR + EPT + SSD for both-metric breakthrough

@@ -1,0 +1,12 @@
+Experiment             CLIP_Style      LPIPS   clip_dir clip_content
+----------------------------------------------------------------------
+fc_sb_kernel7        NO_JSON_FOUND
+fc_sb_floor0         NO_JSON_FOUND
+fc_sb_curriculum     NO_JSON_FOUND
+fc_sb_fiber_ep       NO_JSON_FOUND
+fc_sb_wavelet        NO_JSON_FOUND
+
+=== E2 BASELINE (for comparison) ===
+fc_sb_sigma04:     clip_style=0.708  LPIPS=0.540
+
+=== DONE ===

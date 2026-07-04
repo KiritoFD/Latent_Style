@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4f_lvl3.json",
+  "model": {
+    "endpoint_lock_ll": true
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4g1a_lock_ll",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4g1a_lock_ll",
+    "axis": "true_ll_lock_inference",
+    "stage": "phase4g",
+    "notes": "Phase 4G.1a: True LL lock in inference. Trains with w_ll=1.0 (backbone sees LL target), but at inference skips v_ll application (ll_new = ll_old). Distinct from 4A2 (w_ll=0 only removed gradient but still applied random v_ll in inference). Tests core hypothesis: LL drift necessary or not? 2x2 matrix: (w_ll, lock_ll) = (1.0,false)=4F SOTA, (0.0,false)=4A2 fail, (1.0,true)=THIS, (0.0,true)=4G.1b."
+  }
+}

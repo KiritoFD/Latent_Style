@@ -1,0 +1,12 @@
+{
+  "_base": "630_remote_t11_long30ep.json",
+  "training": {
+    "num_epochs": 1,
+    "patience": 1,
+    "full_eval_each_epoch": true,
+    "resume_checkpoint": "I:/Github/Latent_Style/SchrodingerBridge/exp/630_local_t11_long30ep/epoch_0030.pt",
+    "test_image_dir": "I:/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache/hf"
+  }
+}

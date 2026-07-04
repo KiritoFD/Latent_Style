@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4h1b_eota_per_subband_a05.json",
+  "model": {
+    "endpoint_adain_scale": 0.7
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h1c_eota_per_subband_a07",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h1c_eota_per_subband_a07",
+    "axis": "eota_alpha_sweep",
+    "stage": "phase4h1c",
+    "notes": "Phase 4H.1c: EOTA + per_subband + alpha=0.7. Alpha sweep to find sweet spot between 4H.1a (alpha=1.0, clip=0.7359 lpips=0.3853) and 4H.1b (alpha=0.5, clip=0.7219 lpips=0.3226). Linear interpolation predicts alpha=0.7 -> clip~0.730 lpips~0.344, near 4F.1 SOTA. Goal: recover clip above 0.7243 threshold while keeping lpips gains."
+  }
+}

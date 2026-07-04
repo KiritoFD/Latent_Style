@@ -1,0 +1,39 @@
+{
+  "experiments": [
+    {
+      "name": "620_ablation_endpoint_velocity_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_endpoint_velocity_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_endpoint_lowhigh_nofilm_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_endpoint_lowhigh_nofilm_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_endpoint_lowhigh_hd128_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_endpoint_lowhigh_hd128_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_endpoint_lowhigh_hd256_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_endpoint_lowhigh_hd256_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_endpoint_lowhigh_hd512_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_endpoint_lowhigh_hd512_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    }
+  ]
+}

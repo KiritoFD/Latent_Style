@@ -1,0 +1,28 @@
+{
+  "_base": "630_phase4j1_dwt_route.json",
+  "model": {
+    "ll_global_style_inject": true,
+    "ll_global_style_gate_init": 0.1,
+    "ll_style_inject_source": "global_query"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_t15_llgqca",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 32,
+    "cudnn_benchmark": false,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "data": {
+    "pairing_cache_active_topk": 0
+  },
+  "ablation": {
+    "name": "local_t15_llgqca",
+    "axis": "ll_style_inject_source",
+    "stage": "local_t15",
+    "notes": "T15 LLGQCA: LL Global Query Cross-Attention. T13/T14证明用统计量(mean/std)做AdaIN无法提升clip(丢失style_mem细节). T15改用cross-attention: LL全局向量作为query cross-attend style_mem, 让模型学习提取全局风格. 理论: style_mem虽为高频训练但编码完整风格, 全局query(而非空间高频query)可能提取出全局风格部分. cross-attn非线性表达力优于AdaIN线性统计量匹配. 空间均匀注入(broadcast)不扰动结构."
+  }
+}

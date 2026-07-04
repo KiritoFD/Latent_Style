@@ -1,0 +1,23 @@
+{
+  "_base": "630_phase4f_lvl3.json",
+  "bridge": {
+    "spectral_w_ll": 0.3,
+    "spectral_w_lh": 2.0,
+    "spectral_w_hl": 2.0
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h2d_w_hf_20",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h2d_w_hf_20",
+    "axis": "loss_ratio_hf_increase",
+    "stage": "phase4h2",
+    "notes": "Phase 4H.2d: Double HF loss weights (w_lh=w_hl=2.0). Hypothesis: more HF supervision → more style transfer (higher clip), but worse content fidelity (higher lpips). Tests if current 1.0 HF weight is suboptimal. Current 0.3:1.0:1.0 → 0.3:2.0:2.0."
+  }
+}

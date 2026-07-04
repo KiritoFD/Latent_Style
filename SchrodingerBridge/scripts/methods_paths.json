@@ -1,0 +1,77 @@
+{
+  "samst_latent_256": {
+    "gen_dir": "/mnt/i/exp_samst_latent_eval/step_000001/images",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "adain_256": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/exp_baseline_256/adain/step_000001/images",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "wct_256": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/exp_baseline_256/wct/step_000001/images",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "samst_256": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/exp_baseline_256/samst/step_000001/images",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "samam_256": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/exp_samam/eval_256/samam_final_20k_256/step_020000/images",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "adain_512": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/baseline_v2/images/adain",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "wct_512": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/baseline_v2/eval/wct_vgg19/images",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "samst_512": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/baseline_v2/images/samst",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "samam_512": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/baseline_v2/images/samam",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "sdedit_str0.35_512": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/baseline_v2/images/sdedit_str0.35",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "sdturbo_512": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/baseline_v2/images/sdturbo",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "styleid_512": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/baseline_v2/images/styleid",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "cut_512": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/baseline_v2/images/cut",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "seedream_512": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/baseline_v2/eval/seedream/images",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  },
+  "identity_512": {
+    "gen_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/baseline_v2/images/identity",
+    "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+  }
+}

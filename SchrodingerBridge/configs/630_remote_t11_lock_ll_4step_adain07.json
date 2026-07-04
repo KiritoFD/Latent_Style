@@ -1,0 +1,27 @@
+{
+  "_base": "630_remote_t11_long30ep.json",
+  "model": {
+    "endpoint_lock_ll": true,
+    "endpoint_adain_scale": 0.7,
+    "endpoint_adain_scale_lh": 0.5,
+    "endpoint_adain_scale_hl": 0.5,
+    "endpoint_adain_scale_hh": 0.7
+  },
+  "training": {
+    "num_epochs": 1,
+    "patience": 1,
+    "full_eval_each_epoch": true,
+    "resume_checkpoint": "I:/Github/Latent_Style/SchrodingerBridge/exp/630_local_t11_stochastic_dwt_p08/epoch_0005.pt",
+    "test_image_dir": "I:/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache/hf",
+    "full_eval_num_steps": 4,
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/630_lock_ll_4step_adain07"
+  },
+  "ablation": {
+    "name": "lock_ll_4step_adain07",
+    "axis": "endpoint_lock_ll_steps_adain",
+    "stage": "lock_ll_sweep",
+    "notes": "T11 + lock_ll + 4-step + adain0.7. Triple combo: LL lock (LPIPS) + 4-step (accel) + high adain (CLIP). Best of all worlds?"
+  }
+}

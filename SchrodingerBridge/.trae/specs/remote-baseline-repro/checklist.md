@@ -1,0 +1,15 @@
+- [ ] 远程环境确认：Python/PyTorch/CUDA/关键包版本正确
+- [ ] 远程环境确认：distinct5_512 数据集 test 5×30 + train 5×1000 完整
+- [ ] 远程 Identity 基线评估结果与本地一致（CLIP-S=0.6933, LPIPS=0.0）
+- [ ] SDEdit 4个strength各产出750张图，命名格式正确
+- [ ] SD-Turbo 产出750张图，使用1步推理
+- [ ] AdaIN 使用官方预训练权重推理，产出750张图
+- [ ] StyleID 推理产出750张图
+- [ ] SaMAM 在 distinct5_512 上训练完成，推理750张图
+- [ ] SaMST 在 distinct5_512 上训练完成，推理750张图
+- [ ] S2WAT 在 distinct5_512 上训练完成，推理750张图
+- [ ] CUT 20个风格对训练完成，推理600+150=750张图
+- [ ] 所有方法用 LPIPS-VGG + CLIP-ViT-L/14 统一评估
+- [ ] unified_results.json 包含所有方法的指标
+- [ ] baseline_methods_catalog.md 更新为远程复现结果
+- [ ] Dashboard v3 生成并可交互

@@ -1,0 +1,19 @@
+{
+  "_base": "630_remote_base_5style.json",
+  "bridge": {
+    "terminal_swd_weight": 0.3,
+    "w_flow": 0.8,
+    "single_step_swd_weight": 10.0,
+    "w_endpoint_style": 10.0
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/630_remote_p2_swd_flow_balance",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "remote_p2_swd_flow_balance",
+    "axis": "parameter_swd_flow_balance",
+    "stage": "remote_p2",
+    "notes": "P2(Param): SWD+Flow weight balancing. terminal_swd=0.3 (stronger style consistency), w_flow=0.8 (slightly relaxed FM). Theory: stronger style distribution matching. Expected: style distribution improves."
+  }
+}

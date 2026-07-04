@@ -1,0 +1,143 @@
+=== M5 Local Cleanup Log - 07/02/2026 23:19:10 ===
+[2026-07-02 23:19:12] DELETED scale | 18894MB | Old wikiart_1024 datasets from May 2026, no longer used (datasets now on /mnt/i/)
+[2026-07-02 23:20:03] DELETED _codex_tmp | 99.2MB | All temporary .log/.pid/.sh monitoring files
+[2026-07-02 23:20:03] DELETED aaai_submission_snapshot_9a4b99dfa_page1_scatter_artfid | 30.1MB | Old snapshot, superseded
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_claim_reaudit_render | 3.3MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_claim_reaudit_render2 | 0.6MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_grid_row_previews | 7.5MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_pages_accessibility_narrative | 2.7MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_pages_claimboundary2 | 1.3MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_pages_grid_recheck | 3.2MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_pages_relatedwork_refresh | 2.2MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_pages_round2 | 4.5MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_pages_round2_claimfix | 1.7MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_pages_round2_posttiming | 2.7MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_pages_round2_theoryfix | 1.4MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_pages_s2wat_gram_fix | 0.6MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_pages_visual_check | 1.9MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render | 11.3MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_check | 3.9MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_check_current | 1.4MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_check_current2 | 2MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_frontcheck | 0.7MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_post_bibtex | 0.4MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_post_caption_fix | 1.5MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_post_related | 1.5MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_post_related_fresh | 1.5MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_post_theoryfix | 1.9MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_post_theoryfix_fresh | 1MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_post_timing | 1.5MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_post_timing_fresh | 1.4MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_pdf_render_review_round | 3.1MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_visual_recheck | 3MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:03] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\aaai_submission\tmp_visual_score | 7.9MB | aaai_submission tmp_* render dir
+[2026-07-02 23:20:04] DELETED exp\620_spatial_bridge | 5183.9MB | Old 620 series 65 smoke/ablation subdirs, superseded by 630 series
+[2026-07-02 23:20:24] DELETED exp\phase616_live_dashboard | 1220.8MB | Old 616 dashboard eval.tgz archives
+[2026-07-02 23:20:27] DELETED exp\630_local_t11_long30ep | 0.6MB | src_only, no ckpt no eval
+[2026-07-02 23:20:27] DELETED exp\630_local_t3_adain_ll_t3a | 0.6MB | src_only, no ckpt no eval
+[2026-07-02 23:20:27] DELETED exp\task5_baseline_2ep | 0MB | src_only, no ckpt no eval
+[2026-07-02 23:20:27] DELETED exp\task5_endpoint_a_2ep | 0MB | src_only, no ckpt no eval
+[2026-07-02 23:20:27] DELETED exp\task5_endpoint_b_2ep | 0MB | src_only, no ckpt no eval
+[2026-07-02 23:20:27] DELETED exp\task5_endpoint_c_2ep | 0MB | src_only, no ckpt no eval
+[2026-07-02 23:20:27] DELETED exp\task6_baseline_5ep | 0.1MB | src_only, no ckpt no eval
+[2026-07-02 23:20:27] DELETED exp\task6_exp_a_optimal_5ep | 0.1MB | src_only, no ckpt no eval
+[2026-07-02 23:20:27] DELETED exp\task6_exp_b_two_stage_5ep | 0.1MB | src_only, no ckpt no eval
+[2026-07-02 23:20:27] DELETED exp\625_fc_sb | 1.3MB | temp script dir
+[2026-07-02 23:20:27] DELETED exp\p3_remote_10h | 8.5MB | temp script dir
+[2026-07-02 23:20:27] DELETED exp\tuning_deepdive | 0.4MB | temp script dir
+[2026-07-02 23:20:27] DELETED exp\phase4j_batch_logs | 0.8MB | temp script dir
+[2026-07-02 23:20:27] DELETED exp\armored_breakthrough_proper | 0MB | historical May 2026 probe
+[2026-07-02 23:20:27] DELETED exp\decision_tree_clip_style | 0MB | historical May 2026 probe
+[2026-07-02 23:20:27] DELETED exp\diffeomorphic_tangent_head_sweep | 0MB | historical May 2026 probe
+[2026-07-02 23:20:27] DELETED exp\diffeomorphic_tangent_sweep | 0.3MB | historical May 2026 probe
+[2026-07-02 23:20:27] DELETED exp\fisher_operator_consumer_probe | 0.3MB | historical May 2026 probe
+[2026-07-02 23:20:27] DELETED exp\fisher_operator_tokenizer_probe | 0.3MB | historical May 2026 probe
+[2026-07-02 23:20:27] DELETED exp\fisher_style_backbone_probe | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:27] DELETED exp\fisher_style_memory_adapter_probe | 0MB | historical May 2026 probe
+[2026-07-02 23:20:27] DELETED exp\local_repro_sadd_38f_8ep_20260528_224707 | 0MB | historical May 2026 probe
+[2026-07-02 23:20:27] DELETED exp\manual_k1_k2_8epoch | 0.4MB | historical May 2026 probe
+[2026-07-02 23:20:27] DELETED exp\phase1_diagnostic_probes | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\physical_loss_tree | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\reference_memory_generation_probe_full | 0.2MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\remote_factorized_tokenizer_pull | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\router_aware_backbone_probe | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\scripts | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\style_memory_bank_adapter_probe | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\style_memory_bank_adapter_route_probe | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\style_memory_bank_probe | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\style_memory_typed_adapter_probe | 0MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\style_representation_adapter_probe | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\style_representation_safe_projection_probe | 0.2MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\style_representation_style_aware_router_probe | 0.2MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\t01_local_base | 0MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\temp_anneal_proper | 0MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\tokenizer_adain_gate_calibration | 0.7MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\tokenizer_adain_texture_gate_calibration_rerun | 0.2MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\tokenizer_bandgate_calibration | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\tokenizer_prototype_carrier_calibration | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\tokenizer_stat_reader_probe | 0.3MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\tokenizer_stat_vocab_probe | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\tokenizer_texton_carrier_calibration | 0.1MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\vae_backend_256_mse_controls | 0MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\vae_backend_256_status | 0MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\wikiart_512_encode_logs | 0.7MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\wikiart_512_transfer_logs | 0MB | historical May 2026 probe
+[2026-07-02 23:20:28] DELETED exp\phase3_task1 | 108.7MB | old series deprecated
+[2026-07-02 23:20:28] DELETED exp\fc_sb_r2 | 0.2MB | old series deprecated
+[2026-07-02 23:20:28] DELETED exp\20250618_lite_ot_vertical_auto | 0MB | old series deprecated
+[2026-07-02 23:20:28] DELETED exp\p4_fusion_breakout | 0MB | old series deprecated
+[2026-07-02 23:20:28] DELETED exp\task4_no_dino | 0MB | old series deprecated
+[2026-07-02 23:21:01] DELETED exp\_smoke_distinct5_512_ema_baseline_vlen004 | 0.5MB | smoke/probe cleanup
+[2026-07-02 23:21:01] DELETED exp\_smoke_distinct5_512_ema_variant_a_class_prototypes_b8_vlen001 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:01] DELETED exp\_smoke_distinct5_512_ema_variant_b_global_vq_b8_vlen001 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:02] DELETED exp\_smoke_distinct5_512_ema_variant_c_content_guided_spatial_b8_vlen001 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:02] DELETED exp\_smoke_distinct5_512_ema_variant_d_vq_content_guided_b8_vlen001 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:02] DELETED exp\_smoke_distinct5_512_ema_variant_e_latent_prototype_ot_queue_b8_vlen001 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:02] DELETED exp\_smoke_distinct5_512_ema_variant_i_dual_mix_local | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:03] DELETED exp\_smoke_distinct5_512_ema_variant_j_aux_hard_swd_local | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:03] DELETED exp\_smoke_distinct5_512_ema_variant_k_content_adaptive_local | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:03] DELETED exp\_smoke_distinct5_512_ema_variant_m_style_gated_local_windows | 0.5MB | smoke/probe cleanup
+[2026-07-02 23:21:03] DELETED exp\_smoke_distinct5_profile_probe_b8_vlen001 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:04] DELETED exp\_smoke_distinct5_variant_a_latent_init | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:04] DELETED exp\_smoke_distinct5_variant_b_latent_init | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:04] DELETED exp\local_wsl_distinct5_512_ema_k_b16_step2min | 0.5MB | smoke/probe cleanup
+[2026-07-02 23:21:05] DELETED exp\local_wsl_distinct5_512_ema_k_b16_step2min_v160 | 0.5MB | smoke/probe cleanup
+[2026-07-02 23:21:05] DELETED exp\local_wsl_distinct5_512_ema_k_b16_stepcalib | 0.5MB | smoke/probe cleanup
+[2026-07-02 23:21:05] DELETED exp\local_wsl_distinct5_512_ema_k_b32_e8 | 0.5MB | smoke/probe cleanup
+[2026-07-02 23:21:05] DELETED exp\local_wsl_wikiart512_carrier_gate_from_hist_e3 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:06] DELETED exp\local_wsl_wikiart512_execution_budget_from_hist_e1 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:06] DELETED exp\local_wsl_wikiart512_full_b32_e8 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:06] DELETED exp\local_wsl_wikiart512_style_injection_delta_div_from_hist_e3 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:07] DELETED exp\local_wsl_wikiart512_style_injection_delta_div_w05_from_hist_e3 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:07] DELETED exp\local_wsl_wikiart512_style_injection_from_hist_e1 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:07] DELETED exp\local_wsl_wikiart512_style_injection_from_hist_e3 | 0.4MB | smoke/probe cleanup
+[2026-07-02 23:21:07] DELETED exp\probes_20260601 | 0MB | smoke/probe cleanup
+[2026-07-02 23:21:07] DELETED exp\smoke_blockmask | 0MB | smoke/probe cleanup
+[2026-07-02 23:21:07] DELETED exp\style_representation_residual_scale_sweep | 0.8MB | smoke/probe cleanup
+[2026-07-02 23:21:08] DELETED exp\tmp_output_appearance_resume_smoke | 0.6MB | smoke/probe cleanup
+[2026-07-02 23:21:08] DELETED exp\630_local_t15_llgqca_train.log | 0.08MB | loose file
+[2026-07-02 23:21:08] DELETED exp\630_local_t19b_dim96_train.log | 0.1MB | loose file
+[2026-07-02 23:21:08] DELETED exp\630_phase3_train.log | 0.28MB | loose file
+[2026-07-02 23:21:08] DELETED exp\630_phase4a2_adain_0_train.log | 0.07MB | loose file
+[2026-07-02 23:21:08] DELETED exp\630_phase4a2_extrap_0_train.log | 0.09MB | loose file
+[2026-07-02 23:21:08] DELETED exp\630_phase4b1_freq_a05_train.log | 0.09MB | loose file
+[2026-07-02 23:21:08] DELETED exp\630_phase4b1_freq_a1_train.log | 0.09MB | loose file
+[2026-07-02 23:21:08] DELETED exp\_eval_samam_unified.bat | 0MB | loose file
+[2026-07-02 23:21:08] DELETED exp\_remote_scan_v2.py | 0.01MB | loose file
+[2026-07-02 23:21:08] DELETED exp\ablation_log.md | 0MB | loose file
+[2026-07-02 23:21:08] DELETED exp\analyze_task6_results.py | 0MB | loose file
+[2026-07-02 23:21:09] DELETED exp\archive_manifest.json | 0.02MB | loose file
+[2026-07-02 23:21:09] DELETED exp\baseline_err.log | 0MB | loose file
+[2026-07-02 23:21:09] DELETED exp\baseline_train.log | 0MB | loose file
+[2026-07-02 23:21:09] DELETED exp\clean_base_v2_relu2_train.log | 0.09MB | loose file
+[2026-07-02 23:21:09] DELETED exp\gen_task6_configs.py | 0MB | loose file
+[2026-07-02 23:21:09] DELETED exp\t5_err.log | 0.07MB | loose file
+[2026-07-02 23:21:09] DELETED exp\t5_train.log | 0MB | loose file
+[2026-07-02 23:21:09] DELETED exp\tuning_deepdive.zip | 0.03MB | loose file
+[2026-07-02 23:21:09] DELETED exp\verify_task6_configs.py | 0MB | loose file
+[2026-07-02 23:21:09] DELETED G:\GitHub\Latent_Style\SchrodingerBridge\exp\wikiart_stress1_Color_Field_Painting__High_Renaissance__Mannerism_Late_Renaissance__Pop_Art__Realism_variant_f_b44_remote | 0MB | old series deprecated
+[2026-07-02 23:21:29] DELETED logs\phase4e_db2_lvl1_result.txt | 80.7MB | logs/ misnamed eval image dir
+[2026-07-02 23:21:29] DELETED logs\phase4g1a_train.txt | 34.7MB | logs/ misnamed eval image dir
+[2026-07-02 23:21:30] DELETED logs\phase4g1b_train.txt | 9.6MB | logs/ misnamed eval image dir
+
+=== Phase 8-10 freed: 0.13 GB ===

@@ -126,15 +126,15 @@
 | **SaMam** | **~436** | **0.5816** | **0.2434** | **20k步, batch=1, 512×512, 32-true, distinct5** | **完成 (风格转移失败)** |
 | CUT | 322.6 | 0.7137 | 0.3743 | 5 styles × 4 epochs (2+2 decay) | 完成 |
 | Seedream 4.5 | — | 0.7198 | 0.4767 | commercial API (非本地训练) | 完成 |
-| **FC-SB T11** | **~30** | **0.7213** | **0.2868** | **5 epochs, 903K params, latent space** | **完成** |
+| **FC-SB T11** | **3.08** | **0.7213** | **0.2868** | **5 epochs, 903K params, latent space** | **完成** |
 
 **关键发现**:
 - **SaMam LPIPS=0.2434 是所有非 identity 方法中最优**（优于 T11 0.2868, CUT 0.3743），但 CLIP-S=0.5816 低于 Identity (0.6933)，风格转移几乎失败
 - SaMam CLIP-S=0.5816 (step 20000) 是所有方法中最低（低于 SaMST 0.6183），表明 mamba 模型过度保持内容
-- SaMam 训练时间比 T11 长 14.5× (436 vs 30 min)，比 CUT 长 35% (436 vs 322.6 min)
+- SaMam 训练时间比 T11 长约 141× (436 vs 3.08 min)，比 CUT 长 35% (436 vs 322.6 min)
 - **T11 vs SaMam**: T11 **DUAL BEAT SaMam** — CLIP-S +0.1397 (大幅领先), LPIPS -0.0434 (微弱落后, 但 SaMam 风格转移失败导致 LPIPS 低无意义)
 - **Seedream 4.5 虽 CLIP-S=0.7198 与 T11 接近，但 LPIPS=0.4767 远差于 T11 的 0.2868**（commercial API 牺牲保真度换风格强度）
-- **T11 训练效率最高（~30min, 903K params），比 SaMam 快 14.5×，比 CUT 快 10.8×**
+- **T11 训练效率最高（3.08 min, 903K params），比 SaMam 快约 141×，比 CUT 快约 104.7×**
 
 ---
 

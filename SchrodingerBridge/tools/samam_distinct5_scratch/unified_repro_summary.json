@@ -1,0 +1,16 @@
+{
+  "runs": [
+    {
+      "baseline": "styleid",
+      "protocol": "protocol_a_800",
+      "styles": "photo,monet,vangogh,cezanne,Hayao",
+      "status": "ok",
+      "adapter_note": "fully automated via existing wrapper",
+      "error": "",
+      "images_dir": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\styleid\\protocol_a_800\\images",
+      "result_root": "G:\\GitHub\\Latent_Style\\Related_Works\\baseline_pipeline\\results\\styleid\\protocol_a_800",
+      "reference_images_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\pareto_probe_4\\S-add__K-3_C-2_W-10_Col-15\\full_eval\\epoch_0001\\images",
+      "elapsed_sec": 3085.29
+    }
+  ]
+}

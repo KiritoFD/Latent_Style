@@ -1,0 +1,21 @@
+{
+  "_base": "630_phase4h1g_eota_spatial_fiber_a08.json",
+  "bridge": {
+    "terminal_swd_weight": 0.3
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h7d_sota_terminal_swd_03",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h7d_sota_terminal_swd_03",
+    "axis": "sota_plus_terminal_swd_boost",
+    "stage": "phase4h7",
+    "notes": "Phase 4H.7d: NEW SOTA (4H.1g) + terminal_swd_weight=0.3 (from 0.1). 3x terminal style supervision. Goal: boost clip (currently 0.7251, only 0.0008 above threshold) by strengthening terminal style loss. Complements EOTA's terminal AdaIN."
+  }
+}

@@ -1,0 +1,12 @@
+Write-Host "=== MONITOR PROCESS ==="
+&wsl -d Ubuntu-22.04 -e bash -c "pgrep -fa 'remote_loop_monitor' 2>/dev/null; echo EXIT=$?"
+Write-Host ""
+Write-Host "=== PROGRESS.LOG TAIL (last 10) ==="
+&wsl -d Ubuntu-22.04 -e bash -c "tail -10 /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/progress.log 2>/dev/null"
+Write-Host ""
+Write-Host "=== TRAIN STATUS ==="
+&wsl -d Ubuntu-22.04 -e bash -c "tail -1 /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/train.log 2>/dev/null | tr -d '\r'; echo; pgrep -f train_SaMam | head -1; nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv,noheader; ls /mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/step_checkpoints/ 2>/dev/null | wc -l"
+Write-Host ""
+Write-Host "=== WSL.EXE PROCESSES ==="
+Get-Process -Name wsl -ErrorAction SilentlyContinue | Measure-Object | Select-Object -ExpandProperty Count
+Write-Host "WSL processes running"

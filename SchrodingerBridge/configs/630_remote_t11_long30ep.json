@@ -1,0 +1,28 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "training": {
+    "num_epochs": 30,
+    "patience": 5,
+    "full_eval_each_epoch": false,
+    "test_image_dir": "I:/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache/hf"
+  },
+  "data": {
+    "latent_dir": "I:/wikiart_distinct5_latents_512_ema",
+    "test_image_dir": "I:/wikiart_distinct5_samam_512_classview/test",
+    "data_root": "I:/wikiart_distinct5_latents_512_ema",
+    "latent_cache_dir": "I:/wikiart_distinct5_latents_512_ema/.latent_cache/packed",
+    "pairing_cache_path": "I:/wikiart_distinct5_latents_512_ema/.latent_cache/prototype_pairing_top8.pt"
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/630_local_t11_long30ep",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "local_t11_long30ep",
+    "axis": "num_epochs",
+    "stage": "local_t11_long",
+    "notes": "T11 baseline with 30 epochs (vs standard 5ep), remote GPU, no per-epoch eval."
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "_base": "630_phase4j1_dwt_route.json",
+  "model": {
+    "ll_global_style_inject": true,
+    "ll_global_style_gate_init": 0.1,
+    "ll_style_inject_source": "ca_output"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_t14_casi",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 32,
+    "cudnn_benchmark": false,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "data": {
+    "pairing_cache_active_topk": 0
+  },
+  "ablation": {
+    "name": "local_t14_casi",
+    "axis": "ll_style_inject_source",
+    "stage": "local_t14",
+    "notes": "T14 CASI: Cross-Attention Statistics Injection. T13证明style_mem原始统计量无效(不编码图像级风格). T14改用高频cross-attention输出(lh_out/hl_out/hh_out)的池化统计量做LL AdaIN. 理论: cross-attention输出是模型学到的有意义风格提取, 其统计量携带真实风格信息. AdaIN空间均匀应用不扰动结构. 结合cross-attention的风格提取能力和AdaIN的空间均匀性."
+  }
+}

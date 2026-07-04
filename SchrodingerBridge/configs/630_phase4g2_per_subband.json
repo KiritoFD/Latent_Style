@@ -1,0 +1,22 @@
+{
+  "_base": "630_phase4f_lvl3.json",
+  "model": {
+    "endpoint_lowpass_levels": 3,
+    "endpoint_adain_mode": "per_subband"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4g2_per_subband",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4g2_per_subband",
+    "axis": "per_subband_adain",
+    "stage": "phase4g2",
+    "notes": "Phase 4G.2: 频域 per-subband AdaIN. 基于 4F.1 SOTA (haar lvl3), 将 Endpoint AdaIN 从空间域全局 fiber 升级为频域每子带独立 mean+std 匹配. LL_3 (8x8) 不动作为内容锚, 对 9 个高频子带 (LH1/HL1/HH1 + LH2/HL2/HH2 + LH3/HL3/HH3) 各自独立做 AdaIN. 利用 Haar 正交性保证统计隔离, 不同尺度风格信息被精准匹配而非平均化. 预期: clip 略升 (每子带风格更精准), lpips 持平或略升."
+  }
+}

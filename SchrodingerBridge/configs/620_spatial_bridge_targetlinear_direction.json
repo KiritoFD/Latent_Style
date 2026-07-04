@@ -1,0 +1,23 @@
+{
+  "_base": "620_spatial_bridge_targetlinear.json",
+  "bridge": {
+    "endpoint_direction_weight": 1.0,
+    "endpoint_direction_high_weight": 2.0,
+    "endpoint_direction_floor": 0.75,
+    "endpoint_direction_high_floor": 0.50
+  },
+  "training": {
+    "batch_size": 64,
+    "num_workers": 0,
+    "full_eval_each_epoch": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/620_spatial_bridge/620_targetlinear_direction_smoke"
+  },
+  "ablation": {
+    "name": "620_targetlinear_direction_smoke",
+    "axis": "620_endpoint_shrinkage",
+    "stage": "smoke",
+    "notes": "Probe-aligned endpoint direction loss: penalize early endpoint shrinkage along source-target latent direction, with extra pressure on high band."
+  }
+}

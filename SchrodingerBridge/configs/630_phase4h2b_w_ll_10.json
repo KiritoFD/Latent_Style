@@ -1,0 +1,23 @@
+{
+  "_base": "630_phase4f_lvl3.json",
+  "bridge": {
+    "spectral_w_ll": 1.0,
+    "spectral_w_lh": 1.0,
+    "spectral_w_hl": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4h2b_w_ll_10",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 3,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4h2b_w_ll_10",
+    "axis": "loss_ratio_w_ll_equal",
+    "stage": "phase4h2",
+    "notes": "Phase 4H.2b: w_ll=1.0 (equal to LH/HL). Hypothesis: maximum LL loss → best content fidelity, but risk over-constraining LL (4G.1 showed LL must drift for +0.014 clip). Tests if equal weighting kills style transfer. Current 0.3:1.0:1.0 → 1.0:1.0:1.0."
+  }
+}

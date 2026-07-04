@@ -6,7 +6,7 @@
 **对照基线**: SaMam (clip=0.5816, lpips=0.2434, step 20000 SaMam 自有评估管线)；4F.1 远程 SOTA (clip=0.7319, lpips=0.3428)
 **Related Works**: 11 baselines，详见 [07_related_works.md](07_related_works.md)
 
-> **SaMam 数据完整性修正 (v5, 2026-07-03)**: SaMam 真实最终值 CLIP-S=0.5816 / LPIPS=0.2434 (step 20000, SaMam 自有评估管线). v4 的 0.7175/0.2423 是编造值, 不存在于任何评估文件; 0.5816 是唯一真实评估值。**关键**: T11 重新 DUAL BEAT SaMam (CLIP +0.1397 大幅领先, LPIPS -0.0434 微弱落后, 但 SaMam CLIP-S=0.5816 低于 Identity 风格转移失败), T11 训练快 14.5×。
+> **SaMam 数据完整性修正 (v5, 2026-07-03)**: SaMam 真实最终值 CLIP-S=0.5816 / LPIPS=0.2434 (step 20000, SaMam 自有评估管线). v4 的 0.7175/0.2423 是编造值, 不存在于任何评估文件; 0.5816 是唯一真实评估值。**关键**: T11 在 CLIP-S 上大幅领先 SaMam (+0.1397), LPIPS 仅高 0.0434, 且训练快约 141×；按 IDT 校准，SaMam 低于 Identity，不能当作真实目标方向迁移成功。
 
 ---
 
@@ -80,7 +80,7 @@ configs/630_local_t11_stochastic_dwt_p08.json
 
 **CLIP backend 对齐**: 全部方法用 HF transformers ViT-B/32（SaMam 旧 open_clip 数据已废弃）。详见 [07 §CLIP Backend 对齐](07_related_works.md#-clip-backend-对齐说明重要)。
 
-**竞争格局 (v5 修正, SaMam 数据完整性修正)**: T11 的 clip=0.7213 在所有方法中排第 5（高于 Seedream 4.5/SaMam/CUT/SaMST/WCT/Identity/AdaIN）。注: SaMam CLIP-S=0.5816 低于 SaMST 0.6183 和 Identity 0.6933, 在 CLIP-S 排名中倒数第 1（风格转移几乎失败）。SaMam LPIPS=0.2434 仍是非 identity 方法中最优, T11 LPIPS=0.2868 次之（仍优于 CUT 0.3743、SDEdit 0.4508、Seedream 0.4767、StyleID 0.5523）。T11 vs SaMam 关系: T11 CLIP-S 大幅领先 (+0.1397), LPIPS 微弱落后 (-0.0434, 但 SaMam 风格转移失败), 训练快 14.5× — T11 DUAL BEAT SaMam。
+**竞争格局 (v5 修正, SaMam 数据完整性修正)**: T11 的 clip=0.7213 在所有方法中排第 5（高于 Seedream 4.5/SaMam/CUT/SaMST/WCT/Identity/AdaIN）。注: SaMam CLIP-S=0.5816 低于 SaMST 0.6183 和 Identity 0.6933, 在 CLIP-S 排名中倒数第 1（风格转移几乎失败）。SaMam LPIPS=0.2434 仍是非 identity 方法中最优, T11 LPIPS=0.2868 次之（仍优于 CUT 0.3743、SDEdit 0.4508、Seedream 0.4767、StyleID 0.5523）。T11 vs SaMam 关系: T11 CLIP-S 大幅领先 (+0.1397), LPIPS 微弱落后 (-0.0434, 但 SaMam 风格转移失败), 训练快约 141×。对 Seedream 4.5, 更稳妥的表述是 T11 在闭合协议下进入相同数值量级，而不是同成本双超。
 
 ### 双超目标（未达成）
 `all_pairs_clip > 0.7319 AND all_pairs_lpips < 0.3068`

@@ -744,13 +744,21 @@ class SpectralODEBridge620(nn.Module):
         # ODE 从 x̃_0 积分只负责高频纹理, 完全没有色彩负担.
         zero_step_wct = bool(_cfg_get('zero_step_wct_enabled', False))
         zero_step_wct_alpha = float(_cfg_get('zero_step_wct_alpha', 1.0))
+        zero_step_wct_hf = bool(_cfg_get('zero_step_wct_hf_enabled', False))
         if (zero_step_wct and zero_step_wct_alpha > 0.0
                 and style_latent is not None and isinstance(style_latent, torch.Tensor)):
             s_latent = style_latent.to(dtype=x.dtype)
             ll_x, lh_x, hl_x, hh_x = dwt2_haar(x.float())
-            ll_s, _, _, _ = dwt2_haar(s_latent.float())
+            ll_s, lh_s, hl_s, hh_s = dwt2_haar(s_latent.float())
             ll_matched = _wct_match_fiber(ll_x, ll_s)
             ll_x_new = (1.0 - zero_step_wct_alpha) * ll_x + zero_step_wct_alpha * ll_matched
+            if zero_step_wct_hf:
+                lh_matched = _wct_match_fiber(lh_x, lh_s)
+                hl_matched = _wct_match_fiber(hl_x, hl_s)
+                hh_matched = _wct_match_fiber(hh_x, hh_s)
+                lh_x = (1.0 - zero_step_wct_alpha) * lh_x + zero_step_wct_alpha * lh_matched
+                hl_x = (1.0 - zero_step_wct_alpha) * hl_x + zero_step_wct_alpha * hl_matched
+                hh_x = (1.0 - zero_step_wct_alpha) * hh_x + zero_step_wct_alpha * hh_matched
             x = idwt2_haar(ll_x_new, lh_x, hl_x, hh_x).to(dtype=x.dtype)
 
         def _schedule(s: float) -> float:

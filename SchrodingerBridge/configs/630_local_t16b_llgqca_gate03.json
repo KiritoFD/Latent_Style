@@ -1,0 +1,28 @@
+{
+  "_base": "630_phase4j1_dwt_route.json",
+  "model": {
+    "ll_global_style_inject": true,
+    "ll_global_style_gate_init": 0.3,
+    "ll_style_inject_source": "global_query"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_local_t16b_llgqca_gate03",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 48,
+    "cudnn_benchmark": false,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "data": {
+    "pairing_cache_active_topk": 0
+  },
+  "ablation": {
+    "name": "local_t16b_llgqca_gate03",
+    "axis": "ll_global_style_gate_init",
+    "stage": "local_t16",
+    "notes": "T16b LLGQCA gate sweep: gate_init=0.3. 中等注入强度. tanh(0.3)=0.291, 约为T15(0.1)的3倍注入."
+  }
+}

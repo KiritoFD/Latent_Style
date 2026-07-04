@@ -1,0 +1,17 @@
+Phase 72 Plan H (T26) YCbCr LL color decorrelation + Pareto scatter plot
+
+Plan H (T26): YCbCr-style LL luma/chroma separation paradigm-level change.
+Math: LL = Y(luma=channel-mean) + C(chroma=deviation), only transfer C covariance.
+Luma invariant verified: drift=2.7e-7 at scale_ll=1.0 (machine precision).
+Result: clip=0.7200, lpips=0.3085 (NOT dual beat vs T11 clip=0.7213, lpips=0.2868).
+Even with guaranteed luma preservation, LPIPS still degrades: chroma cov
+rearrangement propagates through IDWT as pixel-level color redistribution.
+
+9th architecture experiment failed, stale_count=9.
+1:8 trade-off confirmed as mathematical certainty of DWT-route+LPIPS+CLIP.
+
+Also:
+- Fixed unified_results.json: SaMam corrected from 0.7222 (wrong 256/wikiart5)
+  to 0.5816 (correct HF CLIP 20K step)
+- Added Pareto scatter plot (docs/72/pareto_scatter_all_baselines.png)
+- Added SDEdit s=0.10/0.20 points to visualization

@@ -1,0 +1,35 @@
+{
+  "_base": "630_phase4i7b_cosine_heun_a085_5ep.json",
+  "model": {
+    "endpoint_adain_mode": "per_subband_wct",
+    "endpoint_adain_only_last_step": true,
+    "endpoint_adain_scale": 0.5,
+    "endpoint_adain_scale_ll": 0.0,
+    "endpoint_adain_scale_lh": 0.3,
+    "endpoint_adain_scale_hl": 0.3,
+    "endpoint_adain_scale_hh": 0.5,
+    "style_extrap_alpha": 0.4,
+    "progressive_alpha_schedule": "cubic",
+    "progressive_alpha_power": 3.0
+  },
+  "bridge": {
+    "wct_aligned_target": true,
+    "wct_aligned_alpha": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_phase4j5_wct_aligned_progressive",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 24,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "ablation": {
+    "name": "phase4j5_wct_aligned_progressive",
+    "axis": "wct_aligned_target_plus_progressive_alpha",
+    "stage": "phase4j5",
+    "notes": "Phase 4J.5: Combined 方案 A + 方案 C (综合最优候选). 训练侧 WCT-Aligned Target (消除 t=0.5 velocity 死亡, style_mem 梯度清晰) + 推理侧 Progressive Alpha Scheduling (α(t)=t^3 渐进注入, 替代 EOTA 突兀感). 理论: 训练侧扫清数学障碍 (target 对齐), 推理侧顺滑承接 style_mem 极致风格. 推理用 4I.11 SOTA (per_subband_wct + extrap04). 目标: clip>0.7300, lpips<0.3050 (进阶成功标准)."
+  }
+}

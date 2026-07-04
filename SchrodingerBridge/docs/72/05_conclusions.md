@@ -14,7 +14,7 @@
 | **T11 (本地 SOTA)** | **0.7213** | **0.2868** | Stochastic DWT p=0.8 + w_ll=0.0 + depth=4 + dim=64 |
 | SaMam (基线) | 0.5816 | **0.2434** | mamba-train, step 20000, SaMam 自有评估管线（详见 [07_related_works.md](07_related_works.md)） |
 
-> **SaMam 数据完整性修正 (v5, 2026-07-03)**: SaMam 真实最终值 CLIP-S=0.5816 / LPIPS=0.2434 (step 20000, SaMam 自有评估管线). v4 的 0.7175/0.2423 是编造值, 不存在于任何评估文件; 0.5816 是唯一真实评估值。**关键**: SaMam LPIPS=0.2434 仍优于 T11 的 0.2868 (但 SaMam CLIP-S=0.5816 低于 Identity 风格转移失败)——T11 **重新 DUAL BEAT SaMam (CLIP +0.1397 大幅领先, LPIPS -0.0434 微弱落后, 但 SaMam 风格转移失败)**。T11 CLIP-S 大幅领先 (+0.1397), 训练快 14.5×。
+> **SaMam 数据完整性修正 (v5, 2026-07-03)**: SaMam 真实最终值 CLIP-S=0.5816 / LPIPS=0.2434 (step 20000, SaMam 自有评估管线). v4 的 0.7175/0.2423 是编造值, 不存在于任何评估文件; 0.5816 是唯一真实评估值。**关键**: SaMam LPIPS=0.2434 虽仍优于 T11 的 0.2868, 但 SaMam CLIP-S=0.5816 低于 Identity, 属于风格转移失败；T11 在 CLIP-S 上大幅领先 (+0.1397), 且训练快约 141×。
 
 ### 1.2 双超目标达成情况
 
@@ -35,12 +35,12 @@
 |------|----------------|----------------|------------------------|--------------|-----------------|
 | CLIP-S | 0.7213 (HF) | 0.5816 (SaMam 自有, step 20000) | 0.7198 (HF) | **+0.1397** (大幅) | **+0.0015** (微弱) |
 | LPIPS | 0.2868 | **0.2434** | 0.4767 | **-0.0434** (微弱落后, 但 SaMam 风格转移失败) | **-0.1899** (大幅领先) |
-| 训练时间 | ~30 min | ~436 min | API 调用 | 14.5× 更快 | — |
+| 训练时间 | 3.08 min | 436 min | API 调用 | 141× 更快 | — |
 | 模型规模 | 903K params | — | 闭源海量参数 | 极轻量 | — |
 
 **判定 (v5 修正, SaMam 数据完整性修正)**:
-- T11 vs SaMam: **T11 DUAL BEAT SaMam**。T11 CLIP-S 大幅领先 (+0.1397), LPIPS 微弱落后 (-0.0434, 但 SaMam 风格转移失败)。T11 训练效率 14.5× 优势
-- T11 **DUAL BEAT Seedream 4.5**: clip +0.0015 (微弱), lpips -0.1899 (大幅)
+- T11 vs SaMam: T11 的 CLIP-S 大幅领先 (+0.1397)，LPIPS 仅高 0.0434，训练效率快 141×。由于 SaMam CLIP-S 低于 Identity，这更应解读为 IDT 校准下的方向性失败，而不是内容保真度胜利。
+- T11 与 Seedream 4.5 在闭合 CLIP-S/LPIPS 协议下数值接近：CLIP-S 仅高 0.0015，LPIPS 低 0.1899。更稳妥的表述是“进入同一数值量级”，而不是“同成本双超”。
 - SaMam LPIPS=0.2434 仍是所有非 identity 方法中最优（但 SaMam CLIP-S=0.5816 低于 Identity 0.6933, 风格转移失败），T11 (0.2868) 次之；T11 仍碾压其它训练类方法 (CUT/SDEdit/StyleID) 与商业 API (Seedream)
 
 ---
@@ -77,8 +77,8 @@
 **T11 竞争定位 (v5 修正, SaMam 数据完整性修正)**:
 - **CLIP-S**: 排名第 5（低于 StyleID/SDEdit×2/CUT 三个扩散先验方法，但超越 Seedream 4.5/SaMam/SaMST/WCT/Identity/SD-Turbo/AdaIN）
 - **LPIPS**: 排名第 4（SaMam 0.2434 仍是"非identity LPIPS冠军"；T11 0.2868 仍优于 CUT/SDEdit/Seedream/StyleID/SaMST/WCT/AdaIN）
-- **效率**: 5 epochs / ~30min / 903K params，远优于 SaMam (436min) / CUT (322min) / SDEdit (扩散推理) / Seedream (API)
-- **定位**: "高效+轻量+CLIP大幅领先"的风格迁移方法；SaMam 在 LPIPS 上微弱更优但 CLIP-S 风格转移失败, 训练慢 14.5×；T11 DUAL BEAT SaMam, 仍 DUAL BEAT Seedream 4.5 商业 API
+- **效率**: 5 epochs / 3.08 min / 903K params，远优于 SaMam (436 min) / CUT (322.6 min) / SDEdit (扩散推理) / Seedream (API)
+- **定位**: “高效、轻量、IDT校准后仍成立”的真实风格迁移点；相对 SaMam，T11 在方向性风格转移上显著更强且训练快 141×；相对 Seedream，则是一个极低成本但数值接近的大先验参考点。
 
 ### 2.2 两条 Pareto 前沿
 
@@ -224,8 +224,8 @@
 > 4. **EOTA 理论突破**（4H.1）: End-of-Trajectory AdaIN 解耦 ODE 求解与风格注入，恢复 α 有效性
 > 5. **数值精度作为结构自由度**（4I.2）: Heun solver 打破 1D Pareto 前沿，复合增长
 > 6. **Stochastic DWT Route**（T11）: p=0.8 平衡 q_proj 精通 DWT 与 style_mem 学完整风格
-> 7. **T11 vs SaMam 重新定位**（v5 SaMam 数据完整性修正）: T11 CLIP-S 大幅领先 SaMam (+0.1397), LPIPS 微弱落后 SaMam (-0.0434, 但 SaMam 风格转移失败)；T11 训练效率 14.5× 优势。T11 DUAL BEAT SaMam
-> 8. **DUAL BEAT Seedream 4.5**（T11 vs 商业 API）: T11 在 CLIP-S 微弱领先 (+0.0015)、LPIPS 大幅领先 (-0.1899) 商业扩散模型 API，证明频域解耦在保真度上的根本优势
+> 7. **T11 vs SaMam 重新定位**（v5 SaMam 数据完整性修正）: T11 CLIP-S 大幅领先 SaMam (+0.1397), LPIPS 仅高 0.0434；按 IDT 校准，SaMam 低于 Identity，因此不应再把其低 LPIPS 直接解读为强迁移结果。T11 训练效率快约 141×。
+> 8. **T11 vs Seedream 4.5**（商业 API 参考线）: T11 在闭合 CLIP-S/LPIPS 协议下与 Seedream 数值接近，LPIPS 更低，但更稳妥的表述应是“进入相同数值量级”，而不是“同成本双超”。
 >
 > **实验规模**: 90+ 配置系统性验证 + 12 个 related works baseline 对照（含商业 API），含减法消融、加法探索、结构性突破、架构限制证明。"
 
@@ -326,7 +326,7 @@
 |------|------|
 | 本地 SOTA (T11) | ✓ 达成 |
 | 远程 SOTA (4I.7b) | ✓ 达成 |
-| vs SaMam 定位 (v5) | ✅ **T11 DUAL BEAT SaMam**（T11: clip +0.1397 大幅领先, lpips -0.0434 微弱落后但 SaMam 风格转移失败, 效率 14.5×） |
+| vs SaMam 定位 (v5) | ✅ T11 在 IDT 校准下显著强于 SaMam（clip +0.1397, lpips +0.0434, 效率约 141×） |
 | 双超目标 (clip>0.7319 AND lpips<0.3068) | ✗ 未达成（目标 = 自身 4F.1，非 SaMam） |
 | 1:8 trade-off 证明 | ✓ 系统性证明（26+ 配置） |
 | Related Works 完整对照 | ✓ 达成（11 baselines，详见 [07](07_related_works.md)） |
