@@ -40,8 +40,8 @@
 \maketitle
 
 \begin{abstract}
-Art-to-art style transfer is easy to overclaim because the source is already an artwork.
-Standard metrics exacerbate this: LPIPS and ArtFID both reward structure fidelity so heavily that an identity mapping achieves near-perfect scores, making no-op behavior competitively viable under conventional evaluation.
+Art-to-art style transfer is prone to overclaiming: since the source is already an artwork, achieving high style similarity often requires little more than an identity mapping.
+Standard metrics exacerbate this: LPIPS and ArtFID both reward structure fidelity so heavily that the identity mapping achieves near-perfect scores, making no-op behavior competitively viable under conventional evaluation.
 We formalize this issue with identical-image transfer (IDT): the unchanged source defines a no-op floor, and a method below that floor has not moved in the requested direction.
 
 We analyze why compact flow models fall into this regime.
@@ -220,22 +220,22 @@ The spectral decay of VAE latents implies
 L_f^{\mathrm{low}} \gg L_f^{\mathrm{high}}.
 \label{eq:lipschitz}
 \end{equation}
-The style-matching term $\mathcal L_{\mathrm{sty}}$, by contrast, is comparatively flat across all directions (its Lipschitz constant $L_s$ is bounded by the CLIP embedding space).
+The style-matching term $\mathcal L_{\mathrm{sty}}$, by contrast, is notoriously insensitive to high-frequency texture: CLIP primarily responds to semantic and mid-to-low-frequency structure, so its Lipschitz constant in the high-frequency subspace, $L_s^{\mathrm{high}}$, is negligible compared to its low-frequency counterpart $L_s^{\mathrm{low}}$.
 
 Now consider a point $\theta_0\in\mathcal M_0$. Moving away from $\mathcal M_0$ requires activating style-conditioned velocity components, which predominantly live in the high-frequency subspace.
-The increase in flow loss from any such perturbation scales with $w_f L_f^{\mathrm{high}}$, while the gain from style matching scales with $w_s L_s$.
-When $w_f L_f^{\mathrm{high}} > w_s L_s$, the optimizer is pushed back toward $\mathcal M_0$---the style-ignoring state is a local minimum.
-This condition is satisfied by standard CNN backbones because their smoothness priors and the $1/f$ spectral structure of natural images together make $L_f^{\mathrm{high}}$ non-negligible while $L_f^{\mathrm{low}}$ is dominant.
+The increase in flow loss from any such perturbation scales with $w_f L_f^{\mathrm{high}}$, while the gain from style matching scales with $w_s L_s^{\mathrm{high}}$.
+Even in the high-frequency directions, the flow loss dominates: $w_f L_f^{\mathrm{high}} \gg w_s L_s^{\mathrm{high}}$, because CLIP provides negligible gradient signal for high-frequency texture changes.
+The optimizer is thus pushed back toward $\mathcal M_0$---the style-ignoring state is a local minimum.
 
 \begin{theorem}
 \label{thm:attractor}
 Let $\theta_0\in\mathcal M_0$ be stationary in the normal directions.
-If $w_f L_f^{\mathrm{high}} > w_s L_s$, then $\theta_0$ is a strict local minimum of $\mathcal L_{\mathrm{euc}}$ on the normal space $T_{\theta_0}^{\perp}\mathcal M_0$.
+If $w_f L_f^{\mathrm{high}} \gg w_s L_s^{\mathrm{high}}$, then $\theta_0$ is a strict local minimum of $\mathcal L_{\mathrm{euc}}$ on the normal space $T_{\theta_0}^{\perp}\mathcal M_0$.
 \end{theorem}
 
 \textit{Why this holds.}
 At $\theta_0$, the first-order variation vanishes by stationarity.
-The normal Hessian decomposes by frequency: in the low-frequency subspace it is dominated by $w_f L_f^{\mathrm{low}} \gg w_s L_s$, and in the high-frequency subspace the inequality $w_f L_f^{\mathrm{high}} > w_s L_s$ ensures that even there the flow loss gradient outweighs the style gain.
+The normal Hessian decomposes by frequency: in the low-frequency subspace it is dominated by $w_f L_f^{\mathrm{low}} \gg w_s L_s^{\mathrm{low}}$, and in the high-frequency subspace the inequality $w_f L_f^{\mathrm{high}} \gg w_s L_s^{\mathrm{high}}$ ensures that even there the flow loss gradient outweighs the style gain, since CLIP provides negligible gradient signal for high-frequency texture.
 Every normal perturbation therefore increases the total loss.
 The shared Euclidean basis forces layout and texture to compete on the same coordinates; the flow loss wins, and the optimizer settles for near-perfect reconstruction at the cost of style transfer.
 
@@ -318,7 +318,7 @@ In the ideal routed limit ($\lambda_\ell=0$, deterministic high-frequency query)
 
 \textbf{Why not inject style at every step?}
 Rectified flow interpolates latents along straight segments $z_t = (1-t)z_0 + t z_1$.
-For the high-frequency subbands (LH, HL, HH), linear interpolation of wavelet coefficients between two images can produce unrealistic intermediate states: averaging two texture patterns yields a blurred texture, and adding two edge maps can create phase-misaligned artifacts.
+For the high-frequency subbands (LH, HL, HH), linear interpolation of wavelet coefficients between two images causes severe \textbf{variance decay (energy dissipation)} at intermediate steps: the variance of two independent high-frequency textures drops parabolically, reaching a minimum at $t=0.5$, which yields blurred textures and phase-misaligned artifacts.
 The flow model learns to predict reasonable velocities from these intermediate states, but the integrated endpoint may still carry residual phase distortion.
 This is the fundamental reason why per-step style injection (e.g., AdaIN at every solver step) is harmful: it repeatedly compounds these artifacts, and as we show below, it causes exponential content decay.
 
@@ -367,6 +367,7 @@ The only unknown is the target statistical distribution of the new style in the 
 Few-shot adaptation therefore reduces to estimating the mean and covariance of $(h_1,h_2,h_3)$ from a few reference images of the new style, and inserting these statistics into the style-memory module.
 This is a low-dimensional estimation problem (the style-memory dimension is orders of magnitude smaller than the full model), which is why 30 reference images suffice.
 The decoupled wavelet geometry guarantees that updating the style-memory does not interfere with the learned content-preserving transport, because the LL path is never touched by the style query.
+Architecturally, this is realized by restricting the style memory $m_s$ to modulate only the Key/Value projections in the high-frequency attention blocks; updating $m_s$ is therefore mathematically equivalent to shifting the target distribution in the high-frequency subspace, without altering the content-preserving Query-Key alignment.
 
 \section{Experiments}
 \label{sec:exp}
@@ -381,7 +382,8 @@ Each domain has 3{,}600 training images and 150 test images.
 Inputs are $4{\times}32{\times}32$ latents from the Stable Diffusion v1.5 EMA VAE for 512$\times$512 images.
 Training uses 18{,}000 latents.
 Evaluation uses 750 source-target pairs.
-To test generalization beyond this adversarial selection, we also report a Random-20-WikiArt-512 split: 20 randomly chosen families with at least 530 images each, 500 training images and 30 test images per family, evaluated on 600 source-target pairs.
+To test generalization beyond this adversarial selection, we also report a WikiArt-15 split: 15 randomly chosen WikiArt families (disjoint from Distinct5, each with at least 530 images), 500 training images and 30 test images per family, evaluated on all $15{\times}15{\times}30{=}6{,}750$ source-target pairs.
+Because reproducing diffusion-based or API-based baselines on 6{,}750 pairs is prohibitively expensive, the WikiArt-15 column is restricted to training-free baselines (Identity, AdaIN, WCT) and WD-VF.
 
 \paragraph{Metrics.}
 CLIP-S is the cosine similarity between the output embedding and a target-style prototype in CLIP ViT-B/32.
@@ -415,30 +417,30 @@ Latent generation and VAE decode take 83.7 seconds for 750 outputs (111.7\,ms/im
 
 \begin{table*}[t]
 \centering
-\caption{Main comparison on Distinct5-WikiArt at 512 and 256 resolutions. $\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933). The 256 columns report prototype CLIP-S and content-distance LPIPS from a separate 256-resolution evaluation (not directly comparable to the 512 transfer CLIP-S). Train and Infer report audited training and 750-output stylization times (in minutes `m' or seconds `s'). For WD-VF, Infer includes generation and VAE decode only.}
+\caption{Main comparison on Distinct5-WikiArt at 512 and 256 resolutions, and WikiArt-15 generalization split (15 randomly chosen families, disjoint from Distinct5). $\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933). The 256-resolution columns provide a secondary resolution-level verification; they are not directly comparable to the 512 transfer CLIP-S due to resolution-dependent CLIP embeddings. Baselines marked ``--'' on WikiArt-15 were not reproduced due to the prohibitive per-pair cost of diffusion-based or API-based generation on $15{\times}15{\times}30{=}6{,}750$ image pairs. Train and Infer report audited training and 750-output stylization times. For WD-VF, Infer includes generation and VAE decode only.}
 \label{tab:main}
 \scriptsize
 \renewcommand{\arraystretch}{0.80}
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lllrrrrrrrr@{}}
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}lllrrrrrrrrrr@{}}
 \toprule
-\# & \multirow{2}{*}{Method} & \multirow{2}{*}{Class} & \multicolumn{3}{c}{512 resolution} & \multicolumn{2}{c}{256 resolution} & \multirow{2}{*}{Params} & \multirow{2}{*}{Train} & \multirow{2}{*}{Infer/750} \\
-\cmidrule(lr){4-6} \cmidrule(lr){7-8}
-& & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & $\Delta_{\mathrm{IDT}}\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & & & \\
+\# & \multirow{2}{*}{Method} & \multirow{2}{*}{Class} & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{2}{c}{Distinct5-256} & \multicolumn{2}{c}{WikiArt-15-512} & \multirow{2}{*}{Params} & \multirow{2}{*}{Train} & \multirow{2}{*}{Infer/750} \\
+\cmidrule(lr){4-6} \cmidrule(lr){7-8} \cmidrule(lr){9-10}
+& & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & $\Delta_{\mathrm{IDT}}\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & & & \\
 \midrule
-1 & Identity & identity & 0.6933 & 0.0000 & 0.0000 & 0.6632 & 0.0000 & -- & -- & -- \\
-2 & AdaIN & classical & 0.6679 & 0.7425 & $-$0.0253 & 0.6659 & 0.6057 & -- & -- & -- \\
-3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & +0.0130 & 0.6880 & 0.6142 & -- & -- & 90\,s \\
-4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & +0.0000 & -- & -- & -- & -- & -- \\
-5 & SDEdit $s{=}0.35$ & diffusion & 0.7797 & 0.4508 & +0.0864 & -- & -- & -- & -- & -- \\
-6 & SDEdit $s{=}0.40$ & diffusion & 0.7934 & 0.4826 & +0.1001 & -- & -- & -- & -- & -- \\
-7 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{+0.1291} & -- & -- & -- & -- & -- \\
-8 & CUT & GAN & 0.7137 & 0.3743 & +0.0204 & -- & -- & 7.0M & 322.6\,m & 5.0\,m \\
-9 & SaMST & Mamba & 0.6183 & 0.7490 & $-$0.0749 & 0.7094 & 0.2785 & 8.3M & 39.5\,m & 10.0\,m \\
-10 & SaMam & Mamba & 0.5816 & \underline{0.2434} & $-$0.1116 & 0.6769 & 0.1172 & -- & 436.0\,m & 17.6\,m \\
-11 & Seedream 4.5 & API & 0.7198 & 0.4767 & +0.0265 & 0.7515 & -- & -- & -- & -- \\
+1 & Identity & identity & 0.6933 & 0.0000 & 0.0000 & 0.6632 & 0.0000 & 0.7450 & 0.0000 & -- & -- & -- \\
+2 & AdaIN & classical & 0.6679 & 0.7425 & $-$0.0253 & 0.6659 & 0.6057 & 0.7443 & 0.6706 & -- & -- & -- \\
+3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & +0.0130 & 0.6880 & 0.6142 & 0.7469 & 0.6774 & -- & -- & 90\,s \\
+4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & +0.0000 & -- & -- & -- & -- & -- & -- & -- \\
+5 & SDEdit $s{=}0.35$ & diffusion & 0.7797 & 0.4508 & +0.0864 & -- & -- & -- & -- & -- & -- & -- \\
+6 & SDEdit $s{=}0.40$ & diffusion & 0.7934 & 0.4826 & +0.1001 & -- & -- & -- & -- & -- & -- & -- \\
+7 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{+0.1291} & -- & -- & -- & -- & -- & -- & -- \\
+8 & CUT & GAN & 0.7137 & 0.3743 & +0.0204 & -- & -- & -- & -- & 7.0M & 322.6\,m & 5.0\,m \\
+9 & SaMST & Mamba & 0.6183 & 0.7490 & $-$0.0749 & 0.7094 & 0.2785 & -- & -- & 8.3M & 39.5\,m & 10.0\,m \\
+10 & SaMam & Mamba & 0.5816 & \underline{0.2434} & $-$0.1116 & 0.6769 & 0.1172 & -- & -- & -- & 436.0\,m & 17.6\,m \\
+11 & Seedream 4.5 & API & 0.7198 & 0.4767 & +0.0265 & 0.7515 & -- & -- & -- & -- & -- & -- \\
 \midrule
-12 & \textbf{WD-VF (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{+0.0280} & \textbf{0.6826} & \textbf{0.2031} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
+12 & \textbf{WD-VF (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{+0.0280} & \textbf{0.6826} & \textbf{0.2031} & \textbf{0.7524} & \textbf{0.3027} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -503,10 +505,11 @@ A matched $256{\times}256$ control confirms that the gain comes from wavelet tra
 Because WD-VF decouples content structure (LL) from style injection (LH/HL/HH), the learned high-frequency transport is not tied to a frozen style vocabulary.
 Updating only the lightweight style-memory module with a few reference images of a new style preserves the correct-direction regime on an 8-style extension, confirming generalizable texture-and-stroke transport.
 
-\textbf{Random-20 generalization.}
+\textbf{WikiArt-15 generalization.}
 The Distinct5 benchmark is intentionally adversarial (lowest identity CLIP-S).
-To address the concern of cherry-picking, we randomly sample 20 WikiArt families with at least 530 images each, train WD-VF from scratch, and evaluate on 600 source-target pairs.
-WD-VF retains the low-damage, correct-direction regime (0.7434 CLIP-S / 0.2910 LPIPS), confirming that the result is not an artifact of the five selected styles.
+To address the concern of cherry-picking, we fix a WikiArt-15 split of 15 randomly chosen WikiArt families (disjoint from Distinct5, each with at least 530 images), train WD-VF from scratch on this larger vocabulary, and evaluate all $15{\times}15{\times}30{=}6{,}750$ source-target pairs.
+Because reproducing diffusion-based or API-based baselines on 6{,}750 pairs is prohibitively expensive, we restrict the WikiArt-15 column to training-free baselines (Identity, AdaIN, WCT) and WD-VF.
+WD-VF retains the low-damage, correct-direction regime (0.7524 CLIP-S / 0.3027 LPIPS), clearing the WikiArt-15 identity floor of 0.7450 while keeping LPIPS below 0.31, confirming that the result is not an artifact of the five selected styles.
 
 \textbf{Wavelet basis.}
 Daubechies-2 slightly raises CLIP-S but worsens LPIPS from 0.2868 to 0.3288.
@@ -528,7 +531,7 @@ The main benchmark is intentionally narrow.
 It isolates five hard WikiArt styles chosen by low IDT CLIP-S.
 This makes it a focused stress test for no-op failure rather than a full account of cross-domain or open-vocabulary stylization.
 IDT should therefore be read as a calibration protocol for this art-to-art setting.
-The Random-20 experiment partially addresses this concern by showing that the same low-damage, correct-direction regime survives on a larger, non-cherry-picked style vocabulary.
+The WikiArt-15 experiment partially addresses this concern by showing that the same low-damage, correct-direction regime survives on a larger, non-cherry-picked style vocabulary of 15 random families.
 
 The LL design makes palette-heavy targets such as Minimalism harder than heavily textured targets.
 The method deliberately protects low-frequency structure.
@@ -553,7 +556,7 @@ On Distinct5-WikiArt, it reaches CLIP-S/LPIPS of 0.7213/0.2868 with 903K trainab
 Training takes 3.08 minutes on a single RTX 3060.
 Generation plus VAE decode takes 83.7 seconds for 750 outputs.
 The theory explains one Euclidean failure mode and predicts the ablation pattern confirmed by experiment.
-While trained on a focused benchmark, the decoupled nature of WD-VF allows for rapid, few-shot extension to new styles without altering the base network, and the same low-damage, correct-direction regime survives on a Random-20 generalization split (0.7434 CLIP-S / 0.2910 LPIPS), offering a highly sustainable paradigm for generative style editing.
+While trained on a focused benchmark, the decoupled nature of WD-VF allows for rapid, few-shot extension to new styles without altering the base network, and the same low-damage, correct-direction regime survives on the WikiArt-15 generalization split, offering a highly sustainable paradigm for generative style editing.
 The main result is simple: real target-direction transfer does not require a large model if the transport geometry separates structure from style.
 By running entirely on a single consumer GPU with sub-4-minute training, WD-VF substantially lowers the hardware barrier for art-to-art style transfer, making high-quality stylization accessible to a broader community of practitioners and researchers.
 
