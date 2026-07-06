@@ -210,6 +210,51 @@ class ORTVAEDecoder:
         return torch.clamp(image, 0.0, 1.0)
 
 
+class _PassthroughLatentDist:
+    """Mock latent_dist for PassthroughVAE — sample() returns the input unchanged."""
+
+    def __init__(self, x: torch.Tensor) -> None:
+        self._x = x
+
+    def sample(self) -> torch.Tensor:
+        return self._x
+
+
+class _PassthroughDecoderOutput:
+    """Mock decoder output for PassthroughVAE — .sample returns the input unchanged."""
+
+    def __init__(self, x: torch.Tensor) -> None:
+        self.sample = x
+
+
+class _PassthroughVAEConfig:
+    """Mock VAE config for pixel-space models — scaling_factor=1.0 (no VAE)."""
+
+    def __init__(self) -> None:
+        self.scaling_factor = 1.0
+        self.latent_channels = 3
+
+
+class PassthroughVAE(torch.nn.Module):
+    """Pixel-space VAE substitute: encode/decode are identity (no-op).
+
+    Used when the model operates directly on pixels (latent_channels == 3, image_size == 256).
+    Matches the diffusers VAE interface: vae.encode(x).latent_dist.sample() and vae.decode(z).sample.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.config = _PassthroughVAEConfig()
+
+    def encode(self, image_tensor: torch.Tensor):
+        # image_tensor is (B, 3, H, W) in [-1, 1]; return as "latent" (no scaling)
+        return type("Encoded", (), {"latent_dist": _PassthroughLatentDist(image_tensor)})
+
+    def decode(self, latent: torch.Tensor):
+        # latent is (B, 3, H, W) — same as pixel space; return as image in [-1, 1]
+        return _PassthroughDecoderOutput(latent)
+
+
 def _call_modelscope_snapshot(repo_id: str, dest: str):
     if not MODELSCOPE_AVAILABLE or ms_snapshot_download is None:
         raise RuntimeError("ModelScope snapshot downloader not available")

@@ -1,0 +1,51 @@
+{
+  "_base": "630_phase4i2b_sota_heun_5ep.json",
+  "model": {
+    "num_styles": 20
+  },
+  "training": {
+    "batch_size": 12,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true,
+    "test_image_dir": "G:/GitHub/Latent_Style/Dataset/wikiart_random20_512/wikiart_random20_512/images/test",
+    "full_eval_clip_style_idt_baseline": 0.0
+  },
+  "data": {
+    "data_root": "G:/GitHub/Latent_Style/Dataset/wikiart_random20_512_latents_ema/train",
+    "style_subdirs": [
+      "Abstract_Expressionism",
+      "Art_Nouveau_Modern",
+      "Baroque",
+      "Color_Field_Painting",
+      "Cubism",
+      "Early_Renaissance",
+      "Expressionism",
+      "Fauvism",
+      "High_Renaissance",
+      "Impressionism",
+      "Mannerism_Late_Renaissance",
+      "Minimalism",
+      "Naive_Art_Primitivism",
+      "Northern_Renaissance",
+      "Pop_Art",
+      "Post_Impressionism",
+      "Rococo",
+      "Romanticism",
+      "Symbolism",
+      "Ukiyo_e"
+    ],
+    "pairing_cache_path": "G:/GitHub/Latent_Style/Dataset/wikiart_random20_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "latent_cache_dir": "G:/GitHub/Latent_Style/Dataset/wikiart_random20_512_latents_ema/train/.latent_cache/packed"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/630_random20_heun_5ep",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "random20_heun_5ep",
+    "axis": "generalization_random20",
+    "stage": "phase4i2b",
+    "notes": "Random-20 WikiArt stress test with the phase4i2b SOTA config. Validates generalization beyond Distinct5."
+  }
+}

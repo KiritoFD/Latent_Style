@@ -194,6 +194,7 @@ class SpatialBridge620(nn.Module):
                     num_layers=depth,
                     attn_temperature=self.style_attn_temperature,
                     gate_warmup_steps=gate_warmup_steps,
+                    attn_mode=self.style_attn_mode,
                 )
                 for idx in range(depth)
             ]

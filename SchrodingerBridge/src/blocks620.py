@@ -68,6 +68,7 @@ class SpatialBridgeBlock620(nn.Module):
         dwt_route_train_prob: float = 0.0,
         ll_adaln_zero: bool = False,
         ll_tone_bias: bool = False,
+        attn_mode: str = "relu2",
     ) -> None:
         super().__init__()
 
@@ -132,7 +133,7 @@ class SpatialBridgeBlock620(nn.Module):
         self.style_gate = nn.Parameter(torch.tensor(float(style_gate_init)))
         self.style_gate_mode = "tanh_gate"  # 630 Phase 72: 硬编码 (已验证最优)
         self._gate_init = float(style_gate_init)
-        self.attn_mode = "relu2"  # 630 Phase 72: 硬编码 (629 D19-D22 已验证最优)
+        self.attn_mode = str(attn_mode).lower().strip()  # default "relu2" (629 D19-D22 最优); "softmax" 用 flash attention 适配像素空间大分辨率
         self.attn_temperature = float(attn_temperature)
         nn.init.zeros_(self.time_adaln[-1].weight)
         nn.init.zeros_(self.time_adaln[-1].bias)

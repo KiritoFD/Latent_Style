@@ -1,0 +1,42 @@
+{
+  "_base": "630_phase4i2b_sota_heun_5ep.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/abl512/X33_style_64x",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "X33_style_64x",
+    "axis": "w_style",
+    "stage": "abl512_v3",
+    "notes": "EXTREME: 64x style weight (8x SOTA). Predict: catastrophic content loss."
+  },
+  "data": {
+    "data_root": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train",
+    "latent_cache_dir": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/packed",
+    "pairing_cache_path": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "num_workers": 0,
+    "pin_memory": false,
+    "persistent_workers": false
+  },
+  "training": {
+    "batch_size": 16,
+    "num_workers": 0,
+    "pin_memory": false,
+    "persistent_workers": false,
+    "test_image_dir": "I:/datasets/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache/hf",
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": true
+  },
+  "full_eval": {
+    "batch_size": 2,
+    "ref_feature_batch_size": 2,
+    "vae_model": "ema",
+    "num_steps": 8
+  },
+  "bridge": {
+    "w_endpoint_style": 64.0
+  }
+}
