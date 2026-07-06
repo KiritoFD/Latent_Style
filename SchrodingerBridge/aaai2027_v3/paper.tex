@@ -377,28 +377,28 @@ Architecturally, this is realized by restricting the style memory $m_s$ to modul
 
 \begin{table*}[t]
 \centering
-\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art (256, CycleGAN 5-style), and WikiArt-20 generalization split (full 20 WikiArt families, including Distinct5). $\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933). Photo2Art-256 provides a secondary dataset-level verification on the CycleGAN cezanne/Hayao/monet/photo/vangogh split; values are not directly comparable to 512 CLIP-S due to resolution-dependent CLIP embeddings. Baselines marked ``--'' on WikiArt-20 were not reproduced due to prohibitive training or API cost on $20{\times}20{\times}30{=}12{,}000$ pairs; ``--'' on Photo2Art-256 reflects missing per-style checkpoints or API LPIPS unavailability. Train and Infer report audited training and 750-output stylization times. For WEAVE, Infer includes generation and VAE decode only. Time units: m = minutes, s = seconds.}
+\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art (256, CycleGAN 5-style), and WikiArt-20 generalization split (full 20 WikiArt families, including Distinct5). $\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933). Photo2Art-256 provides a secondary dataset-level verification on the CycleGAN cezanne/Hayao/monet/photo/vangogh split; values are not directly comparable to 512 CLIP-S due to resolution-dependent CLIP embeddings. MUSIQ (higher is better) is reported for Photo2Art-256 as an auxiliary no-reference image quality assessment. Baselines marked ``--'' on WikiArt-20 were not reproduced due to prohibitive training or API cost on $20{\times}20{\times}30{=}12{,}000$ pairs; ``--'' on Photo2Art-256 reflects missing per-style checkpoints or API LPIPS unavailability. Train and Infer report audited training and 750-output stylization times. For WEAVE, Infer includes generation and VAE decode only. Time units: m = minutes, s = seconds.}
 \label{tab:main}
 \scriptsize
 \renewcommand{\arraystretch}{0.78}
 \setlength{\tabcolsep}{3.2pt}
-\begin{tabular}{@{}lllrrrrrrrrrr@{}}
+\begin{tabular}{@{}lllrrrrrrrrrrr@{}}
 \toprule
-\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{2}{c}{Photo2Art-256} & \multicolumn{2}{c}{WikiArt-20-512} & Params & Train & Infer.\ Time (750 pairs) \\
-\cmidrule(lr){4-6} \cmidrule(lr){7-8} \cmidrule(lr){9-10}
-& & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & $\Delta_{\mathrm{IDT}}\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & & & \\
+\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{3}{c}{Photo2Art-256} & \multicolumn{2}{c}{WikiArt-20-512} & Params & Train & Infer.\ Time (750 pairs) \\
+\cmidrule(lr){4-6} \cmidrule(lr){7-9} \cmidrule(lr){10-11}
+& & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & $\Delta_{\mathrm{IDT}}\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & & & \\
 \midrule
-1 & Identity & identity & 0.6933 & 0.0000 & 0.0000 & 0.6632 & 0.0000 & 0.7312 & 0.0000 & -- & -- & -- \\
-2 & AdaIN & classical & 0.6679 & 0.7425 & $-$0.0253 & 0.6659 & 0.6057 & 0.7276 & 0.6795 & -- & -- & -- \\
-3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & +0.0130 & 0.6880 & 0.6142 & 0.7308 & 0.6876 & -- & -- & 90\,s \\
-4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & +0.0000 & -- & -- & -- & -- & -- & -- & -- \\
-5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{+0.1291} & -- & -- & -- & -- & -- & -- & -- \\
-6 & CUT & GAN & 0.7137 & 0.3743 & +0.0204 & -- & -- & -- & -- & 7.0M & 322.6\,m & 5.0\,m \\
-7 & SaMST & Mamba & 0.6183 & 0.7490 & $-$0.0749 & 0.7094 & 0.2785 & -- & -- & 8.3M & 39.5\,m & 10.0\,m \\
-8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & $-$0.1116 & 0.6769 & 0.1172 & -- & -- & -- & 436.0\,m & 17.6\,m \\
-9 & Seedream 4.5 & API & 0.7198 & 0.4767 & +0.0265 & 0.7515 & -- & -- & -- & -- & -- & -- \\
+1 & Identity & identity & 0.6933 & 0.0000 & 0.0000 & 0.6632 & 0.0000 & 56.83 & 0.7312 & 0.0000 & -- & -- & -- \\
+2 & AdaIN & classical & 0.6679 & 0.7425 & $-$0.0253 & 0.6659 & 0.6057 & 41.23 & 0.7276 & 0.6795 & -- & -- & -- \\
+3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & +0.0130 & 0.6880 & 0.6142 & 40.33 & 0.7308 & 0.6876 & -- & -- & 90\,s \\
+4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & +0.0000 & -- & -- & -- & -- & -- & -- & -- & -- \\
+5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{+0.1291} & -- & -- & -- & -- & -- & -- & -- & -- \\
+6 & CUT & GAN & 0.7137 & 0.3743 & +0.0204 & -- & -- & -- & -- & -- & 7.0M & 322.6\,m & 5.0\,m \\
+7 & SaMST & Mamba & 0.6183 & 0.7490 & $-$0.0749 & 0.7094 & 0.2785 & 40.73 & -- & -- & 8.3M & 39.5\,m & 10.0\,m \\
+8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & $-$0.1116 & 0.6769 & 0.1172 & 50.03 & -- & -- & -- & 436.0\,m & 17.6\,m \\
+9 & Seedream 4.5 & API & 0.7198 & 0.4767 & +0.0265 & 0.7515 & -- & 64.00 & -- & -- & -- & -- & -- \\
 \midrule
-10 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{+0.0280} & \textbf{0.6826} & \textbf{0.2031} & \textbf{0.7434} & \textbf{0.2904} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
+10 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{+0.0280} & \textbf{0.6826} & \textbf{0.2031} & \textbf{45.68} & \textbf{0.7434} & \textbf{0.2904} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -452,21 +452,22 @@ The main conclusion therefore does not depend on the identity rows.
 
 Figure~\ref{fig:abl512_scatter} presents a $512{\times}512$ ablation plot with 43 configurations spanning seven theoretical axes (the AdaIN axis is omitted from the plot because its extreme endpoint, AdaIN $4{\times}$, inflates LPIPS far beyond the displayed range and compresses the rest of the cloud; those rows remain in the underlying CSV).
 
-\begin{figure*}[t]
+\begin{figure}[t]
 \centering
-\includegraphics[width=1.0\textwidth]{fig_abl512_scatter.pdf}
+\includegraphics[width=0.85\linewidth]{fig_abl512_scatter.pdf}
 \caption{512-resolution ablation scatter plot.
 Each point is one of 43 ablation configurations (AdaIN axis omitted to avoid axis compression), colored by theoretical axis; the gold star marks the full WEAVE model.
 The dashed line is the Pareto frontier in the CLIP-S vs.\ $1{-}\mathrm{LPIPS}$ plane.
-The extrapolation~1 variant falls clearly off-frontier, validating the theoretical predictions.}
+Configurations in the bottom-left suffer from content-style conflict (e.g., Euclidean transport without DWT) or excessive capacity constraints (e.g., small velocity head).
+Configurations in the bottom-right are extreme styling methods that collapse content (e.g., per-step AdaIN injection).
+}
 \label{fig:abl512_scatter}
-\end{figure*}
+\end{figure}
 
 Most configurations cluster tightly around the full model (gold star), confirming the robustness of WEAVE's core design.
 The most prominent off-frontier point is the extrapolation~1 variant, whose content preservation collapses when high-frequency routing is removed, validating the role of endpoint subband alignment.
 A separate $10{\times}$ learning-rate run diverged to NaN and is excluded from the plot, consistent with Theorem~\ref{thm:attractor}.
 The AdaIN $4{\times}$ variant (omitted from the plot for axis readability) was checked separately and confirms Proposition~\ref{prop:eota}: amplifying per-step AdaIN causes catastrophic content decay.
-The Pareto frontier is traced by mild variants $(w_{\mathrm{LL}}{=}0$, $\mathrm{dim}{=}32$), confirming that the wavelet coordinate change, endpoint alignment, and routing schedule are the three design pillars carrying the result.
 
 \subsection{Generalization and Robustness}
 \label{sec:gen}
