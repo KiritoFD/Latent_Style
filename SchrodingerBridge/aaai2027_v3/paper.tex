@@ -41,6 +41,7 @@
 
 \begin{abstract}
 Art-to-art style transfer is easy to overclaim because the source is already an artwork.
+Standard metrics exacerbate this: LPIPS and ArtFID both reward structure fidelity so heavily that an identity mapping achieves near-perfect scores, making no-op behavior competitively viable under conventional evaluation.
 We formalize this issue with identical-image transfer (IDT): the unchanged source defines a no-op floor, and a method below that floor has not moved in the requested direction.
 
 We analyze why compact flow models fall into this regime.
