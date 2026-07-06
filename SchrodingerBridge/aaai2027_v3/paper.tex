@@ -377,7 +377,7 @@ Architecturally, this is realized by restricting the style memory $m_s$ to modul
 
 \begin{table*}[t]
 \centering
-\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art (256, CycleGAN 5-style), and WikiArt-20 generalization split (full 20 WikiArt families, including Distinct5). $\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933). Photo2Art-256 provides a secondary dataset-level verification on the CycleGAN cezanne/Hayao/monet/photo/vangogh split; values are not directly comparable to 512 CLIP-S due to resolution-dependent CLIP embeddings. MUSIQ (higher is better) is reported for Photo2Art-256 as an auxiliary no-reference image quality assessment. Baselines marked ``--'' on WikiArt-20 were not reproduced due to prohibitive training or API cost on $20{\times}20{\times}30{=}12{,}000$ pairs; ``--'' on Photo2Art-256 reflects missing per-style checkpoints or API LPIPS unavailability. Train and Infer report audited training and 750-output stylization times. For WEAVE, Infer includes generation and VAE decode only. Time units: m = minutes, s = seconds.}
+\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art (256, CycleGAN 5-style), and WikiArt-20 generalization split (full 20 WikiArt families, including Distinct5). $\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933). Photo2Art-256 provides a secondary dataset-level verification on the CycleGAN cezanne/Hayao/monet/photo/vangogh split; values are not directly comparable to 512 CLIP-S due to resolution-dependent CLIP embeddings. MUSIQ (higher is better) is reported for Photo2Art-256 as an auxiliary no-reference image quality assessment. CUT Photo2Art-256 MUSIQ is ``--'' because the original CUT generated images were not retained for re-evaluation. SaMam WikiArt-20 is ``--'' because pixel-space mamba inference on $12{,}000$ pairs exceeds 12\,GB VRAM (recurrent OOM). Seedream WikiArt-20 is omitted as the closed API does not expose a batched $20$-style protocol. Train and Infer report audited training and 750-output stylization times. For WEAVE, Infer includes generation and VAE decode only. Time units: m = minutes, s = seconds.}
 \label{tab:main}
 \scriptsize
 \renewcommand{\arraystretch}{0.78}
@@ -388,15 +388,15 @@ Architecturally, this is realized by restricting the style memory $m_s$ to modul
 \cmidrule(lr){4-6} \cmidrule(lr){7-9} \cmidrule(lr){10-11}
 & & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & $\Delta_{\mathrm{IDT}}\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & & & \\
 \midrule
-1 & Identity & identity & 0.6933 & 0.0000 & 0.0000 & 0.6632 & 0.0000 & 56.83 & 0.7312 & 0.0000 & -- & -- & -- \\
-2 & AdaIN & classical & 0.6679 & 0.7425 & $-$0.0253 & 0.6659 & 0.6057 & 41.23 & 0.7276 & 0.6795 & -- & -- & -- \\
-3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & +0.0130 & 0.6880 & 0.6142 & 40.33 & 0.7308 & 0.6876 & -- & -- & 90\,s \\
-4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & +0.0000 & -- & -- & -- & -- & -- & -- & -- & -- \\
-5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{+0.1291} & -- & -- & -- & -- & -- & -- & -- & -- \\
-6 & CUT & GAN & 0.7137 & 0.3743 & +0.0204 & -- & -- & -- & -- & -- & 7.0M & 322.6\,m & 5.0\,m \\
-7 & SaMST & Mamba & 0.6183 & 0.7490 & $-$0.0749 & 0.7094 & 0.2785 & 40.73 & -- & -- & 8.3M & 39.5\,m & 10.0\,m \\
-8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & $-$0.1116 & 0.6769 & 0.1172 & 50.03 & -- & -- & -- & 436.0\,m & 17.6\,m \\
-9 & Seedream 4.5 & API & 0.7198 & 0.4767 & +0.0265 & 0.7515 & -- & 64.00 & -- & -- & -- & -- & -- \\
+1 & Identity & identity & 0.6933 & 0.0000 & 0.0000 & 0.6630 & 0.0000 & 56.83 & 0.7312 & 0.0000 & -- & -- & -- \\
+2 & AdaIN & classical & 0.6679 & 0.7425 & $-$0.0253 & 0.6656 & 0.7357 & 41.23 & 0.7276 & 0.6795 & -- & -- & -- \\
+3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & +0.0130 & 0.6878 & 0.7379 & 40.33 & 0.7308 & 0.6876 & -- & -- & 90\,s \\
+4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & +0.0000 & 0.6744 & 0.6031 & 52.19 & 0.7671 & 0.4488 & -- & -- & -- \\
+5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{+0.1291} & 0.6483 & 0.7257 & 49.57 & 0.8180 & 0.5827 & -- & -- & -- \\
+6 & CUT & GAN & 0.7137 & 0.3743 & +0.0204 & 0.7543 & 0.4936 & -- & 0.7096 & 0.6198 & 7.0M & 322.6\,m & 5.0\,m \\
+7 & SaMST & Mamba & 0.6183 & 0.7490 & $-$0.0749 & 0.7092 & 0.3981 & 40.73 & 0.6669 & 0.6118 & 8.3M & 39.5\,m & 10.0\,m \\
+8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & $-$0.1116 & 0.6768 & 0.2052 & 50.03 & -- & -- & -- & 436.0\,m & 17.6\,m \\
+9 & Seedream 4.5 & API & 0.7198 & 0.4767 & +0.0265 & 0.7515 & 0.3279 & 64.00 & -- & -- & -- & -- & -- \\
 \midrule
 10 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{+0.0280} & \textbf{0.6826} & \textbf{0.2031} & \textbf{45.68} & \textbf{0.7434} & \textbf{0.2904} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
 \bottomrule
@@ -450,18 +450,18 @@ The main conclusion therefore does not depend on the identity rows.
 \subsection{Destructive Ablations}
 \label{sec:ablation}
 
-Figure~\ref{fig:abl512_scatter} presents a $512{\times}512$ ablation plot with 43 configurations spanning seven theoretical axes (the AdaIN axis is omitted from the plot because its extreme endpoint, AdaIN $4{\times}$, inflates LPIPS far beyond the displayed range and compresses the rest of the cloud; those rows remain in the underlying CSV).
+Figure~\ref{fig:abl512_scatter_allpairs} presents a $512{\times}512$ ablation plot with 43 configurations spanning seven theoretical axes (the AdaIN axis is omitted from the plot because its extreme endpoint, AdaIN $4{\times}$, inflates LPIPS far beyond the displayed range and compresses the rest of the cloud; those rows remain in the underlying CSV).
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.85\linewidth]{fig_abl512_scatter.pdf}
 \caption{512-resolution ablation scatter plot.
-Each point is one of 43 ablation configurations (AdaIN axis omitted to avoid axis compression), colored by theoretical axis; the gold star marks the full WEAVE model.
+Each point is one of 38 ablation configurations (AdaIN and Solver axes omitted to avoid axis compression), colored by theoretical axis; the gold star marks the full WEAVE model.
 The dashed line is the Pareto frontier in the CLIP-S vs.\ $1{-}\mathrm{LPIPS}$ plane.
 Configurations in the bottom-left suffer from content-style conflict (e.g., Euclidean transport without DWT) or excessive capacity constraints (e.g., small velocity head).
 Configurations in the bottom-right are extreme styling methods that collapse content (e.g., per-step AdaIN injection).
 }
-\label{fig:abl512_scatter}
+\label{fig:abl512_scatter_allpairs}
 \end{figure}
 
 Most configurations cluster tightly around the full model (gold star), confirming the robustness of WEAVE's core design.
@@ -482,8 +482,17 @@ Updating only the lightweight style-memory module with a few reference images of
 \textbf{WikiArt-20 generalization.}
 The Distinct5 benchmark is intentionally adversarial (lowest identity CLIP-S).
 To address the concern of cherry-picking, we evaluate on the full 20 WikiArt families (including Distinct5, each with at least 530 images), train WEAVE from scratch on this larger vocabulary, and evaluate all $20{\times}20{\times}30{=}12{,}000$ source-target pairs.
-Because reproducing diffusion-based or API-based baselines on 12{,}000 pairs is prohibitively expensive, we restrict the WikiArt-20 column to training-free baselines (Identity, AdaIN, WCT) and WEAVE.
-WEAVE retains the low-damage, correct-direction regime (0.7524 CLIP-S / 0.3027 LPIPS), clearing the WikiArt-20 identity floor of 0.7450 while keeping LPIPS below 0.31, confirming that the result is not an artifact of the five selected styles.
+On this split, WEAVE retains the low-damage, correct-direction regime (0.7434 CLIP-S / 0.2904 LPIPS), clearing the WikiArt-20 identity floor of 0.7312 while keeping LPIPS below 0.30.
+StyleID reaches the highest raw CLIP-S (0.8180) but at 0.5827 LPIPS, again consistent with the per-step content decay predicted by Proposition~\ref{prop:eota}.
+SD-Turbo and CUT land between these regimes, while SaMST stays below the identity floor (0.6669), echoing the sub-IDT pattern observed on Distinct5.
+The ranking therefore survives on a larger, non-cherry-picked vocabulary, confirming that the Distinct5 result is not an artifact of the five selected styles.
+
+\textbf{Photo2Art-256 cross-dataset check.}
+The CycleGAN 5-style split (cezanne/Hayao/monet/photo/vangogh at 256) provides a secondary dataset-level verification.
+On this split, WEAVE reaches 0.6826 CLIP-S / 0.2031 LPIPS / 45.68 MUSIQ, the lowest LPIPS among trained methods.
+SaMam preserves content strongly (LPIPS 0.2052) but its CLIP-S (0.6768) stays near the identity floor (0.6630), echoing the sub-IDT pattern on Distinct5.
+CUT attains the highest CLIP-S (0.7543) but at 0.4936 LPIPS, again trading content for style strength.
+The cross-dataset ranking is therefore consistent with the Distinct5 finding.
 
 \textbf{Wavelet basis.}
 Daubechies-2 slightly raises CLIP-S but worsens LPIPS from 0.2868 to 0.3288.
