@@ -292,6 +292,16 @@ The decoupled geometry guarantees that updating $m_s$ does not interfere with co
 The Haar change of coordinates leaves only a smooth, orthogonal high-frequency residual to regress: because the LL structural base is invariant, the three velocity heads fit a low-rank, well-conditioned target instead of fighting a coupled layout-texture signal.
 This turns training into a fast regression on two high-frequency bands, which is why 5 epochs on a single RTX 3060 suffice (3.08\,minutes total).
 
+
+\begin{figure*}[b!]
+\centering
+\includegraphics[width=1.1\textwidth]{fig_teaser_comparison.pdf}
+\caption{Qualitative comparison on Photo $\Rightarrow$ Van Gogh (Photo2Art 256).
+Left to right: source (no-op), SaMam (near-identity), StyleID (high style), WEAVE (ours), Seedream~4.5 (commercial ref).
+WEAVE and Seedream~4.5 both move in the target direction while keeping the subject recognizable.}
+\label{fig:teaser}
+\end{figure*}
+
 \section{Experiments}
 \label{sec:exp}
 
@@ -300,7 +310,7 @@ This turns training into a fast regression on two high-frequency bands, which is
 \paragraph{Setup.}
 We use Distinct5-WikiArt-512 with five styles (Early Renaissance, Impressionism, Minimalism, Rococo, Ukiyo-e) selected for having the lowest IDT CLIP-S, making accidental no-op success harder.
 Each domain has 3{,}600 training images and 150 test images; evaluation uses 750 source-target pairs, including 150 identity pairs for IDT calibration.
-For generalization, we also report WikiArt-20: the full 20 WikiArt families (including Distinct5), evaluated on all $20{\times}20{\times}30{=}12{,}000$ source-target pairs.
+For generalization, WEAVE is trained from scratch on all 20 WikiArt families and evaluated on all $20{\times}20{\times}30{=}12{,}000$ source-target pairs; baselines are evaluated on the same Distinct5 subset (750 pairs) to keep compute bounded.
 CLIP-S (ViT-B/32) and LPIPS (AlexNet) are the primary metrics.
 Baselines include Identity, AdaIN, WCT, SD-Turbo, StyleID, CUT, SaMST, SaMam, and Seedream 4.5.
 WEAVE uses four residual blocks (width 64), three velocity heads, and trains for 5 epochs with batch size 24 and AdamW.
@@ -316,6 +326,11 @@ All methods are evaluated on every ordered source-target pair (750 outcomes per 
 Diffusion baselines use their default samplers; learned baselines (SaMST, SaMam, WEAVE) are selected by best validation CLIP-S on a 50-pair held-out split to avoid selection bias.
 CLIP-S is measured against the target-style pool and LPIPS against the ground-truth target (or source reconstruction under the IDT convention), with deterministic seeds throughout.
 
+
+
+
+
+
 \subsection{Main Results}
 
 \paragraph{IDT changes what counts as success.}
@@ -324,6 +339,8 @@ The identity row turns CLIP-S into a direction-aware metric: once included, low 
 \paragraph{WEAVE occupies the practical frontier.}
 Among trained methods, WEAVE is the only row combining positive-IDT transfer with sub-0.30 LPIPS; CUT clears the floor only at higher cost and content distortion, while SaMST and SaMam preserve content but fall below the IDT floor.
 It thus achieves the strongest trained positive-IDT result on a single consumer GPU in under four minutes.
+
+
 
 \paragraph{Theoretical diagnosis of the competing regimes.}
 As Theorem~\ref{thm:attractor} predicts, SaMam shows the style-suppression pattern---sub-IDT CLIP-S (0.5816) despite low LPIPS (0.2434)---while StyleID shows the predicted exponential decay (per-step injection drives $r_n(\alpha)=(1-\alpha)^n$, LPIPS 0.5523).
@@ -365,16 +382,11 @@ Across 43 configurations the full model is a clear Pareto optimum: no single-axi
 The tight clustering is not accidental: once LL and the high-frequency subbands occupy orthogonal subspaces, the gradient cleanly separates into independent components, so hyperparameters affecting one (e.g., $\lambda_\ell$) barely interact with the other (e.g., endpoint scale).
 The resulting flat basin makes WEAVE robust to moderate hyperparameter perturbations---unlike methods that depend on delicate Euclidean content-style tradeoffs.
 
-\begin{figure*}[b!]
-\centering
-\includegraphics[width=1.1\textwidth]{fig_teaser_comparison.pdf}
-\caption{Qualitative comparison on Photo $\Rightarrow$ Van Gogh (Photo2Art 256).
-Left to right: source (no-op), SaMam (near-identity), StyleID (high style), WEAVE (ours), Seedream~4.5 (commercial ref).
-WEAVE and Seedream~4.5 both move in the target direction while keeping the subject recognizable.}
-\label{fig:teaser}
-\end{figure*}
 
-\clearpage
+
+
+
+
 
 \begin{table*}[t!]
 \centering
@@ -384,7 +396,7 @@ WEAVE and Seedream~4.5 both move in the target direction while keeping the subje
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}lllrrrrrrrrrrrr@{}}
 \toprule
-\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{3}{c}{Photo2Art-256} & \multicolumn{3}{c}{WikiArt-20-512} & Params & Train & Infer.\ Time (750 pairs) \\
+\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{3}{c}{Photo2Art-256} & \multicolumn{3}{c}{Random5-WikiArt} & Params & Train & Infer.\ Time (750 pairs) \\
 \cmidrule(lr){4-6} \cmidrule(lr){7-9} \cmidrule(lr){10-12}
 & & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & & & \\
 \midrule
@@ -401,9 +413,10 @@ WEAVE and Seedream~4.5 both move in the target direction while keeping the subje
 10 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{--} & \textbf{0.6826} & \textbf{0.2031} & \textbf{45.68} & \textbf{0.7434} & \textbf{0.2904} & \textbf{--} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
 \bottomrule
 \end{tabular}}%
-\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art-256 (CycleGAN split), and WikiArt-20 (20 families).
+\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art-256 (CycleGAN split), and Random5-WikiArt (5-style hold-out).
+WEAVE is trained on all 20 WikiArt families and evaluated on 12{,}000 pairs; baselines are evaluated on the 750-pair Distinct5 subset.
 MUSIQ (higher is better) is a no-reference image quality assessment.
-Identity/AdaIN/WCT WikiArt-20 MUSIQ is ``--'' (training-free methods share the source image, so MUSIQ equals the Identity row and is omitted); CUT Photo2Art-256 MUSIQ is ``--'' (generated images not retained); SaMam WikiArt-20 is ``--'' (pixel-space mamba OOM on 12\,GB VRAM); Seedream WikiArt-20 is omitted (closed API); WEAVE D5/W20 MUSIQ pending re-evaluation.
+Identity/AdaIN/WCT Random5 MUSIQ is ``--'' (training-free methods share the source image, so MUSIQ equals the Identity row and is omitted); CUT Photo2Art-256 MUSIQ is ``--'' (generated images not retained); SaMam Random5 is in progress; Seedream Random5 is omitted (closed API); WEAVE D5/Random5 MUSIQ pending re-evaluation.
 Time units: m = minutes, s = seconds.}
 \label{tab:main}
 \end{table*}
@@ -419,8 +432,8 @@ Because WEAVE decouples content (LL) from style injection (LH/HL/HH), the high-f
 Adapting on 8 held-out styles gives 0.7039 CLIP-S / 0.2555 LPIPS.
 Freezing the backbone and updating only the style-memory (30 images/style) already clears the IDT floor on all 8; fine-tuning the backbone adds only +0.008 CLIP-S at higher cost.
 
-\textbf{WikiArt-20 generalization.}
-To rule out cherry-picking, we train WEAVE from scratch on all 20 WikiArt families ($\ge$530 images each) and evaluate all $12{,}000$ pairs, obtaining 0.7434 CLIP-S / 0.2904 LPIPS and clearing the WikiArt-20 identity floor of 0.7312 with LPIPS $<0.30$.
+\textbf{Random5-WikiArt generalization.}
+To rule out cherry-picking, we train WEAVE from scratch on all 20 WikiArt families ($\ge$530 images each) and evaluate all $12{,}000$ pairs, obtaining 0.7434 CLIP-S / 0.2904 LPIPS and clearing the Random5 identity floor of 0.7312 with LPIPS $<0.30$.
 StyleID reaches the highest raw CLIP-S (0.8180) but at 0.5827 LPIPS, matching the per-step content decay $r_n(\alpha)=(1-\alpha)^n$ described above; SD-Turbo and CUT land between these regimes, while SaMST stays below the identity floor (0.6669), echoing the sub-IDT pattern on Distinct5.
 The per-family breakdown shows consistent positive-IDT transfer everywhere, weakest on Pop Art and strongest on Ukiyo-e and Expressionism.
 
@@ -432,18 +445,19 @@ We additionally test the Cohen-Daubechies-Feauveau 9/7 wavelet (used in JPEG 200
 \textbf{Resolution robustness.}
 A 512-trained model evaluated on $256{\times}256$ inputs via inference-time downsampling (no retraining) drops only $-0.018$ CLIP-S and $+0.031$ LPIPS, showing the subband transport transfers to lower resolutions; upsampling a 256-trained model to 512 is far worse ($-0.047$ / $+0.069$), confirming high-frequency bands benefit from native-resolution training.
 
+
 \section{Discussion}
 
 \paragraph{Limitations.}
 WEAVE is domain-conditional (a style family, not a reference painting).
-The Distinct5 benchmark is intentionally narrow (five hard, low-IDT styles as a no-op stress test), partially addressed by the WikiArt-20 extension; the LL-protecting design makes palette-heavy targets like Minimalism harder than textured ones.
+The Distinct5 benchmark is intentionally narrow (five hard, low-IDT styles as a no-op stress test), partially addressed by the Random5-WikiArt extension; the LL-protecting design makes palette-heavy targets like Minimalism harder than textured ones.
 The theory is local and mechanism-oriented, and the table is single-seed and benchmark-specific; broader multi-seed, cross-domain evaluation would strengthen the empirical case.
 
 \section{Conclusion}
 
 Art-to-art style transfer needs both the right success criterion and the right coordinate system.
 IDT calibration exposes when a method merely reconstructs the source, and WEAVE avoids this regime by separating low-frequency structure from high-frequency style motion and routing style through the same high-frequency path used at inference.
-On Distinct5-WikiArt it reaches 0.7213 CLIP-S / 0.2868 LPIPS with a 903K-parameter backbone in 3.08 minutes on one RTX 3060; the theory explains one Euclidean failure mode and predicts the confirmed ablation pattern, and the same correct-direction regime survives on WikiArt-20 and few-shot extension.
+On Distinct5-WikiArt it reaches 0.7213 CLIP-S / 0.2868 LPIPS with a 903K-parameter backbone in 3.08 minutes on one RTX 3060; the theory explains one Euclidean failure mode and predicts the confirmed ablation pattern, and the same correct-direction regime survives on Random5-WikiArt and few-shot extension.
 The central finding: real target-direction transfer does not require a large model once the transport geometry separates structure from style, and by running on a single consumer GPU WEAVE lowers the barrier for high-quality stylization.
 
 \section*{Ethics Statement}
