@@ -330,7 +330,9 @@ WEAVE and Seedream~4.5 both move in the target direction while keeping the subje
 \vspace{-0.7\baselineskip}
 \end{strip}
 
-\begin{strip}
+\clearpage
+
+\begin{table*}[t!]
 \centering
 \scriptsize
 \renewcommand{\arraystretch}{0.78}
@@ -342,25 +344,25 @@ WEAVE and Seedream~4.5 both move in the target direction while keeping the subje
 \cmidrule(lr){4-6} \cmidrule(lr){7-9} \cmidrule(lr){10-11}
 & & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & $\Delta_{\mathrm{IDT}}\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & & & \\
 \midrule
-1 & Identity & identity & 0.6933 & 0.0000 & 0.0000 & 0.6632 & 0.0000 & 56.83 & 0.7312 & 0.0000 & -- & -- & -- \\
-2 & AdaIN & classical & 0.6679 & 0.7425 & $-$0.0253 & 0.6659 & 0.6057 & 41.23 & 0.7276 & 0.6795 & -- & -- & -- \\
-3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & +0.0130 & 0.6880 & 0.6142 & 40.33 & 0.7308 & 0.6876 & -- & -- & 90\,s \\
-4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & +0.0000 & -- & -- & -- & -- & -- & -- & -- & -- \\
-5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{+0.1291} & -- & -- & -- & -- & -- & -- & -- & -- \\
-6 & CUT & GAN & 0.7137 & 0.3743 & +0.0204 & -- & -- & -- & -- & -- & 7.0M & 322.6\,m & 5.0\,m \\
-7 & SaMST & Mamba & 0.6183 & 0.7490 & $-$0.0749 & 0.7094 & 0.2785 & 40.73 & -- & -- & 8.3M & 39.5\,m & 10.0\,m \\
-8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & $-$0.1116 & 0.6769 & 0.1172 & 50.03 & -- & -- & -- & 436.0\,m & 17.6\,m \\
+1 & Identity & identity & 0.6933 & 0.0000 & 0.0000 & 0.6630 & 0.0000 & 56.83 & 0.7312 & 0.0000 & -- & -- & -- \\
+2 & AdaIN & classical & 0.6679 & 0.7425 & $-$0.0253 & 0.6656 & 0.7357 & 41.23 & 0.7276 & 0.6795 & -- & -- & -- \\
+3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & +0.0130 & 0.6878 & 0.7379 & 40.33 & 0.7308 & 0.6876 & -- & -- & 90\,s \\
+4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & +0.0000 & 0.6744 & 0.6031 & 52.19 & 0.7671 & 0.4488 & -- & -- & -- \\
+5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{+0.1291} & 0.6483 & 0.7257 & 49.57 & 0.8180 & 0.5827 & -- & -- & -- \\
+6 & CUT & GAN & 0.7137 & 0.3743 & +0.0204 & 0.7543 & 0.4936 & -- & 0.7096 & 0.6198 & 7.0M & 322.6\,m & 5.0\,m \\
+7 & SaMST & Mamba & 0.6183 & 0.7490 & $-$0.0749 & 0.7092 & 0.3981 & 40.73 & 0.6669 & 0.6118 & 8.3M & 39.5\,m & 10.0\,m \\
+8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & $-$0.1116 & 0.6768 & 0.2052 & 50.03 & -- & -- & -- & 436.0\,m & 17.6\,m \\
 9 & Seedream 4.5 & API & 0.7198 & 0.4767 & +0.0265 & 0.7515 & 0.2270 & 64.00 & -- & -- & -- & -- & -- \\
 \midrule
 10 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{+0.0280} & \textbf{0.6826} & \textbf{0.2031} & \textbf{45.68} & \textbf{0.7434} & \textbf{0.2904} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
 \bottomrule
 \end{tabular}}%
-\captionof{table}{Main comparison on Distinct5-WikiArt (512), Photo2Art-256 (CycleGAN split), and WikiArt-20 (20 families).
+\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art-256 (CycleGAN split), and WikiArt-20 (20 families).
 $\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933).
-``--'': not reproduced due to training/API cost ($12{,}000$ pairs) or missing checkpoints.
+CUT Photo2Art-256 MUSIQ is ``--'' (generated images not retained for re-evaluation); SaMam WikiArt-20 is ``--'' (pixel-space mamba inference on $12{,}000$ pairs exceeds 12\,GB VRAM); Seedream WikiArt-20 is omitted (closed API does not expose a batched 20-style protocol).
 Time units: m = minutes, s = seconds.}
 \label{tab:main}
-\end{strip}
+\end{table*}
 
 \paragraph{IDT changes what counts as success.}
 The identity row turns CLIP-S into a direction-aware metric: once included, low LPIPS alone is not enough, and both SaMST and SaMam stay below the IDT floor, suggesting their low LPIPS reflects source preservation.
@@ -421,7 +423,8 @@ Adapting on 8 held-out styles gives 0.7039 CLIP-S / 0.2555 LPIPS.
 Freezing the backbone and updating only the style-memory (30 images/style) already clears the IDT floor on all 8; fine-tuning the backbone adds only +0.008 CLIP-S at higher cost.
 
 \textbf{WikiArt-20 generalization.}
-To rule out cherry-picking, we train WEAVE from scratch on all 20 WikiArt families ($\ge$530 images each) and evaluate all $12{,}000$ pairs (diffusion/API baselines omitted as too costly), obtaining 0.7524 CLIP-S / 0.3027 LPIPS and clearing the WikiArt-20 identity floor of 0.7450 with LPIPS $<0.31$.
+To rule out cherry-picking, we train WEAVE from scratch on all 20 WikiArt families ($\ge$530 images each) and evaluate all $12{,}000$ pairs, obtaining 0.7434 CLIP-S / 0.2904 LPIPS and clearing the WikiArt-20 identity floor of 0.7312 with LPIPS $<0.30$.
+StyleID reaches the highest raw CLIP-S (0.8180) but at 0.5827 LPIPS, matching the per-step content decay $r_n(\alpha)=(1-\alpha)^n$ described above; SD-Turbo and CUT land between these regimes, while SaMST stays below the identity floor (0.6669), echoing the sub-IDT pattern on Distinct5.
 The per-family breakdown shows consistent positive-IDT transfer everywhere, weakest on Pop Art and strongest on Ukiyo-e and Expressionism.
 
 \textbf{Wavelet basis.}
