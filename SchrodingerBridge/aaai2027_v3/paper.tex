@@ -517,48 +517,24 @@ Haar's exact orthogonality and local support keep both the theory and the implem
 
 \section{Discussion}
 
-\paragraph{Hard targets.}
-Minimalism remains the hardest target family because its style change is driven more by low-frequency palette than by brushwork.
-This matches the design.
-LL is weakly supervised during transport and fixed during endpoint stylization.
-WD-VF therefore favors structure stability over large palette shifts.
-
 \paragraph{Limitations.}
-WD-VF is domain-conditional rather than exemplar-conditional.
-It is designed to reach a target style family, not to copy one reference painting.
-
-The main benchmark is intentionally narrow.
-It isolates five hard WikiArt styles chosen by low IDT CLIP-S.
-This makes it a focused stress test for no-op failure rather than a full account of cross-domain or open-vocabulary stylization.
-IDT should therefore be read as a calibration protocol for this art-to-art setting.
-The WikiArt-15 experiment partially addresses this concern by showing that the same low-damage, correct-direction regime survives on a larger, non-cherry-picked style vocabulary of 15 random families.
-
-The LL design makes palette-heavy targets such as Minimalism harder than heavily textured targets.
-The method deliberately protects low-frequency structure.
-Large palette shifts are therefore less favored than brushwork and surface-texture changes.
-
-The theory is local and mechanism-oriented.
-It explains one failure mode of Euclidean latent flow and predicts the related ablations.
-It does not address global convergence or every possible collapse mechanism.
-
-The current main table is single-seed and benchmark-specific.
-The effect sizes are large, but broader multi-seed evaluation would strengthen the empirical case.
-Broader cross-domain data would also test whether the same IDT-calibrated story survives outside WikiArt-to-WikiArt transfer.
-
-Despite these limitations, the low computational footprint of WD-VF---903K parameters, 3.08-minute training, and a 3.5\,MB checkpoint---makes it uniquely accessible for community reproduction, extension, and deployment in resource-constrained settings. We believe this accessibility is a core contribution: it lowers the barrier for researchers and practitioners to experiment with, improve upon, and apply real style transfer.
+WD-VF is domain-conditional rather than exemplar-conditional: it reaches a target style family, not a specific reference painting.
+The Distinct5 benchmark is intentionally narrow, isolating five hard WikiArt styles chosen by low IDT CLIP-S as a stress test for no-op failure.
+The WikiArt-15 extension partially addresses this, showing that the same low-damage, correct-direction regime survives on a larger, non-cherry-picked style vocabulary.
+The LL design deliberately protects low-frequency structure, making palette-heavy targets such as Minimalism harder than heavily textured targets.
+The theory is local and mechanism-oriented: it explains one Euclidean failure mode and predicts the related ablations, but does not address global convergence.
+The main table is single-seed and benchmark-specific; broader multi-seed and cross-domain evaluation would strengthen the empirical case.
 
 \section{Conclusion}
 
 Art-to-art style transfer needs both the right success criterion and the right coordinate system.
 IDT calibration exposes when a method is only reconstructing the source.
 WD-VF avoids this regime by separating low-frequency structure from high-frequency style motion and by routing style through the same high-frequency path used at inference.
-On Distinct5-WikiArt, it reaches CLIP-S/LPIPS of 0.7213/0.2868 with 903K trainable parameters in its flow backbone.
-Training takes 3.08 minutes on a single RTX 3060.
-Generation plus VAE decode takes 83.7 seconds for 750 outputs.
+On Distinct5-WikiArt, it reaches CLIP-S/LPIPS of 0.7213/0.2868 with 903K trainable parameters in its flow backbone, training in 3.08 minutes on a single RTX 3060.
 The theory explains one Euclidean failure mode and predicts the ablation pattern confirmed by experiment.
-While trained on a focused benchmark, the decoupled nature of WD-VF allows for rapid, few-shot extension to new styles without altering the base network, and the same low-damage, correct-direction regime survives on the WikiArt-15 generalization split, offering a highly sustainable paradigm for generative style editing.
+The decoupled geometry enables few-shot extension to new styles without retraining, and the same correct-direction regime survives on the WikiArt-15 generalization split.
 The main result is simple: real target-direction transfer does not require a large model if the transport geometry separates structure from style.
-By running entirely on a single consumer GPU with sub-4-minute training, WD-VF substantially lowers the hardware barrier for art-to-art style transfer, making high-quality stylization accessible to a broader community of practitioners and researchers.
+By running entirely on a single consumer GPU, WD-VF substantially lowers the hardware barrier for art-to-art style transfer, making high-quality stylization accessible to a broader community of practitioners and researchers.
 
 \section*{Ethics Statement}
 Style transfer tools can be misused to produce deceptive images or to misattribute stylistic authorship.
