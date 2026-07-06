@@ -67,7 +67,7 @@ BASELINES = [
 
 OURS_FRONTIER = [
     point("T10", 0.7083, 0.2480, "ours", label=True, display="Fidelity-leaning"),
-    point("T11", 0.7213, 0.2868, "ours", label=True, display="WD-VF"),
+    point("T11", 0.7213, 0.2868, "ours", label=True, display="WEAVE"),
     point("4J.1", 0.7226, 0.3068, "ours", label=False),
     point("4I.7b", 0.7272, 0.3218, "ours", label=True, display="Style-leaning"),
     point("4F.1", 0.7319, 0.3428, "ours", label=True, display="Style max"),
@@ -294,7 +294,7 @@ def main() -> None:
             markerfacecolor=GROUP_STYLE["ours"]["face"],
             markeredgecolor=GROUP_STYLE["ours"]["edge"],
             markersize=8.4,
-            label="WD-VF",
+            label="WEAVE",
         ),
     ]
     ax.legend(
