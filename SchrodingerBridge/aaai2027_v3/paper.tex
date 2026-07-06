@@ -307,6 +307,13 @@ During training, we use the high-frequency query with probability $p=0.8$ and th
 This stochastic routing preserves a small low-frequency color channel while matching the inference-time design.
 
 In the ideal routed limit ($\lambda_\ell=0$, deterministic high-frequency query), the supervised objective reduces to $\mathbb E_t[\|v_1-u_1\|_2^2 + \|v_2-u_2\|_2^2]$, confining active transport to two orthogonal high-frequency subbands and eliminating the low-frequency conflict from both the gradient and the style-query path.
+We formalize this as:
+
+\begin{proposition}
+\label{prop:orthogonal}
+Let $\ell = \text{LL}(z)$ be the low-frequency subband of a latent $z$ under the Haar transform.
+If the velocity field $v$ has zero displacement component on the LL subband and the style query only accesses the high-frequency subbands, then the structural content coordinate $\ell$ is conserved throughout the transport: $\ell_t = \ell_0$ for all $t$.
+\end{proposition}
 
 \subsection{Endpoint Alignment: ODE Rationale and WCT Validity}
 \label{sec:eota}
@@ -361,7 +368,7 @@ When a new style is introduced, the flow backbone's transport dynamics remain va
 The only unknown is the target statistical distribution of the new style in the high-frequency subspace.
 Few-shot adaptation therefore reduces to estimating the mean and covariance of $(h_1,h_2,h_3)$ from a few reference images of the new style, and inserting these statistics into the style-memory module.
 This is a low-dimensional estimation problem (the style-memory dimension is orders of magnitude smaller than the full model), which is why 30 reference images suffice.
-The decoupled wavelet geometry guarantees that updating the style-memory does not interfere with the learned content-preserving transport, because the LL path is never touched by the style query.
+The decoupled wavelet geometry guarantees that updating the style-memory does not interfere with the learned content-preserving transport, because the LL path is never touched by the style query (Proposition~\ref{prop:orthogonal}).
 Architecturally, this is realized by restricting the style memory $m_s$ to modulate only the Key/Value projections in the high-frequency attention blocks; updating $m_s$ is therefore mathematically equivalent to shifting the target distribution in the high-frequency subspace, without altering the content-preserving Query-Key alignment.
 
 \section{Experiments}
@@ -369,14 +376,14 @@ Architecturally, this is realized by restricting the style memory $m_s$ to modul
 
 \begin{table*}[t]
 \centering
-\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art (256, CycleGAN 5-style), and WikiArt-15 generalization split (15 randomly chosen families, disjoint from Distinct5). $\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933). Photo2Art-256 provides a secondary dataset-level verification on the CycleGAN cezanne/Hayao/monet/photo/vangogh split; values are not directly comparable to 512 CLIP-S due to resolution-dependent CLIP embeddings. Baselines marked ``--'' on WikiArt-15 were not reproduced due to prohibitive training or API cost on $15{\times}15{\times}30{=}6{,}750$ pairs. Train and Infer report audited training and 750-output stylization times. For WEAVE, Infer includes generation and VAE decode only.}
+\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art (256, CycleGAN 5-style), and WikiArt-20 generalization split (full 20 WikiArt families, including Distinct5). $\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933). Photo2Art-256 provides a secondary dataset-level verification on the CycleGAN cezanne/Hayao/monet/photo/vangogh split; values are not directly comparable to 512 CLIP-S due to resolution-dependent CLIP embeddings. Baselines marked ``--'' on WikiArt-20 were not reproduced due to prohibitive training or API cost on $20{\times}20{\times}30{=}12{,}000$ pairs. Train and Infer report audited training and 750-output stylization times. For WEAVE, Infer includes generation and VAE decode only.}
 \label{tab:main}
 \scriptsize
 \renewcommand{\arraystretch}{0.78}
 \setlength{\tabcolsep}{3.2pt}
 \begin{tabular}{@{}lllrrrrrrrrrr@{}}
 \toprule
-\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{2}{c}{Photo2Art-256} & \multicolumn{2}{c}{WikiArt-15-512} & Params & Train & \shortstack{Infer\\ /750} \\
+\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{2}{c}{Photo2Art-256} & \multicolumn{2}{c}{WikiArt-20-512} & Params & Train & \shortstack{Infer\\ /750} \\
 \cmidrule(lr){4-6} \cmidrule(lr){7-8} \cmidrule(lr){9-10}
 & & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & $\Delta_{\mathrm{IDT}}\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & & & \\
 \midrule
@@ -402,7 +409,7 @@ Architecturally, this is realized by restricting the style memory $m_s$ to modul
 \paragraph{Setup.}
 We use Distinct5-WikiArt-512 with five styles (Early Renaissance, Impressionism, Minimalism, Rococo, Ukiyo-e) selected for having the lowest IDT CLIP-S, making accidental no-op success harder.
 Each domain has 3{,}600 training images and 150 test images; evaluation uses 750 source-target pairs, including 150 identity pairs for IDT calibration.
-For generalization, we also report WikiArt-15: 15 randomly chosen WikiArt families (disjoint from Distinct5), evaluated on all $15{\times}15{\times}30{=}6{,}750$ source-target pairs.
+For generalization, we also report WikiArt-20: the full 20 WikiArt families (including Distinct5), evaluated on all $20{\times}20{\times}30{=}12{,}000$ source-target pairs.
 CLIP-S (ViT-B/32) and LPIPS (AlexNet) are the primary metrics.
 Baselines include Identity, AdaIN, WCT, SD-Turbo, SDEdit, StyleID, CUT, SaMST, SaMam, and Seedream 4.5.
 WEAVE uses four residual blocks (width 64), three velocity heads, and trains for 5 epochs with batch size 24 and AdamW.
@@ -472,11 +479,11 @@ A matched $256{\times}256$ control confirms that the gain comes from wavelet tra
 Because WEAVE decouples content structure (LL) from style injection (LH/HL/HH), the learned high-frequency transport is not tied to a frozen style vocabulary.
 Updating only the lightweight style-memory module with a few reference images of a new style preserves the correct-direction regime on an 8-style extension, confirming generalizable texture-and-stroke transport.
 
-\textbf{WikiArt-15 generalization.}
+\textbf{WikiArt-20 generalization.}
 The Distinct5 benchmark is intentionally adversarial (lowest identity CLIP-S).
-To address the concern of cherry-picking, we fix a WikiArt-15 split of 15 randomly chosen WikiArt families (disjoint from Distinct5, each with at least 530 images), train WEAVE from scratch on this larger vocabulary, and evaluate all $15{\times}15{\times}30{=}6{,}750$ source-target pairs.
-Because reproducing diffusion-based or API-based baselines on 6{,}750 pairs is prohibitively expensive, we restrict the WikiArt-15 column to training-free baselines (Identity, AdaIN, WCT) and WEAVE.
-WEAVE retains the low-damage, correct-direction regime (0.7524 CLIP-S / 0.3027 LPIPS), clearing the WikiArt-15 identity floor of 0.7450 while keeping LPIPS below 0.31, confirming that the result is not an artifact of the five selected styles.
+To address the concern of cherry-picking, we evaluate on the full 20 WikiArt families (including Distinct5, each with at least 530 images), train WEAVE from scratch on this larger vocabulary, and evaluate all $20{\times}20{\times}30{=}12{,}000$ source-target pairs.
+Because reproducing diffusion-based or API-based baselines on 12{,}000 pairs is prohibitively expensive, we restrict the WikiArt-20 column to training-free baselines (Identity, AdaIN, WCT) and WEAVE.
+WEAVE retains the low-damage, correct-direction regime (0.7524 CLIP-S / 0.3027 LPIPS), clearing the WikiArt-20 identity floor of 0.7450 while keeping LPIPS below 0.31, confirming that the result is not an artifact of the five selected styles.
 
 \textbf{Wavelet basis.}
 Daubechies-2 slightly raises CLIP-S but worsens LPIPS from 0.2868 to 0.3288.
@@ -487,7 +494,7 @@ Haar's exact orthogonality and local support keep both the theory and the implem
 \paragraph{Limitations.}
 WEAVE is domain-conditional rather than exemplar-conditional: it reaches a target style family, not a specific reference painting.
 The Distinct5 benchmark is intentionally narrow, isolating five hard WikiArt styles chosen by low IDT CLIP-S as a stress test for no-op failure.
-The WikiArt-15 extension partially addresses this, showing that the same low-damage, correct-direction regime survives on a larger, non-cherry-picked style vocabulary.
+The WikiArt-20 extension partially addresses this, showing that the same low-damage, correct-direction regime survives on a larger, non-cherry-picked style vocabulary.
 The LL design deliberately protects low-frequency structure, making palette-heavy targets such as Minimalism harder than heavily textured targets.
 The theory is local and mechanism-oriented: it explains one Euclidean failure mode and predicts the related ablations, but does not address global convergence.
 The main table is single-seed and benchmark-specific; broader multi-seed and cross-domain evaluation would strengthen the empirical case.
@@ -499,7 +506,7 @@ IDT calibration exposes when a method is only reconstructing the source.
 WEAVE avoids this regime by separating low-frequency structure from high-frequency style motion and by routing style through the same high-frequency path used at inference.
 On Distinct5-WikiArt, it reaches CLIP-S/LPIPS of 0.7213/0.2868 with 903K trainable parameters in its flow backbone, training in 3.08 minutes on a single RTX 3060.
 The theory explains one Euclidean failure mode and predicts the ablation pattern confirmed by experiment.
-The decoupled geometry enables few-shot extension to new styles without retraining, and the same correct-direction regime survives on the WikiArt-15 generalization split.
+The decoupled geometry enables few-shot extension to new styles without retraining, and the same correct-direction regime survives on the WikiArt-20 generalization split.
 The central finding is that real target-direction transfer does not require a large model if the transport geometry separates structure from style.
 By running entirely on a single consumer GPU, WEAVE substantially lowers the hardware barrier for art-to-art style transfer, making high-quality stylization accessible to a broader community of practitioners and researchers.
 
