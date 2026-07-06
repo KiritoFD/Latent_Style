@@ -1,0 +1,405 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+\setcounter{secnumdepth}{2}
+
+\newtheorem*{slemma}{Lemma}
+\newtheorem*{sproposition}{Proposition}
+\newtheorem*{stheorem}{Theorem}
+\newtheorem*{sdefinition}{Definition}
+
+\title{Supplementary Material for ``Affordable Real Style Transfer:\\
+Training Wavelet-Decoupled Rectified Flow on an RTX 3060 in Minutes''}
+\author{Anonymous Submission}
+\date{}
+
+\begin{document}
+\maketitle
+
+\appendix
+
+\section{Method Details}
+\label{sec:method_details}
+
+This supplement expands the final WEAVE model, the proofs used in the main paper, and the supporting controls referenced in Section~4.
+
+\subsection{Problem Setup}
+\label{sec:problem}
+
+Let $x_c \in \mathbb{R}^{H \times W \times 3}$ be a content image and $s \in \{1,\ldots,K\}$ a target style domain. We work in the latent space of the Stable Diffusion v1.5 EMA VAE and write
+\[
+z_0 = \mathcal E(x_c) \in \mathbb{R}^{4 \times 32 \times 32},
+\]
+sample a target latent $z_1 \sim p_s$, and use the rectified-flow path
+\[
+z_t = (1-t)z_0 + tz_1,
+\qquad
+u_t = z_1 - z_0,
+\qquad
+t \sim \mathcal U([0,1]).
+\]
+The learned generator integrates a style-conditioned velocity field from $t=0$ to $t=1$ and decodes the final latent with the frozen VAE decoder.
+
+\subsection{Haar Coordinates and Subband Separation}
+\label{sec:haar}
+
+\begin{slemma}[Wavelet isometry]
+The single-level 2D Haar transform $\mathcal W$ is orthogonal. For any latent $z$ with subbands $\mathcal W(z) = (\ell,h_1,h_2,h_3)$,
+\[
+\|z\|_F^2 = \|\ell\|_F^2 + \|h_1\|_F^2 + \|h_2\|_F^2 + \|h_3\|_F^2.
+\]
+\end{slemma}
+\begin{proof}
+The one-dimensional Haar matrix is orthogonal. The two-dimensional transform is its separable Kronecker product, which remains orthogonal. Parseval's identity then gives the stated energy decomposition.
+\end{proof}
+
+\begin{sproposition}[Content perturbation bound]
+Let $z=z_{\mathrm{cnt}}+z_{\mathrm{sty}}$ and write $\mathcal W(z_{\mathrm{cnt}})=(\ell_{\mathrm{cnt}},h_{\mathrm{cnt}})$. If
+\[
+\|h_{\mathrm{cnt}}\|_F^2 \le \epsilon \|z_{\mathrm{cnt}}\|_F^2
+\qquad
+\text{for some } \epsilon\in[0,1],
+\]
+then any high-frequency-only map $T_\ell(\ell,h)=(\ell,\phi(h))$ satisfies
+\[
+\left|
+\|T_\ell(z)-z\|_F^2 - \|\phi(h)-h\|_F^2
+\right|
+\le \epsilon \|z_{\mathrm{cnt}}\|_F^2.
+\]
+\end{sproposition}
+\begin{proof}
+By Haar orthogonality, all cross terms between $\ell$ and $h$ vanish. The only content perturbation left is the high-frequency residue already present in $h_{\mathrm{cnt}}$.
+\end{proof}
+
+\begin{sdefinition}[Wavelet coordinate split]
+We use the LL subband $\ell$ as the low-frequency coordinate and the three high-frequency subbands $(h_1,h_2,h_3)$ as the high-frequency coordinates. Equivalently, the projection map is $\pi(z)=\ell$.
+\end{sdefinition}
+
+\subsection{Implemented WEAVE Model}
+\label{sec:implemented}
+
+Let
+\[
+\mathcal W(z_t) = (\ell_t,h_{1,t},h_{2,t},h_{3,t}),
+\qquad
+\mathcal W(u_t) = (u_\ell,u_1,u_2,u_3).
+\]
+The final WEAVE model predicts three velocity heads $(v_\ell,v_1,v_2)$. The $h_3$ band remains in the state and is stylized at the endpoint, but it has no learned velocity head.
+
+The implemented supervised objective is
+\begin{equation}
+\mathcal L_{\mathrm{impl}}
+=
+\mathbb E_t\!\left[
+\lambda_\ell\|v_\ell-u_\ell\|_2^2
++
+\|v_1-u_1\|_2^2
++
+\|v_2-u_2\|_2^2
+\right],
+\label{eq:impl-loss}
+\end{equation}
+with $\lambda_\ell = 0.3$. The LL term is therefore de-weighted, not removed.
+
+High-frequency query routing is stochastic during training and deterministic at evaluation. Let
+\[
+q_{\mathrm{routed}} = Q[h_{1,t};h_{2,t};h_{3,t}],
+\qquad
+q_{\mathrm{full}} = Q[\ell_t;h_{1,t};h_{2,t};h_{3,t}].
+\]
+During training,
+\[
+q_t =
+\begin{cases}
+q_{\mathrm{routed}}, & B=1,\\
+q_{\mathrm{full}}, & B=0,
+\end{cases}
+\qquad
+B \sim \mathrm{Bernoulli}(0.8),
+\]
+while evaluation always uses $q_{\mathrm{routed}}$.
+
+\subsection{Style-Agnostic Basin in Euclidean Coordinates}
+\label{sec:degeneration}
+
+\begin{sdefinition}[Style-independent manifold]
+The style-independent manifold is
+\[
+\mathcal M_0
+=
+\{\theta:\tilde v_\theta(z,t,s)=\bar v_\theta(z,t)\ \text{for all } z,t,s\},
+\]
+with $\bar v_\theta(z,t)=\mathbb E_s[\tilde v_\theta(z,t,s)]$.
+\end{sdefinition}
+
+\begin{stheorem}[Content-dominant Euclidean basin]
+Let $\theta_0\in\mathcal M_0$ be stationary in the normal directions:
+\[
+\nabla_\perp \mathcal L_{\mathrm{FM}}(\theta_0)=0,
+\qquad
+\nabla_\perp \mathcal L_{\mathrm{sty}}(\theta_0)=0.
+\]
+Suppose the normal curvatures satisfy
+\[
+\nabla_\perp^2 \mathcal L_{\mathrm{FM}}(\theta_0)\succeq \mu I,
+\qquad
+\|\nabla_\perp^2 \mathcal L_{\mathrm{sty}}(\theta_0)\|_{\mathrm{op}}\le\nu.
+\]
+If $w_f\mu>w_s\nu$, then $\theta_0$ is a strict local minimum of $\mathcal L_{\mathrm{euc}}$ restricted to $T_{\theta_0}^{\perp}\mathcal M_0$.
+\end{stheorem}
+\begin{proof}
+For any normal perturbation $\delta\in T_{\theta_0}^{\perp}\mathcal M_0$, the stationarity conditions remove all first-order terms. A second-order expansion gives
+\[
+\Delta \mathcal L_{\mathrm{euc}}(\delta)
+=
+\tfrac12 \delta^\top
+\Bigl(
+w_f\nabla_\perp^2 \mathcal L_{\mathrm{FM}}(\theta_0)
++
+w_s\nabla_\perp^2 \mathcal L_{\mathrm{sty}}(\theta_0)
+\Bigr)\delta
++
+o(\|\delta\|^2).
+\]
+Using the curvature bounds,
+\[
+\Delta \mathcal L_{\mathrm{euc}}(\delta)
+\ge
+\tfrac12(w_f\mu-w_s\nu)\|\delta\|^2 + o(\|\delta\|^2).
+\]
+The coefficient of $\|\delta\|^2$ is positive, so sufficiently small nonzero perturbations increase the objective.
+\end{proof}
+
+\paragraph{Style-amplitude diagnostic.}
+For the Euclidean baseline we also fit the descriptive decomposition
+\[
+\tilde v_\theta(z,t,s)=\bar v_\theta(z,t)+\kappa(\theta)\,\Delta v_\theta(z,t,s),
+\qquad
+\mathbb E_s[\Delta v_\theta(z,t,s)] = 0,
+\]
+and measure $\kappa \approx 0.016$. This diagnostic complements Theorem~1 by showing that the style-conditioned component is numerically small in the Euclidean collapsed solution.
+
+\subsection{Idealized High-Frequency Query Limit}
+\label{sec:idealized}
+
+\begin{stheorem}[Subband-decoupled supervised objective]
+In the idealized high-frequency-query limit, $\lambda_\ell=0$, the high-frequency query is used deterministically, and the model has no HH velocity head. The supervised objective then reduces to
+\[
+\mathcal L_{\mathrm{ideal}}
+=
+\mathbb E_t\!\left[\|v_1-u_1\|_2^2 + \|v_2-u_2\|_2^2\right].
+\]
+\end{stheorem}
+\begin{proof}
+Wavelet orthogonality splits the residual norm by subband. Setting $\lambda_\ell=0$ removes the LL residual, and the absence of an HH head removes the $h_3$ residual. Deterministic high-frequency queries eliminate LL from the style-query path. Only the $h_1$ and $h_2$ transport terms remain.
+\end{proof}
+
+This theorem isolates the mechanism behind WEAVE. The final model keeps the same geometry with $\lambda_\ell=0.3$, high-frequency queries sampled with probability $0.8$ during training, and LL untouched only at the endpoint stylization stage.
+
+\subsection{Endpoint Subband Alignment}
+\label{sec:endpoint}
+
+Let the integrated endpoint satisfy
+\[
+\mathcal W(\hat z_1) = (\hat \ell,\hat h_1,\hat h_2,\hat h_3),
+\]
+and let a reference style latent satisfy
+\[
+\mathcal W(z_1^\star) = (\ell^\star,h_1^\star,h_2^\star,h_3^\star).
+\]
+For $i\in\{1,2,3\}$ define the whitening-and-coloring map
+\[
+T_i(a) = \Sigma_i^{\star 1/2}\,\hat\Sigma_i^{-1/2}(a-\hat\mu_i)+\mu_i^\star.
+\]
+The practical endpoint update is
+\[
+\hat h_i^+ = (1-\alpha_i)\hat h_i + \alpha_i T_i(\hat h_i),
+\qquad
+(\alpha_1,\alpha_2,\alpha_3)=(0.3,0.3,0.5),
+\]
+while $\hat \ell^+ = \hat \ell$.
+
+\begin{sproposition}[Fiber-preserving endpoint map]
+The endpoint update leaves the base coordinate fixed:
+\[
+\pi(\hat z_1^+) = \pi(\hat z_1) = \hat \ell.
+\]
+\end{sproposition}
+\begin{proof}
+Each $T_i$ acts only on a high-frequency subband, and the practical update sets $\hat \ell^+ = \hat \ell$. Therefore the projection $\pi$ is unchanged.
+\end{proof}
+
+\begin{sproposition}[$\alpha$-identifiability under endpoint injection]
+If a blend of strength $\alpha$ is applied at every step for $n$ steps, the residual content fraction is $r_n(\alpha)=(1-\alpha)^n$. Endpoint-only injection corresponds to $n=1$, for which $r_1(\alpha)=1-\alpha$ is affine and preserves blend identifiability.
+\end{sproposition}
+\begin{proof}
+Each injection preserves a fraction $1-\alpha$ of the current content residue, so composing $n$ identical injections gives $r_n(\alpha)=(1-\alpha)^n$. The case $n=1$ is affine in $\alpha$, while $n\gg1$ compresses the same control range exponentially.
+\end{proof}
+
+\subsection{Architecture and Hyperparameters}
+\label{sec:hyper}
+
+\begin{table}[h]
+\centering
+\caption{Final WEAVE model hyperparameters.}
+\label{tab:hyper}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Parameter & Value \\
+\midrule
+Latent space & Stable Diffusion v1.5 EMA VAE, $4 \times 32 \times 32$ \\
+Wavelet basis & single-level Haar DWT \\
+Backbone & 4 residual blocks, width $64$ \\
+Style memory & learnable per-domain bank, 256 tokens $\times$ 64 dims \\
+Velocity heads & learned $3\times3$ heads for LL/LH/HL; no HH head \\
+Loss weights & $(w_{\mathrm{LL}},w_{\mathrm{LH}},w_{\mathrm{HL}})=(0.3,1.0,1.0)$ \\
+Training route & high-frequency query with probability $0.8$ \\
+Evaluation route & high-frequency query always on \\
+Endpoint stylization & per-subband WCT, scales $(0.0,0.3,0.3,0.5)$ for LL/LH/HL/HH \\
+ODE solver & Heun, 8 steps, cosine schedule \\
+Optimizer & AdamW, learning rate $2\times10^{-4}$, weight decay $10^{-4}$ \\
+Batch size & 24 \\
+Epochs & 5 \\
+Hardware & single RTX 3060 (12\,GB) \\
+Trainable parameters & 903{,}248 \\
+Training time & 3.08 min end to end \\
+Evaluation time & 97 s on 750 pairs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Additional Experiments}
+\label{sec:additional_exp}
+
+\subsection{Component Ablation}
+\label{sec:ablation}
+
+\begin{table}[h]
+\centering
+\caption{\textbf{Table 4: Mechanistic Validation of the WEAVE Architecture.} Component ablation relative to the final WEAVE model.}
+\label{tab:ablation_supp}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lcccl@{}}
+\toprule
+Variant & CLIP-S & LPIPS & $\Delta$CLIP-S & Note \\
+\midrule
+\textbf{WEAVE (full)} & \textbf{0.7213} & \textbf{0.2868} & --- & baseline \\
+\midrule
+\multicolumn{5}{l}{\emph{Wavelet basis}} \\
+\quad No DWT (Euclidean) & 0.7117 & 0.2994 & $-$0.0096 & content-style conflict returns \\
+\quad Daubechies-2 (vs.\ Haar) & 0.7258 & 0.3288 & $+$0.0045 & stronger style, weaker fidelity \\
+\midrule
+\multicolumn{5}{l}{\emph{Base handling}} \\
+\quad Lock LL at inference & 0.7174 & 0.3372 & $-$0.0039 & removes useful tone drift \\
+\quad $w_{\text{LL}}=1.0$ at train & 0.7174 & 0.2774 & $-$0.0039 & content term becomes too strong \\
+\quad Train HH head & 0.7213 & 0.2868 & $\pm$0.0001 & negligible gain \\
+\midrule
+\multicolumn{5}{l}{\emph{Endpoint stylization}} \\
+\quad Per-step AdaIN & 0.7361 & 0.3843 & $+$0.0148 & repeated over-stylization \\
+\quad AdaIN (diagonal) vs.\ WCT & 0.7266 & 0.3402 & $+$0.0053 & weaker cross-channel match \\
+\quad Inject LL too & 0.7215 & 0.3856 & $+$0.0002 & global color drift \\
+\midrule
+\multicolumn{5}{l}{\emph{Routing}} \\
+\quad $p=0.0$ (Euclidean train) & 0.7061 & 0.2606 & $-$0.0152 & train-test mismatch \\
+\quad $p=0.5$ & 0.7083 & 0.2480 & $-$0.0130 & high-frequency path under-trained \\
+\quad $p=1.0$ (always DWT) & 0.7226 & 0.3068 & $+$0.0013 & slightly higher style, worse LPIPS \\
+\midrule
+\multicolumn{5}{l}{\emph{Solver}} \\
+\quad Euler (vs.\ Heun) & 0.7210 & 0.3129 & $-$0.0003 & lower solver accuracy \\
+\quad RK4 (vs.\ Heun) & 0.7265 & 0.3235 & $+$0.0052 & extra cost, no operating-point gain \\
+\midrule
+\multicolumn{5}{l}{\emph{Capacity}} \\
+\quad depth $=2$ (vs.\ 4) & 0.7172 & 0.2705 & $-$0.0041 & lower capacity \\
+\quad dim $=32$ (vs.\ 64) & 0.7153 & 0.2705 & $-$0.0060 & narrower backbone \\
+\quad gate $=0$ (no gate) & 0.7080 & 0.2641 & $-$0.0133 & weaker style control \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Pixel-Space and Resolution Controls}
+\label{sec:pixel_latent}
+
+\begin{table}[h]
+\centering
+\caption{Pixel-space, latent-space, and resolution controls.}
+\label{tab:pixel_latent}
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Model & Space & Resolution & CLIP-S & LPIPS \\
+\midrule
+pixel256 e3 & pixel & $256\times256$ & 0.6960 & 0.5317 \\
+latent256 e2 & latent & $256\times256$ & 0.7081 & 0.2381 \\
+latent256 e10 & latent & $256\times256$ & 0.7168 & 0.3125 \\
+WEAVE (main) & latent & $512\times512$ & 0.7213 & 0.2868 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The control matrix shows two effects. First, latent-space transport already dominates matched pixel-space flow: even the LPIPS-optimal latent256 checkpoint improves over pixel256 by $+0.0121$ CLIP-S and $-0.2936$ LPIPS. Second, the full $512\times512$ WEAVE model improves further over the latent256 control. The main paper therefore benefits from both ingredients: the latent semantic prior and the wavelet-decoupled transport geometry.
+
+\subsection{Parameter-Efficient Style Expansion}
+\label{sec:fewshot}
+
+\begin{table}[h]
+\centering
+\caption{Parameter-efficient style adaptation results.}
+\label{tab:fewshot}
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Setting & all-pairs CLIP-S & all-pairs LPIPS & transfer CLIP-S & transfer LPIPS \\
+\midrule
+Frozen-backbone Distinct5 update & 0.7218 & 0.3020 & 0.6919 & --- \\
+8-style extension (50 images per new style) & --- & --- & 0.7039 & 0.2555 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Optimizing only the style-conditioning parameters preserves the closed Distinct5 result and also supports an 8-style expansion without full retraining. We therefore report style expansion as a separate style-expansion protocol rather than merging it into the closed 5-style table.
+
+\section{Additional Experimental Details}
+\label{sec:exp_details}
+
+\subsection{Dataset Details}
+\label{sec:dataset}
+
+We use Distinct5-WikiArt-512: Early Renaissance, Impressionism, Minimalism, Rococo, and Ukiyo-e. Each domain has $3{,}600$ training images and $150$ test images. The benchmark was selected to have low IDT CLIP-S, so it emphasizes genuinely difficult style moves rather than near-identity targets.
+
+\subsection{Evaluation Protocol}
+\label{sec:eval}
+
+The main paper reports CLIP-S and LPIPS on a unified 750-pair protocol: 5 source domains $\times$ 5 target domains $\times$ 30 source images, including the 150 identity pairs needed for IDT calibration. The identity baseline gives CLIP-S $0.6933$ and LPIPS $0.0000$. All baseline rows in the main paper table are recomputed under this protocol.
+
+\subsection{Baseline Training Details}
+\label{sec:baselines}
+
+All trainable baselines are trained to convergence on the same Distinct5 training set. The measured training times are 322.6 minutes for CUT, 39.5 minutes for SaMST, and 436 minutes for SaMam. WEAVE trains in 3.08 minutes on a single RTX 3060 (12\,GB).
+
+\section{Observed Boundary Cases}
+\label{sec:failures}
+
+\subsection{Minimalism Target}
+\label{sec:minimalism}
+
+Minimalism is largely a low-frequency palette problem. Because WEAVE keeps LL lightly supervised during transport and leaves LL untouched at endpoint stylization, the model shifts palette more conservatively than it transfers texture-heavy domains. This target family therefore shows the highest LPIPS among the five domains.
+
+\subsection{High-Frequency Content Overwrite}
+\label{sec:hf_overwrite}
+
+Style is injected directly into LH/HL/HH. When the content image itself carries dense high-frequency structure, such as text, fine line work, or repetitive patterns, endpoint stylization can overwrite part of that structure with target-domain brushwork statistics.
+
+\subsection{Domain-Level Rather Than Exemplar-Level Style}
+\label{sec:domain_level}
+
+WEAVE transfers the style distribution of a target domain through its style-memory bank. It does not copy the unique brushwork of a single reference painting. Exemplar-level transfer would require a different inference contract and a different benchmark.
+
+\end{document}

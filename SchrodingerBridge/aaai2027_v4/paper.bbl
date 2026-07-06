@@ -1,0 +1,119 @@
+\begin{thebibliography}{18}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Chung, Hyun, and Heo(2024)}]{chung2024styleid}
+Chung, J.; Hyun, S.; and Heo, J.-P. 2024.
+\newblock Style Injection in Diffusion: A Training-free Approach for Adapting
+  Large-scale Diffusion Models for Style Transfer.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}.
+
+\bibitem[{Daubechies(1992)}]{daubechies1992ten}
+Daubechies, I. 1992.
+\newblock Ten Lectures on Wavelets.
+\newblock \emph{SIAM}.
+
+\bibitem[{Deng et~al.(2022)Deng, Tang, Dong, Sun, Huang, and
+  Xu}]{deng2022stytr2}
+Deng, Y.; Tang, F.; Dong, W.; Sun, W.; Huang, F.; and Xu, C. 2022.
+\newblock StyTr2: Image Style Transfer with Transformers.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}.
+
+\bibitem[{Gal et~al.(2024)Gal, Patashnik, Maron, Chechik, and
+  Cohen-Or}]{gal2022stylealigned}
+Gal, R.; Patashnik, O.; Maron, H.; Chechik, G.; and Cohen-Or, D. 2024.
+\newblock StyleAligned: Alignment of Diffusion Models via Shared Attention.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}.
+
+\bibitem[{Gatys, Ecker, and Bethge(2015)}]{gatys2015neural}
+Gatys, L.~A.; Ecker, A.~S.; and Bethge, M. 2015.
+\newblock A Neural Algorithm of Artistic Style.
+\newblock In \emph{arXiv preprint arXiv:1508.06576}.
+
+\bibitem[{Gatys, Ecker, and Bethge(2016)}]{gatys2016image}
+Gatys, L.~A.; Ecker, A.~S.; and Bethge, M. 2016.
+\newblock Image Style Transfer Using Convolutional Neural Networks.
+\newblock In \emph{Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition}.
+
+\bibitem[{Hu et~al.(2022)Hu, Shen, Wallis, Allen-Zhu, Li, Wang, Wang, and
+  Chen}]{hu2022lora}
+Hu, E.~J.; Shen, Y.; Wallis, P.; Allen-Zhu, Z.; Li, Y.; Wang, S.; Wang, L.; and
+  Chen, W. 2022.
+\newblock LoRA: Low-Rank Adaptation of Large Language Models.
+\newblock In \emph{International Conference on Learning Representations}.
+
+\bibitem[{Huang and Belongie(2017)}]{huang2017adain}
+Huang, X.; and Belongie, S. 2017.
+\newblock Arbitrary Style Transfer in Real-time with Adaptive Instance
+  Normalization.
+\newblock In \emph{Proceedings of the IEEE International Conference on Computer
+  Vision}.
+
+\bibitem[{Huang et~al.(2024)Huang, Zhang, Zhang et~al.}]{huang2024aesfa}
+Huang, X.; Zhang, Z.; Zhang, J.; et~al. 2024.
+\newblock AesFA: An Aesthetic Feature-Aware Arbitrary Neural Style Transfer.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}.
+
+\bibitem[{Li et~al.(2017)Li, Chen, Yang, Wang, Lin, and Yang}]{li2017universal}
+Li, Y.; Chen, C.; Yang, J.; Wang, L.; Lin, Z.; and Yang, Y. 2017.
+\newblock Universal Style Transfer via Feature Transforms.
+\newblock In \emph{Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition}.
+
+\bibitem[{Liu et~al.(2024{\natexlab{a}})}]{liu2024samst}
+Liu, Y.; et~al. 2024{\natexlab{a}}.
+\newblock Pluggable Style Representation Learning for Multi-Style Transfer.
+\newblock In \emph{Proceedings of the Asian Conference on Computer Vision}.
+
+\bibitem[{Liu et~al.(2024{\natexlab{b}})}]{liu2024samam}
+Liu, Y.; et~al. 2024{\natexlab{b}}.
+\newblock SaMam: Style-Aware Mamba for Style Transfer.
+\newblock \emph{arXiv preprint arXiv:2403.11887}.
+
+\bibitem[{Meng et~al.(2021)Meng, He, Song, Song, Blackwell, Jia, and
+  Ermon}]{meng2021sdedit}
+Meng, C.; He, Y.; Song, Y.; Song, J.; Blackwell, J.; Jia, J.; and Ermon, S.
+  2021.
+\newblock SDEdit: Guided Image Synthesis and Editing with Stochastic
+  Differential Equations.
+\newblock In \emph{Proceedings of the IEEE International Conference on Computer
+  Vision}.
+
+\bibitem[{Phung, Ghosh, and Tran(2023)}]{phung2023wavelet}
+Phung, T.; Ghosh, P.; and Tran, L. 2023.
+\newblock Wavelet Diffusion Models Are Fast and Scalable Image Generators.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}.
+
+\bibitem[{Wright and Ommer(2022)}]{wright2022artfid}
+Wright, M.; and Ommer, B. 2022.
+\newblock ArtFID: Quantitative Evaluation of Neural Style Transfer.
+\newblock \emph{arXiv preprint arXiv:2207.12280}.
+
+\bibitem[{Ye et~al.(2023)Ye, Zhang, Liu, Han, and Yang}]{ye2023ipadapter}
+Ye, H.; Zhang, J.; Liu, S.; Han, X.; and Yang, W. 2023.
+\newblock IP-Adapter: Text Compatible Image Prompt Adapter for Text-to-Image
+  Diffusion Models.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}.
+
+\bibitem[{Zhang et~al.(2018)Zhang, Isola, Efros, Shechtman, and
+  Wang}]{zhang2018lpips}
+Zhang, R.; Isola, P.; Efros, A.~A.; Shechtman, E.; and Wang, O. 2018.
+\newblock The Unreasonable Effectiveness of Deep Features as a Perceptual
+  Metric.
+\newblock \emph{Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition}.
+
+\bibitem[{Zhang et~al.(2024)}]{zhang2024artbank}
+Zhang, Y.; et~al. 2024.
+\newblock ArtBank: Artistic Style Transfer with Pre-trained Diffusion Model and
+  Implicit Style Prompt.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}.
+
+\end{thebibliography}
