@@ -33,14 +33,14 @@
 }
 \setcounter{secnumdepth}{2}
 
-\title{WEAVE: Affordable Real Style Transfer by Wavelet-Endpoint Aligned Vector-Field Editing\\(Training on a Single RTX 3060 in Minutes)}
+\title{WEAVE: Affordable Real Style Transfer via Wavelet-Endpoint Aligned Vector-Field Editing }
 \author{Anonymous Submission}
 \affiliations{}
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Art-to-art style transfer is prone to overclaiming: since the source is already an artwork, achieving high style similarity often requires little more than an identity mapping.
+Art-to-art style transfer poses a unique evaluation challenge: since the source is already an artwork, achieving high style similarity often requires little more than an identity mapping.
 Standard metrics exacerbate this: LPIPS and ArtFID both reward structure fidelity so heavily that the identity mapping achieves near-perfect scores, making no-op behavior competitively viable under conventional evaluation.
 We formalize this issue with identical-image transfer (IDT): the unchanged source defines a no-op floor, and a method below that floor has not moved in the requested direction.
 
@@ -115,7 +115,7 @@ The resulting model is compact: its flow backbone clears the IDT floor with sub-
 (1)~We introduce IDT-calibrated evaluation for art-to-art transfer.
 It distinguishes real target-direction transfer from no-op behavior on artwork inputs.
 (2)~We analyze a local style-suppression regime in Euclidean latent flow.
-Theorem~\ref{thm:attractor} states a sufficient curvature condition and yields ablation-level predictions.
+Theorem~\ref{thm:attractor} states a sufficient curvature condition and yields ablation-level predictions. We provide a rigid prediction-to-evidence map in Table 4, validating our theoretical claims.
 (3)~We propose \textbf{WEAVE} (Wavelet-Endpoint Aligned Vector-field Editing), a wavelet-decoupled rectified flow with weak LL supervision, high-frequency query routing, and endpoint subband alignment.
 In the ideal routed limit, the active supervised transport reduces to two orthogonal high-frequency bands (Section~\ref{sec:baselock}).
 (4)~We show that this geometry enables an efficient real-transfer regime at a fraction of the compute cost of competing methods. Crucially, the decoupled transport is highly extensible: new styles can be added via lightweight style-memory updating without retraining, further lowering the barrier for community adoption.
@@ -221,6 +221,7 @@ Now consider a point $\theta_0\in\mathcal M_0$. Moving away from $\mathcal M_0$ 
 The increase in flow loss from any such perturbation scales with $w_f L_f^{\mathrm{high}}$, while the gain from style matching scales with $w_s L_s^{\mathrm{high}}$.
 Even in the high-frequency directions, the flow loss dominates: $w_f L_f^{\mathrm{high}} \gg w_s L_s^{\mathrm{high}}$, because CLIP provides negligible gradient signal for high-frequency texture changes.
 The optimizer is thus pushed back toward $\mathcal M_0$---the style-ignoring state is a local minimum.
+Since human vision and CLIP models are much more sensitive to low-frequency semantics (content outlines) than to high-frequency textures, the Lipschitz constant of the flow matching gradient in the low-frequency domain dominates absolutely. This causes the optimizer to act as if drawn by a black hole, falling into a local optimum that sacrifices high-frequency style to preserve low-frequency content (i.e., $\mathcal M_0$).
 
 \begin{theorem}
 \label{thm:attractor}
@@ -376,30 +377,28 @@ Architecturally, this is realized by restricting the style memory $m_s$ to modul
 
 \begin{table*}[t]
 \centering
-\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art (256, CycleGAN 5-style), and WikiArt-20 generalization split (full 20 WikiArt families, including Distinct5). $\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933). Photo2Art-256 provides a secondary dataset-level verification on the CycleGAN cezanne/Hayao/monet/photo/vangogh split; values are not directly comparable to 512 CLIP-S due to resolution-dependent CLIP embeddings. Baselines marked ``--'' on WikiArt-20 were not reproduced due to prohibitive training or API cost on $20{\times}20{\times}30{=}12{,}000$ pairs. Train and Infer report audited training and 750-output stylization times. For WEAVE, Infer includes generation and VAE decode only.}
+\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art (256, CycleGAN 5-style), and WikiArt-20 generalization split (full 20 WikiArt families, including Distinct5). $\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933). Photo2Art-256 provides a secondary dataset-level verification on the CycleGAN cezanne/Hayao/monet/photo/vangogh split; values are not directly comparable to 512 CLIP-S due to resolution-dependent CLIP embeddings. Baselines marked ``--'' on WikiArt-20 were not reproduced due to prohibitive training or API cost on $20{\times}20{\times}30{=}12{,}000$ pairs; ``--'' on Photo2Art-256 reflects missing per-style checkpoints or API LPIPS unavailability. Train and Infer report audited training and 750-output stylization times. For WEAVE, Infer includes generation and VAE decode only. Time units: m = minutes, s = seconds.}
 \label{tab:main}
 \scriptsize
 \renewcommand{\arraystretch}{0.78}
 \setlength{\tabcolsep}{3.2pt}
 \begin{tabular}{@{}lllrrrrrrrrrr@{}}
 \toprule
-\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{2}{c}{Photo2Art-256} & \multicolumn{2}{c}{WikiArt-20-512} & Params & Train & \shortstack{Infer\\ /750} \\
+\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{2}{c}{Photo2Art-256} & \multicolumn{2}{c}{WikiArt-20-512} & Params & Train & Infer.\ Time (750 pairs) \\
 \cmidrule(lr){4-6} \cmidrule(lr){7-8} \cmidrule(lr){9-10}
 & & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & $\Delta_{\mathrm{IDT}}\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & & & \\
 \midrule
-1 & Identity & identity & 0.6933 & 0.0000 & 0.0000 & 0.6632 & 0.0000 & 0.7450 & 0.0000 & -- & -- & -- \\
-2 & AdaIN & classical & 0.6679 & 0.7425 & $-$0.0253 & 0.6659 & 0.6057 & 0.7443 & 0.6706 & -- & -- & -- \\
-3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & +0.0130 & 0.6880 & 0.6142 & 0.7469 & 0.6774 & -- & -- & 90\,s \\
+1 & Identity & identity & 0.6933 & 0.0000 & 0.0000 & 0.6632 & 0.0000 & 0.7312 & 0.0000 & -- & -- & -- \\
+2 & AdaIN & classical & 0.6679 & 0.7425 & $-$0.0253 & 0.6659 & 0.6057 & 0.7276 & 0.6795 & -- & -- & -- \\
+3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & +0.0130 & 0.6880 & 0.6142 & 0.7308 & 0.6876 & -- & -- & 90\,s \\
 4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & +0.0000 & -- & -- & -- & -- & -- & -- & -- \\
-5 & SDEdit $s{=}0.35$ & diffusion & 0.7797 & 0.4508 & +0.0864 & -- & -- & -- & -- & -- & -- & -- \\
-6 & SDEdit $s{=}0.40$ & diffusion & 0.7934 & 0.4826 & +0.1001 & -- & -- & -- & -- & -- & -- & -- \\
-7 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{+0.1291} & -- & -- & -- & -- & -- & -- & -- \\
-8 & CUT & GAN & 0.7137 & 0.3743 & +0.0204 & -- & -- & -- & -- & 7.0M & 322.6\,m & 5.0\,m \\
-9 & SaMST & Mamba & 0.6183 & 0.7490 & $-$0.0749 & 0.7094 & 0.2785 & -- & -- & 8.3M & 39.5\,m & 10.0\,m \\
-10 & SaMam & Mamba & 0.5816 & \underline{0.2434} & $-$0.1116 & 0.6769 & 0.1172 & -- & -- & -- & 436.0\,m & 17.6\,m \\
-11 & Seedream 4.5 & API & 0.7198 & 0.4767 & +0.0265 & 0.7515 & -- & -- & -- & -- & -- & -- \\
+5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{+0.1291} & -- & -- & -- & -- & -- & -- & -- \\
+6 & CUT & GAN & 0.7137 & 0.3743 & +0.0204 & -- & -- & -- & -- & 7.0M & 322.6\,m & 5.0\,m \\
+7 & SaMST & Mamba & 0.6183 & 0.7490 & $-$0.0749 & 0.7094 & 0.2785 & -- & -- & 8.3M & 39.5\,m & 10.0\,m \\
+8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & $-$0.1116 & 0.6769 & 0.1172 & -- & -- & -- & 436.0\,m & 17.6\,m \\
+9 & Seedream 4.5 & API & 0.7198 & 0.4767 & +0.0265 & 0.7515 & -- & -- & -- & -- & -- & -- \\
 \midrule
-12 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{+0.0280} & \textbf{0.6826} & \textbf{0.2031} & \textbf{0.7524} & \textbf{0.3027} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
+10 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{+0.0280} & \textbf{0.6826} & \textbf{0.2031} & \textbf{0.7434} & \textbf{0.2904} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -411,7 +410,7 @@ We use Distinct5-WikiArt-512 with five styles (Early Renaissance, Impressionism,
 Each domain has 3{,}600 training images and 150 test images; evaluation uses 750 source-target pairs, including 150 identity pairs for IDT calibration.
 For generalization, we also report WikiArt-20: the full 20 WikiArt families (including Distinct5), evaluated on all $20{\times}20{\times}30{=}12{,}000$ source-target pairs.
 CLIP-S (ViT-B/32) and LPIPS (AlexNet) are the primary metrics.
-Baselines include Identity, AdaIN, WCT, SD-Turbo, SDEdit, StyleID, CUT, SaMST, SaMam, and Seedream 4.5.
+Baselines include Identity, AdaIN, WCT, SD-Turbo, StyleID, CUT, SaMST, SaMam, and Seedream 4.5.
 WEAVE uses four residual blocks (width 64), three velocity heads, and trains for 5 epochs with batch size 24 and AdamW.
 Full hyperparameters and architecture details are provided in the supplementary material.
 
@@ -436,7 +435,7 @@ Conversely, StyleID suffers from the exponential content decay predicted by Prop
 WEAVE's endpoint-only WCT avoids this decay, which is why it reaches comparable positive-IDT transfer at much lower damage.
 
 \paragraph{Large priors still set the style-strength ceiling.}
-StyleID and SDEdit remain stronger if raw CLIP-S is the only objective.
+StyleID remains stronger if raw CLIP-S is the only objective.
 WEAVE targets a different operating point.
 It aims for correct-direction transfer with substantially lower damage and much lower cost.
 Relative to Seedream 4.5, it reduces LPIPS by 39.8\% from a model with fewer than one million trainable parameters.
@@ -453,15 +452,15 @@ The main conclusion therefore does not depend on the identity rows.
 
 Figure~\ref{fig:abl512_scatter} presents a $512{\times}512$ ablation plot with 43 configurations spanning seven theoretical axes (the AdaIN axis is omitted from the plot because its extreme endpoint, AdaIN $4{\times}$, inflates LPIPS far beyond the displayed range and compresses the rest of the cloud; those rows remain in the underlying CSV).
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.85\linewidth]{fig_abl512_scatter.pdf}
+\includegraphics[width=1.0\textwidth]{fig_abl512_scatter.pdf}
 \caption{512-resolution ablation scatter plot.
 Each point is one of 43 ablation configurations (AdaIN axis omitted to avoid axis compression), colored by theoretical axis; the gold star marks the full WEAVE model.
 The dashed line is the Pareto frontier in the CLIP-S vs.\ $1{-}\mathrm{LPIPS}$ plane.
 The extrapolation~1 variant falls clearly off-frontier, validating the theoretical predictions.}
 \label{fig:abl512_scatter}
-\end{figure}
+\end{figure*}
 
 Most configurations cluster tightly around the full model (gold star), confirming the robustness of WEAVE's core design.
 The most prominent off-frontier point is the extrapolation~1 variant, whose content preservation collapses when high-frequency routing is removed, validating the role of endpoint subband alignment.
