@@ -56,7 +56,7 @@ The ablation pattern confirms the theoretical predictions.
 
 WD-VF is designed to be \textbf{lightweight and accessible}.
 Its flow backbone has only 903K trainable parameters.
-Training completes in 3.08 minutes on a single consumer-grade GPU.
+Training completes in 3.08 minutes on a single RTX 3060.
 Full inference on 750 image pairs takes 83.7 seconds.
 The decoupled geometry further enables few-shot adaptation to new styles by updating only a compact style-memory module, without retraining.
 Together, these properties substantially lower the hardware and compute barrier for high-quality style transfer, making the method practical for researchers and practitioners without access to large-scale infrastructure.
@@ -150,6 +150,8 @@ ArtFID~\cite{wright2022artfid} serves as an auxiliary check.
 
 \section{Theory and Method}
 \label{sec:method}
+
+This section develops the theory behind WD-VF. The guiding principle is that real target-direction transfer does not require a large model---it requires the right coordinate system. We first diagnose why Euclidean latent flow suppresses style (Section~\ref{sec:baselock}), then build a wavelet-decoupled design that escapes this regime while remaining compact enough to train in minutes on a single consumer GPU.
 
 \begin{figure*}[t]
 \centering
@@ -539,6 +541,8 @@ It does not address global convergence or every possible collapse mechanism.
 The current main table is single-seed and benchmark-specific.
 The effect sizes are large, but broader multi-seed evaluation would strengthen the empirical case.
 Broader cross-domain data would also test whether the same IDT-calibrated story survives outside WikiArt-to-WikiArt transfer.
+
+Despite these limitations, the low computational footprint of WD-VF---903K parameters, 3.08-minute training, and a 3.5\,MB checkpoint---makes it uniquely accessible for community reproduction, extension, and deployment in resource-constrained settings. We believe this accessibility is a core contribution: it lowers the barrier for researchers and practitioners to experiment with, improve upon, and apply real style transfer.
 
 \section{Conclusion}
 
