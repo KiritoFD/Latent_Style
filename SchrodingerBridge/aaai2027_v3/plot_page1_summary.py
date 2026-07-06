@@ -64,7 +64,7 @@ BASELINES = [
     point("StyleID", 0.8223, 0.5523, "diffusion", label=True),
     point("StyleAligned", 0.8739, 0.7825, "training_free", label=True),
     point("IP-Adapter", 0.8288, 0.6363, "training_free", label=True),
-    point("SD-LoRA", 0.7850, 0.3500, "peft", label=True, train_min=25.0),
+    
     point("CUT", 0.7137, 0.3743, "trained", label=True, train_min=322.6),
     point("SaMST", 0.6183, 0.7490, "trained", label=True, train_min=39.5),
     point("SaMam", 0.5816, 0.2434, "trained", label=True, train_min=436.0),
@@ -95,7 +95,7 @@ LABEL_POS = {
     "StyleID": {"xytext": (0, -8), "ha": "center", "va": "top", "arrow": False},
     "StyleAligned": {"xytext": (12, 0), "ha": "left", "va": "center", "arrow": False},
     "IP-Adapter": {"xytext": (-12, 0), "ha": "right", "va": "center", "arrow": False},
-    "SD-LoRA": {"xytext": (0, -8), "ha": "center", "va": "top", "arrow": False},
+    
     "CUT": {"xytext": (-6, 10), "ha": "right", "va": "bottom", "arrow": False},
     "SaMST": {"xytext": (12, 10), "ha": "left", "va": "bottom", "arrow": False},
     "SaMam": {"xytext": (-8, 10), "ha": "right", "va": "bottom", "arrow": False},
@@ -188,7 +188,7 @@ def build_scatter(ax: plt.Axes) -> None:
 
     samam_curve = load_samam_curve()
 
-    for group_name in ["classical", "diffusion", "training_free", "peft", "trained", "external", "ours", "control"]:
+    for group_name in ["classical", "diffusion", "training_free", "trained", "external", "ours", "control"]:
         pts = [p for p in ALL_POINTS if p["group"] == group_name]
         if not pts:
             continue
