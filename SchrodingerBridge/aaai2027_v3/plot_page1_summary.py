@@ -72,7 +72,7 @@ BASELINES = [
 ]
 
 OURS_FRONTIER = [
-    point("T10", 0.7083, 0.2480, "ours", label=True, display="WD-VF", train_min=3.08),
+    point("T10", 0.7083, 0.2480, "ours", label=True, display="WEAVE", train_min=3.08),
     point("T11", 0.7213, 0.2868, "ours", label=True, display="Ours", train_min=3.08),
 ]
 
@@ -107,7 +107,7 @@ LABEL_POS = {
 ARTFID_BARS = [
     {"name": "IDT", "value": 216.5, "time": "ref", "color": "#8F63BF"},
     {"name": "SaMam", "value": 146.1, "time": "7.6h", "color": "#3B82C4"},
-    {"name": "WD-VF", "value": 300.9, "time": "3.08m", "color": "#D6452F"},
+    {"name": "WEAVE", "value": 300.9, "time": "3.08m", "color": "#D6452F"},
     {"name": "Seedream\n4.5", "value": 311.5, "time": "API", "color": "#C98B00"},
 ]
 

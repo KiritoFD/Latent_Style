@@ -21,10 +21,11 @@ import numpy as np
 
 
 # Color and marker mapping per theoretical axis
+# NOTE: adain axis is excluded from the scatter plot per paper revision (the
+# AdaIN ablations are still in the CSV for the record but not drawn).
 AXIS_STYLE = {
     "solver":   {"color": "#1f77b4", "marker": "o", "label": "Solver / ODE"},
     "spectral": {"color": "#ff7f0e", "marker": "s", "label": "Spectral ODE"},
-    "adain":    {"color": "#2ca02c", "marker": "D", "label": "AdaIN"},
     "bridge":   {"color": "#d62728", "marker": "^", "label": "Bridge dynamics"},
     "coupling": {"color": "#9467bd", "marker": "v", "label": "Coupling / OT"},
     "loss":     {"color": "#8c564b", "marker": "P", "label": "Loss weights"},
@@ -32,20 +33,22 @@ AXIS_STYLE = {
     "training": {"color": "#7f7f7f", "marker": "*", "label": "Training"},
 }
 
+# Axes excluded from the scatter plot (still in CSV, not drawn).
+EXCLUDED_AXES = {"adain"}
+
 # Highlight key experiments (validate theoretical propositions)
 HIGHLIGHT = {
     "X06_no_spectral_ode": "No spectral ODE",
-    "X13_adain_4x":        "AdaIN 4x",
     "X40_extrap_1":        "Extrap=1",
     "X10_w_ll_0":          "w_LL=0",
     "X45_epochs_1":        "1 epoch",
     "X41_dim_32":          "dim=32",
 }
 
-# WD-VF full model reference (from main table, Distinct5-512 all-pairs)
-FULL_MODEL_TRANSFER = {"clip_style": 0.7213, "content_lpips": 0.2868, "label": "WD-VF (Ours)"}
+# WEAVE full model reference (from main table, Distinct5-512 all-pairs)
+FULL_MODEL_TRANSFER = {"clip_style": 0.7213, "content_lpips": 0.2868, "label": "WEAVE (Ours)"}
 # all-pairs: CLIP-S=0.7213, LPIPS=0.2868
-FULL_MODEL_ALLPAIRS = {"clip_style": 0.7213, "content_lpips": 0.2868, "label": "WD-VF (Ours)"}
+FULL_MODEL_ALLPAIRS = {"clip_style": 0.7213, "content_lpips": 0.2868, "label": "WEAVE (Ours)"}
 
 
 def load_csv(csv_path: Path) -> list[dict]:
@@ -54,6 +57,8 @@ def load_csv(csv_path: Path) -> list[dict]:
         reader = csv.DictReader(f)
         for row in reader:
             if row["status"] != "OK":
+                continue
+            if row["axis"] in EXCLUDED_AXES:
                 continue
             try:
                 row["transfer_clip_style"] = float(row["transfer_clip_style"])
@@ -85,9 +90,10 @@ def main():
     parser.add_argument("--csv", default="docs/experiments/abl512_v3_results.csv")
     parser.add_argument("--output_pdf", default="docs/figures/abl512_scatter.pdf")
     parser.add_argument("--output_png", default="docs/figures/abl512_scatter.png")
-    parser.add_argument("--metric", choices=["transfer", "allpairs"], default="transfer",
-                        help="Use transfer (style_transfer_ability) or allpairs metrics")
-    parser.add_argument("--title", default="512-resolution ablation (48 configs)")
+    parser.add_argument("--metric", choices=["transfer", "allpairs"], default="allpairs",
+                        help="Use transfer (style_transfer_ability) or allpairs metrics. "
+                             "Default: allpairs (matches the main table WEAVE reference).")
+    parser.add_argument("--title", default="512-resolution ablation (43 configs, AdaIN axis omitted)")
     args = parser.parse_args()
 
     csv_path = Path(args.csv)
@@ -155,7 +161,7 @@ def main():
         p_y = p_y[sort_order]
         ax.plot(p_x, p_y, "k--", linewidth=1.2, alpha=0.6, zorder=2, label="Pareto frontier")
 
-    # Draw WD-VF full model reference point
+    # Draw WEAVE full model reference point
     full_x = 1.0 - full_ref["content_lpips"]
     full_y = full_ref["clip_style"]
     ax.scatter([full_x], [full_y], c="gold", marker="*", s=350,
