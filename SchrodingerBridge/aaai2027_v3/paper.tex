@@ -67,8 +67,8 @@ Together, these properties substantially lower the hardware and compute barrier 
 \captionof{figure}{IDT-calibrated comparison on Distinct5-WikiArt.
 Left: CLIP-S versus $1-\mathrm{LPIPS}$, with bubble area encoding training time.
 The red points mark two WD-VF operating points.
-Square markers denote training-free diffusion editors (StyleAligned, IP-Adapter) and PEFT baselines (SD-LoRA); these are included to anchor the ``efficiency--quality'' trade-off.
-The dashed line marks the IDT floor (0.6933), which SaMam falls below.
+Square markers denote training-free diffusion editors (StyleAligned, IP-Adapter).
+The dashed line marks the IDT floor (0.6933); methods below it have not moved in the requested direction.
 Right: target-pooled ArtFID on the same benchmark, with numbers inside the bars indicating training or response time.}
 \label{fig:page1}
 \vspace{-0.7\baselineskip}
@@ -90,7 +90,8 @@ Under the unified 750-pair protocol, SaMam reaches LPIPS 0.2434 yet only CLIP-S 
 That score is far below the IDT floor of 0.6933.
 The result is not strong transfer with low damage.
 It is near-reconstruction in the wrong direction.
-This empirical signature---low LPIPS together with sub-IDT CLIP-S---is exactly what Theorem~\ref{thm:attractor} predicts for a compact model trained in Euclidean latent coordinates: the flow loss pulls the field toward the style-suppression manifold $\mathcal{M}_0$.
+This is not a coincidence: prior compact multi-style systems were designed to optimize content preservation, and their evaluation protocols rewarded structure fidelity so heavily that an identity mapping would have scored highly in their frameworks.
+IDT makes this failure visible.
 
 We trace this failure to the geometry of Euclidean latent flow.
 In standard latent coordinates, the rectified-flow target $u_t=z_1-z_0$ mixes low-frequency layout motion with high-frequency texture motion.

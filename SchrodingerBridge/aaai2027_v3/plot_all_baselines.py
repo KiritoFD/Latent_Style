@@ -58,7 +58,7 @@ BASELINES = [
     point("StyleID", 0.8223, 0.5523, "diffusion", label=True),
     point("StyleAligned", 0.8739, 0.7825, "training_free", label=True),
     point("IP-Adapter", 0.8288, 0.6363, "training_free", label=True),
-    point("SD-LoRA", 0.7850, 0.3500, "peft", label=True),
+    
     point("CUT", 0.7137, 0.3743, "trained", label=True),
     point("SaMST", 0.6183, 0.7490, "trained", label=True),
     point("SaMam", 0.5816, 0.2434, "trained", label=True),
@@ -94,7 +94,7 @@ LABEL_POS = {
     "StyleID": {"xytext": (0, 18), "ha": "center", "va": "bottom", "arrow": False},
     "StyleAligned": {"xytext": (16, 10), "ha": "left", "va": "bottom", "arrow": False},
     "IP-Adapter": {"xytext": (-16, 10), "ha": "right", "va": "bottom", "arrow": False},
-    "SD-LoRA": {"xytext": (0, -24), "ha": "center", "va": "top", "arrow": False},
+    
     "CUT": {"xytext": (0, -24), "ha": "center", "va": "top", "arrow": False},
     "SaMST": {"xytext": (16, 10), "ha": "left", "va": "bottom", "arrow": False},
     "SaMam": {"xytext": (16, -18), "ha": "left", "va": "top", "arrow": False},
@@ -157,7 +157,7 @@ def main() -> None:
         ha="left",
     )
 
-    for group_name in ["classical", "diffusion", "training_free", "peft", "trained", "external", "ours", "control"]:
+    for group_name in ["classical", "diffusion", "training_free", "trained", "external", "ours", "control"]:
         pts = [p for p in ALL_POINTS if p["group"] == group_name]
         if not pts:
             continue
@@ -275,16 +275,7 @@ def main() -> None:
             markersize=8.0,
             label="Training-free diffusion",
         ),
-        Line2D(
-            [0],
-            [0],
-            marker="s",
-            color="none",
-            markerfacecolor=GROUP_STYLE["peft"]["face"],
-            markeredgecolor=GROUP_STYLE["peft"]["edge"],
-            markersize=8.0,
-            label="PEFT (SD-LoRA)",
-        ),
+        
         Line2D(
             [0],
             [0],
