@@ -59,9 +59,9 @@ This keeps global structure stable while concentrating model capacity on stroke 
 On Distinct5-WikiArt, the WD-VF model (with a trainable flow backbone of 903K parameters, excluding the frozen VAE) reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868.
 It clears the IDT floor of 0.6933 and exceeds SaMam by $+0.1397$ CLIP-S.
 Relative to Seedream 4.5, it reduces LPIPS by 39.8\% while staying in the same ArtFID range.
-Training takes 3.08 minutes on a single RTX 3060 (12\,GB).
+Training takes 3.08 minutes on a single consumer-grade RTX 3060 (12\,GB), substantially lowering the hardware barrier for high-quality style transfer.
 Generation plus VAE decode takes 83.7 seconds for 750 outputs, or 111.7\,ms/image.
-Furthermore, this decoupled geometry enables lightweight few-shot adaptation. Adding new styles requires updating only a compact style-memory module without retraining the core transport flow, preserving high-quality transfer.
+Furthermore, this decoupled geometry enables lightweight few-shot adaptation: adding new styles requires updating only a compact style-memory module without retraining the core transport flow, preserving high-quality transfer and further reducing the cost of extending the system to new artistic domains.
 The ablations follow the predicted pattern: removing DWT weakens the frontier, route mismatch lowers transfer quality, and repeated style injection raises LPIPS.
 \end{abstract}
 
@@ -125,7 +125,7 @@ It distinguishes real target-direction transfer from no-op behavior on artwork i
 Theorem~\ref{thm:attractor} states a sufficient curvature condition and yields ablation-level predictions.
 (3)~We propose \textbf{WD-VF}, a wavelet-decoupled rectified flow with weak LL supervision, high-frequency query routing, and endpoint subband alignment.
 In the ideal routed limit, the active supervised transport reduces to two orthogonal high-frequency bands (Section~\ref{sec:baselock}).
-(4)~We show that this geometry gives an efficient real-transfer regime. WD-VF uses 903K trainable parameters (excluding the frozen VAE) and trains in 3.08 minutes. Crucially, the decoupled transport is highly extensible: we demonstrate that the model can generalize to unseen styles via lightweight style-memory updating, eliminating the need for full retraining.
+(4)~We show that this geometry gives an efficient real-transfer regime. WD-VF uses 903K trainable parameters (excluding the frozen VAE) and trains in 3.08 minutes on a single consumer-grade GPU, making high-quality art-to-art style transfer accessible without large-scale compute infrastructure. Crucially, the decoupled transport is highly extensible: we demonstrate that the model can generalize to unseen styles via lightweight style-memory updating, eliminating the need for full retraining and further lowering the barrier for community adoption.
 
 \section{Related Work}
 \label{sec:related}
@@ -141,7 +141,7 @@ The closest learned baselines are compact multi-style systems such as SaMST and 
 Larger diffusion-based editors such as StyleID and SDEdit define the high-compute end of the same benchmark range~\cite{meng2021sdedit,chung2024styleid}.
 Training-free diffusion editors such as StyleAligned~\cite{gal2022stylealigned} and IP-Adapter~\cite{ye2023ipadapter} offer zero-shot style control without retraining, while PEFT approaches such as SD-LoRA~\cite{hu2022lora} fine-tune a small rank decomposition on a target style.
 Together with commercial systems such as Seedream~\cite{zhang2024artbank}, these methods anchor the ``quality'' side of the efficiency--quality spectrum.
-WD-VF targets the same interface at much lower cost.
+WD-VF targets the same interface at much lower cost, running entirely on a single consumer GPU with sub-4-minute training and a 3.5\,MB checkpoint, making style transfer accessible to practitioners without large-scale compute infrastructure.
 
 \paragraph{Wavelets and evaluation.}
 Prior wavelet methods mainly use multi-scale decompositions as feature-processing modules~\cite{daubechies1992ten,phung2023wavelet}.
@@ -253,11 +253,7 @@ The transform is orthogonal, so the Frobenius norm splits additively:
 \|z\|_F^2 = \|\ell\|_F^2 + \|h_1\|_F^2 + \|h_2\|_F^2 + \|h_3\|_F^2.
 \end{equation}
 We write $\pi(z)=\ell$ for the low-frequency projection.
-
-\textbf{Why this decoupling is geometrically sound.}
-Because the transform is orthogonal, any operation that modifies only the high-frequency subbands $(h_1,h_2,h_3)$ leaves the structural base coordinate $\ell$ strictly invariant---there are no cross terms between $\ell$ and $h$ in the squared norm.
-This is the geometric reason WD-VF can transport texture (stroke, brushwork, surface statistics) without destabilizing layout.
-The only residual content alteration comes from the small high-frequency tail of the content signal, which is bounded by the energy concentration in $\ell$.
+Due to the orthogonality of the Haar transform, modifying only the high-frequency subbands leaves the structural base coordinate $\ell$ strictly invariant.
 
 \textbf{Empirical frequency spectrum of VAE latents.}
 To verify that the LL subband genuinely captures the structural content while the high-frequency subbands carry style information, we measure the subband energy distribution on the Distinct5-WikiArt test set.
@@ -315,10 +311,7 @@ where $m_s$ is the style memory.
 During training, we use the high-frequency query with probability $p=0.8$ and the full-latent query $q_{\mathrm{full}} = Q[\ell_t;h_{1,t};h_{2,t};h_{3,t}]$ with probability $0.2$.
 This stochastic routing preserves a small low-frequency color channel while matching the inference-time design.
 
-In the ideal routed limit ($\lambda_\ell=0$, deterministic high-frequency query), the supervised objective reduces to $\mathbb E_t[\|v_1-u_1\|_2^2 + \|v_2-u_2\|_2^2]$---the learned style transport lives on two orthogonal high-frequency subbands, $h_1$ and $h_2$, while the structural base coordinate $\ell$ is untouched by both the loss gradient and the style-query path.
-This is the direct consequence of removing the LL supervision and HH velocity head, together with routing $\ell$ out of the attention query.
-The dominant low-frequency conflict identified by Theorem~\ref{thm:attractor} is therefore absent from both the objective and the inference path.
-By confining style transport to the $h_1$ and $h_2$ subbands, WD-VF inherently aligns training with the high-frequency inference path, rendering repeated intermediate style injection mathematically redundant---endpoint-only alignment suffices.
+In the ideal routed limit ($\lambda_\ell=0$, deterministic high-frequency query), the supervised objective reduces to $\mathbb E_t[\|v_1-u_1\|_2^2 + \|v_2-u_2\|_2^2]$, confining active transport to two orthogonal high-frequency subbands and eliminating the low-frequency conflict from both the gradient and the style-query path.
 
 \subsection{Endpoint Alignment: ODE Rationale and WCT Validity}
 \label{sec:eota}
@@ -343,13 +336,8 @@ In the final model, the endpoint scales are $(0.0, 0.3, 0.3, 0.5)$ for LL/LH/HL/
 
 \textbf{Validity of the Gaussian assumption.}
 WCT is optimal under the assumption that the features follow a multivariate Gaussian distribution.
-However, wavelet coefficients of natural images are known to be heavy-tailed (Laplacian-like).
-Why is WCT still valid here?
-The answer lies in the VAE latent space.
-The SD1.5 VAE is trained with a KL regularization term that explicitly encourages the latent distribution to be approximately Gaussian.
-After the VAE encoder compresses the $512{\times}512$ image into a $4{\times}32{\times}32$ latent, the individual feature channels are strongly regularized toward $\mathcal N(0,I)$.
-In this compressed, Gaussianized space, the wavelet subband coefficients inherit approximate normality, making second-order moment matching (WCT) a well-justified operation.
-Empirically, we verified this by computing the KL divergence between the empirical distribution of each subband and a fitted Gaussian: the divergence is below $0.05$ nats for all bands, confirming that the Gaussian approximation is tight in VAE latent space.
+However, wavelet coefficients of natural images are known to be heavy-tailed.
+The SD1.5 VAE is trained with a KL regularization term that explicitly encourages the latent distribution to be approximately Gaussian, making second-order moment matching (WCT) well-justified in the latent space (KL divergence $<0.05$ nats for all subbands; see supplementary material for details).
 
 \textbf{Exponential content decay from per-step injection.}
 If a blend of strength $\alpha$ is applied at every step for $n$ steps, the residual content fraction is
@@ -362,9 +350,6 @@ r_n(\alpha) = (1-\alpha)^n.
 For $n=8$, even a moderate blend gives $r_8(0.5)=3.9\times10^{-3}$, so repeated injection quickly saturates.
 Endpoint-only injection corresponds to $n=1$, for which $r_1(\alpha)=1-\alpha$ is affine and therefore preserves blend identifiability.
 \end{proposition}
-
-\textit{Why this matters.}
-Each injection composes a $(1-\alpha)$ shrinkage on the residual content. After $n$ steps the shrinkage is exponential in $n$, so even a modest per-step blend annihilates content for deep trajectories. At $n=1$ the residual is affine, $1-\alpha$, which leaves a linear and identifiable trade-off between style strength and content preservation. This is why endpoint alignment is the optimal strategy for the CLIP-S/LPIPS frontier, avoiding the sharp LPIPS degradation caused by per-step AdaIN (Figure~\ref{fig:abl512_scatter}).
 
 \subsection{Few-Shot Generalization via a Decoupled Style Subspace}
 \label{sec:fewshot}
@@ -382,16 +367,6 @@ The only unknown is the target statistical distribution of the new style in the 
 Few-shot adaptation therefore reduces to estimating the mean and covariance of $(h_1,h_2,h_3)$ from a few reference images of the new style, and inserting these statistics into the style-memory module.
 This is a low-dimensional estimation problem (the style-memory dimension is orders of magnitude smaller than the full model), which is why 30 reference images suffice.
 The decoupled wavelet geometry guarantees that updating the style-memory does not interfere with the learned content-preserving transport, because the LL path is never touched by the style query.
-
-\subsection{Architecture and Measured Cost}
-\label{sec:arch}
-
-The final model uses four residual blocks at width $64$, three $3\times3$ velocity heads (LL/LH/HL), and 903K trainable parameters (excluding the frozen VAE).
-Training runs for 5 epochs with batch size 24 and AdamW at $2\times10^{-4}$.
-The model trains end-to-end in 3.08 minutes on a single RTX 3060 (12\,GB).
-On the aligned 750-pair run, latent generation takes 42.9 seconds and VAE decode takes 40.8 seconds.
-Stylization therefore takes 83.7 seconds, or 111.7\,ms/image.
-A full evaluation pass including CLIP and LPIPS takes 97.3 seconds.
 
 \section{Experiments}
 \label{sec:exp}
@@ -430,6 +405,11 @@ SaMST and SaMam have verified convergence records under the aligned Distinct5 se
 CUT uses an archived checkpoint.
 It has a recorded 322.6-minute training time but no surviving training log.
 We therefore keep its image-quality numbers and report the archived training time separately.
+
+\paragraph{Implementation details.}
+The final model uses four residual blocks at width $64$, three $3\times3$ velocity heads (LL/LH/HL), and 903K trainable parameters (excluding the frozen VAE).
+Training runs for 5 epochs with batch size 24 and AdamW at $2\times10^{-4}$, taking 3.08 minutes on a single RTX 3060 (12\,GB).
+Latent generation and VAE decode take 83.7 seconds for 750 outputs (111.7\,ms/image); a full evaluation pass including CLIP and LPIPS takes 97.3 seconds.
 
 \subsection{Main Results}
 
@@ -474,30 +454,19 @@ Among trained methods in this benchmark, WD-VF is the only row that combines pos
 CUT clears the floor but needs hours and still damages content more.
 SaMST and SaMam preserve content but miss the requested direction.
 WD-VF is therefore the strongest trained positive-IDT result in this comparison.
+Critically, it achieves this on a single consumer GPU with sub-4-minute training, demonstrating that high-quality style transfer does not require large-scale compute infrastructure.
 
 \paragraph{Theoretical diagnosis of the competing regimes.}
-SaMam's result is not merely a weak number; it is the empirical signature predicted by Theorem~\ref{thm:attractor}.
-The model preserves structure (LPIPS 0.2434) but suppresses style-conditioned transport (CLIP-S 0.5816, well below the IDT floor).
-This is precisely the style-suppression attractor: in Euclidean latent coordinates, the shared basis for layout and texture lets the flow loss dominate the style term, pulling the field toward the style-ignoring manifold $\mathcal{M}_0$.
-Even the advanced Mamba backbone does not escape this attractor, because the parameterization still lives in the same Euclidean latent space.
-
-StyleID, by contrast, operates at the opposite extreme.
-Its diffusion backbone injects style guidance at every solver step.
-Proposition~\ref{prop:eota} shows that per-step blending causes the residual content fraction to decay as $r_n(\alpha)=(1-\alpha)^n$; with $n\gg1$, even a moderate $\alpha$ compresses the content residual exponentially.
-This predicts the high LPIPS (0.5523) observed in Table~\ref{tab:main}: the method does transfer style, but it pays for that strength with structural distortion.
-WD-VF's endpoint-only WCT avoids this exponential decay; the affine residual $r_1(\alpha)=1-\alpha$ preserves layout identifiability, which is why it reaches comparable positive-IDT transfer at much lower damage.
+As predicted by Theorem~\ref{thm:attractor}, SaMam falls into the style-suppression attractor: in Euclidean latent coordinates, the shared basis for layout and texture lets the flow loss dominate the style term, producing sub-IDT CLIP-S (0.5816) despite low LPIPS (0.2434).
+Conversely, StyleID suffers from the exponential content decay predicted by Proposition~\ref{prop:eota}: per-step style injection drives $r_n(\alpha)=(1-\alpha)^n$, causing the observed high LPIPS (0.5523).
+WD-VF's endpoint-only WCT avoids this decay, which is why it reaches comparable positive-IDT transfer at much lower damage.
 
 \paragraph{Large priors still set the style-strength ceiling.}
 StyleID and SDEdit remain stronger if raw CLIP-S is the only objective.
 WD-VF targets a different operating point.
 It aims for correct-direction transfer with substantially lower damage and much lower cost.
 Relative to Seedream 4.5, it stays close in CLIP-S and reduces LPIPS from 0.4767 to 0.2868, a 39.8\% reduction from a local model of 903K trainable parameters.
-
-\paragraph{Efficiency is part of the result.}
-The main scientific claim is geometric, but the measured cost shows what that geometry buys in practice.
-Stylization takes 42.9 seconds for latent generation and 40.8 seconds for VAE decode over 750 outputs.
-This totals 83.7 seconds, or 111.7\,ms/image.
-Training takes 3.08 minutes on a single RTX 3060.
+This cost-quality profile substantially lowers the entry barrier for style transfer research and application: the entire system---training, inference, and evaluation---runs comfortably on a single consumer GPU, making it accessible to practitioners and researchers without access to large-scale compute clusters.
 
 \paragraph{Auxiliary metrics agree with the main reading.}
 Figure~\ref{fig:page1}(right) adds a target-pooled ArtFID check.
@@ -508,8 +477,7 @@ The main conclusion therefore does not depend on the identity rows.
 \subsection{Destructive Ablations}
 \label{sec:ablation}
 
-Figure~\ref{fig:abl512_scatter} presents a $512{\times}512$ resolution stress test with 48 ablation configurations spanning eight theoretical axes: solver, spectral ODE, AdaIN, bridge dynamics, coupling/OT, loss weights, architecture, and training.
-Each point is one ablation plotted in the CLIP-S vs.\ $1{-}\mathrm{LPIPS}$ plane, where the upper-right region is the desired correct-direction regime; the gold star marks the full WD-VF model.
+Figure~\ref{fig:abl512_scatter} presents a $512{\times}512$ ablation plot with 48 configurations spanning eight theoretical axes.
 
 \begin{figure}[t]
 \centering
@@ -521,54 +489,30 @@ Three destructive clusters (AdaIN $4{\times}$, extrapolation~1, and LR~$10{\time
 \label{fig:abl512_scatter}
 \end{figure}
 
-The scatter reveals a clear pattern.
-Most configurations cluster tightly around the full model, demonstrating that the WD-VF design is robust to perturbations in solver order, path geometry, OT regularization, attention head count, and loss weights.
-Three destructive clusters fall clearly off-frontier, and each matches a theoretical prediction.
-Amplifying AdaIN ($4{\times}$) buys higher style score at the cost of catastrophic content damage, validating Proposition~\ref{prop:eota}: per-step style injection pushes the trajectory out of the correct-direction basin.
-Setting the high-frequency extrapolation to~1 collapses content preservation, confirming that endpoint extrapolation is essential.
-Increasing the learning rate by $10{\times}$ diverges to NaN, consistent with Theorem~\ref{thm:attractor}: the curvature condition requires the Adam step to stay below the wavelet-decoupled basin radius.
-The Pareto frontier is traced by mild variants such as $w_{\mathrm{LL}}{=}0$ and $\mathrm{dim}{=}32$, confirming that low-frequency supervision and capacity reduction preserve content while leaving style transfer largely intact.
-The wavelet coordinate change (Theorem~\ref{thm:attractor}), endpoint alignment (Proposition~\ref{prop:eota}), and the routing schedule are the three pieces carrying the result; the remaining axes are robust.
+Most configurations cluster tightly around the full model (gold star), confirming the robustness of WD-VF's core design.
+Three destructive clusters fall clearly off-frontier, each validating a theoretical prediction: amplifying per-step AdaIN ($4{\times}$) causes catastrophic content decay (Proposition~\ref{prop:eota}), removing high-frequency extrapolation collapses content preservation, and a $10{\times}$ learning rate diverges to NaN (Theorem~\ref{thm:attractor}).
+The Pareto frontier is traced by mild variants $(w_{\mathrm{LL}}{=}0$, $\mathrm{dim}{=}32$), confirming that the wavelet coordinate change, endpoint alignment, and routing schedule are the three design pillars carrying the result.
 
-\subsection{Lightweight Few-Shot Generalization}
+\subsection{Generalization and Robustness}
+\label{sec:gen}
 
-Beyond the main comparison, three controls test whether the result depends on representation, style vocabulary, and dataset bias.
-All controls are reported on the full all-pairs protocol, consistent with the main table.
+\textbf{Latent space vs.\ RGB.}
+A matched $256{\times}256$ control confirms that the gain comes from wavelet transport in VAE latent space, not from adding another loss term: direct RGB flow damages content far more under the same protocol.
 
-\paragraph{Latent prior carries the gain.}
-A matched $256\times256$ control isolates whether the gain comes from wavelet transport in latent space or merely from adding another loss.
-Direct RGB flow damages content far more than the latent-space control under the same protocol, confirming that the latent semantic prior, not the auxiliary loss, carries the result.
+\textbf{Few-shot style adaptation.}
+Because WD-VF decouples content structure (LL) from style injection (LH/HL/HH), the learned high-frequency transport is not tied to a frozen style vocabulary.
+Updating only the lightweight style-memory module with a few reference images of a new style preserves the correct-direction regime on an 8-style extension, confirming generalizable texture-and-stroke transport.
 
-\paragraph{Few-shot style-memory update.}
-Because WD-VF mathematically decouples the content structure (LL) from the style injection (LH/HL/HH), the learned high-frequency transport is not tied to a frozen five-style vocabulary.
-We test this via a few-shot adaptation protocol: by exclusively updating the lightweight style-memory module using only a few reference images of a new style, the model preserves the correct-direction regime on an 8-style extension.
-This confirms that WD-VF learns a generalizable mechanism for texture-and-stroke transport, rather than merely memorizing the training domains.
+\textbf{Random-20 generalization.}
+The Distinct5 benchmark is intentionally adversarial (lowest identity CLIP-S).
+To address the concern of cherry-picking, we randomly sample 20 WikiArt families with at least 530 images each, train WD-VF from scratch, and evaluate on 600 source-target pairs.
+WD-VF retains the low-damage, correct-direction regime (0.7434 CLIP-S / 0.2910 LPIPS), confirming that the result is not an artifact of the five selected styles.
 
-\paragraph{Random-20 generalization stress test.}
-The Distinct5 benchmark is intentionally adversarial: the five target families were selected because they have the lowest identity CLIP-S, making accidental no-op success hardest.
-A natural reviewer concern is therefore whether the result survives on a broader, non-cherry-picked style set.
-We randomly sample 20 WikiArt families with at least 530 images each (Abstract Expressionism, Art Nouveau, Baroque, Color Field Painting, Cubism, Early Renaissance, Expressionism, Fauvism, High Renaissance, Impressionism, Mannerism, Minimalism, Na{\"\i}ve Art, Northern Renaissance, Pop Art, Post-Impressionism, Rococo, Romanticism, Symbolism, Ukiyo-e), train WD-VF from scratch with the same 5-epoch budget, and evaluate on 600 source-target pairs.
-WD-VF retains the low-damage, correct-direction regime on this larger vocabulary, confirming that the Distinct5 result is not an artifact of the five selected styles.
-
-Haar is not the only workable wavelet basis, but it is the most reliable default here.
-Its exact orthogonality makes the subband decomposition literal.
-Its local support keeps the supervision easy to interpret.
+\textbf{Wavelet basis.}
 Daubechies-2 slightly raises CLIP-S but worsens LPIPS from 0.2868 to 0.3288.
-We therefore keep Haar because it preserves the main CLIP-S/LPIPS tradeoff and keeps both the theory and the implementation simple.
-On the current benchmark, we do not observe blocking artifacts that outweigh this tradeoff.
+Haar's exact orthogonality and local support keep both the theory and the implementation simple without blocking artifacts that outweigh the tradeoff.
 
 \section{Discussion}
-
-\paragraph{Training efficiency.}
-WD-VF trains in minutes because the objective is easier, not only because the network is small.
-LL carries most global structure.
-Once LL is weakly supervised and removed from the style-query path at inference, the model no longer spends most of its capacity on conflicting low-frequency objectives.
-The remaining capacity can focus on high-frequency texture motion.
-
-\paragraph{Mechanism of real style transfer.}
-WD-VF edits the high-frequency subbands directly and aligns their endpoint statistics once, at the last step.
-It does not repeatedly inject style through the whole trajectory.
-This transfers stroke and surface texture while keeping the source layout stable.
 
 \paragraph{Hard targets.}
 Minimalism remains the hardest target family because its style change is driven more by low-frequency palette than by brushwork.
@@ -609,6 +553,7 @@ Generation plus VAE decode takes 83.7 seconds for 750 outputs.
 The theory explains one Euclidean failure mode and predicts the ablation pattern confirmed by experiment.
 While trained on a focused benchmark, the decoupled nature of WD-VF allows for rapid, few-shot extension to new styles without altering the base network, and the same low-damage, correct-direction regime survives on a Random-20 generalization split (0.7434 CLIP-S / 0.2910 LPIPS), offering a highly sustainable paradigm for generative style editing.
 The main result is simple: real target-direction transfer does not require a large model if the transport geometry separates structure from style.
+By running entirely on a single consumer GPU with sub-4-minute training, WD-VF substantially lowers the hardware barrier for art-to-art style transfer, making high-quality stylization accessible to a broader community of practitioners and researchers.
 
 \section*{Ethics Statement}
 Style transfer tools can be misused to produce deceptive images or to misattribute stylistic authorship.
@@ -630,24 +575,5 @@ We will release the code, the checkpoint, and the 750-pair evaluation protocol u
 \FloatBarrier
 
 \bibliography{refs}
-
-\section*{AAAI Reproducibility Checklist}
-
-\begin{enumerate}
-\item This paper claims the following contributions:
-(1)~IDT-calibrated evaluation for art-to-art transfer (Section~\ref{sec:exp});
-(2)~analysis of Euclidean collapse through the set $\mathcal{M}_0$ and Theorem~\ref{thm:attractor} (Section~\ref{sec:attractor});
-(3)~the WD-VF method, a wavelet-decoupled rectified flow with high-frequency query routing and endpoint subband alignment (Section~\ref{sec:method});
-(4)~objective decomposition in the high-frequency-only query case and its ablation-level consequences (Section~\ref{sec:baselock}).
-\item The dataset (Distinct5-WikiArt-512) is publicly available. The evaluation protocol (CLIP-S, LPIPS, 750 pairs including 150 identity pairs) is described in Section~\ref{sec:exp}.
-\item Code, checkpoint, and evaluation scripts will be released upon publication.
-\item Training requires a single 12\,GB GPU (RTX 3060); 5 epochs; 3.08 minutes end-to-end.
-\item The evaluation protocol uses HuggingFace CLIP ViT-B/32 and AlexNet LPIPS, with 750 (source, target) pairs across 5 domains.
-\item All baseline numbers (Table~\ref{tab:main}) are evaluated under the same protocol.
-SaMST and SaMam have explicit convergence records.
-CUT uses an archived checkpoint with recorded training time but no surviving training log.
-\item Statistical reporting: Table~\ref{tab:main} reports the main single-seed 750-pair results.
-The supplement provides ablations, boundary-case analyses, and extension studies.
-\end{enumerate}
 
 \end{document}
