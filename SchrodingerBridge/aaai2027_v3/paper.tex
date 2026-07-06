@@ -40,29 +40,25 @@
 \maketitle
 
 \begin{abstract}
-Art-to-art style transfer is easy to overclaim because the source image is already an artwork.
-If the unchanged source already resembles the target domain, high style similarity can come from doing almost nothing.
-We formalize this issue with identical-image transfer (IDT).
-The unchanged source defines a no-op floor.
-A method below that floor has not moved in the requested direction.
+Art-to-art style transfer is easy to overclaim because the source is already an artwork.
+We formalize this issue with identical-image transfer (IDT): the unchanged source defines a no-op floor, and a method below that floor has not moved in the requested direction.
 
-We then analyze why compact flow models often fall into this regime.
-In Euclidean latent coordinates, low-frequency layout motion and high-frequency texture motion share one basis.
-The flow objective can then favor structure preservation and suppress style-conditioned transport.
-We state a sufficient local condition for this style-suppression regime and turn it into ablation-level predictions.
+We analyze why compact flow models fall into this regime.
+In Euclidean latent coordinates, low-frequency layout and high-frequency texture share one basis, letting the flow objective suppress style-conditioned transport.
+We state a sufficient local condition for this style-suppression attractor and turn it into testable predictions.
 
-We propose \textnormal{WD-VF}, a wavelet-decoupled rectified flow in the latent space of the Stable Diffusion v1.5 EMA VAE.
-A single-level Haar transform separates LL, LH, HL, and HH subbands.
-WD-VF weakens LL supervision, routes style queries through high-frequency bands, and applies whitening and coloring only at the endpoint.
-This keeps global structure stable while concentrating model capacity on stroke and texture transfer.
+We propose \textnormal{WD-VF}, a wavelet-decoupled rectified flow.
+A single-level Haar transform separates structure from texture.
+WD-VF weakens low-frequency supervision, routes style queries through high-frequency bands, and applies whitening-and-coloring only at the endpoint.
+On Distinct5-WikiArt, WD-VF clears the IDT floor (CLIP-S\,$=$\,0.7213, LPIPS\,$=$\,0.2868) and exceeds the strongest compact baseline by $+0.1397$ CLIP-S.
+The ablation pattern confirms the theoretical predictions.
 
-On Distinct5-WikiArt, the WD-VF model (with a trainable flow backbone of 903K parameters, excluding the frozen VAE) reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868.
-It clears the IDT floor of 0.6933 and exceeds SaMam by $+0.1397$ CLIP-S.
-Relative to Seedream 4.5, it reduces LPIPS by 39.8\% while staying in the same ArtFID range.
-Training takes 3.08 minutes on a single consumer-grade RTX 3060 (12\,GB), substantially lowering the hardware barrier for high-quality style transfer.
-Generation plus VAE decode takes 83.7 seconds for 750 outputs, or 111.7\,ms/image.
-Furthermore, this decoupled geometry enables lightweight few-shot adaptation: adding new styles requires updating only a compact style-memory module without retraining the core transport flow, preserving high-quality transfer and further reducing the cost of extending the system to new artistic domains.
-The ablations follow the predicted pattern: removing DWT weakens the frontier, route mismatch lowers transfer quality, and repeated style injection raises LPIPS.
+WD-VF is designed to be \textbf{lightweight and accessible}.
+Its flow backbone has only 903K trainable parameters.
+Training completes in 3.08 minutes on a single consumer-grade GPU.
+Full inference on 750 image pairs takes 83.7 seconds.
+The decoupled geometry further enables few-shot adaptation to new styles by updating only a compact style-memory module, without retraining.
+Together, these properties substantially lower the hardware and compute barrier for high-quality style transfer, making the method practical for researchers and practitioners without access to large-scale infrastructure.
 \end{abstract}
 
 \begin{strip}
