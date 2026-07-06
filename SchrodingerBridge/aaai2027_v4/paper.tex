@@ -273,6 +273,15 @@ Although wavelet coefficients are heavy-tailed, the SD1.5 VAE's KL regularizatio
 Per-step blending erodes content as $r_n(\alpha)=(1-\alpha)^n$ after $n$ steps; for $n{=}8,\alpha{=}0.5$ this falls to $3.9\times10^{-3}$, effectively erasing structure.
 Endpoint-only WCT sets $n{=}1$, so $r_1(\alpha)=1-\alpha$ is affine and preserves structure identifiability and style strength independently.
 
+
+\begin{figure*}[t!]
+\centering
+\includegraphics[width=1.1\textwidth]{fig_teaser_comparison.pdf}
+\caption{Qualitative comparison on Photo $\Rightarrow$ Van Gogh (Photo2Art 256).
+Left to right: source (no-op), SaMam (near-identity), StyleID (high style), WEAVE (ours), Seedream~4.5 (commercial ref).
+WEAVE and Seedream~4.5 both move in the target direction while keeping the subject recognizable.}
+\label{fig:teaser}
+\end{figure*}
 \subsection{Few-Shot Generalization via a Decoupled Style Subspace}
 \label{sec:fewshot}
 
@@ -293,15 +302,45 @@ The Haar change of coordinates leaves only a smooth, orthogonal high-frequency r
 This turns training into a fast regression on two high-frequency bands, which is why 5 epochs on a single RTX 3060 suffice (3.08\,minutes total).
 
 
-\begin{figure*}[b!]
-\centering
-\includegraphics[width=1.1\textwidth]{fig_teaser_comparison.pdf}
-\caption{Qualitative comparison on Photo $\Rightarrow$ Van Gogh (Photo2Art 256).
-Left to right: source (no-op), SaMam (near-identity), StyleID (high style), WEAVE (ours), Seedream~4.5 (commercial ref).
-WEAVE and Seedream~4.5 both move in the target direction while keeping the subject recognizable.}
-\label{fig:teaser}
-\end{figure*}
 
+
+
+
+
+
+
+\begin{table*}[t!]
+\centering
+\scriptsize
+\renewcommand{\arraystretch}{0.78}
+\setlength{\tabcolsep}{2.5pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lllrrrrrrrrrrrr@{}}
+\toprule
+\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{3}{c}{Photo2Art-256} & \multicolumn{3}{c}{Random5-WikiArt} & Params & Train & Infer.\ Time (750 pairs) \\
+\cmidrule(lr){4-6} \cmidrule(lr){7-9} \cmidrule(lr){10-12}
+& & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & & & \\
+\midrule
+1 & Identity & identity & 0.6933 & 0.0000 & 58.31 & 0.6630 & 0.0000 & 56.83 & 0.7312 & 0.0000 & -- & -- & -- & -- \\
+2 & AdaIN & classical & 0.6679 & 0.7425 & 53.55 & 0.6656 & 0.7357 & 41.23 & 0.7276 & 0.6795 & -- & -- & -- & -- \\
+3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & 21.68 & 0.6878 & 0.7379 & 40.33 & 0.7308 & 0.6876 & -- & -- & -- & 90\,s \\
+4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & 60.72 & 0.6744 & 0.6031 & 52.19 & 0.7671 & 0.4488 & 63.23 & -- & -- & -- \\
+5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{64.95} & 0.6483 & 0.7257 & 49.57 & 0.8180 & 0.5827 & 67.46 & -- & -- & -- \\
+6 & CUT & GAN & 0.7137 & 0.3743 & 41.79 & 0.7543 & 0.4936 & -- & 0.7096 & 0.6198 & 41.79 & 7.0M & 322.6\,m & 5.0\,m \\
+7 & SaMST & Mamba & 0.6183 & 0.7490 & 29.71 & 0.7092 & 0.3981 & 40.73 & 0.6669 & 0.6118 & 66.65 & 8.3M & 39.5\,m & 10.0\,m \\
+8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & 51.17 & 0.6768 & 0.2052 & 50.03 & -- & -- & -- & -- & 436.0\,m & 17.6\,m \\
+9 & Seedream 4.5 & API & 0.7198 & 0.4767 & -- & 0.7515 & 0.2270 & 64.00 & -- & -- & -- & -- & -- & -- \\
+\midrule
+10 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{--} & \textbf{0.6826} & \textbf{0.2031} & \textbf{45.68} & \textbf{0.7434} & \textbf{0.2904} & \textbf{--} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
+\bottomrule
+\end{tabular}}%
+\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art-256 (CycleGAN split), and Random5-WikiArt (5-style hold-out).
+WEAVE is trained on all 20 WikiArt families and evaluated on 12{,}000 pairs; baselines are evaluated on the 750-pair Distinct5 subset.
+MUSIQ (higher is better) is a no-reference image quality assessment.
+Identity/AdaIN/WCT Random5 MUSIQ is ``--'' (training-free methods share the source image, so MUSIQ equals the Identity row and is omitted); CUT Photo2Art-256 MUSIQ is ``--'' (generated images not retained); SaMam Random5 is in progress; Seedream Random5 is omitted (closed API); WEAVE D5/Random5 MUSIQ pending re-evaluation.
+Time units: m = minutes, s = seconds.}
+\label{tab:main}
+\end{table*}
 \section{Experiments}
 \label{sec:exp}
 
@@ -314,16 +353,10 @@ For generalization, WEAVE is trained from scratch on all 20 WikiArt families and
 CLIP-S (ViT-B/32) and LPIPS (AlexNet) are the primary metrics.
 Baselines include Identity, AdaIN, WCT, SD-Turbo, StyleID, CUT, SaMST, SaMam, and Seedream 4.5.
 WEAVE uses four residual blocks (width 64), three velocity heads, and trains for 5 epochs with batch size 24 and AdamW.
-Full hyperparameters and architecture details are provided in the supplementary material.
 
-\paragraph{Training details.}
-The style-memory module is a learnable embedding of dimension 128 (one token per style).
-We use random horizontal flips and $256{\times}256$ center crops, AdamW with weight decay and peak LR $1{\times}10^{-4}$, gradient clipping at norm 1.0, and no EMA.
-All runs use FP16 on a single RTX 3060 (12\,GB).
-
-\paragraph{Evaluation protocol.}
-All methods are evaluated on every ordered source-target pair (750 outcomes per configuration).
-Diffusion baselines use their default samplers; learned baselines (SaMST, SaMam, WEAVE) are selected by best validation CLIP-S on a 50-pair held-out split to avoid selection bias.
+\paragraph{Training and evaluation.}
+WEAVE trains with AdamW (weight decay, peak LR $1{\times}10^{-4}$), gradient clipping at norm 1.0, and no EMA on a single RTX~3060 (12\,GB).
+All methods are evaluated on every ordered source-target pair; learned baselines are selected by best validation CLIP-S on a 50-pair held-out split to avoid selection bias.
 CLIP-S is measured against the target-style pool and LPIPS against the ground-truth target (or source reconstruction under the IDT convention), with deterministic seeds throughout.
 
 
@@ -338,7 +371,7 @@ The identity row turns CLIP-S into a direction-aware metric: once included, low 
 
 \paragraph{WEAVE occupies the practical frontier.}
 Among trained methods, WEAVE is the only row combining positive-IDT transfer with sub-0.30 LPIPS; CUT clears the floor only at higher cost and content distortion, while SaMST and SaMam preserve content but fall below the IDT floor.
-It thus achieves the strongest trained positive-IDT result on a single consumer GPU in under four minutes.
+It thus achieves the strongest trained positive-IDT result on a single consumer GPU.
 
 
 
@@ -388,38 +421,7 @@ The resulting flat basin makes WEAVE robust to moderate hyperparameter perturbat
 
 
 
-\begin{table*}[t!]
-\centering
-\scriptsize
-\renewcommand{\arraystretch}{0.78}
-\setlength{\tabcolsep}{2.5pt}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{@{}lllrrrrrrrrrrrr@{}}
-\toprule
-\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{3}{c}{Photo2Art-256} & \multicolumn{3}{c}{Random5-WikiArt} & Params & Train & Infer.\ Time (750 pairs) \\
-\cmidrule(lr){4-6} \cmidrule(lr){7-9} \cmidrule(lr){10-12}
-& & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & & & \\
-\midrule
-1 & Identity & identity & 0.6933 & 0.0000 & 58.31 & 0.6630 & 0.0000 & 56.83 & 0.7312 & 0.0000 & -- & -- & -- & -- \\
-2 & AdaIN & classical & 0.6679 & 0.7425 & 53.55 & 0.6656 & 0.7357 & 41.23 & 0.7276 & 0.6795 & -- & -- & -- & -- \\
-3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & 21.68 & 0.6878 & 0.7379 & 40.33 & 0.7308 & 0.6876 & -- & -- & -- & 90\,s \\
-4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & 60.72 & 0.6744 & 0.6031 & 52.19 & 0.7671 & 0.4488 & 63.23 & -- & -- & -- \\
-5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{64.95} & 0.6483 & 0.7257 & 49.57 & 0.8180 & 0.5827 & 67.46 & -- & -- & -- \\
-6 & CUT & GAN & 0.7137 & 0.3743 & 41.79 & 0.7543 & 0.4936 & -- & 0.7096 & 0.6198 & 41.79 & 7.0M & 322.6\,m & 5.0\,m \\
-7 & SaMST & Mamba & 0.6183 & 0.7490 & 29.71 & 0.7092 & 0.3981 & 40.73 & 0.6669 & 0.6118 & 66.65 & 8.3M & 39.5\,m & 10.0\,m \\
-8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & 51.17 & 0.6768 & 0.2052 & 50.03 & -- & -- & -- & -- & 436.0\,m & 17.6\,m \\
-9 & Seedream 4.5 & API & 0.7198 & 0.4767 & -- & 0.7515 & 0.2270 & 64.00 & -- & -- & -- & -- & -- & -- \\
-\midrule
-10 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{--} & \textbf{0.6826} & \textbf{0.2031} & \textbf{45.68} & \textbf{0.7434} & \textbf{0.2904} & \textbf{--} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
-\bottomrule
-\end{tabular}}%
-\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art-256 (CycleGAN split), and Random5-WikiArt (5-style hold-out).
-WEAVE is trained on all 20 WikiArt families and evaluated on 12{,}000 pairs; baselines are evaluated on the 750-pair Distinct5 subset.
-MUSIQ (higher is better) is a no-reference image quality assessment.
-Identity/AdaIN/WCT Random5 MUSIQ is ``--'' (training-free methods share the source image, so MUSIQ equals the Identity row and is omitted); CUT Photo2Art-256 MUSIQ is ``--'' (generated images not retained); SaMam Random5 is in progress; Seedream Random5 is omitted (closed API); WEAVE D5/Random5 MUSIQ pending re-evaluation.
-Time units: m = minutes, s = seconds.}
-\label{tab:main}
-\end{table*}
+
 
 \subsection{Generalization and Robustness}
 \label{sec:gen}

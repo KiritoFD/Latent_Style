@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.11)  4 JUL 2026 21:22
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.11)  4 JUL 2026 21:49
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -712,19 +712,19 @@ Overfull \hbox (1.49994pt too wide) in paragraph at lines 68--75
  []
 
 CUTED [- LAST -]
-Extra skip:0.0pt
-Left:191.24998pt/1.9485pt
+Extra skip:9.75pt
+Left:201.24998pt/1.9485pt
 Right:193.44849pt/0.0pt
-Split: 192.34923pt
-Output:192.34923pt
+Split: 198.34923pt
+Output:198.34923pt
 Pageshrink: 0.0pt
 Pagestretch: 0.0pt
 @colht:487.8225pt
-CUTED [output]: 192.34923pt
-CUTED [leftcolumn badness]: 1
-CUTED [rightcolumn badness]: 5
+CUTED [output]: 198.34923pt
+CUTED [leftcolumn badness]: 57
+CUTED [rightcolumn badness]: 752
 
-Underfull \vbox (badness 2903) has occurred while \output is active []
+Underfull \vbox (badness 10000) has occurred while \output is active []
 
  [1{c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/20
 26/texmf-dist/fonts/enc/dvips/newtx/ntx-ec-tlf.enc}
@@ -749,35 +749,39 @@ LaTeX Font Info:    Font shape `T1/ntxtlf/m/it' will be
 (Font)              scaled to size 5.0pt on input line 215.
 
 [2] [3 <./framework_sfm_main.png (PNG copy)>] [4]
-LaTeX Font Info:    Trying to load font information for T1+pcr on input line 54
-0.
+LaTeX Font Info:    Trying to load font information for T1+pcr on input line 52
+3.
 
 (c:/texlive/2026/texmf-dist/tex/latex/psnfss/t1pcr.fd
 File: t1pcr.fd 2001/06/04 font definitions for T1/pcr.
 )
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
-(Font)              scaled to size 7.0pt on input line 564.
+(Font)              scaled to size 7.0pt on input line 547.
 LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
-(Font)              scaled to size 7.0pt on input line 583.
- [5{c:/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc}]
-LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
-(Font)              scaled to size 9.0pt on input line 639.
- [6] [7] (./paper.bbl) [8] (./paper.aux)
+(Font)              scaled to size 7.0pt on input line 566.
+ [5{c:/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc}] [6]
+Underfull \hbox (badness 10000) in paragraph at lines 719--719
+[]\T1/ntxtlf/m/n/7 Per-step in-jec-tion
+ []
+
+
+Underfull \vbox (badness 1400) has occurred while \output is active []
+
+ [7]
+(./paper.bbl) [8] [9
+
+] (./paper.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2020/03/25>
  ***********
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
  ) 
 Here is how much of TeX's memory you used:
- 17918 strings out of 467525
- 348343 string characters out of 5423209
+ 17919 strings out of 467525
+ 348382 string characters out of 5423209
  756969 words of memory out of 5000000
- 46482 multiletter control sequences out of 15000+600000
- 676905 words of font info for 78 fonts, out of 8000000 for 9000
+ 46483 multiletter control sequences out of 15000+600000
+ 674038 words of font info for 77 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  89i,13n,117p,580b,352s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/tex
@@ -786,19 +790,17 @@ live/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026
 t/fonts/type1/public/amsfonts/cm/cmmi9.pfb><c:/texlive/2026/texmf-dist/fonts/ty
 pe1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public
 /amsfonts/cm/cmr5.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/c
-m/cmr6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb>
-<c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb><c:/texlive
-/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2026/tex
-mf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb><c:/texlive/2026/texmf-dist/fo
-nts/type1/public/amsfonts/cm/cmsy9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/
-public/amsfonts/symbols/msbm10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/urw/
-courier/ucrr8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmb.pf
-b><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmr.pfb><c:/texlive/202
-6/texmf-dist/fonts/type1/public/newtx/ztmri.pfb>
-Output written on paper.pdf (8 pages, 572941 bytes).
+m/cmr7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb>
+<c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texli
+ve/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb><c:/texlive/2026/te
+xmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb><c:/texlive/2026/texmf-
+dist/fonts/type1/urw/courier/ucrr8a.pfb><c:/texlive/2026/texmf-dist/fonts/type1
+/public/newtx/ztmb.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztm
+r.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmri.pfb>
+Output written on paper.pdf (9 pages, 557929 bytes).
 PDF statistics:
- 211 PDF objects out of 1000 (max. 8388607)
- 89 compressed objects within 1 object stream
+ 204 PDF objects out of 1000 (max. 8388607)
+ 85 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  23 words of extra memory for PDF output out of 10000 (max. 10000000)
 

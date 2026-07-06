@@ -12,7 +12,8 @@
     "style_attn_num_heads": 4,
     "style_attn_num_tokens": 256,
     "style_cross_attn_gate_init": 0.05,
-    "tokenizer_dino_dim": 384
+    "tokenizer_dino_dim": 384,
+    "style_attn_mode": "softmax"
   },
   "bridge": {
     "bridge_path_mode": "vertical",
@@ -31,12 +32,12 @@
   },
   "training": {
     "seed": 42,
-    "batch_size": 2,
+    "batch_size": 1,
     "learning_rate": 0.0002,
-    "num_epochs": 10,
+    "num_epochs": 5,
     "save_interval": 1,
-    "num_workers": -1,
-    "persistent_workers": true,
+    "num_workers": 0,
+    "persistent_workers": false,
     "prefetch_factor": 1,
     "pin_memory": false,
     "use_amp": true,
@@ -47,16 +48,16 @@
     "full_eval_defer_until_training_end": true,
     "full_eval_force_regen": true,
     "full_eval_profile_timing": true,
-    "test_image_dir": "I:/legacy256_overfit50/test",
-    "full_eval_cache_dir": "I:/Github/Latent_Style/eval_cache",
-    "full_eval_clip_hf_cache_dir": "I:/Github/Latent_Style/eval_cache/hf",
+    "test_image_dir": "/mnt/i/legacy256_overfit50/test",
+    "full_eval_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache",
+    "full_eval_clip_hf_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache/hf",
     "full_eval_clip_backend": "hf",
     "full_eval_clip_style_idt_baseline": 0.639920825263,
     "full_eval_batch_size": 2,
     "full_eval_vae_decode_batch_size": 2
   },
   "data": {
-    "data_root": "I:/legacy256_overfit50_pixel256/train",
+    "data_root": "/mnt/i/legacy256_overfit50_pixel256/train",
     "style_subdirs": [
       "cezanne",
       "Hayao",
@@ -70,7 +71,7 @@
     "preload_to_gpu": false,
     "virtual_length_multiplier": 1.0,
     "latent_cache_mode": "packed",
-    "latent_cache_dir": "I:/legacy256_overfit50_pixel256/train/.latent_cache",
+    "latent_cache_dir": "/mnt/i/legacy256_overfit50_pixel256/train/.latent_cache/packed",
     "dino_cache_path": "",
     "dino_cache_required": false,
     "dino_bank_limit_per_style": 8,
@@ -98,12 +99,12 @@
     "only_lpips_clip_style": true
   },
   "checkpoint": {
-    "save_dir": "./exp/pixel256_photo2art/pixel256_b2_e10"
+    "save_dir": "./exp/pixel256_photo2art/pixel256_b1_e5_softmax"
   },
   "ablation": {
-    "name": "pixel256_photo2art_b2_e10",
+    "name": "pixel256_photo2art_b1_e5_softmax",
     "axis": "620_spatial_bridge_photo2art",
     "stage": "base_photo2art",
-    "notes": "Pixel-space 256x256 SFM on legacy256_overfit50 photo2art 5 styles (cezanne/Hayao/monet/photo/vangogh)."
+    "notes": "Pixel-space 256x256 SFM on legacy256_overfit50 photo2art 5 styles. Uses softmax (flash) attention instead of relu2 to fit 256x256 spatial in 12GB VRAM. batch_size=1, 5 epochs (minimum per project constraint) due to 1.6s/step at 256x256 spatial."
   }
 }

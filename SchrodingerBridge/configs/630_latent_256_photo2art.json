@@ -579,8 +579,8 @@
     "full_eval_introstyle_ensemble_size": 1,
     "full_eval_in_process": false,
     "full_eval_runtime_model_cache": false,
-    "full_eval_each_epoch": true,
-    "full_eval_defer_until_training_end": false,
+    "full_eval_each_epoch": false,
+    "full_eval_defer_until_training_end": true,
     "full_eval_force_regen": true,
     "full_eval_profile_timing": true,
     "full_eval_stop_on_convergence": false,
@@ -589,9 +589,9 @@
     "full_eval_convergence_flat_eps_style": 0.005,
     "full_eval_convergence_flat_eps_lpips": 0.018,
     "full_eval_convergence_min_epochs": 0,
-    "test_image_dir": "I:/legacy256_overfit50/test",
-    "full_eval_cache_dir": "I:/Github/Latent_Style/eval_cache",
-    "full_eval_clip_hf_cache_dir": "I:/Github/Latent_Style/eval_cache/hf",
+    "test_image_dir": "/mnt/i/legacy256_overfit50/test",
+    "full_eval_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache",
+    "full_eval_clip_hf_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache/hf",
     "full_eval_clip_backend": "hf",
     "full_eval_hf_clip_skip_processor": false,
     "full_eval_disable_lpips": false,
@@ -606,7 +606,7 @@
     "patience": 2
   },
   "data": {
-    "data_root": "I:/legacy256_overfit50_latent256/train",
+    "data_root": "/mnt/i/legacy256_overfit50_latent256/train",
     "style_subdirs": [
       "cezanne",
       "Hayao",
@@ -639,7 +639,7 @@
     "pairing_cache_cross_only": true,
     "style_caption_path": "",
     "latent_cache_mode": "packed",
-    "latent_cache_dir": "I:/legacy256_overfit50_latent256/train/.latent_cache/packed",
+    "latent_cache_dir": "/mnt/i/legacy256_overfit50_latent256/train/.latent_cache/packed",
     "dino_cache_path": "",
     "dino_cache_required": false,
     "dino_bank_limit_per_style": 8

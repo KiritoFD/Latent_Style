@@ -34,7 +34,7 @@ AXIS_STYLE = {
 }
 
 # Axes excluded from the scatter plot (still in CSV, not drawn).
-EXCLUDED_AXES = {"adain"}
+EXCLUDED_AXES = {"adain", "solver"}
 
 # Highlight key experiments (validate theoretical propositions)
 HIGHLIGHT = {
@@ -45,8 +45,8 @@ HIGHLIGHT = {
     "X41_dim_32":          "dim=32",
 }
 
-# WEAVE full model reference (from main table, Distinct5-512 all-pairs)
-FULL_MODEL_TRANSFER = {"clip_style": 0.7213, "content_lpips": 0.2868, "label": "WEAVE (Ours)"}
+# WEAVE full model reference (from style_transfer_ability)
+FULL_MODEL_TRANSFER = {"clip_style": 0.6908, "content_lpips": 0.2965, "label": "WEAVE (Ours)"}
 # all-pairs: CLIP-S=0.7213, LPIPS=0.2868
 FULL_MODEL_ALLPAIRS = {"clip_style": 0.7213, "content_lpips": 0.2868, "label": "WEAVE (Ours)"}
 
@@ -93,7 +93,7 @@ def main():
     parser.add_argument("--metric", choices=["transfer", "allpairs"], default="allpairs",
                         help="Use transfer (style_transfer_ability) or allpairs metrics. "
                              "Default: allpairs (matches the main table WEAVE reference).")
-    parser.add_argument("--title", default="512-resolution ablation (43 configs, AdaIN axis omitted)")
+    parser.add_argument("--title", default="", help="Figure title (empty = no title)")
     args = parser.parse_args()
 
     csv_path = Path(args.csv)

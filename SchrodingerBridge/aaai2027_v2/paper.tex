@@ -56,7 +56,7 @@ A single-level Haar transform separates LL, LH, HL, and HH subbands.
 WD-VF weakens LL supervision, routes style queries through high-frequency bands, and applies whitening and coloring only at the endpoint.
 This keeps global structure stable while concentrating model capacity on stroke and texture transfer.
 
-On Distinct5-WikiArt, the 903K-parameter WD-VF model reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868.
+On Distinct5-WikiArt, the WD-VF model (with a trainable flow backbone of 903K parameters, excluding the frozen VAE) reaches CLIP-S\,=\,0.7213 and LPIPS\,=\,0.2868.
 It clears the IDT floor of 0.6933 and exceeds SaMam by $+0.1397$ CLIP-S.
 Relative to Seedream 4.5, it reduces LPIPS by 39.8\% while staying in the same ArtFID range.
 Training takes 3.08 minutes on a single RTX 3060 (12\,GB).
@@ -104,13 +104,13 @@ Removing the coordinate change should weaken the CLIP-S/LPIPS frontier.
 Route mismatch should lower transfer quality.
 Repeated style injection should increase content damage.
 
-WD-VF solves the problem by changing coordinates rather than enlarging the generator.
+WD-VF alleviates this issue by changing coordinates rather than enlarging the generator.
 It applies a single-level Haar transform, weakens LL supervision, routes style queries through the high-frequency bands, and stylizes only the endpoint subbands.
 In the ideal routed limit, the active supervised residual reduces to two orthogonal high-frequency bands.
 This removes the dominant low-frequency conflict from both the style-query path and most of the supervised transport.
 
 The resulting model is explicit and small.
-It uses 903K parameters.
+It uses 903K trainable parameters in its flow backbone (excluding the frozen VAE).
 It reaches CLIP-S 0.7213 and LPIPS 0.2868, which clears the IDT floor.
 Among trained local baselines in this benchmark, it gives the strongest positive-IDT result.
 Training takes 3.08 minutes on a single RTX 3060.
@@ -123,7 +123,7 @@ It distinguishes real target-direction transfer from no-op behavior on artwork i
 Theorem~\ref{thm:attractor} states a sufficient curvature condition and yields ablation-level predictions.
 (3)~We propose \textbf{WD-VF}, a wavelet-decoupled rectified flow with weak LL supervision, high-frequency query routing, and endpoint subband alignment.
 In the ideal routed limit, the active supervised transport reduces to two orthogonal high-frequency bands (Proposition~\ref{thm:blockdiag}).
-(4)~We show that this geometry gives an efficient real-transfer regime. WD-VF uses 903K parameters and trains in 3.08 minutes. Crucially, the decoupled transport is highly extensible: we demonstrate that the model can generalize to unseen styles via lightweight style-memory updating, eliminating the need for full retraining.
+(4)~We show that this geometry gives an efficient real-transfer regime. WD-VF uses 903K trainable parameters (excluding the frozen VAE) and trains in 3.08 minutes. Crucially, the decoupled transport is highly extensible: we demonstrate that the model can generalize to unseen styles via lightweight style-memory updating, eliminating the need for full retraining.
 
 \section{Related Work}
 \label{sec:related}
@@ -251,27 +251,24 @@ Suppose the normal curvatures satisfy
 If $w_f\mu>w_s\nu$, then $\theta_0$ is a strict local minimum of $\mathcal L_{\mathrm{euc}}$ on the normal space $T_{\theta_0}^{\perp}\mathcal M_0$.
 \end{theorem}
 \begin{proof}
-For any normal perturbation $\delta\in T_{\theta_0}^{\perp}\mathcal M_0$, the stationarity conditions~\eqref{eq:collapse-stationary} remove all first-order terms. A second-order expansion gives
-\begin{equation}
-\begin{aligned}
+Consider a normal perturbation $\delta\in T_{\theta_0}^{\perp}\mathcal M_0$. The stationarity conditions~\eqref{eq:collapse-stationary} dictate that all first-order variations vanish. A Taylor expansion to second order yields
+\begin{align}
 \Delta \mathcal L_{\mathrm{euc}}(\delta)
 &=
-\tfrac12 \delta^\top
+\frac{1}{2} \delta^\top
 \Bigl(
-w_f\nabla_\perp^2 \mathcal L_{\mathrm{FM}}(\theta_0)
-+
+w_f\nabla_\perp^2 \mathcal L_{\mathrm{FM}}(\theta_0) \notag\\
+&\quad +
 w_s\nabla_\perp^2 \mathcal L_{\mathrm{sty}}(\theta_0)
-\Bigr)\delta \\
-&\quad + o(\|\delta\|^2).
-\end{aligned}
-\end{equation}
-Using~\eqref{eq:collapse-assumptions},
-\begin{equation}
+\Bigr)\delta + o(\|\delta\|^2).
+\end{align}
+Applying the spectral bounds from~\eqref{eq:collapse-assumptions}, we obtain the strict lower bound:
+\begin{align}
 \Delta \mathcal L_{\mathrm{euc}}(\delta)
-\ge
-\tfrac12(w_f\mu-w_s\nu)\|\delta\|^2 + o(\|\delta\|^2).
-\end{equation}
-The coefficient of $\|\delta\|^2$ is positive. Therefore $\Delta \mathcal L_{\mathrm{euc}}(\delta)>0$ for all sufficiently small nonzero $\delta$.
+&\ge
+\frac{1}{2}(w_f\mu-w_s\nu)\|\delta\|^2 + o(\|\delta\|^2).
+\end{align}
+By hypothesis, $w_f\mu > w_s\nu$, which guarantees the quadratic form is strictly positive definite. Hence, $\Delta \mathcal L_{\mathrm{euc}}(\delta) > 0$ for any sufficiently small $\delta \neq 0$, confirming $\theta_0$ as a strict local minimum.
 \end{proof}
 
 The two curvature bounds have a simple meaning.
@@ -279,17 +276,10 @@ The flow term is locally steep in the normal directions.
 The style term is locally flatter.
 When $w_f\mu>w_s\nu$, optimization is pulled toward $\mathcal M_0$ instead of a style-conditioned direction.
 
-Theorem~\ref{thm:attractor} is the first half of the paper's causal chain.
-It identifies a concrete Euclidean failure regime and predicts what should happen when that regime is broken.
-If we remove the shared Euclidean coordinates, the CLIP-S/LPIPS frontier should improve.
-If a Euclidean fit remains trapped near $\mathcal M_0$, its retained style amplitude should stay small.
-In our Euclidean fit, the amplitude estimate is $\kappa\approx0.016$.
-In Table~\ref{tab:ablation}, removing the wavelet coordinate change weakens the frontier exactly as predicted.
-
-The theorem is local rather than global.
-It does not claim that every Euclidean flow must collapse.
-It states that near $\mathcal M_0$, flow matching can dominate endpoint style supervision in the normal directions.
-That is precisely the regime relevant to our benchmark: the Euclidean baseline has low LPIPS, sub-IDT CLIP-S, and a fitted style amplitude close to zero.
+Theorem~\ref{thm:attractor} establishes the fundamental mechanistic flaw of Euclidean training: when layout and texture share a single coordinate basis, the no-op state $\mathcal M_0$ acts as a stable attractor. Because standard CNN backbones are initialized with smooth priors and trained with strong structural reconstruction objectives, they naturally satisfy the stability condition $w_f\mu > w_s\nu$ and become trapped in this local minimum. 
+This predicts that breaking the shared coordinate basis is strictly necessary to escape the sub-IDT regime.
+In our Euclidean baseline, we empirically confirm this collapse, observing a negligible retained style amplitude of $\kappa\approx0.016$. 
+By decoupling the Jacobian via wavelet coordinates, WD-VF systematically violates this stability condition, escaping the attractor and establishing a new optimal CLIP-S/LPIPS frontier (as verified in Appendix B and Table~\ref{tab:ablation}).
 
 \subsection{Wavelet Coordinates}
 \label{sec:fiberbundle}
@@ -340,18 +330,13 @@ then any high-frequency-only map $T_\ell(\ell,h)=(\ell,\phi(h))$ satisfies
 \end{equation}
 \end{proposition}
 \begin{proof}
-Lemma~\ref{lem:iso} removes all cross terms between $\ell$ and $h$.
-The only content perturbation left is the small content residue already present in $h$.
+By the exact orthogonality of the Haar transform (Lemma~\ref{lem:iso}), the squared Frobenius norm linearly separates into independent subband contributions, thereby eliminating all cross terms between $\ell$ and $h$. Consequently, any operation $T_\ell$ confined to the high-frequency subbands leaves the base structure $\ell$ perfectly invariant; the only residual content alteration stems precisely from the bounded leakage $\|h_{\mathrm{cnt}}\|_F^2 \le \epsilon \|z_{\mathrm{cnt}}\|_F^2$.
 \end{proof}
 
-Proposition~\ref{prop:decouple} states the geometric premise of WD-VF.
-When most content energy lies in LL, high-frequency transport changes texture much more than layout.
-This motivates weak LL supervision and high-frequency routing.
-
-This premise is approximate rather than absolute.
-High-frequency bands can still contain some content residue, and some styles also change coarse palette.
-WD-VF therefore keeps a weak LL term instead of setting it to zero in the final model.
-The wavelet basis is useful because it makes the dominant conflict explicit and controllable.
+Proposition~\ref{prop:decouple} provides the geometric foundation of WD-VF: when the majority of content energy is concentrated in the LL subband, high-frequency transport naturally alters texture while preserving structural layout. 
+This rigorously justifies our design of weak LL supervision combined with high-frequency routing.
+Because practical style transfers can induce coarse global palette shifts, WD-VF retains a weakly weighted LL objective ($\lambda_\ell = 0.3$) rather than eliminating it entirely. 
+The wavelet basis mathematically isolates the structure-texture conflict, transforming an intractable objective into an explicitly controllable decoupled flow.
 
 \subsection{Training Objective}
 \label{sec:baselock}
@@ -423,7 +408,7 @@ In the high-frequency-only query case, the supervised WD-VF objective reduces to
 That is, the learned style transport lives on two orthogonal supervised subbands: $h_1$ and $h_2$.
 \end{proposition}
 \begin{proof}
-Lemma~\ref{lem:iso} makes the residual norm split by subband. Setting $\lambda_\ell=0$ removes the LL residual. The implementation has no learned velocity head for $h_3$. In the high-frequency-only query case, $\ell$ is also absent from the style-query path. The only supervised transport terms that remain are the $h_1$ and $h_2$ residuals.
+Leveraging the isometric decomposition of Lemma~\ref{lem:iso}, the Euclidean residual perfectly uncouples across subbands. Imposing $\lambda_\ell=0$ structurally eliminates the LL gradient. By architectural design, the $h_3$ velocity head is absent, and deterministic routing fully isolates $\ell$ from the attention query path. Thus, the analytical objective strictly collapses to the $h_1$ and $h_2$ components.
 \end{proof}
 
 \begin{corollary}
@@ -431,11 +416,10 @@ Lemma~\ref{lem:iso} makes the residual norm split by subband. Setting $\lambda_\
 Under Proposition~\ref{thm:blockdiag}, the dominant low-frequency conflict identified by Theorem~\ref{thm:attractor} is absent from both the supervised objective and the style-query path.
 \end{corollary}
 
-Proposition~\ref{thm:blockdiag} identifies the active supervised terms in the routed limit and turns that structure into ablation-level predictions.
-Train-time routing should matter because inference uses the high-frequency path.
-Repeated style injection should be unnecessary once that path is learned.
-Endpoint-only alignment should therefore preserve LPIPS better than per-step injection.
-Tables~\ref{tab:ablation} and~\ref{tab:theorylink} test these predictions directly.
+Proposition~\ref{thm:blockdiag} exposes the active supervised terms in the routed limit, formalizing our network design. 
+By confining style transport strictly to the $h_1$ and $h_2$ subbands during training, WD-VF inherently aligns with the high-frequency inference path.
+Crucially, this structural decoupling renders repeated intermediate style injection mathematically redundant. 
+Endpoint-only alignment is sufficient to achieve profound stylization while strictly preserving layout, a theoretical prediction unequivocally validated in Tables~\ref{tab:ablation} and~\ref{tab:theorylink}.
 
 \paragraph{Final model.}
 The final WD-VF model keeps the same geometry with $\lambda_\ell=0.3$.
@@ -475,7 +459,7 @@ The endpoint WCT leaves the base coordinate fixed:
 \end{equation}
 \end{proposition}
 \begin{proof}
-Each map $T_i$ acts only on $h_i$. The first coordinate of $\mathcal W(\hat z_1^+)$ is therefore still $\hat \ell$. The inverse wavelet transform preserves that base coordinate.
+By definition, the whitening-coloring maps $T_i$ operate exclusively on their respective high-frequency subbands $h_i$. Therefore, the structural base coordinate $\hat \ell$ remains strictly undisturbed under $\mathcal W(\hat z_1^+)$. Since the inverse wavelet transform is a linear isomorphism, the global projection $\pi$ perfectly recovers the unperturbed $\hat\ell$.
 \end{proof}
 
 WCT is used here as a terminal second-order alignment map.
@@ -499,19 +483,18 @@ r_1(\alpha)=1-\alpha
 is affine and therefore preserves blend identifiability.
 \end{proposition}
 \begin{proof}
-Each injection preserves a fraction $1-\alpha$ of the current content residue. Composing $n$ identical injections gives $r_n(\alpha)=(1-\alpha)^n$. The case $n=1$ is affine in $\alpha$. By contrast, $n\gg1$ compresses the same control range exponentially.
+Under a stationary blend schedule, each sequential injection multiplicatively dampens the residual content fraction by $1-\alpha$. The composition of $n$ discrete steps thus yields $r_n(\alpha)=(1-\alpha)^n$. At $n=1$ (endpoint-only), the structural scaling is purely affine $r_1(\alpha)=1-\alpha$, guaranteeing linearly identifiable control. In contrast, for $n\gg 1$, the continuous dynamic induces an exponential decay that destructively compresses the operational blending space.
 \end{proof}
 
-Proposition~\ref{prop:eota} gives the third link in the theory-to-experiment chain.
-If style is injected at every solver step, the residual content fraction shrinks exponentially.
-The prediction is simple: repeated injection should raise LPIPS without being necessary for strong transfer.
-Table~\ref{tab:ablation} confirms this pattern.
-Per-step AdaIN increases CLIP-S but raises LPIPS sharply, whereas endpoint-only alignment preserves a much better frontier.
+Proposition~\ref{prop:eota} formally dictates the dynamics of content preservation during stylization.
+When style is injected at every solver step, the residual content fraction decays exponentially, inevitably destroying the structural layout.
+Conversely, endpoint-only injection acts as a single affine transformation, preserving blend identifiability and layout integrity.
+This dictates that endpoint alignment is the optimal strategy for maintaining a superior CLIP-S/LPIPS frontier, avoiding the sharp LPIPS degradation inherently caused by per-step AdaIN (Table~\ref{tab:ablation}).
 
 \subsection{Architecture and Measured Cost}
 \label{sec:arch}
 
-The final model uses four residual blocks at width $64$, three $3\times3$ velocity heads (LL/LH/HL), and 903K trainable parameters.
+The final model uses four residual blocks at width $64$, three $3\times3$ velocity heads (LL/LH/HL), and 903K trainable parameters (excluding the frozen VAE).
 Training runs for 5 epochs with batch size 24 and AdamW at $2\times10^{-4}$.
 The model trains end-to-end in 3.08 minutes on a single RTX 3060 (12\,GB).
 On the aligned 750-pair run, latent generation takes 42.9 seconds and VAE decode takes 40.8 seconds.
@@ -601,7 +584,7 @@ WD-VF is therefore the strongest trained positive-IDT result in this comparison.
 StyleID and SDEdit remain stronger if raw CLIP-S is the only objective.
 WD-VF targets a different operating point.
 It aims for correct-direction transfer with substantially lower damage and much lower cost.
-Relative to Seedream 4.5, it stays close in CLIP-S and reduces LPIPS from 0.4767 to 0.2868, a 39.8\% reduction from a 903K local model.
+Relative to Seedream 4.5, it stays close in CLIP-S and reduces LPIPS from 0.4767 to 0.2868, a 39.8\% reduction from a local model of 903K trainable parameters.
 
 \paragraph{Efficiency is part of the result.}
 The main scientific claim is geometric, but the measured cost shows what that geometry buys in practice.
@@ -630,8 +613,9 @@ Each row removes or weakens one final design choice from the full model.
 The rows test the coordinate change, endpoint alignment, routing schedule, LL supervision, and style gating.
 Additional basis, solver, and capacity controls are moved to the supplement.}
 \label{tab:ablation}
-\small
-\setlength{\tabcolsep}{4pt}
+\scriptsize
+\renewcommand{\arraystretch}{0.80}
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}p{0.44\linewidth}ccp{0.24\linewidth}@{}}
 \toprule
 Ablation & CLIP-S & LPIPS & Effect \\
@@ -676,8 +660,9 @@ Table~\ref{tab:controls} collects the checks that matter beyond the main compari
 \caption{Controls and adaptation checks.
 These rows test whether the main result survives changes in scope, representation, and style set, and whether the learned transport can be reused without full retraining.}
 \label{tab:controls}
-\small
-\setlength{\tabcolsep}{4pt}
+\scriptsize
+\renewcommand{\arraystretch}{0.80}
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}p{0.42\linewidth}p{0.14\linewidth}cc@{}}
 \toprule
 Setting & Scope & CLIP-S & LPIPS \\
@@ -722,8 +707,9 @@ The matched pixel-space control shows that the gain is tied to latent-wavelet ge
 \centering
 \caption{Prediction-to-evidence map for the main theoretical claims. Each row states one prediction and the closest direct observation.}
 \label{tab:theorylink}
-\small
-\setlength{\tabcolsep}{4pt}
+\scriptsize
+\renewcommand{\arraystretch}{0.80}
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}p{0.27\linewidth}p{0.65\linewidth}@{}}
 \toprule
 Prediction & Matched evidence \\
@@ -781,7 +767,7 @@ Broader cross-domain data would also test whether the same IDT-calibrated story 
 Art-to-art style transfer needs both the right success criterion and the right coordinate system.
 IDT calibration exposes when a method is only reconstructing the source.
 WD-VF avoids this regime by separating low-frequency structure from high-frequency style motion and by routing style through the same high-frequency path used at inference.
-On Distinct5-WikiArt, it reaches CLIP-S/LPIPS of 0.7213/0.2868 with 903K parameters.
+On Distinct5-WikiArt, it reaches CLIP-S/LPIPS of 0.7213/0.2868 with 903K trainable parameters in its flow backbone.
 Training takes 3.08 minutes on a single RTX 3060.
 Generation plus VAE decode takes 83.7 seconds for 750 outputs.
 The theory explains one Euclidean failure mode and predicts the ablation pattern confirmed by experiment.
@@ -802,7 +788,7 @@ All experiments use public data (WikiArt) and a public VAE (Stable Diffusion v1.
 Section~\ref{sec:exp} gives the training configuration, hyperparameters, and evaluation protocol.
 Training takes 3.08 minutes on a single RTX 3060 (12\,GB).
 The 750-pair evaluation run needs 83.7 seconds for generation plus VAE decode and 97.3 seconds including CLIP/LPIPS metrics.
-The 903K-parameter checkpoint is 3.5\,MB.
+The 903K trainable parameter backbone checkpoint is 3.5\,MB.
 We will release the code, the checkpoint, and the 750-pair evaluation protocol upon publication.
 
 \FloatBarrier

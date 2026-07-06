@@ -41,7 +41,7 @@ _SRC_ROOT = Path(__file__).resolve().parents[1]
 if str(_SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(_SRC_ROOT))
 
-from utils.inference import LGTInference, ORTVAEDecoder, load_vae, encode_image, decode_latent
+from utils.inference import LGTInference, ORTVAEDecoder, PassthroughVAE, load_vae, encode_image, decode_latent
 from utils.artfid_metric import (
     compute_artfid_content_distance_from_paths,
     compute_artfid_fid_from_paths,
@@ -2729,6 +2729,9 @@ def main(argv: list[str] | None = None):
         vae = None
         vae_scale_hint = float(args.vae_decode_scale) if args.vae_decode_scale is not None else 0.18215
 
+        # Pixel-space model detection: latent_channels == 3 means no VAE encoding/decoding
+        _is_pixel_space = int(cfg.get("model", {}).get("latent_channels", 4)) == 3
+
         def _load_diffusers_vae(reason: str):
             nonlocal vae
             if vae is not None:
@@ -2752,6 +2755,11 @@ def main(argv: list[str] | None = None):
 
         if can_try_onnx_decode_only:
             print("  ONNX decode-only fast path: defer diffusers VAE load until source-cache miss.")
+        elif _is_pixel_space:
+            # Pixel-space model: use PassthroughVAE (no encoding/decoding)
+            vae = PassthroughVAE()
+            vae_scale_hint = 1.0
+            print("  PassthroughVAE loaded: pixel-space model (latent_channels=3), no VAE encode/decode")
         else:
             _load_diffusers_vae("required by eval settings")
         ort_vae = None
