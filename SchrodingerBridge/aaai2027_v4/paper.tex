@@ -318,52 +318,6 @@ CLIP-S is measured against the target-style pool and LPIPS against the ground-tr
 
 \subsection{Main Results}
 
-\begin{strip}
-\vspace{-0.5\baselineskip}
-\begin{minipage}{\textwidth}
-\noindent\makebox[\textwidth][c]{\includegraphics[width=1.1\textwidth]{fig_teaser_comparison.pdf}}
-\captionof{figure}{Qualitative comparison on Photo $\Rightarrow$ Van Gogh (Photo2Art 256).
-Left to right: source (no-op), SaMam (near-identity), StyleID (high style), WEAVE (ours), Seedream~4.5 (commercial ref).
-WEAVE and Seedream~4.5 both move in the target direction while keeping the subject recognizable.}
-\label{fig:teaser}
-\end{minipage}
-\vspace{-0.7\baselineskip}
-\end{strip}
-
-\clearpage
-
-\begin{table*}[t!]
-\centering
-\scriptsize
-\renewcommand{\arraystretch}{0.78}
-\setlength{\tabcolsep}{2.5pt}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{@{}lllrrrrrrrrrrr@{}}
-\toprule
-\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{3}{c}{Photo2Art-256} & \multicolumn{2}{c}{WikiArt-20-512} & Params & Train & Infer.\ Time (750 pairs) \\
-\cmidrule(lr){4-6} \cmidrule(lr){7-9} \cmidrule(lr){10-11}
-& & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & $\Delta_{\mathrm{IDT}}\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & & & \\
-\midrule
-1 & Identity & identity & 0.6933 & 0.0000 & 0.0000 & 0.6630 & 0.0000 & 56.83 & 0.7312 & 0.0000 & -- & -- & -- \\
-2 & AdaIN & classical & 0.6679 & 0.7425 & $-$0.0253 & 0.6656 & 0.7357 & 41.23 & 0.7276 & 0.6795 & -- & -- & -- \\
-3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & +0.0130 & 0.6878 & 0.7379 & 40.33 & 0.7308 & 0.6876 & -- & -- & 90\,s \\
-4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & +0.0000 & 0.6744 & 0.6031 & 52.19 & 0.7671 & 0.4488 & -- & -- & -- \\
-5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{+0.1291} & 0.6483 & 0.7257 & 49.57 & 0.8180 & 0.5827 & -- & -- & -- \\
-6 & CUT & GAN & 0.7137 & 0.3743 & +0.0204 & 0.7543 & 0.4936 & -- & 0.7096 & 0.6198 & 7.0M & 322.6\,m & 5.0\,m \\
-7 & SaMST & Mamba & 0.6183 & 0.7490 & $-$0.0749 & 0.7092 & 0.3981 & 40.73 & 0.6669 & 0.6118 & 8.3M & 39.5\,m & 10.0\,m \\
-8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & $-$0.1116 & 0.6768 & 0.2052 & 50.03 & -- & -- & -- & 436.0\,m & 17.6\,m \\
-9 & Seedream 4.5 & API & 0.7198 & 0.4767 & +0.0265 & 0.7515 & 0.2270 & 64.00 & -- & -- & -- & -- & -- \\
-\midrule
-10 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{+0.0280} & \textbf{0.6826} & \textbf{0.2031} & \textbf{45.68} & \textbf{0.7434} & \textbf{0.2904} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
-\bottomrule
-\end{tabular}}%
-\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art-256 (CycleGAN split), and WikiArt-20 (20 families).
-$\Delta_{\mathrm{IDT}}$ is computed against the 512 identity floor (0.6933).
-CUT Photo2Art-256 MUSIQ is ``--'' (generated images not retained for re-evaluation); SaMam WikiArt-20 is ``--'' (pixel-space mamba inference on $12{,}000$ pairs exceeds 12\,GB VRAM); Seedream WikiArt-20 is omitted (closed API does not expose a batched 20-style protocol).
-Time units: m = minutes, s = seconds.}
-\label{tab:main}
-\end{table*}
-
 \paragraph{IDT changes what counts as success.}
 The identity row turns CLIP-S into a direction-aware metric: once included, low LPIPS alone is not enough, and both SaMST and SaMam stay below the IDT floor, suggesting their low LPIPS reflects source preservation.
 
@@ -410,6 +364,49 @@ Across 43 configurations the full model is a clear Pareto optimum: no single-axi
 \paragraph{Why the cluster is tight.}
 The tight clustering is not accidental: once LL and the high-frequency subbands occupy orthogonal subspaces, the gradient cleanly separates into independent components, so hyperparameters affecting one (e.g., $\lambda_\ell$) barely interact with the other (e.g., endpoint scale).
 The resulting flat basin makes WEAVE robust to moderate hyperparameter perturbations---unlike methods that depend on delicate Euclidean content-style tradeoffs.
+
+\begin{figure*}[b!]
+\centering
+\includegraphics[width=1.1\textwidth]{fig_teaser_comparison.pdf}
+\caption{Qualitative comparison on Photo $\Rightarrow$ Van Gogh (Photo2Art 256).
+Left to right: source (no-op), SaMam (near-identity), StyleID (high style), WEAVE (ours), Seedream~4.5 (commercial ref).
+WEAVE and Seedream~4.5 both move in the target direction while keeping the subject recognizable.}
+\label{fig:teaser}
+\end{figure*}
+
+\clearpage
+
+\begin{table*}[t!]
+\centering
+\scriptsize
+\renewcommand{\arraystretch}{0.78}
+\setlength{\tabcolsep}{2.5pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lllrrrrrrrrrrrr@{}}
+\toprule
+\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{3}{c}{Photo2Art-256} & \multicolumn{3}{c}{WikiArt-20-512} & Params & Train & Infer.\ Time (750 pairs) \\
+\cmidrule(lr){4-6} \cmidrule(lr){7-9} \cmidrule(lr){10-12}
+& & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & & & \\
+\midrule
+1 & Identity & identity & 0.6933 & 0.0000 & 58.31 & 0.6630 & 0.0000 & 56.83 & 0.7312 & 0.0000 & -- & -- & -- & -- \\
+2 & AdaIN & classical & 0.6679 & 0.7425 & 53.55 & 0.6656 & 0.7357 & 41.23 & 0.7276 & 0.6795 & -- & -- & -- & -- \\
+3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & 21.68 & 0.6878 & 0.7379 & 40.33 & 0.7308 & 0.6876 & -- & -- & -- & 90\,s \\
+4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & 60.72 & 0.6744 & 0.6031 & 52.19 & 0.7671 & 0.4488 & 63.23 & -- & -- & -- \\
+5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{64.95} & 0.6483 & 0.7257 & 49.57 & 0.8180 & 0.5827 & 67.46 & -- & -- & -- \\
+6 & CUT & GAN & 0.7137 & 0.3743 & 41.79 & 0.7543 & 0.4936 & -- & 0.7096 & 0.6198 & 41.79 & 7.0M & 322.6\,m & 5.0\,m \\
+7 & SaMST & Mamba & 0.6183 & 0.7490 & 29.71 & 0.7092 & 0.3981 & 40.73 & 0.6669 & 0.6118 & 66.65 & 8.3M & 39.5\,m & 10.0\,m \\
+8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & 51.17 & 0.6768 & 0.2052 & 50.03 & -- & -- & -- & -- & 436.0\,m & 17.6\,m \\
+9 & Seedream 4.5 & API & 0.7198 & 0.4767 & -- & 0.7515 & 0.2270 & 64.00 & -- & -- & -- & -- & -- & -- \\
+\midrule
+10 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{--} & \textbf{0.6826} & \textbf{0.2031} & \textbf{45.68} & \textbf{0.7434} & \textbf{0.2904} & \textbf{--} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
+\bottomrule
+\end{tabular}}%
+\caption{Main comparison on Distinct5-WikiArt (512), Photo2Art-256 (CycleGAN split), and WikiArt-20 (20 families).
+MUSIQ (higher is better) is a no-reference image quality assessment.
+Identity/AdaIN/WCT WikiArt-20 MUSIQ is ``--'' (training-free methods share the source image, so MUSIQ equals the Identity row and is omitted); CUT Photo2Art-256 MUSIQ is ``--'' (generated images not retained); SaMam WikiArt-20 is ``--'' (pixel-space mamba OOM on 12\,GB VRAM); Seedream WikiArt-20 is omitted (closed API); WEAVE D5/W20 MUSIQ pending re-evaluation.
+Time units: m = minutes, s = seconds.}
+\label{tab:main}
+\end{table*}
 
 \subsection{Generalization and Robustness}
 \label{sec:gen}
