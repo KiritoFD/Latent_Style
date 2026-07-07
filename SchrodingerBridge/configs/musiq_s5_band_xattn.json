@@ -324,7 +324,7 @@
     "sinkhorn_unbalanced_tau_tgt": 1.0,
     "sinkhorn_unbalanced_dummy_cost": 0.0,
     "sinkhorn_unbalanced_dummy_offdiag_cost": 8.0,
-    "swd_scale_mode": "attention-weighted",
+    "swd_scale_mode": "cross-attn-guided",
     "swd_noise_sigma": 0.0,
     "w_attn_entropy_reg": 0.0,
     "w_style_strength_reg": 0.0,
@@ -485,10 +485,12 @@
     "w_freq_split_cosine": 0.0,
     "cfg_dropout_prob": 0.0,
     "cfg_null_token_init_std": 0.02,
-    "swd_semantic_mode": "region",
-    "swd_semantic_regions": 8,
-    "swd_semantic_blend": 0.7,
-    "swd_semantic_kmeans_iters": 6
+    "swd_semantic_mode": "off",
+    "swd_band_mode": "split",
+    "swd_band_w_ll": 0.25,
+    "swd_band_w_lh": 1.0,
+    "swd_band_w_hl": 1.0,
+    "swd_band_w_hh": 2.0
   },
   "training": {
     "seed": 42,
@@ -566,7 +568,7 @@
     "full_eval_in_process": false,
     "full_eval_runtime_model_cache": false,
     "full_eval_each_epoch": false,
-    "full_eval_defer_until_training_end": true,
+    "full_eval_defer_until_training_end": false,
     "full_eval_force_regen": true,
     "full_eval_profile_timing": true,
     "full_eval_stop_on_convergence": false,
@@ -629,7 +631,7 @@
     "dino_bank_limit_per_style": 8
   },
   "checkpoint": {
-    "save_dir": "./exp/musiq_s1_sem_region"
+    "save_dir": "./exp/musiq_s5_band_xattn"
   },
   "full_eval": {
     "vae_model": "ema",
@@ -645,9 +647,9 @@
     "save_generated_images": true
   },
   "ablation": {
-    "name": "musiq_s1_sem_region",
+    "name": "musiq_s5_band_xattn",
     "axis": "628_clean",
     "stage": "clean",
-    "notes": "SWD-centric direction: s1_sem_region. Base=dwt_route+attn-SWD."
+    "notes": "S5: band-split + cross-attn-guided SWD (no k-means). Frequency-band targeting with attention guidance."
   }
 }

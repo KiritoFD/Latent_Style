@@ -563,13 +563,14 @@
     "full_eval_vae_onnx_trt_cache_dir": "",
     "full_eval_skip_diffusers_vae_when_onnx": true,
     "full_eval_only_lpips_clip_style": null,
+    "full_eval_save_generated_images": true,
     "full_eval_clip_style_idt_baseline": 0.639920825263,
     "full_eval_introstyle_up_ft_index": 1,
     "full_eval_introstyle_ensemble_size": 1,
     "full_eval_in_process": false,
     "full_eval_runtime_model_cache": false,
     "full_eval_each_epoch": false,
-    "full_eval_defer_until_training_end": true,
+    "full_eval_defer_until_training_end": false,
     "full_eval_force_regen": true,
     "full_eval_profile_timing": true,
     "full_eval_stop_on_convergence": false,
@@ -644,7 +645,8 @@
     "ref_feature_batch_size": 2,
     "image_save_workers": 4,
     "image_save_backend": "pil_png",
-    "save_summary_grid": true
+    "save_summary_grid": true,
+    "save_generated_images": true
   },
   "ablation": {
     "name": "musiq_s2_sem_patch",

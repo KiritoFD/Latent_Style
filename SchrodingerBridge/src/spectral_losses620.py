@@ -76,273 +76,6 @@ def _sliced_wasserstein(
     return (proj_a_sorted - proj_b_sorted).abs().mean()
 
 
-def _kmeans_labels(feat: torch.Tensor, k: int, iters: int = 4) -> torch.Tensor:
-    """Per-sample mini k-means on spatial features. feat: [B, N, D] -> labels [B, N].
-
-    Cheap (K small, few iters, no grad) segmentation used to define semantic regions.
-    Centroids are seeded by farthest-point-ish spread (evenly spaced sorted-by-norm picks)
-    for determinism and stability across the batch.
-    """
-    bsz, n, d = feat.shape
-    with torch.no_grad():
-        # Seed: pick k anchors spread by feature norm ordering (stable, no RNG divergence).
-        order = feat.norm(dim=2).argsort(dim=1)  # [B, N]
-        pick = (torch.arange(k, device=feat.device) * (n - 1) // max(1, k - 1)).clamp_max(n - 1)
-        seed_idx = order.gather(1, pick.unsqueeze(0).expand(bsz, -1))  # [B, k]
-        centroids = feat.gather(1, seed_idx.unsqueeze(-1).expand(-1, -1, d)).clone()  # [B, k, D]
-        labels = torch.zeros(bsz, n, device=feat.device, dtype=torch.long)
-        for _ in range(max(1, iters)):
-            # Assign: nearest centroid by squared distance.
-            dist = torch.cdist(feat, centroids)  # [B, N, k]
-            labels = dist.argmin(dim=2)  # [B, N]
-            # Update: mean of assigned points (empty clusters keep old centroid).
-            onehot = F.one_hot(labels, num_classes=k).to(feat.dtype)  # [B, N, k]
-            counts = onehot.sum(dim=1).clamp_min(1.0)  # [B, k]
-            new_c = torch.einsum("bnk,bnd->bkd", onehot, feat) / counts.unsqueeze(-1)
-            empty = (onehot.sum(dim=1) < 0.5).unsqueeze(-1)
-            centroids = torch.where(empty, centroids, new_c)
-    return labels
-
-
-def _semantic_region_swd(
-    gen: torch.Tensor,
-    target: torch.Tensor,
-    *,
-    seg_feat: torch.Tensor,
-    num_regions: int,
-    num_projections: int,
-    kmeans_iters: int = 4,
-    noise_sigma: float = 0.0,
-) -> torch.Tensor:
-    """Semantic region-matched SWD (vectorized: no per-sample Python loops).
-
-    Groups spatial locations by content similarity (k-means on ``seg_feat``, the content
-    latent) into ``num_regions`` regions. Each generated region is matched to the target
-    region of best appearance correspondence: target locations are clustered independently
-    and the two label sets are aligned by sorting centroids on their mean projection, so the
-    k-th smoothest/darkest content region maps to the k-th target region. Matching within
-    content-coherent regions keeps per-region statistics internally consistent, avoiding the
-    muddy blend a single global marginal produces when incompatible regions share one match.
-
-    Vectorization: loops only over K regions (not K×B). Per region, a fixed quota of pixels
-    is sampled with replacement via ``torch.multinomial`` (batch-parallel), then projected,
-    sorted, and L1-matched — all on GPU. This is ~25× faster than the per-sample loop version.
-
-    All tensors [B, C, H, W]; seg_feat [B, C, H, W] (content latent, aligned to gen).
-    """
-    bsz, c, h, w = gen.shape
-    n = h * w
-    quota = max(8, n // num_regions)  # fixed samples per region (stochastic SWD)
-
-    g_flat = gen.float().reshape(bsz, c, n).transpose(1, 2)      # [B, N, C]
-    t_flat = target.float().reshape(bsz, c, n).transpose(1, 2)
-    s_flat = seg_feat.float().reshape(bsz, seg_feat.shape[1], n).transpose(1, 2)
-
-    g_labels = _kmeans_labels(s_flat, num_regions, iters=kmeans_iters)   # [B, N] content-defined
-    t_labels = _kmeans_labels(t_flat, num_regions, iters=kmeans_iters)   # [B, N] appearance
-
-    # Align region indices by centroid mean-projection order (shared appearance ordering).
-    dirs = F.normalize(torch.randn(num_projections, c, device=gen.device, dtype=torch.float32), dim=1)
-    with torch.no_grad():
-        def _order(flat, labels):
-            oh = F.one_hot(labels, num_regions).float()               # [B, N, K]
-            cnt = oh.sum(1).clamp_min(1.0)                            # [B, K]
-            cent = torch.einsum("bnk,bnc->bkc", oh, flat) / cnt.unsqueeze(-1)  # [B, K, C]
-            score = cent.mean(dim=2)                                  # [B, K] mean-channel proxy
-            return score.argsort(dim=1)                               # [B, K] region ids sorted
-        g_ord = _order(g_flat, g_labels)   # [B, K] gen region id at rank r
-        t_ord = _order(t_flat, t_labels)
-
-    swd = gen.new_tensor(0.0)
-    active = 0
-    for r in range(num_regions):  # Only K iterations — fully batch-parallel inside
-        gk = g_ord[:, r]  # [B] region index for rank r, per batch item
-        tk = t_ord[:, r]  # [B]
-
-        # Batch-parallel region mask → probability distribution for multinomial sampling
-        g_mask = (g_labels == gk.unsqueeze(1)).float()  # [B, N]
-        t_mask = (t_labels == tk.unsqueeze(1)).float()
-        g_cnt = g_mask.sum(dim=1)  # [B]
-        t_cnt = t_mask.sum(dim=1)
-        if g_cnt.min() < 2 or t_cnt.min() < 2:
-            continue
-
-        g_probs = g_mask / g_cnt.unsqueeze(1).clamp_min(1e-8)  # [B, N]
-        t_probs = t_mask / t_cnt.unsqueeze(1).clamp_min(1e-8)
-
-        # Sample quota pixels with replacement (batch-parallel, differentiable through values)
-        g_idx = torch.multinomial(g_probs, quota, replacement=True)   # [B, quota]
-        t_idx = torch.multinomial(t_probs, quota, replacement=True)
-
-        # Gather: [B, quota, C]
-        g_samp = g_flat.gather(1, g_idx.unsqueeze(-1).expand(-1, -1, c))
-        t_samp = t_flat.gather(1, t_idx.unsqueeze(-1).expand(-1, -1, c))
-
-        # Project → sort → L1, all batched on GPU
-        g_proj = g_samp @ dirs.t()  # [B, quota, P]
-        t_proj = t_samp @ dirs.t()
-        if noise_sigma > 0.0:
-            g_proj = g_proj + noise_sigma * torch.randn_like(g_proj)
-            t_proj = t_proj + noise_sigma * torch.randn_like(t_proj)
-        g_sorted = torch.sort(g_proj, dim=1).values   # [B, quota, P]
-        t_sorted = torch.sort(t_proj, dim=1).values
-        swd = swd + (g_sorted - t_sorted).abs().mean()
-        active += 1
-    if active > 0:
-        swd = swd / active
-    return swd
-
-
-def _semantic_patch_swd(
-    gen: torch.Tensor,
-    target: torch.Tensor,
-    *,
-    seg_feat: torch.Tensor,
-    num_regions: int,
-    patch_sizes: list[int],
-    patch_weights: list[float] | None = None,
-    num_projections: int = 64,
-    kmeans_iters: int = 4,
-    noise_sigma: float = 0.0,
-) -> torch.Tensor:
-    """Semantic region-matched patch SWD (vectorized: no per-sample Python loops).
-
-    Combines content-coherent region partitioning with multi-scale patch texture matching.
-    For each content-defined region (k-means on seg_feat), extracts local patches from
-    both gen and target within that region and matches their projected distributions.
-    This directly targets MUSIQ: texture naturalness is matched within content-coherent
-    areas, avoiding the muddy blend that global pixel-marginal SWD produces when
-    incompatible regions (e.g. smooth sky vs. textured foliage) share one match.
-
-    Vectorization: loops only over K regions and patch sizes (not K×B×patch). Per region,
-    a fixed quota of patch centers is sampled with replacement via ``torch.multinomial``
-    (batch-parallel), then patches are gathered, projected, sorted, and L1-matched — all
-    on GPU.
-
-    Patches are assigned to regions by their center pixel's region label. Multi-scale
-    patches capture texture at multiple granularities (1x1=color, 3x3=fine, 5x5=coarse).
-    """
-    bsz, c, h, w = gen.shape
-    n = h * w
-    quota = max(8, n // num_regions)
-    if patch_weights is None:
-        patch_weights = [1.0] * len(patch_sizes)
-    patch_weights = [float(w) for w in patch_weights]
-    total_pw = sum(patch_weights) or 1.0
-
-    s_flat = seg_feat.float().reshape(bsz, seg_feat.shape[1], n).transpose(1, 2)  # [B, N, D]
-    g_labels = _kmeans_labels(s_flat, num_regions, iters=kmeans_iters)
-    t_labels = _kmeans_labels(
-        target.float().reshape(bsz, c, n).transpose(1, 2), num_regions, iters=kmeans_iters
-    )
-
-    # Region alignment by centroid mean-projection order
-    g_flat = gen.float().reshape(bsz, c, n).transpose(1, 2)
-    t_flat = target.float().reshape(bsz, c, n).transpose(1, 2)
-    with torch.no_grad():
-        def _order(flat, labels):
-            oh = F.one_hot(labels, num_regions).float()
-            cnt = oh.sum(1).clamp_min(1.0)
-            cent = torch.einsum("bnk,bnc->bkc", oh, flat) / cnt.unsqueeze(-1)
-            score = cent.mean(dim=2)
-            return score.argsort(dim=1)
-        g_ord = _order(g_flat, g_labels)
-        t_ord = _order(t_flat, t_labels)
-
-    swd_total = gen.new_tensor(0.0)
-    for ps, pw in zip(patch_sizes, patch_weights):
-        if ps < 1:
-            continue
-        pad = ps // 2
-        g_unf = F.unfold(gen.float(), kernel_size=ps, padding=pad)  # [B, C*ps^2, N]
-        t_unf = F.unfold(target.float(), kernel_size=ps, padding=pad)
-        feat_dim = g_unf.shape[1]
-        g_patch = g_unf.transpose(1, 2)  # [B, N, C*ps^2]
-        t_patch = t_unf.transpose(1, 2)
-        dirs = F.normalize(torch.randn(num_projections, feat_dim, device=gen.device, dtype=torch.float32), dim=1)
-
-        scale_swd = gen.new_tensor(0.0)
-        active = 0
-        for r in range(num_regions):  # Only K iterations — fully batch-parallel
-            gk = g_ord[:, r]  # [B]
-            tk = t_ord[:, r]  # [B]
-            g_mask = (g_labels == gk.unsqueeze(1)).float()
-            t_mask = (t_labels == tk.unsqueeze(1)).float()
-            g_cnt = g_mask.sum(dim=1)
-            t_cnt = t_mask.sum(dim=1)
-            if g_cnt.min() < 2 or t_cnt.min() < 2:
-                continue
-            g_probs = g_mask / g_cnt.unsqueeze(1).clamp_min(1e-8)
-            t_probs = t_mask / t_cnt.unsqueeze(1).clamp_min(1e-8)
-            g_idx = torch.multinomial(g_probs, quota, replacement=True)
-            t_idx = torch.multinomial(t_probs, quota, replacement=True)
-            g_samp = g_patch.gather(1, g_idx.unsqueeze(-1).expand(-1, -1, feat_dim))
-            t_samp = t_patch.gather(1, t_idx.unsqueeze(-1).expand(-1, -1, feat_dim))
-            g_proj = g_samp @ dirs.t()  # [B, quota, P]
-            t_proj = t_samp @ dirs.t()
-            if noise_sigma > 0.0:
-                g_proj = g_proj + noise_sigma * torch.randn_like(g_proj)
-                t_proj = t_proj + noise_sigma * torch.randn_like(t_proj)
-            g_sorted = torch.sort(g_proj, dim=1).values
-            t_sorted = torch.sort(t_proj, dim=1).values
-            scale_swd = scale_swd + (g_sorted - t_sorted).abs().mean()
-            active += 1
-        if active > 0:
-            scale_swd = scale_swd / active
-        swd_total = swd_total + (pw / total_pw) * scale_swd
-    return swd_total
-
-
-def _semantic_band_swd(
-    gen: torch.Tensor,
-    target: torch.Tensor,
-    *,
-    seg_feat: torch.Tensor,
-    num_regions: int,
-    band_weights: dict[str, float],
-    num_projections: int = 64,
-    kmeans_iters: int = 4,
-    noise_sigma: float = 0.0,
-) -> torch.Tensor:
-    """Semantic region-matched SWD per DWT subband.
-
-    Decomposes gen and target into LL/LH/HL/HH via Haar DWT, then applies semantic
-    region matching within each subband independently. The content partitioning (from
-    seg_feat) is reused across subbands so regions remain content-coherent. High-
-    frequency bands (LH/HL/HH) get higher weight since MUSIQ rewards texture/detail
-    naturalness — the band weighting routes the SWD budget toward perceptual quality.
-    """
-    g_ll, g_lh, g_hl, g_hh = dwt2_haar(gen.float())
-    t_ll, t_lh, t_hl, t_hh = dwt2_haar(target.float())
-    # Downsample seg_feat to subband resolution for region definition
-    seg_sub = F.avg_pool2d(seg_feat.float(), kernel_size=2, stride=2)
-    bands = [
-        ("ll", g_ll, t_ll, band_weights.get("ll", 0.25)),
-        ("lh", g_lh, t_lh, band_weights.get("lh", 1.0)),
-        ("hl", g_hl, t_hl, band_weights.get("hl", 1.0)),
-        ("hh", g_hh, t_hh, band_weights.get("hh", 1.5)),
-    ]
-    swd_total = gen.new_tensor(0.0)
-    total_w = 0.0
-    for name, g_b, t_b, bw in bands:
-        if bw <= 0.0:
-            continue
-        # Use subband-specific k-means on the downsampled seg_feat
-        region_swd = _semantic_region_swd(
-            g_b, t_b,
-            seg_feat=seg_sub,
-            num_regions=num_regions,
-            num_projections=num_projections,
-            kmeans_iters=kmeans_iters,
-            noise_sigma=noise_sigma,
-        )
-        swd_total = swd_total + bw * region_swd
-        total_w += bw
-    if total_w > 0.0:
-        swd_total = swd_total / total_w
-    return swd_total
-
-
 def _patch_swd(
     a: torch.Tensor,
     b: torch.Tensor,
@@ -482,17 +215,6 @@ class SpectralODEObjective620:
         self.swd_band_w_lh = float(getattr(self.bridge_cfg, "swd_band_w_lh", 1.0))
         self.swd_band_w_hl = float(getattr(self.bridge_cfg, "swd_band_w_hl", 1.0))
         self.swd_band_w_hh = float(getattr(self.bridge_cfg, "swd_band_w_hh", 1.5))
-        # Semantic region SWD (true semantic SWD): partition the content latent into
-        # content-similar regions (k-means) and match each region's endpoint distribution
-        # to its appearance-corresponding target region, instead of pooling all pixels into
-        # one global marginal. The global match forces a smooth region's pixels partway
-        # toward a textured target region's statistics, producing a muddy blend that lowers
-        # MUSIQ; region-coherent matching keeps per-region statistics internally consistent.
-        # swd_semantic_mode: "off" | "region". Blended with the global SWD via swd_semantic_blend.
-        self.swd_semantic_mode = str(getattr(self.bridge_cfg, "swd_semantic_mode", "off")).strip().lower()
-        self.swd_semantic_regions = max(2, int(getattr(self.bridge_cfg, "swd_semantic_regions", 4)))
-        self.swd_semantic_kmeans_iters = max(1, int(getattr(self.bridge_cfg, "swd_semantic_kmeans_iters", 4)))
-        self.swd_semantic_blend = max(0.0, min(1.0, float(getattr(self.bridge_cfg, "swd_semantic_blend", 0.5))))
         self.w_style_strength_reg = float(getattr(self.bridge_cfg, "w_style_strength_reg", 0.0))
         self.bridge_sigma = float(getattr(self.bridge_cfg, "bridge_sigma", 0.0))
         self._base_bridge_sigma = self.bridge_sigma
@@ -523,7 +245,51 @@ class SpectralODEObjective620:
         dirs = torch.randn(n, c, device=device, dtype=dtype)
         return F.normalize(dirs, dim=1)
 
-    def _cross_attn_swd_weight(self, model, like: torch.Tensor) -> torch.Tensor | None:
+    def _dwt_energy_weight(self, content: torch.Tensor, like: torch.Tensor) -> torch.Tensor:
+        """Content-adaptive SWD weight from DWT high-frequency energy.
+
+        Computes |LH|+|HL|+|HH| of the content latent, upsamples to full
+        resolution, and normalizes to mean=1. This guides SWD to focus on
+        texture-rich regions (edges, details) — exactly the regions MUSIQ
+        rewards for sharpness/naturalness. Smooth regions (sky, flat areas)
+        get low weight, avoiding over-matching there.
+        """
+        _, lh, hl, hh = dwt2_haar(content.detach().float())
+        energy = (lh.abs() + hl.abs() + hh.abs()).mean(dim=1, keepdim=True)  # [B,1,H/2,W/2]
+        weight = F.interpolate(energy, size=like.shape[-2:], mode="bilinear", align_corners=False)
+        weight = weight.to(dtype=like.dtype, device=like.device)
+        weight = weight.clamp_min(1e-8)
+        weight = weight / weight.mean(dim=(2, 3), keepdim=True).clamp_min(1e-6)
+        if self.swd_guidance_power != 1.0:
+            weight = weight.pow(self.swd_guidance_power)
+            weight = weight / weight.mean(dim=(2, 3), keepdim=True).clamp_min(1e-6)
+        if self.swd_guidance_floor > 0.0:
+            weight = self.swd_guidance_floor + (1.0 - self.swd_guidance_floor) * weight
+        return weight
+
+    def _cross_attn_swd_weight(self, model, like: torch.Tensor, content: torch.Tensor | None = None) -> torch.Tensor | None:
+        # DWT-energy guidance: content-adaptive, focuses SWD on texture-rich regions
+        if self.swd_guidance_source in {"dwt_energy", "dwt-energy"} and content is not None:
+            return self._dwt_energy_weight(content, like)
+        # Combined: cross-attn entropy × DWT energy (element-wise product, renormalized)
+        if self.swd_guidance_source in {"cross_attn_plus_dwt", "cross-attn-plus-dwt"} and content is not None:
+            dwt_w = self._dwt_energy_weight(content, like)
+            if self.swd_guidance_source in {"entropy", "pixel_entropy", "attention_entropy"}:
+                guidance = getattr(model, "last_pixel_entropy", None)
+            else:
+                guidance = getattr(model, "last_cross_attn_guidance", None)
+                if guidance is None:
+                    guidance = getattr(model, "last_pixel_entropy", None)
+            if guidance is None or not torch.is_tensor(guidance):
+                return dwt_w  # fallback to DWT-only if cross-attn unavailable
+            attn_w = guidance.detach().to(device=like.device, dtype=like.dtype)
+            if attn_w.shape[-2:] != like.shape[-2:]:
+                attn_w = F.interpolate(attn_w, size=like.shape[-2:], mode="bilinear", align_corners=False)
+            attn_w = attn_w.float().abs().clamp_min(1e-8)
+            attn_w = attn_w / attn_w.mean(dim=(2, 3), keepdim=True).clamp_min(1e-6)
+            combined = (dwt_w.float() * attn_w).clamp_min(1e-8)
+            combined = combined / combined.mean(dim=(2, 3), keepdim=True).clamp_min(1e-6)
+            return combined.to(dtype=like.dtype)
         if self.swd_guidance_source in {"entropy", "pixel_entropy", "attention_entropy"}:
             guidance = getattr(model, "last_pixel_entropy", None)
         else:
@@ -574,117 +340,6 @@ class SpectralODEObjective620:
         swd_guidance_active = z_hat1.new_tensor(0.0)
         swd_guidance_mean = z_hat1.new_tensor(0.0)
         swd_guidance_std = z_hat1.new_tensor(0.0)
-        # Semantic patch SWD: content-coherent region partitioning + multi-scale patch
-        # texture matching within each region. Directly targets MUSIQ: texture naturalness
-        # is matched within content-similar areas, avoiding muddy cross-region blends.
-        if self.swd_semantic_mode == "region_patch" and content is not None:
-            guided = self.swd_scale_mode in {
-                "cross-attn-guided", "cross_attn_guided", "crossattn-guided", "crossattn_guided"
-            }
-            weight = self._cross_attn_swd_weight(model, z_hat1) if guided else None
-            if weight is not None:
-                swd_guidance_active = z_hat1.new_tensor(1.0)
-                swd_guidance_mean = weight.detach().float().mean()
-                swd_guidance_std = weight.detach().float().std()
-            region_patch_swd = _semantic_patch_swd(
-                z_hat1, projected_target,
-                seg_feat=content,
-                num_regions=self.swd_semantic_regions,
-                patch_sizes=self.swd_patch_sizes,
-                patch_weights=self.swd_patch_weights,
-                num_projections=self.num_projections,
-                kmeans_iters=self.swd_semantic_kmeans_iters,
-                noise_sigma=self.swd_noise_sigma,
-            )
-            global_swd = _sliced_wasserstein(
-                z_hat1, projected_target,
-                dirs=self._projection_dirs(z_hat1),
-                noise_sigma=self.swd_noise_sigma,
-                sample_weight=weight, sample_size=self.swd_guidance_sample_size,
-            )
-            beta = self.swd_semantic_blend
-            swd = (1.0 - beta) * global_swd + beta * region_patch_swd
-            edge = F.l1_loss(
-                (z_hat1 - _lowpass(z_hat1, self.lowpass_kernel)).float(),
-                (projected_target - _lowpass(projected_target, self.lowpass_kernel)).float(),
-            )
-            return swd, edge, swd_guidance_active, swd_guidance_mean, swd_guidance_std
-        # Semantic band-split SWD: semantic region matching per DWT subband, with HF
-        # emphasis. Routes the SWD budget toward the high-frequency bands MUSIQ rewards
-        # while maintaining content-coherent region matching within each subband.
-        if self.swd_semantic_mode == "region_band" and content is not None:
-            guided = self.swd_scale_mode in {
-                "cross-attn-guided", "cross_attn_guided", "crossattn-guided", "crossattn_guided"
-            }
-            weight = self._cross_attn_swd_weight(model, z_hat1) if guided else None
-            if weight is not None:
-                swd_guidance_active = z_hat1.new_tensor(1.0)
-                swd_guidance_mean = weight.detach().float().mean()
-                swd_guidance_std = weight.detach().float().std()
-            band_weights = {
-                "ll": self.swd_band_w_ll,
-                "lh": self.swd_band_w_lh,
-                "hl": self.swd_band_w_hl,
-                "hh": self.swd_band_w_hh,
-            }
-            region_band_swd = _semantic_band_swd(
-                z_hat1, projected_target,
-                seg_feat=content,
-                num_regions=self.swd_semantic_regions,
-                band_weights=band_weights,
-                num_projections=self.num_projections,
-                kmeans_iters=self.swd_semantic_kmeans_iters,
-                noise_sigma=self.swd_noise_sigma,
-            )
-            global_swd = _sliced_wasserstein(
-                z_hat1, projected_target,
-                dirs=self._projection_dirs(z_hat1),
-                noise_sigma=self.swd_noise_sigma,
-                sample_weight=weight, sample_size=self.swd_guidance_sample_size,
-            )
-            beta = self.swd_semantic_blend
-            swd = (1.0 - beta) * global_swd + beta * region_band_swd
-            edge = F.l1_loss(
-                (z_hat1 - _lowpass(z_hat1, self.lowpass_kernel)).float(),
-                (projected_target - _lowpass(projected_target, self.lowpass_kernel)).float(),
-            )
-            return swd, edge, swd_guidance_active, swd_guidance_mean, swd_guidance_std
-        # Semantic region SWD (true semantic SWD): match distributions within content-coherent
-        # regions rather than one global marginal. seg_feat is the content latent, so regions
-        # are defined by content similarity ("内容相近的部分"); each is matched to its
-        # appearance-corresponding target region. Blended with the global SWD so the global
-        # distribution constraint (which drives MUSIQ via the reference artwork's statistics)
-        # is preserved while region coherence cleans up incompatible cross-region blending.
-        if self.swd_semantic_mode == "region" and content is not None:
-            guided = self.swd_scale_mode in {
-                "cross-attn-guided", "cross_attn_guided", "crossattn-guided", "crossattn_guided"
-            }
-            weight = self._cross_attn_swd_weight(model, z_hat1) if guided else None
-            if weight is not None:
-                swd_guidance_active = z_hat1.new_tensor(1.0)
-                swd_guidance_mean = weight.detach().float().mean()
-                swd_guidance_std = weight.detach().float().std()
-            global_swd = _sliced_wasserstein(
-                z_hat1, projected_target,
-                dirs=self._projection_dirs(z_hat1),
-                noise_sigma=self.swd_noise_sigma,
-                sample_weight=weight, sample_size=self.swd_guidance_sample_size,
-            )
-            region_swd = _semantic_region_swd(
-                z_hat1, projected_target,
-                seg_feat=content,
-                num_regions=self.swd_semantic_regions,
-                num_projections=self.num_projections,
-                kmeans_iters=self.swd_semantic_kmeans_iters,
-                noise_sigma=self.swd_noise_sigma,
-            )
-            beta = self.swd_semantic_blend
-            swd = (1.0 - beta) * global_swd + beta * region_swd
-            edge = F.l1_loss(
-                (z_hat1 - _lowpass(z_hat1, self.lowpass_kernel)).float(),
-                (projected_target - _lowpass(projected_target, self.lowpass_kernel)).float(),
-            )
-            return swd, edge, swd_guidance_active, swd_guidance_mean, swd_guidance_std
         # Spectral band-split SWD: the model already lives in the wavelet domain, so match
         # the endpoint distribution per DWT subband instead of on the full latent. On the
         # full latent, low-frequency (structure/color) energy dominates the sliced quantiles,
@@ -695,7 +350,7 @@ class SpectralODEObjective620:
             guided = self.swd_scale_mode in {
                 "cross-attn-guided", "cross_attn_guided", "crossattn-guided", "crossattn_guided"
             }
-            weight = self._cross_attn_swd_weight(model, z_hat1) if guided else None
+            weight = self._cross_attn_swd_weight(model, z_hat1, content=content) if guided else None
             if weight is not None:
                 swd_guidance_active = z_hat1.new_tensor(1.0)
                 swd_guidance_mean = weight.detach().float().mean()
@@ -741,7 +396,7 @@ class SpectralODEObjective620:
             guided = self.swd_scale_mode in {
                 "cross-attn-guided", "cross_attn_guided", "crossattn-guided", "crossattn_guided"
             }
-            weight = self._cross_attn_swd_weight(model, z_hat1) if guided else None
+            weight = self._cross_attn_swd_weight(model, z_hat1, content=content) if guided else None
             if weight is not None:
                 swd_guidance_active = z_hat1.new_tensor(1.0)
                 swd_guidance_mean = weight.detach().float().mean()
@@ -765,7 +420,7 @@ class SpectralODEObjective620:
             return swd, edge, swd_guidance_active, swd_guidance_mean, swd_guidance_std
         # Attention-weighted SWD: use cross-attn pixel entropy to weight regions
         if self.swd_scale_mode in {"cross-attn-guided", "cross_attn_guided", "crossattn-guided", "crossattn_guided"}:
-            weight = self._cross_attn_swd_weight(model, z_hat1)
+            weight = self._cross_attn_swd_weight(model, z_hat1, content=content)
             if weight is not None:
                 swd_guidance_active = z_hat1.new_tensor(1.0)
                 swd_guidance_mean = weight.detach().float().mean()
