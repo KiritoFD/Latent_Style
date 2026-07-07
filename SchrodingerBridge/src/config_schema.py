@@ -646,6 +646,10 @@ class BridgeConfig:
     sinkhorn_unbalanced_dummy_offdiag_cost: float = 8.0
     swd_scale_mode: str = "global"
     swd_noise_sigma: float = 0.0
+    swd_guidance_source: str = "style_delta"
+    swd_guidance_floor: float = 0.25
+    swd_guidance_power: float = 1.0
+    swd_guidance_sample_size: int = 256
     w_attn_entropy_reg: float = 0.0
     w_style_strength_reg: float = 0.0
     bridge_sigma: float = 0.05

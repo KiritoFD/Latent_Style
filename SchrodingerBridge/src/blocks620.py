@@ -78,6 +78,7 @@ class SpatialBridgeBlock620(nn.Module):
         self._current_step = 0
         self.max_entropy_queries = 256
         self.cross_attn_entropy = torch.tensor(0.0)
+        self.cross_attn_guidance: torch.Tensor | None = None
         # 630 Phase 4J.1: DWT-Routed Cross-Attention (方案 B)
         self.dwt_route = bool(dwt_route)
         # 630 Remote T2: Soft LL Route — LL 以 alpha 残差注入 style
@@ -294,6 +295,7 @@ class SpatialBridgeBlock620(nn.Module):
         style_delta = self._effective_gate_value().to(dtype=x.dtype) * attended_2d
         self.pixel_entropy = pixel_entropy
         self.cross_attn_entropy = attn_entropy
+        self.cross_attn_guidance = style_delta.detach().float().abs().mean(dim=1, keepdim=True).to(dtype=x.dtype)
 
         # Apply shortcut alpha (float only — learnable variant removed)
         alpha = self.shortcut_alpha

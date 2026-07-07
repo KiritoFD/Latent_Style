@@ -165,18 +165,39 @@ def _wct_match_fiber_keep_mean(
 
 
 class SpectralVelocityHead(nn.Module):
-    """单子带速度头: dim -> latent_channels, zero-init conv."""
+    """单子带速度头: dim -> latent_channels, zero-init conv.
 
-    def __init__(self, dim: int, latent_channels: int) -> None:
+    style_film: when a style_dim is provided, the head's normalized features are
+    FiLM-modulated by the style-global vector (γ,β from a zero-init MLP). The
+    backbone only injects style through cross-attention in the shared body; the
+    output heads otherwise see no direct style signal. FiLM lets each subband
+    velocity head modulate its per-channel statistics from the style code,
+    raising high-frequency style-texture energy (the band MUSIQ rewards) at the
+    point of prediction. Zero-init keeps the head at identity at start, so the
+    modulation is a safe additive refinement over the base velocity.
+    """
+
+    def __init__(self, dim: int, latent_channels: int, style_dim: int = 0) -> None:
         super().__init__()
         self.norm = nn.GroupNorm(1, dim)
         self.act = nn.SiLU()
         self.conv = nn.Conv2d(dim, latent_channels, kernel_size=3, padding=1)
         nn.init.normal_(self.conv.weight, mean=0.0, std=1e-3)
         nn.init.zeros_(self.conv.bias)
+        self.style_dim = int(style_dim)
+        if self.style_dim > 0:
+            self.film = nn.Linear(self.style_dim, dim * 2)
+            nn.init.zeros_(self.film.weight)
+            nn.init.zeros_(self.film.bias)
+        else:
+            self.film = None
 
-    def forward(self, h: torch.Tensor) -> torch.Tensor:
-        return self.conv(self.act(self.norm(h)))
+    def forward(self, h: torch.Tensor, style_global: torch.Tensor | None = None) -> torch.Tensor:
+        z = self.norm(h)
+        if self.film is not None and style_global is not None:
+            gamma, beta = self.film(style_global.float()).to(dtype=h.dtype).chunk(2, dim=-1)
+            z = z * (1.0 + gamma[:, :, None, None]) + beta[:, :, None, None]
+        return self.conv(self.act(z))
 
 
 class SpectralODEBridge620(nn.Module):
@@ -191,6 +212,13 @@ class SpectralODEBridge620(nn.Module):
         self.dim = int(model_cfg.base_dim)
         self.time_dim = int(getattr(model_cfg, "time_dim", self.dim))
         self.dino_dim = int(getattr(model_cfg, "tokenizer_dino_dim", 384))
+        self.style_condition_source = str(getattr(model_cfg, "style_condition_source", "style_memory")).strip().lower()
+        self.use_intrinsic_style = self.style_condition_source in {
+            "latent",
+            "target_latent",
+            "target_style_latent",
+            "target_dino_patches",
+        }
 
         # Style conditioner (style_memory tokens -> bridge width)
         # 630 Phase 6: DINO 退役, style_memory 成为唯一 Style token 路径
@@ -201,6 +229,30 @@ class SpectralODEBridge620(nn.Module):
             num_styles=self.num_styles,
             num_memory_tokens=256,
         )
+        if self.use_intrinsic_style:
+            self.intrinsic_style_cnn = nn.Sequential(
+                nn.Conv2d(self.latent_channels, 64, kernel_size=3, padding=1),
+                nn.GroupNorm(1, 64),
+                nn.SiLU(),
+                nn.Conv2d(64, 128, kernel_size=3, padding=1),
+                nn.GroupNorm(1, 128),
+                nn.SiLU(),
+                nn.Conv2d(128, self.dim, kernel_size=3, padding=1),
+            )
+            self.intrinsic_style_pool = nn.AdaptiveAvgPool2d((16, 16))
+            self.intrinsic_style_proj = nn.Sequential(
+                nn.LayerNorm(self.dim),
+                nn.Linear(self.dim, self.dim),
+            )
+            self.intrinsic_style_global = nn.Sequential(
+                nn.LayerNorm(self.dim),
+                nn.Linear(self.dim, self.dim),
+            )
+        else:
+            self.intrinsic_style_cnn = None
+            self.intrinsic_style_pool = None
+            self.intrinsic_style_proj = None
+            self.intrinsic_style_global = None
 
         # Input projection: 4 subbands stacked -> dim channels
         # Subbands are (B, C, H/2, W/2) each; stack along channel -> (B, 4C, H/2, W/2)
@@ -249,12 +301,26 @@ class SpectralODEBridge620(nn.Module):
         ])
 
         # 3 independent velocity heads (LL, LH, HL) — HH removed: 628 L8 confirmed DEAD
-        self.head_ll = SpectralVelocityHead(self.dim, self.latent_channels)
-        self.head_lh = SpectralVelocityHead(self.dim, self.latent_channels)
-        self.head_hl = SpectralVelocityHead(self.dim, self.latent_channels)
+        # under the old global-SWD regime. 630 semantic-SWD: HH (finest diagonal detail) is
+        # exactly the band MUSIQ rewards, and semantic region SWD now supervises high-freq
+        # matching, so re-enable it behind a flag as a clean A/B.
+        self.enable_hh_head = bool(getattr(model_cfg, "enable_hh_head", False))
+        # 631: FiLM style-modulated velocity heads. The shared backbone injects style
+        # only via cross-attention; the output heads otherwise see no direct style code.
+        # Enabling this lets each subband head FiLM-modulate its per-channel statistics
+        # from style_global (zero-init = identity start), raising HF style-texture energy
+        # at the point of prediction — an architecture-level MUSIQ lever.
+        self.style_film_heads = bool(getattr(model_cfg, "style_film_heads", False))
+        film_dim = self.dim if self.style_film_heads else 0
+        self.head_ll = SpectralVelocityHead(self.dim, self.latent_channels, style_dim=film_dim)
+        self.head_lh = SpectralVelocityHead(self.dim, self.latent_channels, style_dim=film_dim)
+        self.head_hl = SpectralVelocityHead(self.dim, self.latent_channels, style_dim=film_dim)
+        self.head_hh = SpectralVelocityHead(self.dim, self.latent_channels, style_dim=film_dim) if self.enable_hh_head else None
 
         self.last_debug: dict = {}
         self.last_cross_attn_entropy = torch.tensor(0.0)
+        self.last_pixel_entropy: torch.Tensor | None = None
+        self.last_cross_attn_guidance: torch.Tensor | None = None
 
     def _resolve_t(self, x: torch.Tensor, t: torch.Tensor | float | None) -> torch.Tensor:
         if t is None:
@@ -279,9 +345,24 @@ class SpectralODEBridge620(nn.Module):
         # Stack 4 subbands along channel dim (HH still decomposed for input, but no velocity head)
         stacked = torch.cat([ll, lh, hl, hh], dim=1)  # (B, 4C, H/2, W/2)
         # Style (630 Phase 6: DINO 退役, style_memory 唯一路径)
-        style_tokens, style_global = self.style_conditioner(
-            style_id=style_id, batch=x.shape[0], device=x.device, dtype=x.dtype,
-        )
+        if (
+            self.use_intrinsic_style
+            and torch.is_tensor(style_latent)
+            and self.intrinsic_style_cnn is not None
+            and self.intrinsic_style_pool is not None
+            and self.intrinsic_style_proj is not None
+            and self.intrinsic_style_global is not None
+        ):
+            style_feat = self.intrinsic_style_cnn(style_latent.to(device=x.device, dtype=x.dtype))
+            style_feat = self.intrinsic_style_pool(style_feat)
+            style_b, style_c, style_h, style_w = style_feat.shape
+            style_tokens = style_feat.reshape(style_b, style_c, style_h * style_w).permute(0, 2, 1)
+            style_tokens = self.intrinsic_style_proj(style_tokens.float()).to(dtype=x.dtype)
+            style_global = self.intrinsic_style_global(style_feat.mean(dim=[2, 3]).float()).to(dtype=x.dtype)
+        else:
+            style_tokens, style_global = self.style_conditioner(
+                style_id=style_id, batch=x.shape[0], device=x.device, dtype=x.dtype,
+            )
         # 630 Phase 72 方案 C/D: 提取独立 global_tone_embedding (AdaLN-Zero 或 Direct Tone Bias 共用)
         global_tone = None
         if self.ll_adaln_zero or self.ll_tone_bias:
@@ -299,24 +380,60 @@ class SpectralODEBridge620(nn.Module):
         )
         h = self.input_proj(stacked)
         total_entropy = []
+        total_pixel_entropy = []
+        total_guidance = []
         for block in self.blocks:
             h = block(
                 h, time_emb=time_emb, style_tokens=style_tokens,
                 style_global=style_global, global_tone=global_tone,
             )
             total_entropy.append(block.cross_attn_entropy)
+            if getattr(block, "pixel_entropy", None) is not None:
+                total_pixel_entropy.append(block.pixel_entropy)
+            if getattr(block, "cross_attn_guidance", None) is not None:
+                total_guidance.append(block.cross_attn_guidance)
         if total_entropy:
             self.last_cross_attn_entropy = torch.stack(total_entropy).mean()
-        # 3 velocity heads (HH removed: 628 L8 DEAD)
+        else:
+            self.last_cross_attn_entropy = x.new_tensor(0.0)
+        if total_pixel_entropy:
+            resized_entropy = [
+                F.interpolate(g, size=x.shape[-2:], mode="bilinear", align_corners=False)
+                if g.shape[-2:] != x.shape[-2:]
+                else g
+                for g in total_pixel_entropy
+            ]
+            self.last_pixel_entropy = torch.stack(resized_entropy).mean(dim=0)
+        else:
+            self.last_pixel_entropy = None
+        if total_guidance:
+            resized_guidance = [
+                F.interpolate(g, size=x.shape[-2:], mode="bilinear", align_corners=False)
+                if g.shape[-2:] != x.shape[-2:]
+                else g
+                for g in total_guidance
+            ]
+            self.last_cross_attn_guidance = torch.stack(resized_guidance).mean(dim=0)
+        else:
+            self.last_cross_attn_guidance = None
+        # Velocity heads (HH re-enabled behind enable_hh_head for semantic-SWD high-freq)
         v_ll = self.head_ll(h)
         v_lh = self.head_lh(h)
         v_hl = self.head_hl(h)
+        v_hh = self.head_hh(h) if self.head_hh is not None else None
         self.last_debug = {
             "v_ll_abs": v_ll.detach().float().abs().mean(),
             "v_lh_abs": v_lh.detach().float().abs().mean(),
             "v_hl_abs": v_hl.detach().float().abs().mean(),
+            "style_latent_conditioning_active": x.new_tensor(
+                1.0 if self.use_intrinsic_style and torch.is_tensor(style_latent) else 0.0
+            ),
         }
-        return {"ll": v_ll, "lh": v_lh, "hl": v_hl}
+        out = {"ll": v_ll, "lh": v_lh, "hl": v_hl}
+        if v_hh is not None:
+            self.last_debug["v_hh_abs"] = v_hh.detach().float().abs().mean()
+            out["hh"] = v_hh
+        return out
 
     @torch.no_grad()
     def _solver_step(
