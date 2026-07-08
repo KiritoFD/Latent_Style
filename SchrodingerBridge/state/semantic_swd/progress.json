@@ -1,19 +1,22 @@
 {
-  "iteration": 3,
-  "total_findings": 12,
-  "status": "pivot_structural_mechanism5",
-  "stale_count": 3,
-  "last_seen": "2026-07-08T13:05:00",
-  "current_milestone": "M4_structural_pivot",
+  "iteration": 4,
+  "total_findings": 13,
+  "status": "ablation_round1_running",
+  "stale_count": 0,
+  "last_seen": "2026-07-09T01:06:19",
+  "current_milestone": "M5_clean_ablation_round1",
   "best_musiq": 54.50,
   "best_config": "sem_r8 + EOTA τ=0.08 (hard K=8 baseline)",
-  "mechanism_results": {
-    "soft-mask": {"CLIP-S": 0.7230, "LPIPS": 0.3272, "MUSIQ": 41.04, "verdict": "ruled out (MUSIQ crash)"},
-    "sinkhorn": {"CLIP-S": 0.7142, "LPIPS": 0.4243, "verdict": "ruled out (LPIPS +11.2%)"},
-    "hierarchical": {"CLIP-S": 0.7202, "LPIPS": 0.3903, "verdict": "ruled out (LPIPS +2.3%)"},
-    "adaptive-K": {"verdict": "skipped (tactical, same class as 1-4)"},
-    "spectral": {"verdict": "in progress"},
-    "attn": {"verdict": "pending"}
+  "ablation_round1": {
+    "baseline_clip_s": 0.7087,
+    "baseline_duration_min": 12.7,
+    "experiments_total": 16,
+    "experiments_completed": 1,
+    "experiments_running": "abl_no_swd_loss",
+    "eta_hours": 3.2,
+    "fix_applied": "_projection_dirs fresh random (removed deterministic cache)",
+    "data_path_fix": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train",
+    "remote_cleanup": "658 -> 26 top-level entries"
   },
-  "pivot_rationale": "stale_count=3 → protocol requires structural pivot. All 4 mechanisms modify region MATCHING (how distributions are matched within regions). Pivot to region DEFINITION: where/how regions are formed. Mechanism 5 changes WHERE (frequency domain), mechanism 6 changes HOW (attention vs k-means)."
+  "pivot_rationale": "Cleaned infra + fixed _projection_dirs cache bug + fixed data paths. Running 16-config ablation covering 4 tiers. Baseline CLIP-S=0.7087 confirms fix. Will commit after round1 completes."
 }
