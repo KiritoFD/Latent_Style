@@ -1,0 +1,18 @@
+{
+  "_base": "swd_cm_sem_r8.json",
+  "bridge": {
+    "swd_semantic_mode": "region",
+    "swd_semantic_regions": 32,
+    "swd_semantic_blend": 0.7,
+    "dwt_route_train_prob": 0.8
+  },
+  "checkpoint": {
+    "save_dir": "./exp/abl_k32_fine"
+  },
+  "ablation": {
+    "name": "abl_k32_fine",
+    "axis": "K_sweep",
+    "stage": "ablation",
+    "notes": "K=32: very fine regions. Expect LPIPS degradation from sample-size bias."
+  }
+}

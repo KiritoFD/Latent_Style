@@ -1,0 +1,16 @@
+{
+  "_base": "swd_cm_sem_r8.json",
+  "bridge": {
+    "swd_semantic_mode": "region_attn",
+    "swd_semantic_blend": 0.7
+  },
+  "checkpoint": {
+    "save_dir": "./exp/sem_r8_attn_mechanism"
+  },
+  "ablation": {
+    "name": "sem_r8_attn_mechanism",
+    "axis": "semantic_swd_mechanism",
+    "stage": "objective_test",
+    "notes": "Mechanism 6: Attention-guided style-conditional regions. Uses cross-attention map (from DWT-energy guidance) as region definition instead of k-means. Regions are style-conditional: same content location may belong to different regions for different target styles. Hard top-k membership (lesson from soft-mask: hard boundaries preserve MUSIQ)."
+  }
+}

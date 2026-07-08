@@ -1,0 +1,19 @@
+{
+  "_base": "swd_cm_sem_r8.json",
+  "bridge": {
+    "swd_semantic_mode": "region_soft",
+    "swd_semantic_regions": 8,
+    "swd_semantic_blend": 0.7,
+    "swd_semantic_softmax_temp": 1.0,
+    "swd_semantic_min_weight": 0.05
+  },
+  "checkpoint": {
+    "save_dir": "./exp/sem_r8_soft_mechanism"
+  },
+  "ablation": {
+    "name": "sem_r8_soft_mechanism",
+    "axis": "semantic_swd_mechanism",
+    "stage": "objective_test",
+    "notes": "Soft-mask region SWD. Replaces hard k-means argmax labels with softmax membership probabilities. Each pixel contributes fractionally to ALL regions. Tests if breaking hard partition boundary improves perceptual quality by preserving transition information. temp=1.0, min_weight=0.05."
+  }
+}

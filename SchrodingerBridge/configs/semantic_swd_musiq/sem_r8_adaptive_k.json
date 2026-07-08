@@ -1,0 +1,18 @@
+{
+  "_base": "swd_cm_sem_r8.json",
+  "bridge": {
+    "swd_semantic_mode": "region_adaptive_k",
+    "swd_semantic_blend": 0.7,
+    "swd_semantic_adaptive_k_candidates": [4, 8, 16],
+    "swd_semantic_adaptive_k_threshold": 0.1
+  },
+  "checkpoint": {
+    "save_dir": "./exp/sem_r8_adaptive_k_mechanism"
+  },
+  "ablation": {
+    "name": "sem_r8_adaptive_k_mechanism",
+    "axis": "semantic_swd_mechanism",
+    "stage": "objective_test",
+    "notes": "Content-adaptive-K region SWD. Per-sample K chosen by inertia elbow over {4,8,16}. Simple images get small K, complex images get large K. Tests if per-sample K tracks the inverted-U peak better than fixed K=8."
+  }
+}

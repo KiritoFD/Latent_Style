@@ -1,0 +1,19 @@
+{
+  "_base": "swd_cm_sem_r8.json",
+  "bridge": {
+    "swd_semantic_mode": "region",
+    "swd_semantic_regions": 8,
+    "swd_semantic_blend": 0.7,
+    "single_step_swd_weight": 0.0,
+    "dwt_route_train_prob": 0.8
+  },
+  "checkpoint": {
+    "save_dir": "./exp/abl_swd_w0"
+  },
+  "ablation": {
+    "name": "abl_swd_w0",
+    "axis": "component_removal",
+    "stage": "ablation",
+    "notes": "Remove SWD loss entirely (weight=0). Expect largest MUSIQ crash, proving SWD is indispensable."
+  }
+}

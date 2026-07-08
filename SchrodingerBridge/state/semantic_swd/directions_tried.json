@@ -1,1 +1,8 @@
-[]
+[
+  "soft-mask: softmax membership instead of hard argmax → MUSIQ crash, ruled out",
+  "sinkhorn: entropic-regularized OT per region → LPIPS +11.2%, ruled out",
+  "hierarchical: dual-scale K=4+16 coarse+fine → LPIPS +2.3%, ruled out",
+  "PIVOT: structural change — region DEFINITION instead of region MATCHING. Skip adaptive-K (tactical).",
+  "spectral: DWT decoupling — LL global SWD + HF region SWD → frequency-domain region definition (in progress)",
+  "attn: attention-guided — cross-attention map as region definition → style-conditional regions (pending)"
+]

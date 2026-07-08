@@ -72,7 +72,7 @@ In standard latent coordinates, the rectified-flow target $u_t=z_1-z_0$ mixes lo
 The flow loss then rewards structure preservation more strongly than style-conditioned motion, pulling optimization toward a style-suppression regime.
 
 We argue that this ``style-suppression'' phenomenon is not limited to art-to-art translation. It is, in fact, the underlying geometric reason why modern large-scale diffusion models (e.g., IP-Adapter, ControlNet) frequently suffer from ``content collapse'' or ``style dilution'' when conditioned on reference images. When structure and texture are entangled in a single Euclidean latent space, the network is forced into a zero-sum game between semantic layout and stylistic texture.
-Proposition~\ref{thm:attractor} formalizes a sufficient local condition for this regime and yields concrete, testable predictions:
+Proposition~\ref{prop:attractor} formalizes a sufficient local condition for this regime and yields concrete, testable predictions:
 removing the coordinate change should weaken the CLIP-S/LPIPS frontier, route mismatch should lower transfer quality, and repeated style injection should increase content damage.
 
 WEAVE mitigates this suppression regime by changing coordinates rather than enlarging the generator.
@@ -81,14 +81,14 @@ In the ideal routed limit, the active supervised transport reduces to two orthog
 
 Crucially, WEAVE achieves this not by adding algorithmic complexity but by stripping it away.
 A subtractive audit reveals that complex routing heuristics and multi-step injection protocols---standard in prior methods---are bypassed by the network and empirically redundant in this decoupled geometry.
-The resulting model is compact: its flow backbone has only 903K trainable parameters.
+The resulting model is highly compact: its flow backbone has only 903K trainable parameters.
 Training completes in 3.08 minutes on a single RTX 3060.
 Full inference on 750 image pairs takes 83.7 seconds.
 The decoupled geometry further enables few-shot adaptation to new styles by updating only a compact style-memory module, without retraining.
 
 \paragraph{Contributions.}
 (1)~We introduce IDT-calibrated evaluation for art-to-art transfer, distinguishing real target-direction transfer from no-op behavior.
-(2)~We prove a local style-suppression attractor in Euclidean latent flow (Proposition~\ref{thm:attractor}), a sufficient curvature condition that yields a rigid prediction-to-evidence mapping (validated in Section 4.3).
+(2)~We prove a local style-suppression attractor in Euclidean latent flow (Proposition~\ref{prop:attractor}), a sufficient curvature condition that yields a rigid prediction-to-evidence mapping (validated in Section 4.3).
 (3)~We propose \textbf{WEAVE} (Wavelet-Endpoint Aligned Vector-field Editing), a wavelet-decoupled rectified flow with high-frequency query routing and endpoint subband alignment whose active supervised transport reduces to two orthogonal high-frequency bands in the ideal routed limit (Section~\ref{sec:baselock}).
 (4)~We show that this geometry, together with a subtractive audit of unnecessary complexity, enables a practical real-transfer regime at a fraction of the compute cost of competing methods, making high-quality style transfer accessible on a single consumer GPU.
 
@@ -157,7 +157,7 @@ Natural images follow a $1/f$ spectrum: low frequencies dominate the energy, so 
 At $\theta_0\in\mathcal M_0$, activating style components (in the high-frequency subspace) raises flow loss by $w_f L_f^{\mathrm{high}}$ but gains only $w_s L_s^{\mathrm{high}}\approx0$ in style, so the optimizer is pushed back toward $\mathcal M_0$, sacrificing style to preserve content.
 
 \begin{proposition}
-\label{thm:attractor}
+\label{prop:attractor}
 Let $\theta_0\in\mathcal M_0$ be stationary in the normal directions.
 If $w_f L_f^{\mathrm{high}} \gg w_s L_s^{\mathrm{high}}$, then $\theta_0$ is a strict local minimum of $\mathcal L_{\mathrm{euc}}$ on the normal space $T_{\theta_0}^{\perp}\mathcal M_0$.
 \end{proposition}
@@ -165,7 +165,7 @@ If $w_f L_f^{\mathrm{high}} \gg w_s L_s^{\mathrm{high}}$, then $\theta_0$ is a s
 \textit{Theoretical Intuition (see Supplementary for formal derivation).}
 The Hessian of the objective naturally decomposes by frequency. Given that the flow-matching gradient overwhelmingly dominates the low-frequency subspace ($w_f L_f^{\mathrm{low}} \gg w_s L_s^{\mathrm{low}}$), any normal perturbation attempting to inject high-frequency style is statistically outweighed by the structural preservation penalty. Consequently, the Euclidean basis forces layout and texture to compete, driving the optimizer toward a style-suppressing local minimum ($\mathcal M_0$).
 
-Proposition~\ref{thm:attractor} establishes a rigid dictum: while structure and texture share one Euclidean basis the Pareto deadlock is inescapable. The only remedy is to change the coordinate geometry itself---which is precisely what wavelet decoupling does, giving structure and texture orthogonal subbands the optimizer can no longer pit against one another.
+Proposition~\ref{prop:attractor} establishes a rigid dictum: while structure and texture share one Euclidean basis the Pareto deadlock is inescapable. The only remedy is to change the coordinate geometry itself---which is precisely what wavelet decoupling does, giving structure and texture orthogonal subbands the optimizer can no longer pit against one another.
 
 \subsection{Wavelet Decoupling}
 \label{sec:fiberbundle}
@@ -195,13 +195,13 @@ The implemented training objective is
 \mathcal L_{\mathrm{impl}}
 =
 \mathbb E_t\!\left[
-\lambda_\ell\|v_\ell-u_\ell\|_2^2
+\lambda_{LL}\|v_\ell-u_\ell\|_2^2
 + \|v_1-u_1\|_2^2
 + \|v_2-u_2\|_2^2
 \right],
 \label{eq:weave-loss}
 \end{equation}
-with $\lambda_\ell = 0.3$.
+with $\lambda_{LL} = 0.3$.
 WEAVE de-weights LL rather than eliminating it: some styles also shift coarse color tone, so LL remains a weak anchor.
 
 Loss-level de-weighting is only half of the design.
@@ -209,7 +209,7 @@ At inference we route style queries through the high-frequency channels: $q_{\ma
 During training, we use the high-frequency query with probability $p=0.8$ and the full-latent query with probability $0.2$, preserving a small low-frequency color channel while matching inference.
 We use RMSNorm (not GroupNorm) throughout: GroupNorm zero-centers each group, erasing the channel-wise mean that carries tonal information; in our runs it strips $\approx$72\% of style-relevant statistics, producing washed-out outputs.
 
-In the ideal routed limit ($\lambda_\ell=0$, deterministic high-frequency query), the supervised objective reduces to $\mathbb E_t[\|v_1-u_1\|_2^2 + \|v_2-u_2\|_2^2]$, confining active transport to two orthogonal high-frequency subbands.
+In the ideal routed limit ($\lambda_{LL}=0$, deterministic high-frequency query), the supervised objective reduces to $\mathbb E_t[\|v_1-u_1\|_2^2 + \|v_2-u_2\|_2^2]$, confining active transport to two orthogonal high-frequency subbands.
 If the velocity field has zero displacement on LL and the style query accesses only high-frequency subbands, the structural coordinate $\ell_t = \pi(z_t)$ is conserved throughout transport: $\ell_t = \ell_0$ for all $t$ (proof in Supplementary).
 
 \subsection{Endpoint Alignment}
@@ -387,7 +387,7 @@ It thus achieves the strongest trained positive-IDT result on a single consumer 
 
 
 \paragraph{Theoretical diagnosis of the competing regimes.}
-As Proposition~\ref{thm:attractor} predicts, SaMam shows the style-suppression pattern---sub-IDT CLIP-S (0.5816) despite low LPIPS (0.2434)---while StyleID shows the predicted exponential decay (per-step injection drives $r_n(\alpha)=(1-\alpha)^n$, LPIPS 0.5523).
+As Proposition~\ref{prop:attractor} predicts, SaMam shows the style-suppression pattern---sub-IDT CLIP-S (0.5816) despite low LPIPS (0.2434)---while StyleID shows the predicted exponential decay (per-step injection drives $r_n(\alpha)=(1-\alpha)^n$, LPIPS 0.5523).
 WEAVE's endpoint-only WCT avoids this decay, reaching comparable positive-IDT transfer at much lower damage.
 
 \paragraph{Large priors still set the style-strength ceiling.}
@@ -408,22 +408,22 @@ Bottom-left points suffer from content-style conflict or capacity constraints; b
 \subsection{Mechanistic Ablations}
 \label{sec:ablation}
 
-Our subtractive audit shows that modules standard in prior work---optimal-transport routing, multi-step guidance, DINO correspondences---are not only unnecessary but often harmful here: Proposition~\ref{thm:attractor} predicts any component coupling structure and texture in one basis is pulled toward the attractor.
+Our subtractive audit shows that modules standard in prior work---optimal-transport routing, multi-step guidance, DINO correspondences---are not only unnecessary but often harmful here: Proposition~\ref{prop:attractor} predicts any component coupling structure and texture in one basis is pulled toward the attractor.
 We strip them, leaving a minimal core the optimizer can use for target-direction transport.
 
 Figure~\ref{fig:abl512_scatter_allpairs} presents a $512{\times}512$ ablation plot with 43 configurations spanning seven theoretical axes (AdaIN $4\times$ omitted from plot for axis readability; rows remain in CSV).
 
 Most configurations cluster tightly around the full model (gold star), confirming the robustness of WEAVE's core design.
 The most prominent off-frontier point is the extrapolation~1 variant, whose content preservation collapses when high-frequency routing is removed, validating the role of endpoint subband alignment.
-A separate $10{\times}$ learning-rate run diverged to NaN and is excluded from the plot, consistent with Proposition~\ref{thm:attractor}.
+A separate $10{\times}$ learning-rate run diverged to NaN and is excluded from the plot, consistent with Proposition~\ref{prop:attractor}.
 The AdaIN $4{\times}$ variant (omitted from the plot for axis readability) was checked separately and confirms the exponential content decay predicted above: amplifying per-step AdaIN causes catastrophic structure erosion.
 
 \paragraph{Axis-by-axis summary.}
-The seven axes are LL weight $\lambda_\ell\in\{0,0.1,0.3,0.5,1.0\}$ (0 removes low-frequency supervision), routing probability $p\in\{0.5,0.8,1.0\}$, endpoint scale vector, WCT on/off, RMSNorm vs.\ GroupNorm, residual blocks (2 vs.\ 4), and width (32 vs.\ 64).
+The seven axes are LL weight $\lambda_{LL}\in\{0,0.1,0.3,0.5,1.0\}$ (0 removes low-frequency supervision), routing probability $p\in\{0.5,0.8,1.0\}$, endpoint scale vector, WCT on/off, RMSNorm vs.\ GroupNorm, residual blocks (2 vs.\ 4), and width (32 vs.\ 64).
 Across 43 configurations the full model is a clear Pareto optimum: no single-axis change improves both CLIP-S and LPIPS, and removing high-frequency routing ($p{=}0.5$) causes the largest CLIP-S drop ($-0.032$), while more blocks yield diminishing returns.
 
 \paragraph{Why the cluster is tight.}
-The tight clustering is not accidental: once LL and the high-frequency subbands occupy orthogonal subspaces, the gradient cleanly separates into independent components, so hyperparameters affecting one (e.g., $\lambda_\ell$) barely interact with the other (e.g., endpoint scale).
+The tight clustering is not accidental: once LL and the high-frequency subbands occupy orthogonal subspaces, the gradient cleanly separates into independent components, so hyperparameters affecting one (e.g., $\lambda_{LL}$) barely interact with the other (e.g., endpoint scale).
 The resulting flat basin makes WEAVE robust to moderate hyperparameter perturbations---unlike methods that depend on delicate Euclidean content-style tradeoffs.
 
 
@@ -473,6 +473,7 @@ IDT calibration exposes when a method merely reconstructs the source, and WEAVE 
 On Distinct5-WikiArt it reaches 0.7213 CLIP-S / 0.2868 LPIPS with a 903K-parameter backbone in 3.08 minutes on one RTX 3060; the theory explains one Euclidean failure mode and predicts the confirmed ablation pattern, and the same correct-direction regime survives on Random5-WikiArt and few-shot extension.
 The central finding: real target-direction transfer does not require a large model once the transport geometry separates structure from style, and by running on a single consumer GPU WEAVE lowers the barrier for high-quality stylization.
 
+\clearpage
 \section*{Ethics Statement}
 Style transfer tools can be misused to produce deceptive images or to misattribute stylistic authorship.
 Our method operates at the domain level (e.g., ``Impressionism'') rather than the per-artist level.

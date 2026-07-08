@@ -1,0 +1,21 @@
+{
+  "_base": "swd_cm_sem_r8.json",
+  "bridge": {
+    "swd_semantic_mode": "region",
+    "swd_semantic_regions": 8,
+    "swd_semantic_blend": 0.7,
+    "dwt_route_train_prob": 0.0
+  },
+  "model": {
+    "cross_attn_dwt_route": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/abl_no_dwt"
+  },
+  "ablation": {
+    "name": "abl_no_dwt",
+    "axis": "component_removal",
+    "stage": "ablation",
+    "notes": "Disable DWT route entirely. Expect structure collapse and large quality degradation, proving DWT routing is essential for frequency-aware style transfer."
+  }
+}

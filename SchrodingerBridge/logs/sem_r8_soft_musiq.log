@@ -1,0 +1,25 @@
+﻿python : G:\GitHub\Latent_Style\SchrodingerBridge\scripts\_compute_musiq_batch.py:2: SyntaxWarning: invalid escape sequ
+ence '\p'
+At line:15 char:3613
++ ... pgrep\bin'; python scripts/_compute_musiq_batch.py --methods "sem_r8_ ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (G:\GitHub\Laten...e sequence '\p':String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  """Batch MUSIQ computation for image directories.
+[INFO] device=cuda
+[INFO] Loading MUSIQ metric...
+Loading pretrained model MUSIQ from C:\Users\xy\.cache\torch\hub\pyiqa\musiq_koniq_ckpt-e95806b9.pth
+[INFO] 1 methods to evaluate
+
+[sem_r8_soft] 750 images in exp\sem_r8_soft_mechanism\full_eval\epoch_0005\images
+  MUSIQ: 41.0408  (n=750, 8.1s)
+
+[INFO] Saved to exp\sem_r8_soft_mechanism\musiq_result.json
+{
+  "sem_r8_soft": {
+    "musiq": 41.0407699915568,
+    "n_images": 750,
+    "wall_seconds": 8.1
+  }
+}

@@ -1,0 +1,77 @@
+﻿python : 2026-07-08 10:13:04,908 - INFO - Device: cuda
+At line:15 char:3613
++ ... pgrep\bin'; python src/run.py --config configs/semantic_swd_musiq/sem ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-07-08 10:1... - Device: cuda:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-07-08 10:13:04,908 - INFO - Seed: 42
+2026-07-08 10:13:04,916 - INFO - Loaded latent manifest cache: F:\wikiart_distinct5_samam_512_latents_ema\train\.latent
+_cache\packed\manifest.json
+2026-07-08 10:13:04,916 - INFO - Loading latent dataset from F:\wikiart_distinct5_samam_512_latents_ema\train
+2026-07-08 10:13:04,930 - INFO - Loaded packed latent cache: F:\wikiart_distinct5_samam_512_latents_ema\train\.latent_c
+ache\packed\packed\00_Early_Renaissance.pt
+2026-07-08 10:13:04,950 - INFO -   style=Early_Renaissance id=0 count=1000
+2026-07-08 10:13:04,964 - INFO - Loaded packed latent cache: F:\wikiart_distinct5_samam_512_latents_ema\train\.latent_c
+ache\packed\packed\01_Impressionism.pt
+2026-07-08 10:13:04,979 - INFO -   style=Impressionism id=1 count=1000
+2026-07-08 10:13:04,992 - INFO - Loaded packed latent cache: F:\wikiart_distinct5_samam_512_latents_ema\train\.latent_c
+ache\packed\packed\02_Minimalism.pt
+2026-07-08 10:13:05,008 - INFO -   style=Minimalism id=2 count=1000
+2026-07-08 10:13:05,023 - INFO - Loaded packed latent cache: F:\wikiart_distinct5_samam_512_latents_ema\train\.latent_c
+ache\packed\packed\03_Rococo.pt
+2026-07-08 10:13:05,036 - INFO -   style=Rococo id=3 count=1000
+2026-07-08 10:13:05,050 - INFO - Loaded packed latent cache: F:\wikiart_distinct5_samam_512_latents_ema\train\.latent_c
+ache\packed\packed\04_Ukiyo_e.pt
+2026-07-08 10:13:05,064 - INFO -   style=Ukiyo_e id=4 count=1000
+2026-07-08 10:13:05,163 - INFO - Loaded pairing cache F:\wikiart_distinct5_samam_512_latents_ema\train\.latent_cache\pr
+ototype_pairing_top8.pt with 20000 source-target routes
+2026-07-08 10:13:05,238 - INFO - Wrote pairing cache to SHM 'ls_pairmp_4f67ca704761a6e5' (20000 routes, 10.6 MB JSON)
+2026-07-08 10:13:05,247 - INFO - DataLoader | batch=24 workers=0 shuffle=False pin_memory=False persistent_workers=Fals
+e preload_to_gpu=False balanced_target=True pairing_cache=True pairing_mode=rank_stratified rank_schedule=fixed active_
+topk=8 min_topk=1 curriculum_epochs=0 rank_power=1.000 topk=8 explore=0.000/0 dual_mix=0.000/0 aux_topk=0
+2026-07-08 10:13:05,406 - INFO - Model params: 903,248
+2026-07-08 10:13:06,593 - INFO - Active source modules | config_schema=G:\GitHub\Latent_Style\SchrodingerBridge\src\con
+fig_schema.py | model=G:\GitHub\Latent_Style\SchrodingerBridge\src\model.py | trainer=G:\GitHub\Latent_Style\Schrodinge
+rBridge\src\trainer.py | spectral_bridge620=G:\GitHub\Latent_Style\SchrodingerBridge\src\spectral_bridge620.py | spectr
+al_losses620=G:\GitHub\Latent_Style\SchrodingerBridge\src\spectral_losses620.py | blocks620=G:\GitHub\Latent_Style\Schr
+odingerBridge\src\blocks620.py | style_encoder620=G:\GitHub\Latent_Style\SchrodingerBridge\src\style_encoder620.py | ut
+ils.training=G:\GitHub\Latent_Style\SchrodingerBridge\src\utils\training.py
+2026-07-08 10:13:06,632 - INFO - No checkpoint found, start from scratch.
+2026-07-08 10:13:06,637 - INFO - Pairing cache epoch=1 active_topk=8 mode=rank_stratified rank_schedule=fixed explore=0
+.000/0 dual_mix=0.000/0 aux_topk=0
+2026-07-08 10:13:06,638 - INFO - Epoch 1 weight schedule: stage=0 w_content=1.0000 w_style=8.0000 w_style_strength_reg=
+0.0000 sigma=0.0200
+
+Epoch 1/5:   0%|          | 0/208 [00:00<?, ?it/s]
+Epoch 1/5:   0%|          | 0/208 [03:26<?, ?it/s]
+Traceback (most recent call last):
+  File "G:\GitHub\Latent_Style\SchrodingerBridge\src\run.py", line 711, in <module>
+    main()
+  File "G:\GitHub\Latent_Style\SchrodingerBridge\src\run.py", line 597, in main
+    metrics = trainer.train_epoch(dataloader, epoch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\GitHub\Latent_Style\SchrodingerBridge\src\trainer.py", line 1388, in train_epoch
+    loss_dict = self.loss_fn.compute(
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "G:\GitHub\Latent_Style\SchrodingerBridge\src\spectral_losses620.py", line 1297, in compute
+    swd_ss, edge_ss, swd_guidance_active, swd_guidance_mean, swd_guidance_std = self._compute_swd(z_hat1, projected_tar
+get, model, content=content)
+                                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\GitHub\Latent_Style\SchrodingerBridge\src\spectral_losses620.py", line 1052, in _compute_swd
+    region_swd = _semantic_region_swd_sinkhorn(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\GitHub\Latent_Style\SchrodingerBridge\src\spectral_losses620.py", line 514, in _semantic_region_swd_sinkhorn
+    cost = _sinkhorn_1d(
+           ^^^^^^^^^^^^^
+  File "G:\GitHub\Latent_Style\SchrodingerBridge\src\spectral_losses620.py", line 433, in _sinkhorn_1d
+    f = log_a - torch.logsumexp(log_K + g.unsqueeze(0), dim=1)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.AcceleratorError: CUDA error: out of memory
+Search for `cudaErrorMemoryAllocation' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for m
+ore information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

@@ -1948,3 +1948,544 @@ Epoch 5/5:  20%|██        | 42/208 [00:10<00:44,  3.74it/s, curv=0.0000, flo
 00, t=0.501, tswd=0.7940]
 Epoch 5/5:  21%|██        | 43/208 [00:11<00:43,  3.76it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
 00, t=0.501, tswd=0.7940]
+Epoch 5/5:  21%|██        | 44/208 [00:11<00:44,  3.68it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  22%|██▏       | 45/208 [00:11<00:44,  3.70it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  22%|██▏       | 46/208 [00:11<00:43,  3.75it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  23%|██▎       | 47/208 [00:12<00:44,  3.63it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  23%|██▎       | 48/208 [00:12<00:43,  3.71it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  24%|██▎       | 49/208 [00:12<00:42,  3.70it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  24%|██▍       | 50/208 [00:12<00:41,  3.81it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  25%|██▍       | 51/208 [00:13<00:40,  3.86it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  25%|██▌       | 52/208 [00:13<00:40,  3.90it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  25%|██▌       | 53/208 [00:13<00:40,  3.81it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  26%|██▌       | 54/208 [00:13<00:40,  3.77it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  26%|██▋       | 55/208 [00:14<00:40,  3.80it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  27%|██▋       | 56/208 [00:14<00:40,  3.75it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  27%|██▋       | 57/208 [00:14<00:40,  3.75it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  28%|██▊       | 58/208 [00:15<00:38,  3.86it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  28%|██▊       | 59/208 [00:15<00:37,  3.94it/s, curv=0.0000, flow=2.3290, kin=0.0000, loss=12.4398, ot=0.00
+00, t=0.501, tswd=0.7940]
+Epoch 5/5:  28%|██▊       | 59/208 [00:15<00:37,  3.94it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  29%|██▉       | 60/208 [00:15<00:37,  3.96it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  29%|██▉       | 61/208 [00:15<00:36,  3.97it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  30%|██▉       | 62/208 [00:16<00:36,  3.98it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  30%|███       | 63/208 [00:16<00:37,  3.91it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  31%|███       | 64/208 [00:16<00:37,  3.87it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  31%|███▏      | 65/208 [00:16<00:37,  3.85it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  32%|███▏      | 66/208 [00:17<00:37,  3.77it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  32%|███▏      | 67/208 [00:17<00:36,  3.87it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  33%|███▎      | 68/208 [00:17<00:36,  3.87it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  33%|███▎      | 69/208 [00:17<00:35,  3.91it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  34%|███▎      | 70/208 [00:18<00:34,  3.98it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  34%|███▍      | 71/208 [00:18<00:35,  3.88it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  35%|███▍      | 72/208 [00:18<00:35,  3.86it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  35%|███▌      | 73/208 [00:18<00:34,  3.86it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  36%|███▌      | 74/208 [00:19<00:33,  3.98it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  36%|███▌      | 75/208 [00:19<00:33,  4.03it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  37%|███▋      | 76/208 [00:19<00:33,  3.89it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  37%|███▋      | 77/208 [00:19<00:34,  3.82it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  38%|███▊      | 78/208 [00:20<00:34,  3.80it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  38%|███▊      | 79/208 [00:20<00:33,  3.81it/s, curv=0.0000, flow=2.3269, kin=0.0000, loss=12.3406, ot=0.00
+00, t=0.499, tswd=0.7860]
+Epoch 5/5:  38%|███▊      | 79/208 [00:20<00:33,  3.81it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  38%|███▊      | 80/208 [00:20<00:32,  3.90it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  39%|███▉      | 81/208 [00:20<00:32,  3.91it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  39%|███▉      | 82/208 [00:21<00:33,  3.81it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  40%|███▉      | 83/208 [00:21<00:33,  3.72it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  40%|████      | 84/208 [00:21<00:32,  3.76it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  41%|████      | 85/208 [00:22<00:32,  3.76it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  41%|████▏     | 86/208 [00:22<00:32,  3.76it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  42%|████▏     | 87/208 [00:22<00:31,  3.80it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  42%|████▏     | 88/208 [00:22<00:31,  3.84it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  43%|████▎     | 89/208 [00:23<00:30,  3.92it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  43%|████▎     | 90/208 [00:23<00:30,  3.84it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  44%|████▍     | 91/208 [00:23<00:31,  3.74it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  44%|████▍     | 92/208 [00:23<00:32,  3.53it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  45%|████▍     | 93/208 [00:24<00:31,  3.64it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  45%|████▌     | 94/208 [00:24<00:30,  3.72it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  46%|████▌     | 95/208 [00:24<00:29,  3.79it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  46%|████▌     | 96/208 [00:24<00:29,  3.78it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  47%|████▋     | 97/208 [00:25<00:30,  3.69it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  47%|████▋     | 98/208 [00:25<00:30,  3.66it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  48%|████▊     | 99/208 [00:25<00:29,  3.70it/s, curv=0.0000, flow=2.3326, kin=0.0000, loss=12.3410, ot=0.00
+00, t=0.500, tswd=0.7854]
+Epoch 5/5:  48%|████▊     | 99/208 [00:26<00:29,  3.70it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.00
+00, t=0.499, tswd=0.7843]
+Epoch 5/5:  48%|████▊     | 100/208 [00:26<00:28,  3.73it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  49%|████▊     | 101/208 [00:26<00:28,  3.77it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  49%|████▉     | 102/208 [00:26<00:27,  3.82it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  50%|████▉     | 103/208 [00:26<00:26,  3.91it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  50%|█████     | 104/208 [00:27<00:26,  3.93it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  50%|█████     | 105/208 [00:27<00:27,  3.78it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  51%|█████     | 106/208 [00:27<00:27,  3.70it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  51%|█████▏    | 107/208 [00:27<00:27,  3.65it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  52%|█████▏    | 108/208 [00:28<00:26,  3.75it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  52%|█████▏    | 109/208 [00:28<00:26,  3.74it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  53%|█████▎    | 110/208 [00:28<00:26,  3.66it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  53%|█████▎    | 111/208 [00:29<00:28,  3.43it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  54%|█████▍    | 112/208 [00:29<00:30,  3.19it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  54%|█████▍    | 113/208 [00:29<00:30,  3.08it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  55%|█████▍    | 114/208 [00:30<00:30,  3.10it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  55%|█████▌    | 115/208 [00:30<00:30,  3.07it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  56%|█████▌    | 116/208 [00:30<00:29,  3.15it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  56%|█████▋    | 117/208 [00:30<00:26,  3.37it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  57%|█████▋    | 118/208 [00:31<00:25,  3.52it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  57%|█████▋    | 119/208 [00:31<00:24,  3.65it/s, curv=0.0000, flow=2.3165, kin=0.0000, loss=12.3070, ot=0.0
+000, t=0.499, tswd=0.7843]
+Epoch 5/5:  57%|█████▋    | 119/208 [00:31<00:24,  3.65it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  58%|█████▊    | 120/208 [00:31<00:23,  3.73it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  58%|█████▊    | 121/208 [00:31<00:22,  3.90it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  59%|█████▊    | 122/208 [00:32<00:21,  4.04it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  59%|█████▉    | 123/208 [00:32<00:20,  4.10it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  60%|█████▉    | 124/208 [00:32<00:22,  3.77it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  60%|██████    | 125/208 [00:33<00:23,  3.57it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  61%|██████    | 126/208 [00:33<00:23,  3.49it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  61%|██████    | 127/208 [00:33<00:23,  3.43it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  62%|██████▏   | 128/208 [00:33<00:23,  3.39it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  62%|██████▏   | 129/208 [00:34<00:23,  3.36it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  62%|██████▎   | 130/208 [00:34<00:24,  3.22it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  63%|██████▎   | 131/208 [00:34<00:24,  3.20it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  63%|██████▎   | 132/208 [00:35<00:24,  3.15it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  64%|██████▍   | 133/208 [00:35<00:24,  3.12it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  64%|██████▍   | 134/208 [00:35<00:23,  3.10it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  65%|██████▍   | 135/208 [00:36<00:23,  3.10it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  65%|██████▌   | 136/208 [00:36<00:24,  2.99it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  66%|██████▌   | 137/208 [00:36<00:23,  3.01it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  66%|██████▋   | 138/208 [00:37<00:23,  2.96it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  67%|██████▋   | 139/208 [00:37<00:23,  2.92it/s, curv=0.0000, flow=2.3126, kin=0.0000, loss=12.2323, ot=0.0
+000, t=0.497, tswd=0.7785]
+Epoch 5/5:  67%|██████▋   | 139/208 [00:37<00:23,  2.92it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  67%|██████▋   | 140/208 [00:37<00:22,  2.97it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  68%|██████▊   | 141/208 [00:38<00:21,  3.09it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  68%|██████▊   | 142/208 [00:38<00:21,  3.08it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  69%|██████▉   | 143/208 [00:38<00:21,  3.07it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  69%|██████▉   | 144/208 [00:39<00:20,  3.15it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  70%|██████▉   | 145/208 [00:39<00:18,  3.39it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  70%|███████   | 146/208 [00:39<00:17,  3.46it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  71%|███████   | 147/208 [00:39<00:16,  3.63it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  71%|███████   | 148/208 [00:40<00:16,  3.72it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  72%|███████▏  | 149/208 [00:40<00:15,  3.72it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  72%|███████▏  | 150/208 [00:40<00:16,  3.47it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  73%|███████▎  | 151/208 [00:41<00:17,  3.20it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  73%|███████▎  | 152/208 [00:41<00:17,  3.20it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  74%|███████▎  | 153/208 [00:41<00:17,  3.19it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  74%|███████▍  | 154/208 [00:42<00:17,  3.11it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  75%|███████▍  | 155/208 [00:42<00:16,  3.25it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  75%|███████▌  | 156/208 [00:42<00:15,  3.35it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  75%|███████▌  | 157/208 [00:42<00:15,  3.37it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  76%|███████▌  | 158/208 [00:43<00:14,  3.47it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  76%|███████▋  | 159/208 [00:43<00:13,  3.62it/s, curv=0.0000, flow=2.3160, kin=0.0000, loss=12.2407, ot=0.0
+000, t=0.499, tswd=0.7788]
+Epoch 5/5:  76%|███████▋  | 159/208 [00:43<00:13,  3.62it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  77%|███████▋  | 160/208 [00:43<00:12,  3.73it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  77%|███████▋  | 161/208 [00:43<00:12,  3.83it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  78%|███████▊  | 162/208 [00:44<00:11,  3.90it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  78%|███████▊  | 163/208 [00:44<00:11,  3.97it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  79%|███████▉  | 164/208 [00:44<00:10,  4.00it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  79%|███████▉  | 165/208 [00:44<00:10,  3.98it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  80%|███████▉  | 166/208 [00:45<00:10,  3.90it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  80%|████████  | 167/208 [00:45<00:10,  3.77it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  81%|████████  | 168/208 [00:45<00:10,  3.88it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  81%|████████▏ | 169/208 [00:46<00:10,  3.84it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  82%|████████▏ | 170/208 [00:46<00:09,  3.88it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  82%|████████▏ | 171/208 [00:46<00:09,  3.94it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  83%|████████▎ | 172/208 [00:46<00:09,  3.98it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  83%|████████▎ | 173/208 [00:46<00:08,  4.03it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  84%|████████▎ | 174/208 [00:47<00:08,  4.09it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  84%|████████▍ | 175/208 [00:47<00:08,  4.06it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  85%|████████▍ | 176/208 [00:47<00:07,  4.05it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  85%|████████▌ | 177/208 [00:47<00:07,  3.98it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  86%|████████▌ | 178/208 [00:48<00:07,  3.94it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  86%|████████▌ | 179/208 [00:48<00:07,  3.81it/s, curv=0.0000, flow=2.3222, kin=0.0000, loss=12.2486, ot=0.0
+000, t=0.499, tswd=0.7787]
+Epoch 5/5:  86%|████████▌ | 179/208 [00:48<00:07,  3.81it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  87%|████████▋ | 180/208 [00:48<00:07,  3.82it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  87%|████████▋ | 181/208 [00:49<00:06,  3.87it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  88%|████████▊ | 182/208 [00:49<00:06,  3.93it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  88%|████████▊ | 183/208 [00:49<00:06,  3.88it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  88%|████████▊ | 184/208 [00:49<00:06,  3.83it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  89%|████████▉ | 185/208 [00:50<00:06,  3.78it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  89%|████████▉ | 186/208 [00:50<00:05,  3.89it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  90%|████████▉ | 187/208 [00:50<00:05,  3.95it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  90%|█████████ | 188/208 [00:50<00:04,  4.01it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  91%|█████████ | 189/208 [00:51<00:04,  4.02it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  91%|█████████▏| 190/208 [00:51<00:04,  3.94it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  92%|█████████▏| 191/208 [00:51<00:04,  3.81it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  92%|█████████▏| 192/208 [00:51<00:04,  3.69it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  93%|█████████▎| 193/208 [00:52<00:04,  3.67it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  93%|█████████▎| 194/208 [00:52<00:03,  3.68it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  94%|█████████▍| 195/208 [00:52<00:03,  3.82it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  94%|█████████▍| 196/208 [00:52<00:03,  3.71it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  95%|█████████▍| 197/208 [00:53<00:02,  3.71it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  95%|█████████▌| 198/208 [00:53<00:02,  3.73it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  96%|█████████▌| 199/208 [00:53<00:02,  3.83it/s, curv=0.0000, flow=2.3187, kin=0.0000, loss=12.2086, ot=0.0
+000, t=0.500, tswd=0.7760]
+Epoch 5/5:  96%|█████████▌| 199/208 [00:54<00:02,  3.83it/s, curv=0.0000, flow=2.3140, kin=0.0000, loss=12.2004, ot=0.0
+000, t=0.500, tswd=0.7757]
+Epoch 5/5:  96%|█████████▌| 200/208 [00:54<00:02,  3.86it/s, curv=0.0000, flow=2.3140, kin=0.0000, loss=12.2004, ot=0.0
+000, t=0.500, tswd=0.7757]
+Epoch 5/5:  97%|█████████▋| 201/208 [00:54<00:01,  3.88it/s, curv=0.0000, flow=2.3140, kin=0.0000, loss=12.2004, ot=0.0
+000, t=0.500, tswd=0.7757]
+Epoch 5/5:  97%|█████████▋| 202/208 [00:54<00:01,  3.93it/s, curv=0.0000, flow=2.3140, kin=0.0000, loss=12.2004, ot=0.0
+000, t=0.500, tswd=0.7757]
+Epoch 5/5:  98%|█████████▊| 203/208 [00:54<00:01,  3.98it/s, curv=0.0000, flow=2.3140, kin=0.0000, loss=12.2004, ot=0.0
+000, t=0.500, tswd=0.7757]
+Epoch 5/5:  98%|█████████▊| 204/208 [00:55<00:00,  4.05it/s, curv=0.0000, flow=2.3140, kin=0.0000, loss=12.2004, ot=0.0
+000, t=0.500, tswd=0.7757]
+Epoch 5/5:  99%|█████████▊| 205/208 [00:55<00:00,  4.06it/s, curv=0.0000, flow=2.3140, kin=0.0000, loss=12.2004, ot=0.0
+000, t=0.500, tswd=0.7757]
+Epoch 5/5:  99%|█████████▉| 206/208 [00:55<00:00,  4.12it/s, curv=0.0000, flow=2.3140, kin=0.0000, loss=12.2004, ot=0.0
+000, t=0.500, tswd=0.7757]
+Epoch 5/5: 100%|█████████▉| 207/208 [00:55<00:00,  4.21it/s, curv=0.0000, flow=2.3140, kin=0.0000, loss=12.2004, ot=0.0
+000, t=0.500, tswd=0.7757]
+Epoch 5/5: 100%|█████████▉| 207/208 [00:55<00:00,  4.21it/s, curv=0.0000, flow=2.3150, kin=0.0000, loss=12.1979, ot=0.0
+000, t=0.500, tswd=0.7753]
+Epoch 5/5: 100%|██████████| 208/208 [00:55<00:00,  4.32it/s, curv=0.0000, flow=2.3150, kin=0.0000, loss=12.1979, ot=0.0
+000, t=0.500, tswd=0.7753]
+Epoch 5/5: 100%|██████████| 208/208 [00:55<00:00,  3.72it/s, curv=0.0000, flow=2.3150, kin=0.0000, loss=12.1979, ot=0.0
+000, t=0.500, tswd=0.7753]
+2026-07-08 09:18:59,532 - INFO - Epoch 5/5 | loss=12.1979 flow=2.3150 kin=0.0000 ot=0.0000 tswd=0.7753 gini=0.000 hub=0
+.000 otd=0.0000 fiber=0.000 leak=0.0000 tgtshift=0.0000 cla=0.0000 cea=0.0000 sem_attn=0.000 sem_k=0.000 topo_ent=0.000
+ topo_on=0 plan_ent=0.000 bary_ent=0.000 tok_ent=0.000 tok_eff=0.0 tok_max=0.000 tok_svd=0.000 tok_cos=0.000 app_s=0.00
+0 app_d=0.000 sigma=0.000 bex=0 idr=0.00 t=0.500 |v|=0.000 lr=2.81e-05 data=0.9s comp=47.2s epoch=55.9s sps=89.26 bstep
+=0.269s gpu=53.6/86.0% vram=4.95/5.07GB power=43.8/66.2W peak=1.37/2.13GB
+2026-07-08 09:18:59,577 - INFO - Saved checkpoint: exp\sem_r4_k_sweep\epoch_0005.pt
+2026-07-08 09:18:59,577 - INFO - Deferred full eval queue contains 1 checkpoints.
+2026-07-08 09:18:59,716 - INFO - Running full eval for exp\sem_r4_k_sweep\epoch_0005.pt -> exp\sem_r4_k_sweep\full_eval
+\epoch_0005
+HF cache dir: C:\Users\xy\.cache\huggingface\hub
+HF hub cache dir: C:\Users\xy\.cache\huggingface\hub
+[fallback] readable eval image root: F:\wikiart_distinct5_samam_512_classview\test -> F:\wikiart_distinct5_512_images\test
+
+Phase 1: Generation (Batch Size 1)
+  Diffusers VAE loaded: required by eval settings
+  Source latent cache loaded: G:\GitHub\Latent_Style\SchrodingerBridge\eval_cache\source_latents_d5f244d6a942.pt
+  Generating Batch 1/150
+  Generating Batch 2/150
+  Generating Batch 3/150
+  Generating Batch 4/150
+  Generating Batch 5/150
+  Generating Batch 6/150
+  Generating Batch 7/150
+  Generating Batch 8/150
+  Generating Batch 9/150
+  Generating Batch 10/150
+  Generating Batch 11/150
+  Generating Batch 12/150
+  Generating Batch 13/150
+  Generating Batch 14/150
+  Generating Batch 15/150
+  Generating Batch 16/150
+  Generating Batch 17/150
+  Generating Batch 18/150
+  Generating Batch 19/150
+  Generating Batch 20/150
+  Generating Batch 21/150
+  Generating Batch 22/150
+  Generating Batch 23/150
+  Generating Batch 24/150
+  Generating Batch 25/150
+  Generating Batch 26/150
+  Generating Batch 27/150
+  Generating Batch 28/150
+  Generating Batch 29/150
+  Generating Batch 30/150
+  Generating Batch 31/150
+  Generating Batch 32/150
+  Generating Batch 33/150
+  Generating Batch 34/150
+  Generating Batch 35/150
+  Generating Batch 36/150
+  Generating Batch 37/150
+  Generating Batch 38/150
+  Generating Batch 39/150
+  Generating Batch 40/150
+  Generating Batch 41/150
+  Generating Batch 42/150
+  Generating Batch 43/150
+  Generating Batch 44/150
+  Generating Batch 45/150
+  Generating Batch 46/150
+  Generating Batch 47/150
+  Generating Batch 48/150
+  Generating Batch 49/150
+  Generating Batch 50/150
+  Generating Batch 51/150
+  Generating Batch 52/150
+  Generating Batch 53/150
+  Generating Batch 54/150
+  Generating Batch 55/150
+  Generating Batch 56/150
+  Generating Batch 57/150
+  Generating Batch 58/150
+  Generating Batch 59/150
+  Generating Batch 60/150
+  Generating Batch 61/150
+  Generating Batch 62/150
+  Generating Batch 63/150
+  Generating Batch 64/150
+  Generating Batch 65/150
+  Generating Batch 66/150
+  Generating Batch 67/150
+  Generating Batch 68/150
+  Generating Batch 69/150
+  Generating Batch 70/150
+  Generating Batch 71/150
+  Generating Batch 72/150
+  Generating Batch 73/150
+  Generating Batch 74/150
+  Generating Batch 75/150
+  Generating Batch 76/150
+  Generating Batch 77/150
+  Generating Batch 78/150
+  Generating Batch 79/150
+  Generating Batch 80/150
+  Generating Batch 81/150
+  Generating Batch 82/150
+  Generating Batch 83/150
+  Generating Batch 84/150
+  Generating Batch 85/150
+  Generating Batch 86/150
+  Generating Batch 87/150
+  Generating Batch 88/150
+  Generating Batch 89/150
+  Generating Batch 90/150
+  Generating Batch 91/150
+  Generating Batch 92/150
+  Generating Batch 93/150
+  Generating Batch 94/150
+  Generating Batch 95/150
+  Generating Batch 96/150
+  Generating Batch 97/150
+  Generating Batch 98/150
+  Generating Batch 99/150
+  Generating Batch 100/150
+  Generating Batch 101/150
+  Generating Batch 102/150
+  Generating Batch 103/150
+  Generating Batch 104/150
+  Generating Batch 105/150
+  Generating Batch 106/150
+  Generating Batch 107/150
+  Generating Batch 108/150
+  Generating Batch 109/150
+  Generating Batch 110/150
+  Generating Batch 111/150
+  Generating Batch 112/150
+  Generating Batch 113/150
+  Generating Batch 114/150
+  Generating Batch 115/150
+  Generating Batch 116/150
+  Generating Batch 117/150
+  Generating Batch 118/150
+  Generating Batch 119/150
+  Generating Batch 120/150
+  Generating Batch 121/150
+  Generating Batch 122/150
+  Generating Batch 123/150
+
+  Generating Batch 124/150
+  Generating Batch 125/150
+  Generating Batch 126/150
+  Generating Batch 127/150
+  Generating Batch 128/150
+  Generating Batch 129/150
+  Generating Batch 130/150
+  Generating Batch 131/150
+  Generating Batch 132/150
+  Generating Batch 133/150
+  Generating Batch 134/150
+  Generating Batch 135/150
+  Generating Batch 136/150
+  Generating Batch 137/150
+  Generating Batch 138/150
+  Generating Batch 139/150
+  Generating Batch 140/150
+  Generating Batch 141/150
+  Generating Batch 142/150
+  Generating Batch 143/150
+  Generating Batch 144/150
+  Generating Batch 145/150
+  Generating Batch 146/150
+  Generating Batch 147/150
+  Generating Batch 148/150
+  Generating Batch 149/150
+  Generating Batch 150/150
+  Generation models unloaded
+
+妫ｅ啯鐣?Phase 2: Evaluation
+  LPIPS Loaded (alex)
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 398/398 [00:00<00:00, 39413.82it/s]
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\eval_cache\manual_clip\openai-clip-vit-base-patch32 (processor=loaded)
+Found global reference cache: G:\GitHub\Latent_Style\SchrodingerBridge\eval_cache\ref_feats_809477fce3_m30.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+Found global source cache: G:\GitHub\Latent_Style\SchrodingerBridge\eval_cache\src_feats_809477fce3_img256_clip0.pt
+  Source cache loaded successfully
+  Fast metric path: source image device cache enabled.
+
+妫ｅ啯鎯?Generating Summary...
+  Appearance deltas computed for 750 images
+Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\exp\sem_r4_k_sweep\full_eval\epoch_0005\summary.json
+2026-07-08 09:23:30,730 - INFO - Full eval completed for epoch_0005.pt in 269.7s
+2026-07-08 09:23:30,755 - INFO - Refreshing eval curve for exp\sem_r4_k_sweep
+G:\GitHub\Latent_Style\SchrodingerBridge\exp\sem_r4_k_sweep\full_eval\clip_lpips_curve.csv
+G:\GitHub\Latent_Style\SchrodingerBridge\exp\sem_r4_k_sweep\full_eval\curve_summary.json
+2026-07-08 09:23:30,846 - INFO - Refreshing eval convergence for exp\sem_r4_k_sweep
+G:\GitHub\Latent_Style\SchrodingerBridge\exp\sem_r4_k_sweep\full_eval\round2_convergence.json
+2026-07-08 09:23:30,914 - INFO - Training completed.

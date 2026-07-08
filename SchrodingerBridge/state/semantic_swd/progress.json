@@ -1,10 +1,19 @@
 {
-  "iteration": 0,
-  "total_findings": 0,
-  "status": "initialized",
-  "stale_count": 0,
-  "last_seen": "2026-07-08T15:00:00",
-  "current_milestone": "M1",
+  "iteration": 3,
+  "total_findings": 12,
+  "status": "pivot_structural_mechanism5",
+  "stale_count": 3,
+  "last_seen": "2026-07-08T13:05:00",
+  "current_milestone": "M4_structural_pivot",
   "best_musiq": 54.50,
-  "best_config": "sem_r8 + EOTA τ=0.08"
+  "best_config": "sem_r8 + EOTA τ=0.08 (hard K=8 baseline)",
+  "mechanism_results": {
+    "soft-mask": {"CLIP-S": 0.7230, "LPIPS": 0.3272, "MUSIQ": 41.04, "verdict": "ruled out (MUSIQ crash)"},
+    "sinkhorn": {"CLIP-S": 0.7142, "LPIPS": 0.4243, "verdict": "ruled out (LPIPS +11.2%)"},
+    "hierarchical": {"CLIP-S": 0.7202, "LPIPS": 0.3903, "verdict": "ruled out (LPIPS +2.3%)"},
+    "adaptive-K": {"verdict": "skipped (tactical, same class as 1-4)"},
+    "spectral": {"verdict": "in progress"},
+    "attn": {"verdict": "pending"}
+  },
+  "pivot_rationale": "stale_count=3 → protocol requires structural pivot. All 4 mechanisms modify region MATCHING (how distributions are matched within regions). Pivot to region DEFINITION: where/how regions are formed. Mechanism 5 changes WHERE (frequency domain), mechanism 6 changes HOW (attention vs k-means)."
 }
