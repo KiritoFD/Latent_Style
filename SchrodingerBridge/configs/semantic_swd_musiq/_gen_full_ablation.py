@@ -20,10 +20,13 @@ base["data"]["pairing_cache_path"] = "I:/wikiart_distinct5_samam_512_latents_ema
 base["full_eval"]["hf_soft_threshold"] = 0.08
 
 # Infra optimization: target VRAM 10.8-11.2GB on RTX 3060 12GB
-# bs=128 gave 11.6GB (slightly over). bs=120 targets ~11.0GB.
+# bs=128 without expandable_segments: 11.6GB
+# bs=120 with expandable_segments: 10.0GB (expandable_segments saves ~1.6GB)
+# bs=136 with expandable_segments: ~11.0GB (target)
 # Model is tiny (903K params), VRAM dominated by activations.
 # AMP bf16 already enabled in base config.
-base["training"]["batch_size"] = 120
+# PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True set in runner.
+base["training"]["batch_size"] = 136
 # Eval stays low to avoid OOM (strict <7GB)
 base["training"]["full_eval_batch_size"] = 2
 base["full_eval"]["batch_size"] = 2
