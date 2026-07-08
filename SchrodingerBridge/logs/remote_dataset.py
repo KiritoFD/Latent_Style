@@ -360,10 +360,14 @@ class AdaCUTLatentDataset(Dataset):
         return manifest
 
     def _resolve_style_files(self, subdir: str) -> list[Path]:
-        # In packed mode, we still need the full file list for stem registration
-        # (style_item_stems, style_base_to_indices). The packed cache is loaded
-        # separately in _load_style_stack. Returning [packed_path] here would
-        # break stem registration (only 1 stem instead of N).
+        if self.latent_cache_mode == "packed":
+            try:
+                style_id = self.style_subdirs.index(subdir)
+            except ValueError:
+                style_id = 0
+            packed_path = self.latent_cache_dir / "packed" / self._style_cache_name(style_id, subdir)
+            if packed_path.exists():
+                return [packed_path]
         if self._latent_manifest is not None and subdir in self._latent_manifest:
             return list(self._latent_manifest[subdir])
         return self._scan_style_files(subdir)
@@ -379,10 +383,11 @@ class AdaCUTLatentDataset(Dataset):
                         isinstance(payload, dict)
                         and payload.get("schema") == 1
                         and payload.get("subdir") == subdir
+                        and payload.get("count") == len(files)
                     ):
                         latents = torch.as_tensor(payload["latents"]).float()
                         if latents.ndim == 4:
-                            logger.info("Loaded packed latent cache: %s (count=%d)", packed_path, payload.get("count", -1))
+                            logger.info("Loaded packed latent cache: %s", packed_path)
                             # Pin to shared memory so forked/spawned workers can
                             # access the tensor without an extra copy.
                             try:

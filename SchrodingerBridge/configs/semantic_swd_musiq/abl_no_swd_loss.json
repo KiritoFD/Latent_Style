@@ -514,7 +514,7 @@
   },
   "training": {
     "seed": 42,
-    "batch_size": 136,
+    "batch_size": 112,
     "accumulation_steps": 1,
     "num_workers": 0,
     "shuffle": false,

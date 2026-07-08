@@ -1,5 +1,0 @@
-run,rel_path,family,best_transfer_clip_style,best_transfer_classifier_acc,latest_transfer_content_lpips
-overfit50-style-distill-struct-v2,overfit50-style-distill-struct-v2,overfit50,0.5283678302168846,0.85,0.5512134796
-overfit50-distill_low_only,overfit50-distill_low_only,overfit50,0.5184687432646751,0.9299999999999999,0.545552662
-overfit50-strok-style,overfit50-strok-style,overfit50,0.5164450716972351,0.9299999999999999,0.3861631337
-full_300-map16+32,full_300-map16+32,full_300,0.509921290576458,0.78,0.4242168047

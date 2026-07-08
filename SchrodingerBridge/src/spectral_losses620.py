@@ -673,6 +673,8 @@ def _semantic_region_swd_adaptive_k(
     num_projections: int,
     kmeans_iters: int = 4,
     noise_sigma: float = 0.0,
+    sample_size: int = 0,
+    dirs: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Content-adaptive-K semantic region SWD.
 
@@ -884,7 +886,10 @@ def _semantic_region_swd_attn(
     # membership: [B, N, S], S = number of attention regions.
     S = membership.shape[-1]
 
-    dirs = F.normalize(torch.randn(num_projections, c, device=gen.device, dtype=torch.float32), dim=1)
+    if dirs is None:
+        dirs = F.normalize(torch.randn(num_projections, c, device=gen.device, dtype=torch.float32), dim=1)
+    else:
+        dirs = dirs.to(device=gen.device, dtype=torch.float32)
     swd = gen.new_tensor(0.0)
     active = 0
     # For each attention region s, extract top contributing locations and match.
@@ -1037,6 +1042,7 @@ class SpectralODEObjective620:
         self.swd_guidance_sample_size = int(
             getattr(self.bridge_cfg, "swd_guidance_sample_size", getattr(self.bridge_cfg, "swd_cdf_sample_size", 256))
         )
+        self.swd_region_sample_size = int(getattr(self.bridge_cfg, "swd_region_sample_size", self.swd_guidance_sample_size))
         # 631: Patch-based SWD — project k×k local patches instead of single pixels.
         # Single-pixel SWD only matches the latent color/tone marginal (sorted quantiles
         # of 4-dim channel vectors), discarding all local texture arrangement. MUSIQ is a
@@ -1129,11 +1135,18 @@ class SpectralODEObjective620:
         return F.mse_loss(pred.float(), target.float())
 
     def _projection_dirs(self, tensor: torch.Tensor) -> torch.Tensor:
+        """Fresh random projection directions for Sliced Wasserstein Distance.
+
+        SWD approximates the Wasserstein distance by averaging over RANDOM 1D
+        projections. Caching/deterministic dirs breaks the theoretical guarantee
+        and lets the model overfit to fixed marginals — empirically this makes
+        SWD harmful (removing it improves CLIP-S). Each call MUST return fresh
+        random dirs.
+        """
         c = tensor.shape[1]
         device = tensor.device
-        dtype = tensor.dtype
         n = self.num_projections
-        dirs = torch.randn(n, c, device=device, dtype=dtype)
+        dirs = torch.randn(n, c, device=device, dtype=torch.float32)
         return F.normalize(dirs, dim=1)
 
     def _dwt_energy_weight(self, content: torch.Tensor, like: torch.Tensor) -> torch.Tensor:
@@ -1255,9 +1268,10 @@ class SpectralODEObjective620:
                 swd_guidance_active = z_hat1.new_tensor(1.0)
                 swd_guidance_mean = weight.detach().float().mean()
                 swd_guidance_std = weight.detach().float().std()
+            swd_dirs = self._projection_dirs(z_hat1)
             global_swd = _sliced_wasserstein(
                 z_hat1, projected_target,
-                dirs=self._projection_dirs(z_hat1),
+                dirs=swd_dirs,
                 noise_sigma=self.swd_noise_sigma,
                 sample_weight=weight, sample_size=self.swd_guidance_sample_size,
             )

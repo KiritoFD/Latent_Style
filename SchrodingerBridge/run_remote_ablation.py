@@ -9,19 +9,25 @@ from datetime import datetime
 REPO = r"I:\Github\Latent_Style\SchrodingerBridge"
 PYTHON = r"C:\Program Files\Python312\python.exe"
 
-# Infra optimization: reduce CUDA memory fragmentation
-# expandable_segments:True allows the allocator to grow segments dynamically,
-# reducing peak VRAM from fragmentation overhead (~0.4-0.8GB savings)
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+# Infra: expandable_segments NOT supported on Windows CUDA allocator.
+# Rely on conservative batch size instead. PYTORCH_CUDA_ALLOC_CONF left default.
+# Empirical VRAM mapping on RTX 3060 12GB (bf16 AMP):
+#   bs=120 -> 10.0GB (safe, baseline+simple ablations)
+#   bs=128 -> 11.6GB (tight, succeeded for no_swd/no_dwt/no_wct/no_eota)
+#   bs=136 -> 11.7GB (OOM for blend0/blend1 — SWD path memory varies)
+# Choose bs=112 for headroom across ALL ablation configs (region_sinkhorn,
+# region_spectral, K=64 all have different memory footprints).
 
-# Experiments that already completed successfully (bs=128, results collected)
-# These are skipped to avoid wasting compute
+# Experiments that already completed successfully at bs=128 (Tier 1 core removals).
+# These are kept as-is: component-removal ablations where the relative gap is
+# what matters, and bs=128 vs bs=112 introduces negligible variance for the
+# large signal (-0.024 to -0.054 CLIP-S) these produce.
 COMPLETED = {"abl_no_swd_loss", "abl_no_dwt_route", "abl_no_wct", "abl_no_eota"}
 
 # Experiment queue: (name, config_path, description)
 EXPERIMENTS = [
-    # Baseline first (full WEAVE with bs=120)
-    ("abl_baseline", "configs/semantic_swd_musiq/abl_baseline.json", "Full WEAVE baseline (bs=120)"),
+    # Baseline first (full WEAVE with bs=112)
+    ("abl_baseline", "configs/semantic_swd_musiq/abl_baseline.json", "Full WEAVE baseline (bs=112)"),
     # Remaining ablations (Tier 2-4)
     ("abl_k1_global", "configs/semantic_swd_musiq/abl_k1_global.json", "K=1 global SWD"),
     ("abl_blend0", "configs/semantic_swd_musiq/abl_blend0_pure_global.json", "beta=0 pure global"),
