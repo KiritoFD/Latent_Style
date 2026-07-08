@@ -1,0 +1,20 @@
+﻿[
+    {
+        "musiq":  0,
+        "clip_s":  0.7047,
+        "name":  "s2_sem_patch",
+        "lpips":  0.5311
+    },
+    {
+        "musiq":  0,
+        "clip_s":  0.6976,
+        "name":  "s3_sem_band",
+        "lpips":  0.4240
+    },
+    {
+        "musiq":  0,
+        "clip_s":  0.7095,
+        "name":  "s4_sem_xattn",
+        "lpips":  0.5320
+    }
+]

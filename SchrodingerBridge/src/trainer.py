@@ -5,6 +5,7 @@ import logging
 import math
 import os
 import re
+import sys
 import threading
 import time
 import gc
@@ -72,6 +73,31 @@ def _host_can_resolve_path(path: Path) -> bool:
     ):
         return False
     return True
+
+
+def _assert_active_source_modules(module_names: list[str]) -> None:
+    package_dir = Path(__file__).resolve().parent
+    forbidden_snapshot_dir = package_dir / "exp"
+    origins: list[str] = []
+    for name in module_names:
+        module = sys.modules.get(name)
+        module_file = getattr(module, "__file__", None)
+        if not module_file:
+            continue
+        resolved = Path(module_file).resolve()
+        origins.append(f"{name}={resolved}")
+        if forbidden_snapshot_dir in resolved.parents:
+            raise RuntimeError(
+                f"Refusing to train with historical source snapshot: module {name!r} loaded from {resolved}. "
+                f"Run from the active source tree at {package_dir}."
+            )
+        if name not in {"torch"} and package_dir not in resolved.parents and resolved != package_dir:
+            raise RuntimeError(
+                f"Refusing to train with module {name!r} outside active source tree: {resolved}. "
+                f"Expected files under {package_dir}."
+            )
+    if origins:
+        logger.info("Active source modules | %s", " | ".join(origins))
 
 
 def _resolve_optional_host_path(raw_path: str, *, base_dirs: list[Path]) -> Optional[Path]:
@@ -237,9 +263,29 @@ class SBTrainer:
         if contract_family == "620_spatial_bridge":
             from losses620 import SpatialBridgeObjective620
             self.loss_fn = SpatialBridgeObjective620(config)
+            _assert_active_source_modules([
+                "config_schema",
+                "model",
+                "trainer",
+                "model620",
+                "losses620",
+                "blocks620",
+                "style_encoder620",
+                "utils.training",
+            ])
         elif contract_family == "620_spectral_ode":
             from spectral_losses620 import SpectralODEObjective620
             self.loss_fn = SpectralODEObjective620(config)
+            _assert_active_source_modules([
+                "config_schema",
+                "model",
+                "trainer",
+                "spectral_bridge620",
+                "spectral_losses620",
+                "blocks620",
+                "style_encoder620",
+                "utils.training",
+            ])
         else:
             from losses import OTFlowMatchingObjective
             self.loss_fn = OTFlowMatchingObjective(config)
@@ -1535,6 +1581,9 @@ class SBTrainer:
         metrics.setdefault("ot_cost", 0.0)
         metrics.setdefault("terminal_swd", 0.0)
         metrics.setdefault("terminal_swd_aux", 0.0)
+        metrics.setdefault("swd_guidance_active", 0.0)
+        metrics.setdefault("swd_guidance_mean", 0.0)
+        metrics.setdefault("swd_guidance_std", 0.0)
         metrics.setdefault("cycle_consistency", 0.0)
         metrics.setdefault("content_lowpass_anchor", 0.0)
         metrics.setdefault("content_edge_anchor", 0.0)

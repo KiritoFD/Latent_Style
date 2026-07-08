@@ -1,0 +1,55 @@
+﻿============================================================
+WEAVE D5 MUSIQ-only evaluation
+============================================================
+=== Unified evaluation ===
+  image_dir: I:\Github\Latent_Style\SchrodingerBridge\exp\clean_base_v2\full_eval\epoch_0010\images
+  dataset: wiki20distinct5 (styles=['Early_Renaissance', 'Impressionism', 'Minimalism', 'Rococo', 'Ukiyo_e'])
+  test_root: I:\datasets\wikiarts20_512_test
+  Found 750 images
+[MUSIQ] Computing...
+[MUSIQ] Loading...
+Loading pretrained model MUSIQ from C:\Users\Administrator\.cache\torch\hub\pyiqa\musiq_koniq_ckpt-e95806b9.pth
+  MUSIQ = 35.31467566680908
+
+[DONE] Results saved to I:\Github\Latent_Style\SchrodingerBridge\exp\_eval_weave_d5_musiq.json
+  {'n_images': 750, 'dataset': 'wiki20distinct5', 'image_dir': 'I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\clean_base_v2\\full_eval\\epoch_0010\\images', 'wall_seconds': 21.30982732772827, 'musiq': 35.31467566680908}
+[OK] WEAVE D5 MUSIQ eval completed
+
+============================================================
+WEAVE W20 (Random5-WikiArt) MUSIQ-only evaluation
+============================================================
+=== Unified evaluation ===
+  image_dir: I:\Github\Latent_Style\SchrodingerBridge\exp\wikiarts20_eval\images
+  dataset: wiki20distinct5 (styles=['Early_Renaissance', 'Impressionism', 'Minimalism', 'Rococo', 'Ukiyo_e'])
+  test_root: I:\datasets\wikiarts20_512_test
+  Found 12000 images
+[MUSIQ] Computing...
+[MUSIQ] Loading...
+Loading pretrained model MUSIQ from C:\Users\Administrator\.cache\torch\hub\pyiqa\musiq_koniq_ckpt-e95806b9.pth
+  MUSIQ = 31.724459678729374
+
+[DONE] Results saved to I:\Github\Latent_Style\SchrodingerBridge\exp\_eval_weave_w20_musiq.json
+  {'n_images': 12000, 'dataset': 'wiki20distinct5', 'image_dir': 'I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\wikiarts20_eval\\images', 'wall_seconds': 278.3887610435486, 'musiq': 31.724459678729374}
+[OK] WEAVE W20 MUSIQ eval completed
+
+============================================================
+Show results
+============================================================
+--- D5 ---
+{
+  "n_images": 750,
+  "dataset": "wiki20distinct5",
+  "image_dir": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\clean_base_v2\\full_eval\\epoch_0010\\images",
+  "wall_seconds": 21.30982732772827,
+  "musiq": 35.31467566680908
+}
+
+--- W20 ---
+{
+  "n_images": 12000,
+  "dataset": "wiki20distinct5",
+  "image_dir": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\wikiarts20_eval\\images",
+  "wall_seconds": 278.3887610435486,
+  "musiq": 31.724459678729374
+}
+

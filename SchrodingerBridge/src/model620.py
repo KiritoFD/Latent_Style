@@ -200,6 +200,7 @@ class SpatialBridge620(nn.Module):
             ]
         )
         self.last_cross_attn_entropy = torch.tensor(0.0)
+        self.last_cross_attn_guidance: torch.Tensor | None = None
         # 629 D23: endpoint_head_mode == "endpoint_lowhigh" confirmed effective (velocity branch removed)
         self.endpoint_style_to_low = nn.Sequential(
             nn.LayerNorm(self.dim),
@@ -404,6 +405,22 @@ class SpatialBridge620(nn.Module):
             self.last_pixel_entropy = torch.stack(total_pixel_entropy).mean(dim=0)
         else:
             self.last_pixel_entropy = None
+
+        total_guidance = [
+            block.cross_attn_guidance
+            for block in self.blocks
+            if getattr(block, "cross_attn_guidance", None) is not None
+        ]
+        if total_guidance:
+            resized_guidance = [
+                F.interpolate(g, size=x.shape[-2:], mode="bilinear", align_corners=False)
+                if g.shape[-2:] != x.shape[-2:]
+                else g
+                for g in total_guidance
+            ]
+            self.last_cross_attn_guidance = torch.stack(resized_guidance).mean(dim=0)
+        else:
+            self.last_cross_attn_guidance = None
 
         if self.endpoint_head_mode == "endpoint_lowhigh":
             style_low = self.endpoint_style_to_low(style_global.float()).to(dtype=x.dtype).view(x.shape[0], self.latent_channels, 1, 1)

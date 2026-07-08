@@ -1,0 +1,81 @@
+﻿============================================================
+Identity R5 MUSIQ
+============================================================
+=== Unified evaluation ===
+  image_dir: I:\Github\Latent_Style\SchrodingerBridge\exp\baseline_wikiarts20\identity\images
+  dataset: wiki20distinct5 (styles=['Early_Renaissance', 'Impressionism', 'Minimalism', 'Rococo', 'Ukiyo_e'])
+  test_root: I:\datasets\wikiarts20_512_test
+  Found 750 images
+[MUSIQ] Computing...
+[MUSIQ] Loading...
+Loading pretrained model MUSIQ from C:\Users\Administrator\.cache\torch\hub\pyiqa\musiq_koniq_ckpt-e95806b9.pth
+  MUSIQ = 54.60844973754883
+
+[DONE] Results saved to I:\Github\Latent_Style\SchrodingerBridge\exp\_eval_identity_r5_musiq.json
+  {'n_images': 750, 'dataset': 'wiki20distinct5', 'image_dir': 'I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\baseline_wikiarts20\\identity\\images', 'wall_seconds': 25.76459503173828, 'musiq': 54.60844973754883}
+[OK] Identity R5 done
+
+============================================================
+AdaIN R5 MUSIQ
+============================================================
+=== Unified evaluation ===
+  image_dir: I:\Github\Latent_Style\SchrodingerBridge\exp\baseline_wikiarts20\adain\images
+  dataset: wiki20distinct5 (styles=['Early_Renaissance', 'Impressionism', 'Minimalism', 'Rococo', 'Ukiyo_e'])
+  test_root: I:\datasets\wikiarts20_512_test
+  Found 750 images
+[MUSIQ] Computing...
+[MUSIQ] Loading...
+Loading pretrained model MUSIQ from C:\Users\Administrator\.cache\torch\hub\pyiqa\musiq_koniq_ckpt-e95806b9.pth
+  MUSIQ = 51.16404318491618
+
+[DONE] Results saved to I:\Github\Latent_Style\SchrodingerBridge\exp\_eval_adain_r5_musiq.json
+  {'n_images': 750, 'dataset': 'wiki20distinct5', 'image_dir': 'I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\baseline_wikiarts20\\adain\\images', 'wall_seconds': 23.94630265235901, 'musiq': 51.16404318491618}
+[OK] AdaIN R5 done
+
+============================================================
+WCT R5 MUSIQ
+============================================================
+=== Unified evaluation ===
+  image_dir: I:\Github\Latent_Style\SchrodingerBridge\exp\baseline_wikiarts20\wct\images
+  dataset: wiki20distinct5 (styles=['Early_Renaissance', 'Impressionism', 'Minimalism', 'Rococo', 'Ukiyo_e'])
+  test_root: I:\datasets\wikiarts20_512_test
+  Found 750 images
+[MUSIQ] Computing...
+[MUSIQ] Loading...
+Loading pretrained model MUSIQ from C:\Users\Administrator\.cache\torch\hub\pyiqa\musiq_koniq_ckpt-e95806b9.pth
+  MUSIQ = 53.3882761332194
+
+[DONE] Results saved to I:\Github\Latent_Style\SchrodingerBridge\exp\_eval_wct_r5_musiq.json
+  {'n_images': 750, 'dataset': 'wiki20distinct5', 'image_dir': 'I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\baseline_wikiarts20\\wct\\images', 'wall_seconds': 24.115440845489502, 'musiq': 53.3882761332194}
+[OK] WCT R5 done
+
+============================================================
+RESULTS
+============================================================
+--- _eval_identity_r5_musiq.json ---
+{
+  "n_images": 750,
+  "dataset": "wiki20distinct5",
+  "image_dir": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\baseline_wikiarts20\\identity\\images",
+  "wall_seconds": 25.76459503173828,
+  "musiq": 54.60844973754883
+}
+
+--- _eval_adain_r5_musiq.json ---
+{
+  "n_images": 750,
+  "dataset": "wiki20distinct5",
+  "image_dir": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\baseline_wikiarts20\\adain\\images",
+  "wall_seconds": 23.94630265235901,
+  "musiq": 51.16404318491618
+}
+
+--- _eval_wct_r5_musiq.json ---
+{
+  "n_images": 750,
+  "dataset": "wiki20distinct5",
+  "image_dir": "I:\\Github\\Latent_Style\\SchrodingerBridge\\exp\\baseline_wikiarts20\\wct\\images",
+  "wall_seconds": 24.115440845489502,
+  "musiq": 53.3882761332194
+}
+

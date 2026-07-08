@@ -1,0 +1,15 @@
+{
+  "_base": "swd_cm_sem_r8.json",
+  "bridge": {
+    "swd_semantic_regions": 16
+  },
+  "checkpoint": {
+    "save_dir": "./exp/sem_r16_k_sweep"
+  },
+  "ablation": {
+    "name": "sem_r16_k_sweep",
+    "axis": "semantic_swd_k_sweep",
+    "stage": "objective_test",
+    "notes": "K=16 region sweep. Finer regions: more, smaller content-coherent areas."
+  }
+}

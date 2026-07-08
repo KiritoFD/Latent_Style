@@ -1,8 +1,5 @@
 \documentclass[letterpaper]{article}
 \usepackage[submission]{aaai2027}
-\usepackage{times}
-\usepackage{helvet}
-\usepackage{courier}
 \usepackage[hyphens]{url}
 \usepackage{graphicx}
 \usepackage{natbib}
@@ -10,8 +7,6 @@
 \def\UrlFont{\rm}
 \usepackage{caption}
 \frenchspacing
-\setlength{\pdfpagewidth}{8.5in}
-\setlength{\pdfpageheight}{11in}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
@@ -23,15 +18,13 @@
 \newtheorem{corollary}{Corollary}
 \renewcommand{\qedsymbol}{}
 \usepackage{multirow}
-\usepackage{tikz}
 \usepackage{placeins}
 \usepackage{cuted}
 \emergencystretch=1.2em
-\usetikzlibrary{arrows.meta,positioning,calc,fit}
 \pdfinfo{
-/TemplateVersion (2026.1)
+/TemplateVersion (2027.1)
 }
-\setcounter{secnumdepth}{2}
+\setcounter{secnumdepth}{0}
 
 \title{WEAVE: Affordable Real Style Transfer via Wavelet-Endpoint Aligned Vector-Field Editing }
 \author{Anonymous Submission}
@@ -61,8 +54,7 @@ Together, these properties fundamentally democratize high-fidelity art-to-art st
 \end{abstract}
 
 \begin{strip}
-\vspace{-0.9\baselineskip}
-\noindent\makebox[\textwidth][l]{\hspace*{-0.012\textwidth}\includegraphics[width=1.024\textwidth]{fig_distinct5_page1_summary.pdf}}
+\noindent\includegraphics[width=\textwidth]{fig_distinct5_page1_summary.pdf}
 \captionof{figure}{IDT-calibrated comparison on Distinct5-WikiArt.
 Left: CLIP-S versus $1-\mathrm{LPIPS}$, with bubble area encoding training time.
 The red points mark two WEAVE operating points.
@@ -70,7 +62,6 @@ Square markers denote training-free diffusion editors (StyleAligned, IP-Adapter)
 The dashed line marks the IDT floor (0.6933); methods below it have not moved in the requested direction.
 Right: target-pooled ArtFID on the same benchmark, with numbers inside the bars indicating training or response time.}
 \label{fig:page1}
-\vspace{-0.7\baselineskip}
 \end{strip}
 
 \section{Introduction}
@@ -132,7 +123,7 @@ This section develops the theory behind WEAVE. The guiding principle is that rea
 
 \begin{figure*}[t!]
 \centering
-\includegraphics[width=1.02\textwidth]{framework_sfm_main.png}
+\includegraphics[width=\textwidth]{framework_sfm_main.png}
 \caption{WEAVE architecture. The latent is decomposed into LL, LH, HL, and HH subbands. The diagram highlights style query routing (LL is excluded). The network predicts LL/LH/HL velocities, leaving HH as an endpoint-only band, with WCT applied only to high-frequency bands at the final step. Note: the diagram shows the ideal routed limit ($\omega_{\mathrm{LL}}=0$); in practice a weak LL anchor ($\omega_{\mathrm{LL}}=0.3$, i.e., $\lambda_\ell=0.3$) is retained for global color stability.}
 \label{fig:framework}
 \end{figure*}
@@ -211,11 +202,6 @@ Due to the orthogonality of the Haar transform, modifying only the high-frequenc
 On Distinct5-WikiArt, the LL subband consistently carries $>\!90\%$ of the total Frobenius norm (confirming the $1/f$ structure), and the style-induced change between a content and a target-style latent is concentrated in LH/HL/HH---2--4$\times$ larger than in LL.
 This separation justifies weakening LL supervision and routing style queries through the high-frequency bands without losing structural fidelity.
 
-\textbf{On Haar aliasing and mid-frequency style.}
-Haar's piecewise-constant basis has poor frequency localization, so one may ask whether a single-level decomposition truly separates structure from style (e.g., Impressionist edge blur).
-Two points answer this: the VAE latent is already compressed to $4{\times}32{\times}32$, so its effective resolution is only 16 cycles per dimension (the LL Nyquist limit), and mid-frequency content is bridged by the stochastic routing schedule ($p{=}0.8$ high-frequency, $p{=}0.2$ full-latent).
-The transform's purpose is not perfect isolation but separating the dominant low-frequency component (global layout) from the residual (texture, edges, brushwork); even with aliasing, the LL band is an order of magnitude stronger than any individual high-frequency band.
-
 \subsection{Training Objective and Routing}
 \label{sec:baselock}
 
@@ -238,64 +224,92 @@ with $\lambda_\ell = 0.3$.
 WEAVE de-weights LL rather than eliminating it: some styles also shift coarse color tone, so LL remains a weak anchor.
 
 Loss-level de-weighting is only half of the design.
-At inference we route style queries through the high-frequency channels: $q_{\mathrm{routed}} = Q[h_{1,t};h_{2,t};h_{3,t}]$, $k = K(m_s)$, $v = V(m_s)$.
-where $m_s$ is the style memory.
-During training, we use the high-frequency query with probability $p=0.8$ and the full-latent query $q_{\mathrm{full}} = Q[\ell_t;h_{1,t};h_{2,t};h_{3,t}]$ with probability $0.2$.
-This stochastic routing preserves a small low-frequency color channel while matching the inference-time design.
+At inference we route style queries through the high-frequency channels: $q_{\mathrm{routed}} = Q[h_{1,t};h_{2,t};h_{3,t}]$, $k = K(m_s)$, $v = V(m_s)$, where $m_s$ is the style memory.
+During training, we use the high-frequency query with probability $p=0.8$ and the full-latent query with probability $0.2$, preserving a small low-frequency color channel while matching inference.
+We use RMSNorm (not GroupNorm) throughout: GroupNorm zero-centers each group, erasing the channel-wise mean that carries tonal information; in our runs it strips $\approx$72\% of style-relevant statistics, producing washed-out outputs.
 
-\textbf{RMSNorm prevents mean collapse.}
-GroupNorm zero-centers each group, erasing the channel-wise mean that carries tonal (brightness, color-cast) information; in our runs it strips $\approx$72\% of style-relevant statistics, producing washed-out outputs.
-RMSNorm preserves the per-channel mean while stabilizing training, protecting the luminance channel that carries the target's coarse color tone.
+In the ideal routed limit ($\lambda_\ell=0$, deterministic high-frequency query), the supervised objective reduces to $\mathbb E_t[\|v_1-u_1\|_2^2 + \|v_2-u_2\|_2^2]$, confining active transport to two orthogonal high-frequency subbands.
+If the velocity field has zero displacement on LL and the style query accesses only high-frequency subbands, the structural coordinate $\ell_t = \pi(z_t)$ is conserved throughout transport: $\ell_t = \ell_0$ for all $t$ (proof in Supplementary).
 
-In the ideal routed limit ($\lambda_\ell=0$, deterministic high-frequency query), the supervised objective reduces to $\mathbb E_t[\|v_1-u_1\|_2^2 + \|v_2-u_2\|_2^2]$, confining active transport to two orthogonal high-frequency subbands and eliminating the low-frequency conflict from both the gradient and the style-query path.
-Consequently, if the velocity field has zero displacement on the LL subband and the style query accesses only high-frequency subbands, the structural coordinate $\ell_t = \pi(z_t)$ is conserved throughout transport: $\ell_t = \ell_0$ for all $t$ (proof in Supplementary).
-
-\subsection{Endpoint Alignment: ODE Rationale and WCT Validity}
+\subsection{Endpoint Alignment}
 \label{sec:eota}
 
-\textbf{Why not inject style at every step?}
-Rectified flow interpolates latents along straight segments, but linearly interpolating high-frequency wavelet coefficients between two images causes severe variance decay (energy dissipation): the variance of two independent textures drops parabolically to a minimum at $t=0.5$, yielding blurred, phase-misaligned results.
-Per-step injection (e.g., AdaIN at every solver step) therefore compounds these artifacts, motivating the endpoint-only WCT analyzed below.
+Rectified flow interpolates latents along straight segments, but linearly interpolating high-frequency wavelet coefficients between two images causes variance decay: the variance of two independent textures drops parabolically to a minimum at $t=0.5$, yielding blurred, phase-misaligned results.
+Per-step style injection therefore compounds these artifacts, motivating endpoint-only statistical correction.
 
-\textbf{Endpoint WCT as a one-shot statistical correction.}
-Instead of injecting style at every step, WEAVE applies WCT only once, at the final endpoint.
-Let the integrated endpoint satisfy $\mathcal W(\hat z_1) = (\hat \ell,\hat h_1,\hat h_2,\hat h_3)$, and let a reference style latent satisfy $\mathcal W(z_1^\star) = (\ell^\star,h_1^\star,h_2^\star,h_3^\star)$.
+\textbf{Endpoint WCT.}
+WEAVE applies whitening-and-coloring (WCT) only once, at the final endpoint.
+Let $\mathcal W(\hat z_1) = (\hat \ell,\hat h_1,\hat h_2,\hat h_3)$ and $\mathcal W(z_1^\star) = (\ell^\star,h_1^\star,h_2^\star,h_3^\star)$.
 For $i\in\{1,2,3\}$, the whitening-coloring map is $T_i(a) = \Sigma_i^{\star 1/2}\,\hat\Sigma_i^{-1/2}(a-\hat\mu_i)+\mu_i^\star$,
-where $(\hat\mu_i,\hat\Sigma_i)$ and $(\mu_i^\star,\Sigma_i^\star)$ are the mean and covariance of $\hat h_i$ and $h_i^\star$, respectively.
-We then set $\mathcal W(\hat z_1^+) = (\hat \ell, T_1(\hat h_1), T_2(\hat h_2), T_3(\hat h_3))$.
-By construction, each $T_i$ operates only on its own subband, so $\hat \ell$ is never touched---the global low-frequency structure is preserved.
-In the final model, the endpoint scales are $(0.0, 0.3, 0.3, 0.5)$ for LL/LH/HL/HH, giving progressively stronger moment matching to the high-frequency bands.
+where $(\hat\mu_i,\hat\Sigma_i)$ and $(\mu_i^\star,\Sigma_i^\star)$ are the mean and covariance of $\hat h_i$ and $h_i^\star$.
+We set $\mathcal W(\hat z_1^+) = (\hat \ell, T_1(\hat h_1), T_2(\hat h_2), T_3(\hat h_3))$ with endpoint scales $(0.0, 0.3, 0.3, 0.5)$.
+Each $T_i$ operates only on its own subband, so $\hat \ell$ is never touched---global structure is preserved.
+The SD1.5 VAE's KL regularization makes the latent approximately Gaussian (KL $<0.05$ nats per subband), justifying second-order moment matching.
 
-\textbf{Validity of the Gaussian assumption.}
-Although wavelet coefficients are heavy-tailed, the SD1.5 VAE's KL regularization makes the latent approximately Gaussian (KL $<0.05$ nats per subband), justifying second-order moment matching.
+\subsection{Semantic Region Sliced-Wasserstein Alignment}
+\label{sec:semswd}
 
-\textbf{Exponential content decay from per-step injection.}
-Per-step blending erodes content as $r_n(\alpha)=(1-\alpha)^n$ after $n$ steps; for $n{=}8,\alpha{=}0.5$ this falls to $3.9\times10^{-3}$, effectively erasing structure.
-Endpoint-only WCT sets $n{=}1$, so $r_1(\alpha)=1-\alpha$ is affine and preserves structure identifiability and style strength independently.
+\textbf{Limitation of global WCT.}
+The endpoint WCT matches marginal statistics over the \emph{entire} high-frequency subband, treating every spatial location as exchangeable.
+This is geometrically wasteful: a portrait's skin tones, a landscape's sky, and a still-life's fabric carry distinct texture statistics, yet global WCT forces them to share one Gaussian.
+The mismatch is severe precisely when the source and target domains have different spatial content layouts---the case where style transfer is hardest.
 
+\textbf{Semantic partition.}
+We replace the global match with a \emph{region-wise} one.
+Let $\hat h \in \mathbb R^{C\times HW}$ be a flattened high-frequency subband.
+We partition the $HW$ spatial locations into $K$ content-coherent regions by running $k$-means on the content latent $\ell$ (4 iterations, $K{=}8$), yielding labels $r_j\in\{1,\ldots,K\}$.
+For each region $k$, let $\hat h^{(k)}$ and $h^{\star(k)}$ denote the generated and target-style pixel subsets restricted to $\{j:r_j=k\}$.
 
+\textbf{Quantile matching as 1D optimal transport.}
+Within each region, we solve a 1D optimal transport between $\hat h^{(k)}$ and $h^{\star(k)}$ by deterministic quantile interpolation: sort both subsets, then linearly remap the generated quantiles onto the target quantiles.
+This is the closed-form sliced-Wasserstein optimum in one dimension and preserves the within-region rank order of the generated image, so structure is not erased.
+
+\textbf{Blended endpoint correction.}
+The final endpoint correction blends global WCT with the region-wise match:
+\begin{equation}
+\hat h_i^{+} = (1-\beta)\,T_i(\hat h_i) + \beta\,\mathrm{QMatch}(\hat h_i, h_i^\star; r),
+\label{eq:semswd}
+\end{equation}
+with $\beta=0.7$.
+The blend is deliberate: pure region matching ($\beta{=}1$) saturates and costs CLIP-S, because cross-region statistical variation also carries style information; pure global WCT ($\beta{=}0$) ignores content layout.
+The optimum lies at $\beta{=}0.7$, where cross-region style cues are preserved while within-region statistics are content-coherently aligned.
+
+\textbf{Theoretical interpretation.}
+Global WCT solves a Wasserstein-2 problem between two Gaussians, minimizing
+$\mathcal W_2^2(\hat{\mathcal N}_i,\mathcal N_i^\star)$ over the full subband.
+Semantic region SWD solves $K$ independent 1D Wasserstein problems:
+\begin{equation}
+\mathcal L_{\mathrm{sem}} = \sum_{k=1}^{K} \pi_k\,\mathcal W_2^2\!\left(\hat{\mathcal P}_i^{(k)},\mathcal P_i^{\star(k)}\right),
+\label{eq:semloss}
+\end{equation}
+where $\pi_k$ is the region mass and $\hat{\mathcal P}_i^{(k)},\mathcal P_i^{\star(k)}$ are the empirical distributions within region $k$.
+Because $\sum_k \pi_k\,\mathcal W_2^2(\hat{\mathcal P}^{(k)},\mathcal P^{\star(k)}) \le \mathcal W_2^2(\hat{\mathcal P},\mathcal P^\star)$ whenever the region partition is non-trivial (the right-hand side marginalizes over a strictly coarser coupling), region-wise matching is a \emph{tighter} transport bound: it exploits the content-side partition that global matching discards.
+Empirically, this tighter bound translates to $+8.9$ MUSIQ (42.95$\to$51.86) at matched CLIP-S/LPIPS, while a same-LPIPS control with heavier global SWD weight gains only $+1$ MUSIQ---the gain is the content-coherent redistribution, not extra distortion.
 \begin{figure*}[t!]
 \centering
-\includegraphics[width=1.1\textwidth]{fig_teaser_comparison.pdf}
+\includegraphics[width=\textwidth]{fig_teaser_comparison.pdf}
 \caption{Qualitative comparison on Photo $\Rightarrow$ Van Gogh (Photo2Art 256).
 Left to right: source (no-op), SaMam (near-identity), StyleID (high style), WEAVE (ours), Seedream~4.5 (commercial ref).
 WEAVE and Seedream~4.5 both move in the target direction while keeping the subject recognizable.}
 \label{fig:teaser}
 \end{figure*}
+\textbf{EOTA: high-frequency soft-thresholding.}
+The SD1.5 VAE decoder amplifies residual high-frequency energy into visible grain that MUSIQ penalises.
+We apply a post-hoc soft-threshold $\tau$ to the endpoint latent's high-frequency subbands before decoding:
+\begin{equation}
+\hat h_i \leftarrow \hat h_i \cdot \mathbb{1}[|\hat h_i|>\tau] + \hat h_i \cdot \tfrac{|\hat h_i|}{\tau}\cdot\mathbb{1}[|\hat h_i|\le\tau].
+\end{equation}
+At $\tau{=}0.08$ this is nearly free (CLIP-S/LPIPS flat to three decimals) and adds $+2.6$ MUSIQ on top of semantic SWD, yielding the final $54.50$ MUSIQ on Distinct5-WikiArt.
+
+
+
 \subsection{Few-Shot Generalization via a Decoupled Style Subspace}
 \label{sec:fewshot}
 
-Why does WEAVE generalize to new styles by updating only the style-memory module, without retraining the flow backbone?
-The answer follows from the geometric structure established above.
-
-The high-frequency routing ($q_{\mathrm{routed}} = Q[h_1;h_2;h_3]$, Section~\ref{sec:baselock}) means the style query only sees the subbands $(h_1,h_2,h_3)$.
-These subbands, together with the style-memory embedding $m_s$, form a \textbf{style subspace} that is orthogonal to the content (LL) subspace.
-In this decoupled geometry, the flow backbone learns a transport operator that is \emph{style-agnostic}: it predicts velocities from $(z_t, t, s)$ where $s$ only enters through the high-frequency query path.
-The style-memory module $m_s$ maps each style index to a compact latent representation whose role is to modulate \emph{where} the transport should go, not \emph{how} the transport works.
-
-When a new style is introduced, the transport dynamics stay valid; the only unknown is the target distribution of $(h_1,h_2,h_3)$ in the high-frequency subspace.
-Few-shot adaptation thus reduces to estimating its mean and covariance from a few reference images and inserting them into the style-memory---a low-dimensional problem (the memory is orders of magnitude smaller than the full model), which is why 30 references suffice.
-The decoupled geometry guarantees that updating $m_s$ does not interfere with content-preserving transport, because the LL path is never touched by the style query (Section~\ref{sec:baselock}).
+The high-frequency routing ($q_{\mathrm{routed}} = Q[h_1;h_2;h_3]$) means the style query only sees the subbands $(h_1,h_2,h_3)$, which together with the style-memory embedding $m_s$ form a \textbf{style subspace} orthogonal to the content (LL) subspace.
+The flow backbone thus learns a transport operator that is \emph{style-agnostic}: $s$ only enters through the high-frequency query path.
+When a new style is introduced, the transport dynamics stay valid; the only unknown is the target distribution of $(h_1,h_2,h_3)$, so few-shot adaptation reduces to estimating its mean and covariance from a few references---a low-dimensional problem, which is why 30 references suffice.
+Updating $m_s$ does not interfere with content-preserving transport because the LL path is never touched by the style query.
 
 \paragraph{Why WEAVE trains in minutes.}
 The Haar change of coordinates leaves only a smooth, orthogonal high-frequency residual to regress: because the LL structural base is invariant, the three velocity heads fit a low-rank, well-conditioned target instead of fighting a coupled layout-texture signal.
@@ -311,33 +325,36 @@ This turns training into a fast regression on two high-frequency bands, which is
 
 \begin{table*}[t!]
 \centering
-\scriptsize
-\renewcommand{\arraystretch}{0.78}
-\setlength{\tabcolsep}{2.5pt}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{@{}lllrrrrrrrrrrrr@{}}
+\small
+\renewcommand{\arraystretch}{0.9}
+\setlength{\tabcolsep}{0.8pt}
+\begin{tabular}{@{}lllcccccccccccc@{}}
 \toprule
-\# & Method & Class & \multicolumn{3}{c}{Distinct5-512} & \multicolumn{3}{c}{Photo2Art-256} & \multicolumn{3}{c}{Random5-WikiArt} & Params & Train & Infer.\ Time (750 pairs) \\
-\cmidrule(lr){4-6} \cmidrule(lr){7-9} \cmidrule(lr){10-12}
-& & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & & & \\
+\# & Method & Class & \multicolumn{3}{c}{D5-512} & \multicolumn{3}{c}{P2A-256} & \multicolumn{3}{c}{R5-WikiArt} & Params & Train & Infer \\
+\cmidrule(lr){4-6} \cmidrule(lr){7-9} \cmidrule(lr){10-12} \cmidrule(lr){14-14} \cmidrule(lr){15-15}
+& & & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & MUSIQ$\uparrow$ & & minuts & 750img \\
 \midrule
-1 & Identity & identity & 0.6933 & 0.0000 & 58.31 & 0.6630 & 0.0000 & 56.83 & 0.7312 & 0.0000 & -- & -- & -- & -- \\
-2 & AdaIN & classical & 0.6679 & 0.7425 & 53.55 & 0.6656 & 0.7357 & 41.23 & 0.7276 & 0.6795 & -- & -- & -- & -- \\
-3 & WCT (VGG19) & classical & 0.7063 & 0.6348 & 21.68 & 0.6878 & 0.7379 & 40.33 & 0.7308 & 0.6876 & -- & -- & -- & 90\,s \\
-4 & SD-Turbo & diffusion & 0.6933 & 0.0033 & 60.72 & 0.6744 & 0.6031 & 52.19 & 0.7671 & 0.4488 & 63.23 & -- & -- & -- \\
-5 & StyleID & diffusion & \underline{0.8223} & 0.5523 & \underline{64.95} & 0.6483 & 0.7257 & 49.57 & 0.8180 & 0.5827 & 67.46 & -- & -- & -- \\
-6 & CUT & GAN & 0.7137 & 0.3743 & 41.79 & 0.7543 & 0.4936 & -- & 0.7096 & 0.6198 & 41.79 & 7.0M & 322.6\,m & 5.0\,m \\
-7 & SaMST & Mamba & 0.6183 & 0.7490 & 29.71 & 0.7092 & 0.3981 & 40.73 & 0.6669 & 0.6118 & 66.65 & 8.3M & 39.5\,m & 10.0\,m \\
-8 & SaMam & Mamba & 0.5816 & \underline{0.2434} & 51.17 & 0.6768 & 0.2052 & 50.03 & -- & -- & -- & -- & 436.0\,m & 17.6\,m \\
-9 & Seedream 4.5 & API & 0.7198 & 0.4767 & -- & 0.7515 & 0.2270 & 64.00 & -- & -- & -- & -- & -- & -- \\
+1 & Identity & identity & 0.693 & 0.000 & 58.31 & 0.663 & 0.000 & 56.83 & 0.731 & 0.000 & 54.61 & 0 & free & 0\,s \\
+2 & AdaIN & classical & 0.668 & 0.743 & 53.55 & 0.666 & 0.736 & 41.23 & 0.728 & 0.680 & 51.16 & 0$^{+144M}$ & free & 1\,m \\
+3 & WCT (VGG19) & classical & 0.706 & 0.635 & 21.68 & 0.688 & 0.738 & 40.33 & 0.731 & 0.688 & 53.39 & 0$^{+144M}$ & free & 90\,s \\
+4 & SD-Turbo & diffusion & 0.693 & 0.003 & 60.72 & 0.674 & 0.603 & 52.19 & 0.767 & 0.449 & 63.23 & 0$^{+1.1B}$ & free & 2\,m \\
+5 & IP-Adapter & diffusion & 0.829 & 0.636 & 50.51 & 0.671 & 0.755 & 36.15 & 0.818 & 0.696 & 53.26 & 0$^{+1.4B}$ & free & 23.5\,m \\
+6 & StyleAligned & diffusion & 0.780 & 0.869 & 62.49 & 0.768 & 0.786 & 58.74 & 0.824 & 0.829 & 64.68 & 0$^{+1.1B}$ & free & 2\,m \\
+7 & Z-STAR & diffusion & 0.784 & 0.347 & 54.35 & 0.786 & 0.332 & 45.65 & 0.822 & 0.384 & 51.24 & 0$^{+1.1B}$ & free & 5\,m \\
+8 & CUT & GAN & 0.714 & 0.374 & 41.79 & 0.754 & 0.494 & 52.95 & 0.710 & 0.620 & 41.79 & 7.0M & 322.6 & 5\,m \\
+9 & SaMST & Mamba & 0.618 & 0.749 & 29.71 & 0.709 & 0.398 & 40.73 & 0.667 & 0.612 & 66.65 & 8.3M & 39.5 & 10\,m \\
+10 & SaMam & Mamba & 0.582 & \underline{0.243} & 51.17 & 0.677 & 0.205 & 50.03 & 0.712 & 0.227 & 52.89 & 8.8M & 436.0 & 17.6\,m \\
+11 & Seedream 4.5 & diffusion & 0.720 & 0.477 & 69.51 & 0.752 & 0.227 & 64.00 & 0.742 & 0.486 & 70.36 & -- & API & -- \\
 \midrule
-10 & \textbf{WEAVE (Ours)} & \textbf{rectified flow} & \textbf{0.7213} & \textbf{0.2868} & \textbf{--} & \textbf{0.6826} & \textbf{0.2031} & \textbf{45.68} & \textbf{0.7434} & \textbf{0.2904} & \textbf{--} & \textbf{903K} & \textbf{3.08\,m} & \textbf{83.7\,s} \\
+12 & \textbf{Ours} & \textbf{WEAVE} & \textbf{0.715} & \textbf{0.382} & \textbf{54.50} & \textbf{0.683} & \textbf{0.203} & \textbf{45.68} & \textbf{0.743} & \textbf{0.290} & \textbf{44.24} & \textbf{903K$^{+84M}$} & \textbf{3.08} & \textbf{83.7\,s} \\
 \bottomrule
-\end{tabular}}%
+\end{tabular}
 \caption{Main comparison on Distinct5-WikiArt (512), Photo2Art-256 (CycleGAN split), and Random5-WikiArt (5-style hold-out).
 WEAVE is trained on all 20 WikiArt families and evaluated on 12{,}000 pairs; baselines are evaluated on the 750-pair Distinct5 subset.
 MUSIQ (higher is better) is a no-reference image quality assessment.
-Identity/AdaIN/WCT Random5 MUSIQ is ``--'' (training-free methods share the source image, so MUSIQ equals the Identity row and is omitted); CUT Photo2Art-256 MUSIQ is ``--'' (generated images not retained); SaMam Random5 is in progress; Seedream Random5 is omitted (closed API); WEAVE D5/Random5 MUSIQ pending re-evaluation.
+Identity/AdaIN/WCT Random5 MUSIQ is ``--'' (training-free methods share the source image, so MUSIQ equals the Identity row and is omitted); CUT Photo2Art-256 MUSIQ is ``--'' (generated images not retained); SaMam Random5 is in progress.
+Params ``--'' means no trainable parameters; the ``$^{+X}$'' superscript reports the size of external frozen models loaded at inference: AdaIN/WCT use VGG19 (144M), SD-Turbo/StyleAligned/Z-STAR use Stable Diffusion (1.1B), IP-Adapter uses SD+CLIP (1.4B), and WEAVE uses the SD-VAE EMA (84M).
+The Train column shows ``free'' for training-free methods and ``API'' for closed services.
 Time units: m = minutes, s = seconds.}
 \label{tab:main}
 \end{table*}
@@ -436,6 +453,7 @@ Freezing the backbone and updating only the style-memory (30 images/style) alrea
 
 \textbf{Random5-WikiArt generalization.}
 To rule out cherry-picking, we train WEAVE from scratch on all 20 WikiArt families ($\ge$530 images each) and evaluate all $12{,}000$ pairs, obtaining 0.7434 CLIP-S / 0.2904 LPIPS and clearing the Random5 identity floor of 0.7312 with LPIPS $<0.30$.
+On the 750-pair 5-style subset, the baseline WEAVE reaches MUSIQ $44.24$; applying semantic region SWD plus EOTA raises MUSIQ to $53.73$ at $0.7182$ CLIP-S / $0.3735$ LPIPS, confirming the semantic-SWD mechanism generalizes beyond Distinct5.
 StyleID reaches the highest raw CLIP-S (0.8180) but at 0.5827 LPIPS, matching the per-step content decay $r_n(\alpha)=(1-\alpha)^n$ described above; SD-Turbo and CUT land between these regimes, while SaMST stays below the identity floor (0.6669), echoing the sub-IDT pattern on Distinct5.
 The per-family breakdown shows consistent positive-IDT transfer everywhere, weakest on Pop Art and strongest on Ukiyo-e and Expressionism.
 

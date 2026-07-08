@@ -1,0 +1,105 @@
+﻿[1/26] SKIP D5-512/identity - already has 750 images
+[2/26] Transfering D5-512/adain ...
+  OK: 750 images in 23.9s
+[3/26] Transfering D5-512/wct ...
+  OK: 750 images in 9.8s
+[4/26] Transfering D5-512/sdturbo ...
+  OK: 750 images in 22s
+[5/26] Transfering D5-512/cut ...
+  OK: 750 images in 23.2s
+[6/26] Transfering D5-512/samst ...
+  OK: 750 images in 9.6s
+[7/26] Transfering D5-512/samam ...
+  OK: 750 images in 40.1s
+[8/26] Transfering D5-512/styleid ...
+  OK: 750 images in 22.3s
+[9/26] Transfering D5-512/seedream ...
+  OK: 750 images in 42.5s
+[10/26] Transfering D5-512/weave ...
+  OK: 750 images in 14s
+[11/26] Transfering P256/identity ...
+powershell.exe : C:\Windows\System32\OpenSSH\scp.exe: I:/exp_256_photo2art/identity_256/images/*.png: No such file or d
+irectory
+At C:\Users\xy\AppData\Local\Programs\TRAE SOLO CN\resources\app\out\vs\workbench\contrib\terminal\common\scripts\safe_
+rm_aliases.ps1:1134 char:9
++         & $originalPowerShell @modifiedArgs
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Windows\Syst...le or directory:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  FAILED (exit=1, images=0) remote=I:/exp_256_photo2art/identity_256/images
+[12/26] Transfering P256/adain ...
+C:\Windows\System32\OpenSSH\scp.exe: I:/exp_256_photo2art/adain_256/images/*.png: No such file or directory
+  FAILED (exit=1, images=0) remote=I:/exp_256_photo2art/adain_256/images
+[13/26] Transfering P256/wct ...
+C:\Windows\System32\OpenSSH\scp.exe: I:/exp_256_photo2art/wct_256/images/*.png: No such file or directory
+  FAILED (exit=1, images=0) remote=I:/exp_256_photo2art/wct_256/images
+[14/26] Transfering P256/sdturbo ...
+  OK: 750 images in 16.2s
+[15/26] Transfering P256/samst ...
+C:\Windows\System32\OpenSSH\scp.exe: I:/exp_256_photo2art/samst_256/images/*.png: No such file or directory
+  FAILED (exit=1, images=0) remote=I:/exp_256_photo2art/samst_256/images
+[16/26] Transfering P256/samam ...
+C:\Windows\System32\OpenSSH\scp.exe: I:/exp_256_photo2art/samam_256/images/*.png: No such file or directory
+  FAILED (exit=1, images=0) remote=I:/exp_256_photo2art/samam_256/images
+[17/26] Transfering P256/styleid ...
+  OK: 750 images in 15.3s
+[18/26] Transfering P256/weave ...
+  OK: 444 images in 8.9s
+[19/26] Transfering R5-WikiArt/identity ...
+  OK: 12000 images in 306.9s
+[20/26] Transfering R5-WikiArt/adain ...
+  OK: 12000 images in 392.1s
+[21/26] Transfering R5-WikiArt/wct ...
+  OK: 12000 images in 377.2s
+[22/26] Transfering R5-WikiArt/sdturbo ...
+  OK: 1123 images in 34.3s
+[23/26] Transfering R5-WikiArt/samst ...
+  OK: 750 images in 27.1s
+[24/26] Transfering R5-WikiArt/samam ...
+  OK: 750 images in 52.9s
+[25/26] Transfering R5-WikiArt/styleid ...
+  OK: 750 images in 24.6s
+[26/26] Transfering R5-WikiArt/weave ...
+  OK: 12000 images in 246.6s
+
+============================================================
+Transfer Summary
+============================================================
+  Total: 26, Success: 21, Failed: 5
+  Failed: P256/identity, P256/adain, P256/wct, P256/samst, P256/samam
+
+=== Final image counts ===
+[D5-512]
+  adain: 750 png
+  cut: 750 png
+  identity: 750 png
+  samam: 750 png
+  samst: 750 png
+  sdturbo: 750 png
+  seedream: 750 png
+  styleid: 750 png
+  wct: 750 png
+  weave: 750 png
+[P256]
+  adain: 0 png
+  cut: 0 png
+  identity: 0 png
+  samam: 0 png
+  samst: 0 png
+  sdturbo: 750 png
+  seedream: 0 png
+  styleid: 750 png
+  wct: 0 png
+  weave: 750 png
+[R5-WikiArt]
+  adain: 12000 png
+  cut: 0 png
+  identity: 12000 png
+  samam: 750 png
+  samst: 750 png
+  sdturbo: 1123 png
+  seedream: 0 png
+  styleid: 750 png
+  wct: 12000 png
+  weave: 12000 png

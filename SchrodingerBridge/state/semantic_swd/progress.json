@@ -1,0 +1,10 @@
+{
+  "iteration": 0,
+  "total_findings": 0,
+  "status": "initialized",
+  "stale_count": 0,
+  "last_seen": "2026-07-08T15:00:00",
+  "current_milestone": "M1",
+  "best_musiq": 54.50,
+  "best_config": "sem_r8 + EOTA τ=0.08"
+}

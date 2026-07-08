@@ -1,0 +1,15 @@
+{
+  "_base": "swd_cm_sem_r8.json",
+  "bridge": {
+    "swd_semantic_regions": 4
+  },
+  "checkpoint": {
+    "save_dir": "./exp/sem_r4_k_sweep"
+  },
+  "ablation": {
+    "name": "sem_r4_k_sweep",
+    "axis": "semantic_swd_k_sweep",
+    "stage": "objective_test",
+    "notes": "K=4 region sweep. Coarser regions: fewer, larger content-coherent areas."
+  }
+}

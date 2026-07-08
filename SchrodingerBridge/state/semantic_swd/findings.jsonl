@@ -1,0 +1,2 @@
+{"ts":"2026-07-08T15:20:00","source":"orchestrator","level":"decision","event":"M1_start","detail":"K=4 training started (job-36340). Base config sem_r8 with swd_semantic_regions=4. Theory doc written with Theorem 1 (region-wise upper-bounds global)."}
+{"ts":"2026-07-08T15:20:00","source":"work","level":"info","event":"train_progress","detail":"K=4 epoch 2/5 62%, tswd=0.8087, 4 it/s. ETA ~3 min for remaining epochs."}

@@ -1,0 +1,128 @@
+<svg width="100%" viewBox="0 0 680 731" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <title>Schrödinger Bridge latent style transfer system architecture</title>
+  <desc>End-to-end architecture: frozen VAE encoding, style encoder, time-conditioned bridge transport (620_spectral_ode and 620_spatial_bridge contracts), VAE decoding, and training objectives.</desc>
+
+  <text class="th" x="340" y="30" text-anchor="middle">Schrödinger Bridge — Latent Style Transfer</text>
+  <text class="ts" x="340" y="50" text-anchor="middle">LBM system architecture · current 620 contracts</text>
+
+  <rect class="c-gray" x="40" y="68" width="600" height="38" rx="12" stroke-width="0.5"/>
+  <text class="t" x="340" y="87" text-anchor="middle">config_schema.py — ModelConfig · BridgeConfig · TrainingConfig · DataConfig</text>
+
+  <rect class="c-blue" x="40" y="128" width="600" height="122" rx="14" stroke-width="0.5"/>
+  <text class="ts" x="58" y="146">1 · Encoding (frozen VAE tokenizer)</text>
+
+  <g class="node c-blue">
+    <rect x="58" y="158" width="128" height="40" rx="8" stroke-width="0.5"/>
+    <text class="th" x="122" y="178" text-anchor="middle" dominant-baseline="central">Content image</text>
+  </g>
+  <g class="node c-blue">
+    <rect x="210" y="158" width="128" height="40" rx="8" stroke-width="0.5"/>
+    <text class="th" x="274" y="178" text-anchor="middle" dominant-baseline="central">VAE encoder</text>
+  </g>
+  <g class="node c-blue">
+    <rect x="362" y="158" width="128" height="40" rx="8" stroke-width="0.5"/>
+    <text class="th" x="426" y="178" text-anchor="middle" dominant-baseline="central">z_c latent</text>
+  </g>
+
+  <g class="node c-purple">
+    <rect x="58" y="210" width="118" height="40" rx="8" stroke-width="0.5"/>
+    <text class="th" x="117" y="230" text-anchor="middle" dominant-baseline="central">Style image</text>
+  </g>
+  <g class="node c-purple">
+    <rect x="196" y="210" width="118" height="40" rx="8" stroke-width="0.5"/>
+    <text class="th" x="255" y="230" text-anchor="middle" dominant-baseline="central">VAE encoder</text>
+  </g>
+  <g class="node c-purple">
+    <rect x="334" y="210" width="108" height="40" rx="8" stroke-width="0.5"/>
+    <text class="th" x="388" y="230" text-anchor="middle" dominant-baseline="central">z_s latent</text>
+  </g>
+  <g class="node c-purple">
+    <rect x="458" y="210" width="142" height="40" rx="8" stroke-width="0.5"/>
+    <text class="th" x="529" y="224" text-anchor="middle" dominant-baseline="central">Style encoder</text>
+    <text class="ts" x="529" y="240" text-anchor="middle" dominant-baseline="central">DINO features</text>
+  </g>
+
+  <path d="M186,178 L208,178" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M338,178 L360,178" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M176,230 L194,230" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M314,230 L332,230" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M442,230 L456,230" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect class="c-teal" x="40" y="275" width="600" height="250" rx="16" stroke-width="0.5"/>
+  <text class="ts" x="58" y="295">2 · Bridge transport (core)</text>
+  <text class="ts" x="620" y="295" text-anchor="end">contracts: 620_spectral_ode · 620_spatial_bridge</text>
+
+  <g class="node c-teal">
+    <rect x="120" y="332" width="440" height="40" rx="8" stroke-width="0.5"/>
+    <text class="th" x="340" y="346" text-anchor="middle" dominant-baseline="central">Time-conditioned U-Net</text>
+    <text class="ts" x="340" y="362" text-anchor="middle" dominant-baseline="central">backbone · blocks620 · predicts vθ</text>
+  </g>
+  <g class="node c-teal">
+    <rect x="120" y="382" width="440" height="38" rx="8" stroke-width="0.5"/>
+    <text class="th" x="340" y="396" text-anchor="middle" dominant-baseline="central">Frequency decomposition</text>
+    <text class="ts" x="340" y="411" text-anchor="middle" dominant-baseline="central">Haar DWT · LL / LH / HL / HH</text>
+  </g>
+  <g class="node c-teal">
+    <rect x="120" y="430" width="440" height="38" rx="8" stroke-width="0.5"/>
+    <text class="th" x="340" y="444" text-anchor="middle" dominant-baseline="central">ODE integrator</text>
+    <text class="ts" x="340" y="459" text-anchor="middle" dominant-baseline="central">Euler · Heun · RK4</text>
+  </g>
+  <g class="node c-teal">
+    <rect x="120" y="476" width="440" height="38" rx="8" stroke-width="0.5"/>
+    <text class="th" x="340" y="490" text-anchor="middle" dominant-baseline="central">Style injection</text>
+    <text class="ts" x="340" y="505" text-anchor="middle" dominant-baseline="central">AdaIN · Cross-attn · Tone bias</text>
+  </g>
+
+  <g class="node c-teal">
+    <rect x="308" y="300" width="64" height="26" rx="6" stroke-width="0.5"/>
+    <text class="ts" x="340" y="313" text-anchor="middle" dominant-baseline="central">t · time</text>
+  </g>
+
+  <path d="M340,326 L340,330" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M426,198 L426,250 L300,250 L300,332" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M529,250 L529,272 L380,272 L380,332" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M340,372 L340,380" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M340,420 L340,428" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M340,468 L340,474" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M340,514 L340,548" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <g class="node c-green">
+    <rect x="190" y="550" width="150" height="42" rx="8" stroke-width="0.5"/>
+    <text class="th" x="265" y="571" text-anchor="middle" dominant-baseline="central">VAE decoder</text>
+  </g>
+  <g class="node c-green">
+    <rect x="400" y="550" width="160" height="42" rx="8" stroke-width="0.5"/>
+    <text class="th" x="480" y="571" text-anchor="middle" dominant-baseline="central">Output image</text>
+  </g>
+  <path d="M340,571 L398,571" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect class="c-amber" x="40" y="625" width="600" height="86" rx="14" stroke-width="0.5"/>
+  <text class="ts" x="58" y="643">3 · Training objectives</text>
+
+  <g class="node c-amber">
+    <rect x="58" y="656" width="130" height="44" rx="8" stroke-width="0.5"/>
+    <text class="th" x="123" y="672" text-anchor="middle" dominant-baseline="central">Flow matching</text>
+    <text class="ts" x="123" y="688" text-anchor="middle" dominant-baseline="central">(velocity)</text>
+  </g>
+  <g class="node c-amber">
+    <rect x="198" y="656" width="130" height="44" rx="8" stroke-width="0.5"/>
+    <text class="th" x="263" y="678" text-anchor="middle" dominant-baseline="central">Terminal SWD</text>
+  </g>
+  <g class="node c-amber">
+    <rect x="338" y="656" width="130" height="44" rx="8" stroke-width="0.5"/>
+    <text class="th" x="403" y="678" text-anchor="middle" dominant-baseline="central">Kinetic energy</text>
+  </g>
+  <g class="node c-amber">
+    <rect x="478" y="656" width="142" height="44" rx="8" stroke-width="0.5"/>
+    <text class="th" x="549" y="672" text-anchor="middle" dominant-baseline="central">Endpoint</text>
+    <text class="ts" x="549" y="688" text-anchor="middle" dominant-baseline="central">content + style</text>
+  </g>
+
+  <path d="M340,625 L340,527" fill="none" stroke="#888780" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+  <text class="ts" x="352" y="578">training signal</text>
+</svg>

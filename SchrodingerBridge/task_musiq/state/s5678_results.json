@@ -1,0 +1,30 @@
+﻿{
+    "musiq_s5_band_xattn":  {
+                                "musiq":  38.1846,
+                                "status":  "done",
+                                "eval_min":  3.5,
+                                "clip_s":  0.7272,
+                                "lpips":  0.4353
+                            },
+    "musiq_s6_patch_xattn":  {
+                                 "musiq":  36.9385,
+                                 "status":  "done",
+                                 "eval_min":  3.1,
+                                 "clip_s":  0.7233,
+                                 "lpips":  0.4787
+                             },
+    "musiq_s7_dwt_energy":  {
+                                "musiq":  37.9087,
+                                "status":  "done",
+                                "eval_min":  3,
+                                "clip_s":  0.7235,
+                                "lpips":  0.5025
+                            },
+    "musiq_s8_combined":  {
+                              "musiq":  38.9674,
+                              "status":  "done",
+                              "eval_min":  3,
+                              "clip_s":  0.7264,
+                              "lpips":  0.4879
+                          }
+}

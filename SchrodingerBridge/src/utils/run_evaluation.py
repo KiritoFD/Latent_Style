@@ -799,6 +799,84 @@ def _compute_style_latent_stats(
     return means, stds
 
 
+def _apply_spectral_denoise(
+    latents: torch.Tensor,
+    source_latents: torch.Tensor | None = None,
+    *,
+    hf_soft_threshold: float = 0.0,
+    ll_color_align_strength: float = 0.0,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    """Spectral-domain postprocessing: HF soft-thresholding + LL color alignment.
+
+    Two complementary operations to improve perceptual quality (MUSIQ):
+    1. HF Soft-Thresholding: DWT decompose, apply sign(x)*max(|x|-τ,0) to
+       LH/HL/HH subbands, then iDWT reconstruct. Reduces high-frequency
+       artifacts from VAE latent space, improving MUSIQ without losing
+       style transfer quality.
+    2. LL Color Alignment: Align LL subband mean/std of generated latent
+       to source content latent. Corrects color/illumination drift caused
+       by high-frequency decoupling, improving perceptual naturalness.
+
+    Args:
+        latents: Generated latents (B, C, H, W)
+        source_latents: Source content latents (B, C, H, W) for LL color alignment
+        hf_soft_threshold: Soft-threshold τ for HF subbands (0=disabled)
+        ll_color_align_strength: α for LL color alignment (0=disabled)
+    """
+    from spectral620 import dwt2_haar, idwt2_haar
+
+    if latents.numel() == 0:
+        return latents, {"spectral_denoise_active": 0.0}
+
+    hf_soft_threshold = max(0.0, float(hf_soft_threshold))
+    ll_color_align_strength = max(0.0, min(1.0, float(ll_color_align_strength)))
+
+    if hf_soft_threshold <= 0.0 and ll_color_align_strength <= 0.0:
+        return latents, {"spectral_denoise_active": 0.0}
+
+    # DWT decompose
+    lat_f = latents.float()
+    ll, lh, hl, hh = dwt2_haar(lat_f)
+
+    debug_info = {"spectral_denoise_active": 1.0}
+
+    # 1. HF Soft-Thresholding: sign(x) * max(|x| - τ, 0)
+    if hf_soft_threshold > 0.0:
+        debug_info["hf_lh_abs_before"] = float(lh.detach().abs().mean())
+        debug_info["hf_hl_abs_before"] = float(hl.detach().abs().mean())
+        debug_info["hf_hh_abs_before"] = float(hh.detach().abs().mean())
+        lh = torch.sign(lh) * torch.clamp(lh.abs() - hf_soft_threshold, min=0.0)
+        hl = torch.sign(hl) * torch.clamp(hl.abs() - hf_soft_threshold, min=0.0)
+        hh = torch.sign(hh) * torch.clamp(hh.abs() - hf_soft_threshold, min=0.0)
+        debug_info["hf_lh_abs_after"] = float(lh.detach().abs().mean())
+        debug_info["hf_hl_abs_after"] = float(hl.detach().abs().mean())
+        debug_info["hf_hh_abs_after"] = float(hh.detach().abs().mean())
+        debug_info["hf_soft_threshold"] = float(hf_soft_threshold)
+
+    # 2. LL Color Alignment: align generated LL mean/std to source LL
+    if ll_color_align_strength > 0.0 and source_latents is not None:
+        src_f = source_latents.float()
+        if src_f.shape != lat_f.shape:
+            # Resize source to match generated (shouldn't happen normally)
+            src_f = F.interpolate(src_f, size=lat_f.shape[-2:], mode='bilinear', align_corners=False)
+        ll_src, _, _, _ = dwt2_haar(src_f)
+        # Per-channel mean/std alignment with strength blending
+        gen_mean = ll.mean(dim=[2, 3], keepdim=True)
+        gen_std = ll.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        src_mean = ll_src.mean(dim=[2, 3], keepdim=True)
+        src_std = ll_src.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        # Normalize to source statistics, then blend with original
+        ll_aligned = (ll - gen_mean) / gen_std * src_std + src_mean
+        ll = (1.0 - ll_color_align_strength) * ll + ll_color_align_strength * ll_aligned
+        debug_info["ll_color_align_strength"] = float(ll_color_align_strength)
+        debug_info["ll_mean_delta"] = float((src_mean - gen_mean).detach().abs().mean().cpu().item())
+        debug_info["ll_std_delta"] = float((src_std - gen_std).detach().abs().mean().cpu().item())
+
+    # iDWT reconstruct
+    result = idwt2_haar(ll, lh, hl, hh).to(dtype=latents.dtype)
+    return result, debug_info
+
+
 def _apply_latent_style_affine(
     latents: torch.Tensor,
     target_ids: torch.Tensor,
@@ -2255,13 +2333,17 @@ def main(argv: list[str] | None = None):
         '--latent_postprocess_mode',
         type=str,
         default=str(full_eval_defaults.get("latent_postprocess_mode", "none")),
-        choices=["none", "style_latent_affine"],
+        choices=["none", "style_latent_affine", "spectral_denoise"],
         help="Optional latent-space postprocess before VAE decode and metrics.",
     )
     parser.add_argument('--latent_postprocess_strength', type=float, default=float(full_eval_defaults.get("latent_postprocess_strength", 0.0)))
     parser.add_argument('--latent_postprocess_mean_strength', type=float, default=float(full_eval_defaults.get("latent_postprocess_mean_strength", 1.0)))
     parser.add_argument('--latent_postprocess_std_strength', type=float, default=float(full_eval_defaults.get("latent_postprocess_std_strength", 1.0)))
     parser.add_argument('--latent_postprocess_ref_limit', type=int, default=int(full_eval_defaults.get("latent_postprocess_ref_limit", 64)))
+    parser.add_argument('--hf_soft_threshold', type=float, default=float(full_eval_defaults.get("hf_soft_threshold", 0.0)),
+                        help="Soft-threshold τ for HF subbands in spectral_denoise mode (0=disabled)")
+    parser.add_argument('--ll_color_align_strength', type=float, default=float(full_eval_defaults.get("ll_color_align_strength", 0.0)),
+                        help="LL color alignment strength α (0=disabled, 1=full alignment to source)")
     parser.add_argument(
         '--allow_metric_postprocess',
         action='store_true',
@@ -2466,6 +2548,10 @@ def main(argv: list[str] | None = None):
                 args.latent_postprocess_std_strength = float(resolved_full_eval["latent_postprocess_std_strength"])
             if "latent_postprocess_ref_limit" in resolved_full_eval and not _cli_provided("latent_postprocess_ref_limit"):
                 args.latent_postprocess_ref_limit = int(resolved_full_eval["latent_postprocess_ref_limit"])
+            if "hf_soft_threshold" in resolved_full_eval and not _cli_provided("hf_soft_threshold"):
+                args.hf_soft_threshold = float(resolved_full_eval["hf_soft_threshold"])
+            if "ll_color_align_strength" in resolved_full_eval and not _cli_provided("ll_color_align_strength"):
+                args.ll_color_align_strength = float(resolved_full_eval["ll_color_align_strength"])
             if "allow_metric_postprocess" in resolved_full_eval and not _cli_provided("allow_metric_postprocess"):
                 args.allow_metric_postprocess = bool(resolved_full_eval["allow_metric_postprocess"])
     else:
@@ -2568,6 +2654,11 @@ def main(argv: list[str] | None = None):
             str(args.latent_postprocess_mode).strip().lower() != "none"
             and float(args.latent_postprocess_strength) > 0.0
         )
+        or (
+            str(args.latent_postprocess_mode).strip().lower() == "spectral_denoise"
+            and (float(getattr(args, 'hf_soft_threshold', 0.0)) > 0.0
+                 or float(getattr(args, 'll_color_align_strength', 0.0)) > 0.0)
+        )
     )
     if metric_postprocess_requested and not bool(args.allow_metric_postprocess):
         raise ValueError(
@@ -2591,7 +2682,7 @@ def main(argv: list[str] | None = None):
             f"ref_limit={int(args.postprocess_ref_limit)}"
         )
     latent_postprocess_mode = str(args.latent_postprocess_mode).strip().lower()
-    if latent_postprocess_mode not in {"none", "style_latent_affine"}:
+    if latent_postprocess_mode not in {"none", "style_latent_affine", "spectral_denoise"}:
         raise ValueError(f"Unsupported latent_postprocess_mode: {args.latent_postprocess_mode}")
     latent_post_means = None
     latent_post_stds = None
@@ -3137,6 +3228,13 @@ def main(argv: list[str] | None = None):
                                 strength=float(args.latent_postprocess_strength),
                                 mean_strength=float(args.latent_postprocess_mean_strength),
                                 std_strength=float(args.latent_postprocess_std_strength),
+                            )
+                        elif latent_postprocess_mode == "spectral_denoise":
+                            latents_gen, latent_post_debug = _apply_spectral_denoise(
+                                latents_gen,
+                                source_latents=repeated_latents,
+                                hf_soft_threshold=float(getattr(args, 'hf_soft_threshold', 0.0)),
+                                ll_color_align_strength=float(getattr(args, 'll_color_align_strength', 0.0)),
                             )
                         if bool(getattr(args, "eval_delta_observability", False)):
                             try:

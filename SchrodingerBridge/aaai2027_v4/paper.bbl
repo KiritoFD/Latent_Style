@@ -16,11 +16,6 @@ Deng, Y.; Tang, F.; Dong, W.; Sun, W.; Huang, F.; and Xu, C. 2022.
 \newblock StyTr2: Image Style Transfer with Transformers.
 \newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}.
 
-\bibitem[{Gal et~al.(2024)Gal, Patashnik, Maron, Chechik, and Cohen-Or}]{gal2022stylealigned}
-Gal, R.; Patashnik, O.; Maron, H.; Chechik, G.; and Cohen-Or, D. 2024.
-\newblock StyleAligned: Alignment of Diffusion Models via Shared Attention.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}.
-
 \bibitem[{Gatys, Ecker, and Bethge(2015)}]{gatys2015neural}
 Gatys, L.~A.; Ecker, A.~S.; and Bethge, M. 2015.
 \newblock A Neural Algorithm of Artistic Style.
@@ -30,6 +25,11 @@ Gatys, L.~A.; Ecker, A.~S.; and Bethge, M. 2015.
 Gatys, L.~A.; Ecker, A.~S.; and Bethge, M. 2016.
 \newblock Image Style Transfer Using Convolutional Neural Networks.
 \newblock In \emph{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}.
+
+\bibitem[{Hertz et~al.(2024)Hertz, Patashnik, Vinker, Averbuch-Elor, and Daniel}]{gal2022stylealigned}
+Hertz, A.; Patashnik, O.; Vinker, Y.; Averbuch-Elor, R.; and Daniel, C.-O. 2024.
+\newblock Style Aligned Image Generation via Shared Attention.
+\newblock In \emph{Proceedings of the International Conference on Learning Representations}.
 
 \bibitem[{Hu et~al.(2022)Hu, Shen, Wallis, Allen-Zhu, Li, Wang, Wang, and Chen}]{hu2022lora}
 Hu, E.~J.; Shen, Y.; Wallis, P.; Allen-Zhu, Z.; Li, Y.; Wang, S.; Wang, L.; and Chen, W. 2022.

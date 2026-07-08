@@ -1,0 +1,8 @@
+Found 490 images in results\R5-WikiArt\seedream
+[CLIP] Loading openai/clip-vit-base-patch32 (local_files_only=True)...
+[CLIP-S] ref styles: ['Early_Renaissance', 'Impressionism', 'Minimalism', 'Rococo', 'Ukiyo_e']
+CLIP-S = 0.7417808075340426
+  per-style: {'Early_Renaissance': 0.737927570026748, 'Impressionism': 0.7627295833461138, 'Minimalism': 0.7266034489991714, 'Rococo': 0.72739349092756, 'Ukiyo_e': 0.7542499443706201}
+[LPIPS] Loading alex...
+Setting up [LPIPS] perceptual loss: trunk [alex], v[0.1], spatial [off]
+Loading model from: C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\lpips\weights\v0.1\alex.pth

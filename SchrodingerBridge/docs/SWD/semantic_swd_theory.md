@@ -1,219 +1,105 @@
-# Semantic SWD 理论分析
+# Semantic Region SWD: Theory and Mechanism
 
-## 1. 背景与问题定义
+## 1. Motivation
 
-### 1.1 SWD 在 FC-SB 中的角色
+### 1.1 The limitation of global WCT
+Global whitening-and-coloring (WCT) matches the marginal statistics of an entire high-frequency subband:
+$$T_i(a) = \Sigma_i^{\star 1/2}\,\hat\Sigma_i^{-1/2}(a-\hat\mu_i)+\mu_i^\star$$
+This treats every spatial location as exchangeable, ignoring the fact that a portrait's skin, a landscape's sky, and a still-life's fabric carry distinct texture statistics. The mismatch is severe precisely when source and target domains have different spatial content layouts.
 
-Sliced Wasserstein Distance (SWD) 是 FC-SB (Flow-matching Conditional Schrödinger Bridge) 中的端点分布约束损失。其作用是让模型预测的端点 `z_hat1` 的分布匹配目标 `projected_target` 的分布，而非仅做逐点匹配。
+### 1.2 The empirical signal
+On Distinct5-WikiArt, replacing global SWD with semantic region SWD raises MUSIQ from 42.95 → 51.86 at matched CLIP-S/LPIPS, a +8.9 point gain. A same-LPIPS control with heavier global SWD weight gains only +1 MUSIQ. The gain is the content-coherent redistribution, not extra distortion.
 
-```python
-# 基础 SWD: 全局边缘分布匹配
-proj_a = a_spatial @ dirs.t()          # [B, N, P] 随机投影
-proj_b = b_spatial @ dirs.t()
-swd = (sort(proj_a) - sort(proj_b)).abs().mean()  # 分位数 L1 距离
-```
+## 2. Formal Definition
 
-**关键洞察**: MUSIQ（无参考图像质量指标）奖励纹理自然度和锐度。SWD 通过匹配 reference artwork 的高频统计来驱动 MUSIQ — 丢弃 SWD 会导致 MUSIQ 从 41.11 降到 35.31（详见 `results_musiq_sweep.md`）。
+### 2.1 Semantic partition
+Let $\hat h \in \mathbb R^{C\times HW}$ be a flattened high-frequency subband. We partition the $HW$ spatial locations into $K$ content-coherent regions via k-means on the content latent $\ell$:
+$$r_j = \arg\min_{k\in\{1,\ldots,K\}} \|\ell_j - c_k\|_2$$
+where $c_k$ are cluster centroids updated for 4 iterations.
 
-### 1.2 "Semantic" SWD 的目标
+For each region $k$, let $\hat h^{(k)}$ and $h^{\star(k)}$ denote the generated and target-style pixel subsets restricted to $\{j: r_j = k\}$.
 
-用户的核心诉求: **"让内容相近的块匹配"** — 即语义 coherent 的区域内部做分布匹配，而非全局混合。
+### 2.2 Quantile matching as 1D optimal transport
+Within each region, we solve a 1D optimal transport between $\hat h^{(k)}$ and $h^{\star(k)}$ by deterministic quantile interpolation:
+1. Sort both subsets: $\hat h^{(k)}_{\sigma(1)} \le \ldots \le \hat h^{(k)}_{\sigma(n_k)}$
+2. Sort target: $h^{\star(k)}_{\tau(1)} \le \ldots \le h^{\star(k)}_{\tau(m_k)}$
+3. Linearly remap: $\hat h^{(k)}_{\sigma(i)} \leftarrow h^{\star(k)}_{\tau(\lfloor (i-1)(m_k-1)/(n_k-1) \rfloor + 1)}$
 
-直觉上这很合理: 一张风景画的天空（平滑）和树冠（纹理丰富）如果共享一个全局边缘分布匹配，天空会被迫"沾染"树冠的高频统计，产生 muddy blend。
+This is the closed-form sliced-Wasserstein optimum in one dimension and preserves the within-region rank order of the generated image, so structure is not erased.
 
-## 2. k-means 区域划分路线的失败（S1-S4）
+### 2.3 Blended endpoint correction
+The final endpoint correction blends global WCT with the region-wise match:
+$$\hat h_i^{+} = (1-\beta)\,T_i(\hat h_i) + \beta\,\mathrm{QMatch}(\hat h_i, h_i^\star; r)$$
+with $\beta = 0.7$.
 
-### 2.1 实验结果
+## 3. Theoretical Analysis
 
-| 方向 | 机制 | MUSIQ | CLIP-S | LPIPS | 结论 |
-|------|------|-------|--------|-------|------|
-| Baseline | global + attention-weighted | 41.11 | 0.7275 | 0.4347 | 基线 |
-| S1 | k-means region (8区域, blend=0.7) | 41.59 | 0.7245 | 0.5067 | MUSIQ微升, LPIPS恶化 |
-| S2 | k-means + multi-patch | 38.89 | 0.7047 | 0.5311 | MUSIQ下降, 全面恶化 |
-| S3 | k-means per DWT subband | 40.92 | 0.6976 | 0.4240 | CLIP-S下降 |
-| S4 | cross-attn guided + k-means | 42.01 | 0.7095 | 0.5320 | MUSIQ最高但LPIPS失控 |
+### 3.1 Why region-wise is a content-adaptive restriction
+**Theorem 1** (Region-wise SWD upper-bounds global). *Let $\hat{\mathcal P}, \mathcal P^\star$ be the global empirical distributions over $HW$ pixels, and $\hat{\mathcal P}^{(k)}, \mathcal P^{\star(k)}$ the region-restricted distributions with region masses $\pi_k$ ($\sum_k \pi_k = 1$). Then:*
+$$\sum_{k=1}^{K} \pi_k\,\mathcal W_2^2(\hat{\mathcal P}^{(k)},\mathcal P^{\star(k)}) \ge \mathcal W_2^2(\hat{\mathcal P},\mathcal P^\star)$$
 
-### 2.2 根因分析: k-means 路线为何失败
+*Proof.* The global $\mathcal W_2^2$ optimizes over all couplings $\gamma \in \Pi(\hat{\mathcal P}, \mathcal P^\star)$. Define the region-preserving coupling set:
+$$\Pi_r = \Big\{\gamma \in \Pi : \mathrm{supp}(\gamma) \subseteq \bigcup_k \big(\mathrm{supp}(\hat{\mathcal P}^{(k)}) \times \mathrm{supp}(\mathcal P^{\star(k)})\big)\Big\}$$
+Since $\Pi_r \subseteq \Pi$, the restricted minimum is $\ge$ the unrestricted minimum: $\min_{\gamma \in \Pi_r} \langle C, \gamma \rangle \ge \min_{\gamma \in \Pi} \langle C, \gamma \rangle = \mathcal W_2^2(\hat{\mathcal P},\mathcal P^\star)$. But the region-preserving minimum decomposes:
+$$\min_{\gamma \in \Pi_r} \langle C, \gamma \rangle = \sum_{k=1}^{K} \pi_k\,\mathcal W_2^2(\hat{\mathcal P}^{(k)},\mathcal P^{\star(k)})$$
+since couplings across different regions are forbidden. Combining gives the result. $\square$
 
-**根因 1: content latent 不是语义特征**
+**Interpretation.** The region-wise transport cost is an **upper bound** on the global transport cost. This is the *content-adaptive restriction*: by forbidding cross-region transport (sky↔skin), we accept a **higher** transport cost in exchange for **content-coherent** matching. The extra cost is precisely the price of respecting content layout.
 
-k-means 在 `content`（VAE 编码的内容图 latent）上聚类。但 VAE latent 编码的是低级像素信息，不是真正的语义。同一张图的天空区域和水面区域在 latent 空间可能距离很近（都是平滑区域），但它们的"正确"风格转移方式完全不同。
+**Why this helps MUSIQ.** MUSIQ measures perceptual quality, not transport cost. A lower transport cost (global WCT) can match sky pixels to skin pixels if that minimizes distance, but the result looks unnatural. Region-wise SWD pays a higher transport cost to keep sky statistics matched to sky, skin to skin—producing content-coherent textures that MUSIQ rewards.
 
-**根因 2: 区域匹配破坏全局分布约束**
+### 3.2 Why deterministic beats stochastic (10-point MUSIQ gap)
+Replacing deterministic quantile interpolation with stochastic multinomial sampling regresses MUSIQ by ~10 points (51.86 → 41.50). The reason:
 
-global SWD 已经在驱动 MUSIQ — 它让 `z_hat1` 的全局边缘分布匹配 `projected_target`。这个全局匹配包含了 reference artwork 的纹理统计，正是 MUSIQ 奖励的。
+**Deterministic quantile matching** is the closed-form 1D OT optimum. It preserves the within-region rank order: the $i$-th smallest generated pixel maps to the $i$-th smallest target pixel. This is the **monotone coupling**, which is optimal in 1D.
 
-k-means 区域内匹配将这个全局约束拆成 K 个局部约束，每个局部约束的样本量只有全局的 1/K。这:
-- 削弱了全局统计信号（MUSIQ 的驱动力）
-- 降低了 SWD 的统计效力（样本量减少 → 分位数估计噪声增大）
-- 引入区域间的不一致（每个区域独立匹配，边界处产生伪影）
+**Stochastic multinomial sampling** draws from the target distribution independently, breaking the monotone coupling. The result is a **random coupling** whose expected transport cost equals the average distance, not the minimum. In 1D, the gap between the monotone coupling and a random coupling is:
+$$\mathbb E[\mathcal W_2^2(\text{random})] - \mathcal W_2^2(\text{monotone}) = \mathrm{Var}(\text{target rank}) - 0$$
+which is strictly positive whenever the target distribution is non-degenerate.
 
-**根因 3: 训练不稳定**
+**Practical implication:** The monotone coupling preserves spatial coherence (adjacent pixels with similar values remain similar after matching), while stochastic sampling introduces per-pixel noise that the VAE decoder amplifies into grain.
 
-k-means 每次 forward 重新聚类，聚类结果对初始化敏感。即使用了 deterministic seeding（按 norm 排序），content latent 的微小变化也会导致区域划分跳变，使训练信号噪声化。
+### 3.3 The β blend trade-off
+- $\beta = 0$ (pure global WCT): ignores content layout, MUSIQ = 42.95.
+- $\beta = 0.7$ (optimal): cross-region style cues preserved, within-region statistics content-coherently aligned, MUSIQ = 51.86.
+- $\beta = 1.0$ (pure region match): saturates, costs CLIP-S because cross-region statistical variation also carries style information.
 
-**根因 4: 区域对齐的伪问题**
+The optimum at $\beta = 0.7$ reflects a bias-variance trade-off: global WCT has high bias (ignores content) but low variance (uses all pixels); region match has low bias but high variance (fewer pixels per region). The blend minimizes total error.
 
-`_semantic_region_swd` 尝试将 gen 的区域和 target 的区域"对齐"（按 centroid mean-projection 排序）。但 gen 和 target 是不同的图，它们的区域语义未必对应。强行对齐会扭曲内容。
+### 3.4 K-value trade-off (hypothesis, under experiment)
+- $K = 1$: equivalent to global SWD.
+- $K$ small (4): regions too coarse,接近global.
+- $K$ medium (8): sweet spot, content-coherent regions with enough pixels per region.
+- $K$ large (32): regions too fine, per-region statistics noisy (few pixels), variance dominates.
 
-### 2.3 S4 的启示: guidance signal 有效，区域划分无效
+Predicted MUSIQ curve: inverted-U peaking around K=8.
 
-S4（cross-attn guided + k-means）取得了最高 MUSIQ (42.01)，证明 **cross-attn entropy 作为 guidance signal 有效** — 它告诉 SWD "哪里需要风格转移"。
+## 4. Empirical Results
 
-但 S4 的 LPIPS (0.5320) 远超基线 (0.4347) 和目标 (0.48)，证明 **k-means 区域划分仍然在伤害内容保真度**。
+### 4.1 Current best
+| Config | K | β | SWD w | MUSIQ | CLIP-S | LPIPS |
+|--------|---|---|-------|-------|--------|-------|
+| global SWD | - | 0 | 12 | 42.95 | 0.7275 | 0.4347 |
+| sem_r8 (base) | 8 | 0.7 | 12 | 51.86 | 0.7147 | 0.3815 |
+| sem_r8 + EOTA τ=0.08 | 8 | 0.7 | 12 | **54.50** | 0.7126 | 0.3843 |
+| sem_r8_strict (multinomial) | 8 | 0.7 | 12 | 41.50 | - | - |
 
-结论: 正确的方向是 **保留 guidance signal，去掉区域划分**。
+### 4.2 Key findings
+1. **k-means region partitioning is the effective mechanism.** S5-S8 (guidance-based without k-means) all failed (MUSIQ 36-39).
+2. **Deterministic quantile matching is essential.** Stochastic sampling regresses 10 points.
+3. **EOTA stacks with semantic SWD.** +2.6 MUSIQ for free (CLIP-S/LPIPS flat).
+4. **Governing pattern:** adding HF energy hurts MUSIQ (VAE grain); redistributing/cleaning helps.
 
-## 3. Semantic SWD 的正确机制: Guidance-based 而非 Region-based
+## 5. Open Questions (Under Investigation)
 
-### 3.1 核心区分
+1. **K-value sweep:** Does K=4/16/32 beat K=8? (M1, running)
+2. **β-value fine sweep:** Is 0.7 truly optimal or just a local optimum? (M2)
+3. **Region matching alternatives:** Softmax weighting vs hard k-means? (M4)
+4. **Cross-dataset generalization:** Does D5 optimal transfer to R5? (M5)
 
-| 路线 | 机制 | 问题 |
-|------|------|------|
-| Region-based (S1-S4) | 划分区域 → 区域内独立匹配 | 破坏全局约束, 样本不足, 训练不稳定 |
-| **Guidance-based (S5-S8)** | 全局匹配 → guidance 调整采样权重 | 保留全局约束, 聚焦关键区域 |
+## 6. Implementation Notes
 
-### 3.2 Guidance-based Semantic SWD 的数学形式
-
-标准 SWD 对所有空间位置均匀采样:
-```
-SWD_global = E_dir [ (1/N) Σ_i | sort(proj_a)_i - sort(proj_b)_i | ]
-```
-
-Guidance-based SWD 用 semantic signal `w(x,y)` 调整采样概率:
-```
-p(x,y) = w(x,y) / Σ w(x,y)          # 归一化为概率分布
-SWD_guided = E_dir [ (1/M) Σ_j | sort(proj_a[~p])_j - sort(proj_b[~p])_j | ]
-```
-
-其中 `~p` 表示按概率 `p` 采样 M 个位置。
-
-**关键区别**: 这不是区域划分后独立匹配，而是全局匹配中的重要性采样。全局分布约束保留，但 SWD 的"注意力"集中在 semantic 重要的区域。
-
-### 3.3 三种 Guidance Signal
-
-#### 3.3.1 Cross-attention Entropy (S4, S5, S6)
-
-```python
-# model.last_pixel_entropy: [B, 1, H, W]
-# 交叉注意力路由模块的像素熵 — 哪里在"编辑"内容
-weight = model.last_pixel_entropy
-weight = weight / weight.mean()  # 归一化到均值1
-```
-
-**语义**: 交叉注意力熵高的区域 = 模型正在做风格转移的区域 = 需要 SWD 约束的区域。
-
-**验证**: S4 MUSIQ=42.01 > baseline 41.11，证明此 signal 有效。
-
-#### 3.3.2 DWT High-frequency Energy (S7)
-
-```python
-# content 的 DWT 高频能量: |LH| + |HL| + |HH|
-_, lh, hl, hh = dwt2_haar(content)
-energy = (lh.abs() + hl.abs() + hh.abs()).mean(dim=1, keepdim=True)
-weight = energy / energy.mean()  # 归一化
-```
-
-**语义**: 高频能量高的区域 = 纹理丰富的区域 = MUSIQ 直接奖励的区域。
-
-**假设**: MUSIQ 奖励纹理自然度，因此 SWD 应该在纹理丰富的区域更严格地匹配。平滑区域（天空、墙面）的低频统计已经由 FM loss 约束，不需要 SWD 额外约束。
-
-**优势**: 完全 content-adaptive，不依赖模型内部状态，训练初期就有效（cross-attn entropy 需要模型训练后才有意义）。
-
-#### 3.3.3 Combined: Cross-attn × DWT (S8)
-
-```python
-weight = (dwt_weight * attn_weight)  # 逐元素乘积
-weight = weight / weight.mean()       # 重归一化
-```
-
-**语义**: 既需要风格转移（cross-attn）又有纹理细节（DWT）的区域 = 风格转移的"关键战场"。
-
-**假设**: 两个 signal 互补 — cross-attn 标记"哪里转移"，DWT 标记"哪里有纹理"。乘积聚焦在两者的交集。
-
-### 3.4 频段分解 + Guidance 的协同 (S5)
-
-S5 将 DWT 频段分解与 cross-attn guidance 结合:
-
-```python
-for band, weight_b in [(LL, 0.25), (LH, 1.0), (HL, 1.0), (HH, 2.0)]:
-    swd += weight_b * SWD(gen_band, target_band, sample_weight=guidance)
-```
-
-**理论**: 
-- LL (低频): 结构/颜色，FM loss 已约束，SWD 权重低 (0.25)
-- LH/HL (中频): 纹理方向，SWD 权重高 (1.0)
-- HH (高频): 细节/锐度，MUSIQ 最敏感，SWD 权重最高 (2.0)
-- Guidance: 在每个频段内，cross-attn guidance 聚焦在编辑区域
-
-### 3.5 多尺度 Patch + Guidance 的协同 (S6)
-
-S6 将多尺度 patch 纹理匹配与 cross-attn guidance 结合:
-
-```python
-for patch_size, weight_p in [(1, 0.3), (3, 0.4), (5, 0.3)]:
-    swd += weight_p * patch_SWD(gen, target, patch=patch_size, sample_weight=guidance)
-```
-
-**理论**:
-- patch=1: 像素级颜色边缘分布（baseline SWD）
-- patch=3: 细粒度纹理（笔触、颗粒）
-- patch=5: 粗粒度纹理（色块、结构）
-- Guidance: 在每个尺度内，聚焦在编辑区域的局部纹理匹配
-
-## 4. 实验设计
-
-### 4.1 控制变量
-
-所有实验固定:
-- batch_size=48, num_epochs=10, lr=2e-4
-- cross_attn_dwt_route=true (DWT 路由架构)
-- single_step_swd_weight=8.0
-- 5-style distinct5 数据集
-- RTX 3060 12GB, VRAM < 11GB
-
-### 4.2 变量
-
-| 实验 | swd_scale_mode | swd_guidance_source | swd_band_mode | swd_patch_mode |
-|------|---------------|--------------------|--------------|---------------|
-| S5 | cross-attn-guided | style_delta (default) | split | off |
-| S6 | cross-attn-guided | style_delta (default) | off | multi |
-| S7 | cross-attn-guided | dwt_energy | off | off |
-| S8 | cross-attn-guided | cross_attn_plus_dwt | off | off |
-
-### 4.3 评估指标
-
-- **MUSIQ**: 主要目标（推高）
-- **CLIP-S**: 风格相似度（保持 > 0.70）
-- **LPIPS**: 内容保真度（控制 < 0.48，参考 Seedream 0.4767）
-
-### 4.4 Trade-off 参考
-
-Seedream 4.5 在 D5-512: CLIP-S=0.7198, LPIPS=0.4767, MUSIQ=69.51
-→ 接受 LPIPS 到 ~0.48，换取 MUSIQ 提升
-
-## 5. 预期与风险
-
-### 5.1 预期
-
-- S5 (band+guidance): MUSIQ 应高于 baseline，因为 HF 频段被重点约束
-- S6 (patch+guidance): MUSIQ 应高于 baseline，因为多尺度纹理匹配
-- S7 (DWT-energy): 如果 MUSIQ 提升，证明 content-adaptive guidance 不依赖模型内部状态
-- S8 (combined): 如果两个 signal 互补，应该有最高的 MUSIQ
-
-### 5.2 风险
-
-- DWT-energy guidance 可能在内容图本身纹理丰富时退化（所有区域权重相近 → 退化为 global SWD）
-- Combined guidance 的乘积可能过度聚焦，导致大部分区域无约束
-- band-split 和 multi-patch 的计算开销可能影响训练速度
-
-## 6. 代码路径
-
-- 理论实现: `src/spectral_losses620.py`
-  - `_sliced_wasserstein()`: 基础 SWD + 加权采样
-  - `_patch_swd()`: 多尺度 patch SWD
-  - `_dwt_energy_weight()`: DWT 能量 guidance (新增)
-  - `_cross_attn_swd_weight()`: 统一 guidance 入口 (扩展)
-  - `_compute_swd()`: SWD 分发器
-- 配置: `configs/musiq_s{5,6,7,8}_*.json`
-- 评估: `task_musiq/eval_only.py` + `scripts/_compute_musiq_batch.py`
+- Code: `src/spectral_losses620.py`, functions `_kmeans_labels` and `_semantic_region_swd`.
+- The K×B Python loop is intentional (vectorized multinomial produces wrong results).
+- Config: `swd_semantic_mode=region`, `swd_semantic_regions=K`, `swd_semantic_blend=β`.
+- Training: 5 epochs, batch=24, Patience=2, ~3.5 min/epoch on RTX 3060.

@@ -22,11 +22,35 @@ def _sliced_wasserstein(
     *,
     dirs: torch.Tensor,
     noise_sigma: float = 0.0,
+    sample_weight: torch.Tensor | None = None,
+    sample_size: int = 0,
 ) -> torch.Tensor:
     bsz, c, h, w = a.shape
     # spatial feature format: (B, H*W, C)
     a_spatial = a.float().reshape(bsz, c, -1).transpose(1, 2)
     b_spatial = b.float().reshape(bsz, c, -1).transpose(1, 2)
+    if sample_weight is not None:
+        # Interpret guidance as spatial transport mass rather than multiplying
+        # latent amplitudes. This makes cross-attn-guided SWD a local empirical
+        # distribution match over routed regions.
+        flat_weight = sample_weight.detach().float()
+        if flat_weight.ndim == 4:
+            flat_weight = flat_weight.mean(dim=1).reshape(bsz, -1)
+        else:
+            flat_weight = flat_weight.reshape(bsz, -1)
+        n = a_spatial.shape[1]
+        if flat_weight.shape[0] == bsz and flat_weight.shape[1] == n:
+            probs = flat_weight.clamp_min(1e-8)
+            probs = probs / probs.sum(dim=1, keepdim=True).clamp_min(1e-8)
+            take = n if sample_size <= 0 else min(n, max(1, int(sample_size)))
+            cdf = probs.cumsum(dim=1).contiguous()
+            cdf[:, -1] = 1.0
+            q = (torch.arange(take, device=a.device, dtype=cdf.dtype) + 0.5) / float(take)
+            q = q.unsqueeze(0).expand(bsz, -1).contiguous()
+            idx = torch.searchsorted(cdf, q, right=False).clamp_max(n - 1)
+            gather_idx = idx.unsqueeze(-1).expand(-1, -1, c)
+            a_spatial = a_spatial.gather(dim=1, index=gather_idx)
+            b_spatial = b_spatial.gather(dim=1, index=gather_idx)
     
     # Project: (B, H*W, C) @ (C, num_dirs) -> (B, H*W, num_dirs)
     proj_a = a_spatial @ dirs.t()
@@ -87,6 +111,12 @@ class SpatialBridgeObjective620:
         self.w_attn_entropy_reg = float(getattr(self.bridge_cfg, "w_attn_entropy_reg", 0.0))
         self.w_style_strength_reg = float(getattr(self.bridge_cfg, "w_style_strength_reg", 0.0))
         self.swd_noise_sigma = float(getattr(self.bridge_cfg, "swd_noise_sigma", 0.0))
+        self.swd_guidance_source = str(getattr(self.bridge_cfg, "swd_guidance_source", "style_delta")).strip().lower()
+        self.swd_guidance_floor = max(0.0, min(1.0, float(getattr(self.bridge_cfg, "swd_guidance_floor", 0.25))))
+        self.swd_guidance_power = max(1e-3, float(getattr(self.bridge_cfg, "swd_guidance_power", 1.0)))
+        self.swd_guidance_sample_size = int(
+            getattr(self.bridge_cfg, "swd_guidance_sample_size", getattr(self.bridge_cfg, "swd_cdf_sample_size", 256))
+        )
         self.bridge_sigma = float(getattr(self.bridge_cfg, "bridge_sigma", 0.0))
         self._base_bridge_sigma = self.bridge_sigma
         self.bridge_sigma_schedule = str(getattr(self.bridge_cfg, "bridge_sigma_schedule", "constant")).strip().lower()
@@ -207,6 +237,29 @@ class SpatialBridgeObjective620:
             dirs = F.normalize(dirs, p=2, dim=1, eps=1e-8).to(device=like.device)
             self._projection_cache[key] = dirs
         return dirs
+
+    def _cross_attn_swd_weight(self, model, like: torch.Tensor) -> torch.Tensor | None:
+        guidance = None
+        if self.swd_guidance_source in {"entropy", "pixel_entropy", "attention_entropy"}:
+            guidance = getattr(model, "last_pixel_entropy", None)
+        else:
+            guidance = getattr(model, "last_cross_attn_guidance", None)
+            if guidance is None:
+                guidance = getattr(model, "last_pixel_entropy", None)
+        if guidance is None or not torch.is_tensor(guidance):
+            return None
+
+        weight = guidance.detach().to(device=like.device, dtype=like.dtype)
+        if weight.shape[-2:] != like.shape[-2:]:
+            weight = F.interpolate(weight, size=like.shape[-2:], mode="bilinear", align_corners=False)
+        weight = weight.float().abs().clamp_min(1e-8)
+        weight = weight / weight.mean(dim=(2, 3), keepdim=True).clamp_min(1e-6)
+        if self.swd_guidance_power != 1.0:
+            weight = weight.pow(self.swd_guidance_power)
+            weight = weight / weight.mean(dim=(2, 3), keepdim=True).clamp_min(1e-6)
+        if self.swd_guidance_floor > 0.0:
+            weight = self.swd_guidance_floor + (1.0 - self.swd_guidance_floor) * weight
+        return weight.to(dtype=like.dtype)
 
     def _sample_t(self, content: torch.Tensor) -> torch.Tensor:
         lo = max(0.0, min(1.0, self.t_min))
@@ -615,6 +668,9 @@ class SpatialBridgeObjective620:
                 print(f"[A4-debug] step={self._w_debug_counter} band={self.output_variance_band} gen_std_mean={gen_std.mean().item():.4f} target_std_mean={target_std.mean().item():.4f} loss={output_variance_loss.item():.6f}", flush=True)
 
         # SWD scale mode handling
+        swd_guidance_active = content.new_tensor(0.0)
+        swd_guidance_mean = content.new_tensor(0.0)
+        swd_guidance_std = content.new_tensor(0.0)
         if self.swd_scale_mode == "2-scale":
             swd_64 = _sliced_wasserstein(z_hat1, projected_target, dirs=self._projection_dirs(z_hat1), noise_sigma=self.swd_noise_sigma)
             z_hat1_32 = F.avg_pool2d(z_hat1, kernel_size=2, stride=2)
@@ -630,9 +686,28 @@ class SpatialBridgeObjective620:
             target_style_16 = F.avg_pool2d(projected_target, kernel_size=4, stride=4)
             swd_16 = _sliced_wasserstein(z_hat1_16, target_style_16, dirs=self._projection_dirs(z_hat1_16), noise_sigma=self.swd_noise_sigma)
             swd_ss = 0.4 * swd_64 + 0.4 * swd_32 + 0.2 * swd_16
+        elif self.swd_scale_mode in {"cross-attn-guided", "cross_attn_guided", "crossattn-guided", "crossattn_guided"}:
+            weight = self._cross_attn_swd_weight(model, z_hat1)
+            if weight is not None:
+                swd_guidance_active = content.new_tensor(1.0)
+                swd_guidance_mean = weight.detach().float().mean()
+                swd_guidance_std = weight.detach().float().std()
+                swd_ss = _sliced_wasserstein(
+                    z_hat1,
+                    projected_target,
+                    dirs=self._projection_dirs(z_hat1),
+                    noise_sigma=self.swd_noise_sigma,
+                    sample_weight=weight,
+                    sample_size=self.swd_guidance_sample_size,
+                )
+            else:
+                swd_ss = _sliced_wasserstein(z_hat1, projected_target, dirs=self._projection_dirs(z_hat1), noise_sigma=self.swd_noise_sigma)
         elif self.swd_scale_mode == "attention-weighted" and getattr(model, "last_pixel_entropy", None) is not None:
             weight = model.last_pixel_entropy.to(device=z_hat1.device, dtype=z_hat1.dtype)
             weight = weight / weight.mean(dim=(2, 3), keepdim=True).clamp_min(1e-6)
+            swd_guidance_active = content.new_tensor(1.0)
+            swd_guidance_mean = weight.detach().float().mean()
+            swd_guidance_std = weight.detach().float().std()
             swd_ss = _sliced_wasserstein(z_hat1 * weight, projected_target * weight, dirs=self._projection_dirs(z_hat1), noise_sigma=self.swd_noise_sigma)
         else:
             swd_ss = _sliced_wasserstein(z_hat1, projected_target, dirs=self._projection_dirs(z_hat1), noise_sigma=self.swd_noise_sigma)
@@ -741,6 +816,9 @@ class SpatialBridgeObjective620:
             "training_target_projection_low_mode_all": content.new_tensor(1.0 if self.low_mode == "all" else 0.0),
             "bridge_sigma": content.new_tensor(float(getattr(model, "bridge_sigma", 0.0))),
             "swd_noise_sigma": content.new_tensor(self.swd_noise_sigma),
+            "swd_guidance_active": swd_guidance_active.detach(),
+            "swd_guidance_mean": swd_guidance_mean.detach(),
+            "swd_guidance_std": swd_guidance_std.detach(),
             "style_gate_value": debug.get("style_gate_value", zero).detach() if torch.is_tensor(debug.get("style_gate_value", None)) else zero,
             "cross_attn_entropy": debug.get("cross_attn_entropy", zero).detach() if torch.is_tensor(debug.get("cross_attn_entropy", None)) else zero,
             "cross_attn_delta_abs": debug.get("cross_attn_delta_abs", zero).detach() if torch.is_tensor(debug.get("cross_attn_delta_abs", None)) else zero,

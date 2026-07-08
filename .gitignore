@@ -118,3 +118,5 @@ node_modules/
 package-lock.json
 package.json
 _data_sync/
+*/results/
+*tmp*

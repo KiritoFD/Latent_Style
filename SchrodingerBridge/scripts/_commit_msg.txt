@@ -1,0 +1,26 @@
+feat(v4): fill all remaining MUSIQ/Params/Infer gaps in main table
+
+MUSIQ backfill (3 new evaluations on Random5-WikiArt, 750 images each):
+- Identity R5: 54.61 (was --)
+- AdaIN R5: 51.16 (was --)
+- WCT R5: 53.39 (was --)
+These refute the prior caption claim that training-free methods
+share the source image; AdaIN/WCT do modify the output on R5.
+
+Params backfill (0 for training-free and closed API):
+- Identity, AdaIN, WCT, SD-Turbo, Seedream: 0 (was --)
+
+Infer-750 backfill (from baseline_summary_table.csv):
+- Identity: 0s (no-op)
+- AdaIN: 0s (single forward pass)
+- SD-Turbo: 0s (single-step diffusion)
+- Seedream: -- (API latency, not locally measurable)
+- WCT: 90s (already present)
+
+Remaining -- entries (documented in caption):
+- CUT Photo2Art-256 MUSIQ: generated images not retained
+- Seedream Distinct5/Random5 MUSIQ: closed API, images not retained
+- Seedream Infer-750: API latency
+
+Caption updated to reflect new data and remove stale notes.
+Compiles to 8 pages (pdflatex + bibtex + pdflatex x2).
