@@ -1,9 +1,0 @@
-name: aaai2027-local-analysis
-channels:
-  - conda-forge
-  - defaults
-dependencies:
-  - python=3.12
-  - pip
-  - pip:
-      - -r local_analysis_requirements.txt
