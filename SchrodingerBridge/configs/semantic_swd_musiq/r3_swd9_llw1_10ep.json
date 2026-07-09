@@ -372,7 +372,7 @@
     "training_bridge_noise_projection_preserve_rms": true,
     "terminal_swd_weight": 0.1,
     "terminal_swd_aux_weight": 0.0,
-    "single_step_swd_weight": 12.0,
+    "single_step_swd_weight": 9.0,
     "single_step_edge_weight": 0.1,
     "semantic_supervision_family": "legacy_terminal_swd",
     "w_variance_penalty": 0.0,
@@ -388,7 +388,7 @@
     "contrastive_temperature": 0.1,
     "w_output_variance": 0.0,
     "output_variance_band": "hh",
-    "spectral_w_ll": 0.3,
+    "spectral_w_ll": 1.0,
     "spectral_w_lh": 1.0,
     "spectral_w_hl": 1.0,
     "spectral_w_hh": 2.0,
@@ -533,7 +533,7 @@
     ],
     "multistep_gamma": 0.1,
     "grad_clip_norm": 1.0,
-    "num_epochs": 5,
+    "num_epochs": 10,
     "save_interval": 5,
     "async_checkpoint_save": false,
     "log_interval": 20,
@@ -651,7 +651,7 @@
     "dino_bank_limit_per_style": 8
   },
   "checkpoint": {
-    "save_dir": "./exp/abl_spectral"
+    "save_dir": "./exp/r3_swd9_llw1_10ep"
   },
   "full_eval": {
     "vae_model": "ema",
@@ -667,9 +667,10 @@
     "hf_soft_threshold": 0.08
   },
   "ablation": {
-    "name": "abl_spectral",
-    "axis": "full_method_ablation",
-    "stage": "objective_test",
-    "notes": "Spectral-decoupled SWD (M5 mechanism)"
+    "name": "r3_swd9_llw1_10ep",
+    "axis": "round3_swd_gap_fill",
+    "stage": "round3_combination",
+    "base": "r2_spectral_10ep (Round 2 best)",
+    "notes": "swd_w=9 + ll_w=1.0 + 10ep. Fills the SWD weight gap between 6 (R2 best content) and 12 (R2 best style)."
   }
 }

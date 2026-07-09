@@ -388,7 +388,7 @@
     "contrastive_temperature": 0.1,
     "w_output_variance": 0.0,
     "output_variance_band": "hh",
-    "spectral_w_ll": 0.3,
+    "spectral_w_ll": 2.0,
     "spectral_w_lh": 1.0,
     "spectral_w_hl": 1.0,
     "spectral_w_hh": 2.0,
@@ -533,7 +533,7 @@
     ],
     "multistep_gamma": 0.1,
     "grad_clip_norm": 1.0,
-    "num_epochs": 5,
+    "num_epochs": 10,
     "save_interval": 5,
     "async_checkpoint_save": false,
     "log_interval": 20,
@@ -651,7 +651,7 @@
     "dino_bank_limit_per_style": 8
   },
   "checkpoint": {
-    "save_dir": "./exp/abl_spectral"
+    "save_dir": "./exp/r3_llw2_10ep"
   },
   "full_eval": {
     "vae_model": "ema",
@@ -667,9 +667,10 @@
     "hf_soft_threshold": 0.08
   },
   "ablation": {
-    "name": "abl_spectral",
-    "axis": "full_method_ablation",
-    "stage": "objective_test",
-    "notes": "Spectral-decoupled SWD (M5 mechanism)"
+    "name": "r3_llw2_10ep",
+    "axis": "round3_llw_upper_probe",
+    "stage": "round3_combination",
+    "base": "r2_spectral_10ep (Round 2 best)",
+    "notes": "ll_w=2.0 + 10ep. Upper bound probe for ll_w. If content keeps improving without style loss, ll_w=2.0 may be better."
   }
 }

@@ -596,9 +596,9 @@
     "full_eval_convergence_flat_eps_style": 0.005,
     "full_eval_convergence_flat_eps_lpips": 0.018,
     "full_eval_convergence_min_epochs": 0,
-    "test_image_dir": "I:/wikiart_distinct5_samam_512_classview/test",
+    "test_image_dir": "I:/datasets/wikiart_distinct5_samam_512_classview/test",
     "full_eval_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/eval_cache",
-    "full_eval_clip_hf_cache_dir": "C:/Users/xy/.cache/huggingface/hub",
+    "full_eval_clip_hf_cache_dir": "C:/Users/Administrator/.cache/huggingface/hub",
     "full_eval_clip_backend": "hf",
     "full_eval_hf_clip_skip_processor": false,
     "full_eval_disable_lpips": false,
@@ -612,7 +612,7 @@
     "full_eval_save_generated_images": true
   },
   "data": {
-    "data_root": "I:/wikiart_distinct5_samam_512_latents_ema/train",
+    "data_root": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train",
     "style_subdirs": [
       "Early_Renaissance",
       "Impressionism",
@@ -629,7 +629,7 @@
     "virtual_length_multiplier": 1.0,
     "content_style_sampling_weights": null,
     "target_style_sampling_weights": null,
-    "pairing_cache_path": "I:/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "pairing_cache_path": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
     "pairing_cache_topk": 8,
     "pairing_cache_active_topk": 8,
     "pairing_cache_sample_mode": "rank_stratified",
@@ -645,7 +645,7 @@
     "pairing_cache_cross_only": true,
     "style_caption_path": "",
     "latent_cache_mode": "packed",
-    "latent_cache_dir": "I:/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/packed",
+    "latent_cache_dir": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/packed",
     "dino_cache_path": "",
     "dino_cache_required": false,
     "dino_bank_limit_per_style": 8

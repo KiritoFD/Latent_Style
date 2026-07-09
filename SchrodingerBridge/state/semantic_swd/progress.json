@@ -1,22 +1,123 @@
 {
-  "iteration": 4,
-  "total_findings": 13,
-  "status": "ablation_round1_running",
+  "iteration": 10,
+  "total_findings": 20,
+  "status": "ablation_round3_complete_ready_for_round4",
   "stale_count": 0,
-  "last_seen": "2026-07-09T01:06:19",
-  "current_milestone": "M5_clean_ablation_round1",
+  "last_seen": "2026-07-09T14:10:00",
+  "current_milestone": "M6_ablation_round3",
   "best_musiq": 54.50,
-  "best_config": "sem_r8 + EOTA τ=0.08 (hard K=8 baseline)",
+  "best_config": "r3_spectral_15ep (CLIP-S=0.7311, d_idt=0.0912) — style SOTA",
   "ablation_round1": {
+    "status": "complete",
     "baseline_clip_s": 0.7087,
-    "baseline_duration_min": 12.7,
-    "experiments_total": 16,
-    "experiments_completed": 1,
-    "experiments_running": "abl_no_swd_loss",
-    "eta_hours": 3.2,
-    "fix_applied": "_projection_dirs fresh random (removed deterministic cache)",
-    "data_path_fix": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train",
-    "remote_cleanup": "658 -> 26 top-level entries"
+    "experiments_completed": 15,
+    "experiments_failed": 1,
+    "best_variant": "abl_spectral (CLIP-S=0.7237, delta_idt=0.0838)",
+    "failed": {"abl_sinkhorn": "OT diverged, killed at 04:21:38"}
   },
-  "pivot_rationale": "Cleaned infra + fixed _projection_dirs cache bug + fixed data paths. Running 16-config ablation covering 4 tiers. Baseline CLIP-S=0.7087 confirms fix. Will commit after round1 completes."
+  "ablation_round2": {
+    "status": "complete",
+    "started_at": "2026-07-09T06:36:49 (remote)",
+    "base_config": "spectral (Round 1 best)",
+    "experiments_total": 6,
+    "experiments_completed": 6,
+    "experiments_failed": 0,
+    "experiments_running": null,
+    "completed_at": "2026-07-09T09:00:39 (remote)",
+    "best_variant": "r2_spectral_10ep (CLIP-S=0.7288, d_idt=0.0888, +0.0051 vs R1 spectral-5ep)",
+    "runner": "r2_ablation_runner (scheduled task)",
+    "remote_repo": "I:\\Github\\Latent_Style\\SchrodingerBridge",
+    "log_file": "I:\\Github\\Latent_Style\\SchrodingerBridge\\remote_ablation_r2_log.txt"
+  },
+  "ablation_round3": {
+    "status": "complete",
+    "started_at": "2026-07-09T09:22:23 (remote)",
+    "completed_at": "2026-07-09T13:28:41 (remote)",
+    "base_config": "r2_spectral_10ep (Round 2 best, CLIP-S=0.7288)",
+    "experiments_total": 6,
+    "experiments_completed": 6,
+    "experiments_failed": 0,
+    "best_variant_style": "r3_spectral_15ep (CLIP-S=0.7311, d_idt=0.0912, +0.0023 vs R2_10ep) — STYLE SOTA",
+    "best_variant_content": "r3_swd6_llw1_10ep (cLPIPS=0.3260, -0.0199 vs R2_10ep) — CONTENT SOTA",
+    "runner": "r3_ablation_runner (scheduled task)",
+    "log_file": "I:\\Github\\Latent_Style\\SchrodingerBridge\\remote_ablation_r3_log.txt",
+    "configs": [
+      "r3_swd6_llw1_5ep (5ep) - swd_w=6 + ll_w=1.0, isolate 10ep effect",
+      "r3_swd6_llw1_10ep (10ep) - TRIPLE COMBO",
+      "r3_swd9_llw1_10ep (10ep) - swd_w gap fill (6-12)",
+      "r3_llw05_10ep (10ep) - ll_w middle point (0.5)",
+      "r3_llw2_10ep (10ep) - ll_w upper probe (2.0)",
+      "r3_spectral_15ep (15ep) - 10->15ep continuation check"
+    ],
+    "estimated_total_runtime_min": 246,
+    "actual_total_runtime_min": 246,
+    "results": {
+      "r3_swd6_llw1_5ep": {
+        "status": "complete",
+        "clip_style": 0.7204,
+        "clip_t": 0.2271,
+        "content_lpips": 0.3353,
+        "clip_s_delta_idt": 0.0805,
+        "vs_r2_spectral_10ep_clip_s": -0.0084,
+        "duration_min": 20.4,
+        "interpretation": "Triple combo at 5ep: best content (0.3353) but style drops to 0.7204. Negative interaction on style at 5ep."
+      },
+      "r3_swd6_llw1_10ep": {
+        "status": "complete",
+        "clip_style": 0.7240,
+        "clip_t": 0.2279,
+        "content_lpips": 0.3260,
+        "clip_s_delta_idt": 0.0841,
+        "vs_r2_spectral_10ep_clip_s": -0.0048,
+        "vs_r2_spectral_10ep_content_lpips": -0.0199,
+        "duration_min": 41.2,
+        "interpretation": "CONTENT SOTA across all 3 rounds (cLPIPS=0.3260). 10ep rescues style (+0.0036 vs 5ep) AND huge content improvement (-0.0093 vs 5ep). vs R2 best: trades -0.0048 style for -0.0199 content."
+      },
+      "r3_swd9_llw1_10ep": {
+        "status": "complete",
+        "clip_style": 0.7259,
+        "clip_t": 0.2284,
+        "content_lpips": 0.3325,
+        "clip_s_delta_idt": 0.0860,
+        "vs_r2_spectral_10ep_clip_s": -0.0029,
+        "duration_min": 41.0,
+        "interpretation": "swd_w=9 (gap fill 6-12): style 0.7259 between swd6 (0.7240) and swd12 (0.7288). Confirms monotonic swd_w -> style. Content 0.3325 between swd6 (0.3260) and swd12 (0.3459)."
+      },
+      "r3_llw05_10ep": {
+        "status": "complete",
+        "clip_style": 0.7278,
+        "clip_t": 0.2289,
+        "content_lpips": 0.3426,
+        "clip_s_delta_idt": 0.0879,
+        "vs_r2_spectral_10ep_clip_s": -0.0010,
+        "duration_min": 40.9,
+        "interpretation": "ll_w=0.5 (10ep): near-baseline style (-0.0010) with slight content improvement (-0.0033). ll_w=0.3 remains style-optimal at 10ep; higher ll_w trades style for content."
+      },
+      "r3_llw2_10ep": {
+        "status": "complete",
+        "clip_style": 0.7266,
+        "clip_t": 0.2285,
+        "content_lpips": 0.3307,
+        "clip_s_delta_idt": 0.0867,
+        "vs_r2_spectral_10ep_clip_s": -0.0022,
+        "vs_r2_spectral_10ep_content_lpips": -0.0152,
+        "duration_min": 40.9,
+        "interpretation": "ll_w=2.0 (10ep): stronger content gain (-0.0152) but style drops -0.0022. Confirms ll_w as style-content trade-off knob (NOT strict improvement at 10ep, contrary to Round 2 5ep finding)."
+      },
+      "r3_spectral_15ep": {
+        "status": "complete",
+        "clip_style": 0.7311,
+        "clip_t": 0.2296,
+        "content_lpips": 0.3524,
+        "clip_s_delta_idt": 0.0912,
+        "vs_r2_spectral_10ep_clip_s": 0.0023,
+        "vs_r2_spectral_10ep_delta_idt": 0.0024,
+        "vs_r2_spectral_10ep_content_lpips": 0.0065,
+        "duration_min": 61.3,
+        "interpretation": "STYLE SOTA across all 3 rounds (CLIP-S=0.7311, d_idt=0.0912). 10->15ep continues to improve style (+0.0023) but content degrades (+0.0065 vs 10ep). Training length exhibits style-content trade-off past 10ep; 10ep is content sweet spot, 15ep+ is style sweet spot."
+      }
+    }
+  },
+  "next_action": "write Round 3 analysis doc, git commit, then design Round 4 (convergence check: 20ep, swd_w>12, ll_w<0.3)",
+  "pivot_rationale": "Round3 complete 6/6 ok in 246 min. r3_spectral_15ep is new style SOTA (+0.0023 vs R2 best). r3_swd6_llw1_10ep is content SOTA (cLPIPS=0.3260). Three key insights: (1) training length past 10ep trades content for style; (2) ll_w=0.3 is style-optimal at 10ep (R2 5ep 'll_w strict improvement' finding does NOT generalize to 10ep); (3) swd_w is a clean style-content trade-off knob. Ready for commit + Round 4 convergence check."
 }

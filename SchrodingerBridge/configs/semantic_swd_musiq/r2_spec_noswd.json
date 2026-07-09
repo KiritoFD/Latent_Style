@@ -372,7 +372,7 @@
     "training_bridge_noise_projection_preserve_rms": true,
     "terminal_swd_weight": 0.1,
     "terminal_swd_aux_weight": 0.0,
-    "single_step_swd_weight": 12.0,
+    "single_step_swd_weight": 0.0,
     "single_step_edge_weight": 0.1,
     "semantic_supervision_family": "legacy_terminal_swd",
     "w_variance_penalty": 0.0,
@@ -651,7 +651,7 @@
     "dino_bank_limit_per_style": 8
   },
   "checkpoint": {
-    "save_dir": "./exp/abl_spectral"
+    "save_dir": "./exp/r2_spec_noswd"
   },
   "full_eval": {
     "vae_model": "ema",
@@ -667,9 +667,9 @@
     "hf_soft_threshold": 0.08
   },
   "ablation": {
-    "name": "abl_spectral",
-    "axis": "full_method_ablation",
-    "stage": "objective_test",
-    "notes": "Spectral-decoupled SWD (M5 mechanism)"
+    "name": "r2_spec_noswd",
+    "axis": "round2_combo_spectral_noswd",
+    "stage": "round2_combination",
+    "notes": "spectral + no_swd_loss (swd_weight=0). Round1 best two positives combined."
   }
 }
