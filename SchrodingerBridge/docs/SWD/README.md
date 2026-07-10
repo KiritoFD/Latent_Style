@@ -1,5 +1,10 @@
 # Semantic SWD Notes
 
+> Archive notice (2026-07-10): this directory records historical MUSIQ-oriented
+> exploration. MUSIQ is no longer part of model selection. The active four-metric
+> plan is `docs/710/README.md`, and the removed experiment configs are intentionally
+> not runnable from the current tree.
+
 This directory tracks the semantic/cross-attention-guided SWD cleanup for the AAAI 2027 LBM/WEAVE experiments.
 
 ## Current Takeaway

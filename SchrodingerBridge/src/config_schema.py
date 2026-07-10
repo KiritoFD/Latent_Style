@@ -716,17 +716,6 @@ class BridgeConfig:
     swd_semantic_regions: int = 4
     swd_semantic_kmeans_iters: int = 4
     swd_semantic_blend: float = 0.5
-    swd_semantic_softmax_temp: float = 1.0
-    swd_semantic_min_weight: float = 0.05
-    swd_semantic_sinkhorn_epsilon: float = 0.1
-    swd_semantic_sinkhorn_iters: int = 10
-    swd_semantic_hier_coarse: int = 4
-    swd_semantic_hier_fine: int = 16
-    swd_semantic_hier_fine_weight: float = 0.5
-    swd_semantic_adaptive_k_candidates: tuple[int, ...] = (4, 8, 16)
-    swd_semantic_adaptive_k_threshold: float = 0.1
-    swd_semantic_spectral_ll_weight: float = 1.0
-    swd_semantic_spectral_hf_weight: float = 2.0
     normalize_eps: float = 1e-8
     logit_clamp: float = 50.0
     velocity_clamp: float = 20.0
