@@ -62,13 +62,43 @@ For additional information on amsmath, use the `?' option.
 [Loading MPS to PDF converter (version 2006.09.02).]
 ) (c:/texlive/2026/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 (c:/texlive/2026/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg))
-! I can't write on file `paper.pdf'.
-(Press Enter to retry, or Control-Z to exit; default file extension is `.pdf')
-Please type another file name for output
-! Emergency stop.
-<argument> \pdfximage 
-                      \ifnum 0\ifx \Gin@decode \@empty \else 1\fi \ifGin@int...
-l.44 ...extwidth]{fig_distinct5_page1_summary.pdf}
-                                                  
-!  ==> Fatal error occurred, no output PDF file produced!
+(c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsa.fd)
+(c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsb.fd)
+Underfull \vbox (badness 3375) has occurred while \output is active
+Underfull \vbox (badness 10000) has occurred while \output is active [1{c:/texl
+ive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/2026/texmf-di
+st/fonts/enc/dvips/newtx/ntx-ec-tlf.enc} <./fig_distinct5_page1_summary.pdf>]
+Underfull \vbox (badness 10000) has occurred while \output is active
+Underfull \hbox (badness 3098) in paragraph at lines 110--111
+\T1/ntxtlf/m/n/10 Neural net-works ex-hibit a well-documented spec-tral
+[2]
+Overfull \hbox (1.82243pt too wide) detected at line 202
+[]\OMS/cmsy/m/n/10 L[] \OT1/cmr/m/n/10 := \U/msb/m/n/10 E[]  [] \OML/cmm/m/it/1
+0 ;
+[3]
+Underfull \hbox (badness 2119) in paragraph at lines 219--221
+ \T1/ntxtlf/b/n/10 End-point WCT. \T1/ntxtlf/m/n/10 Let $\OMS/cmsy/m/n/10 W\OT1
+/cmr/m/n/10 ([]) = ([]\OML/cmm/m/it/10 ; []; []; []\OT1/cmr/m/n/10 )$ \T1/ntxtl
+f/m/n/10 and
+[4 <./framework_sfm_main.png> <./fig_probe_combined.pdf> <./fig_probe_swd_separ
+ation.pdf>] [5 <./fig_teaser_comparison.png (PNG copy)> <./radar_baselines_14.p
+ng>] [6] (./paper.bbl) [7] (./paper.aux)
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+ )
+(see the transcript file for additional information)<c:/texlive/2026/texmf-dist
+/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2026/texmf-dist/fonts/ty
+pe1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/publi
+c/amsfonts/cm/cmmi6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts
+/cm/cmmi7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.
+pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/tex
+live/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb><c:/texlive/2026/t
+exmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2026/texmf-dist
+/fonts/type1/public/amsfonts/cm/cmsy7.pfb><c:/texlive/2026/texmf-dist/fonts/typ
+e1/public/amsfonts/cm/cmsy9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/
+amsfonts/symbols/msbm10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newt
+x/ztmb.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmr.pfb><c:/te
+xlive/2026/texmf-dist/fonts/type1/public/newtx/ztmri.pfb>
+Output written on paper.pdf (7 pages, 1862173 bytes).
 Transcript written on paper.log.

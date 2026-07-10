@@ -1,0 +1,74 @@
+\begin{thebibliography}{14}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Chung, Hyun, and Heo(2024)}]{chung2024style}
+Chung, J.; Hyun, S.; and Heo, J.-P. 2024.
+\newblock Style Injection in Diffusion: A Training-free Approach for Adapting Large-scale Diffusion Models for Style Transfer.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}.
+
+\bibitem[{Gatys, Ecker, and Bethge(2015)}]{gatys2015neural}
+Gatys, L.~A.; Ecker, A.~S.; and Bethge, M. 2015.
+\newblock A Neural Algorithm of Artistic Style.
+\newblock In \emph{arXiv preprint arXiv:1508.06576}.
+
+\bibitem[{Hertz et~al.(2024)Hertz, Voynov, Fruchter, and Cohen-Or}]{hertz2024style}
+Hertz, A.; Voynov, A.; Fruchter, S.; and Cohen-Or, D. 2024.
+\newblock Style Aligned Image Generation via Shared Attention.
+\newblock In \emph{Proceedings of the International Conference on Learning Representations (ICLR)}.
+
+\bibitem[{Huang and Belongie(2017)}]{huang2017arbitrary}
+Huang, X.; and Belongie, S. 2017.
+\newblock Arbitrary Style Transfer in Real-time with Adaptive Instance Normalization.
+\newblock In \emph{ICCV}.
+
+\bibitem[{Li et~al.(2017)Li, Fang, Yang, Wang, Lu, and Yang}]{li2017universal}
+Li, Y.; Fang, C.; Yang, J.; Wang, Z.; Lu, X.; and Yang, M.-H. 2017.
+\newblock Universal Style Transfer via Feature Transforms.
+\newblock In \emph{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}.
+
+\bibitem[{Liu et~al.(2025)Liu, Wang, Zhang, Yu, and Guo}]{liu2024samam}
+Liu, H.; Wang, L.; Zhang, Y.; Yu, Z.; and Guo, Y. 2025.
+\newblock SaMam: Style-aware State Space Model for Arbitrary Image Style Transfer.
+\newblock \emph{arXiv preprint arXiv:2503.15934}.
+
+\bibitem[{Liu et~al.(2024)}]{liu2024samst}
+Liu, H.; et~al. 2024.
+\newblock Pluggable Style Representation Learning for Multi-Style Transfer.
+\newblock In \emph{Proceedings of the Asian Conference on Computer Vision}.
+
+\bibitem[{Park et~al.(2020)Park, Efros, Zhang, and Zhu}]{park2020cut}
+Park, T.; Efros, A.~A.; Zhang, R.; and Zhu, J.-Y. 2020.
+\newblock Contrastive Learning for Unpaired Image-to-Image Translation.
+\newblock In \emph{Proceedings of the European Conference on Computer Vision}.
+
+\bibitem[{Phung, Dao, and Tran(2023)}]{phung2023wavelet}
+Phung, H.; Dao, Q.; and Tran, A. 2023.
+\newblock Wavelet Diffusion Models Are Fast and Scalable Image Generators.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}.
+
+\bibitem[{Rahaman et~al.(2019)Rahaman, Baratin, Arpit, Draxler, Li, Hamprecht, Bengio, and Courville}]{rahaman2019spectral}
+Rahaman, N.; Baratin, A.; Arpit, D.; Draxler, F.; Li, M.; Hamprecht, F.; Bengio, Y.; and Courville, A. 2019.
+\newblock On the Spectral Bias of Neural Networks.
+\newblock In \emph{ICML}.
+
+\bibitem[{Rombach et~al.(2022)Rombach, Blattmann, Ling, Esser, and Ommer}]{rombach2022high}
+Rombach, R.; Blattmann, A.; Ling, D.; Esser, P.; and Ommer, B. 2022.
+\newblock High-Resolution Image Synthesis with Latent Diffusion Models.
+\newblock In \emph{CVPR}.
+
+\bibitem[{Wright and Ommer(2022)}]{wright2022artfid}
+Wright, M.; and Ommer, B. 2022.
+\newblock ArtFID: Quantitative Evaluation of Neural Style Transfer.
+\newblock \emph{arXiv preprint arXiv:2207.12280}.
+
+\bibitem[{Yoo et~al.(2019)Yoo, Uh, Chun, Kang, and Ha}]{yoo2019photorealistic}
+Yoo, J.; Uh, Y.; Chun, S.; Kang, B.; and Ha, J.-W. 2019.
+\newblock Photorealistic Style Transfer via Wavelet Transforms.
+\newblock In \emph{ICCV}.
+
+\bibitem[{Zhang et~al.(2018)Zhang, Isola, Efros, Shechtman, and Wang}]{zhang2018unreasonable}
+Zhang, R.; Isola, P.; Efros, A.~A.; Shechtman, E.; and Wang, O. 2018.
+\newblock The Unreasonable Effectiveness of Deep Features as a Perceptual Metric.
+\newblock In \emph{CVPR}.
+
+\end{thebibliography}

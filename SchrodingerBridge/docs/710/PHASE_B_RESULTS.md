@@ -99,7 +99,63 @@ w_ll=0.3 是最佳平衡。w_ll=1.0 略微提升 DINO-S（+0.0024）但 LPIPS �
 
 B0 T11 是 Pareto 前沿上的最佳平衡点，作为后续 Style 改进的基线。
 
-## 5. 速度对比
+## 5. Phase T1: Adaptive Style Gate (ASG) — 突破推理天花板
+
+### 5.1 动机与理论
+
+推理时方法（WCT/AdaIN/放大/稀释）穷尽后，DINO-S 天花板稳定在 0.4614-0.4617（18 个方向，stale_count=9）。
+关键发现：放大 style 信号 (S4=-0.0135) 和稀释 style 信号 (S5=-0.0136) 对 DINO-S 损害几乎相同，
+说明**推理时的标量 style_gate 已在局部最优**，任何方向扰动都退化。
+
+**ASG 理论**：标量 gate 对所有空间位置施加相同 style 强度。但不同区域需求不同：
+- 平坦区域（天空、背景）需要**较少 style** → 保护内容结构
+- 纹理区域（笔触、边缘）需要**更多 style** → 增强风格转移
+
+ASG 将标量 gate 升级为 content-dependent 空间 gate map：
+```
+gate_map = tanh(style_gate + MLP(content_features))  # [B, 1, H, W]
+```
+MLP 零初始化（`asg_proj.weight=0, bias=0`），训练初期 `gate_map ≈ tanh(style_gate)` 等价于标量 gate，
+随训练逐渐学习空间自适应调制。
+
+### 5.2 实验结果
+
+| run | epochs | train_min | CLIP-S | LPIPS | DINO-S | DINO-C | Δ vs S0 | 结论 |
+|-----|--------:|----------:|-------:|------:|-------:|-------:|--------:|------|
+| S0 WEAVE | 10 | ~5.0 | 0.7298 | 0.4631 | 0.4421 | 0.6951 | - | baseline |
+| wct_ll05 (推理) | - | - | 0.7330 | 0.5422 | 0.4614 | 0.5937 | +0.0193 | 推理天花板 |
+| wct_steps16 (推理) | - | - | 0.7324 | 0.5432 | 0.4617 | 0.5922 | +0.0196 | 推理极限 |
+| **T1 ASG 5ep** | **5** | **~2.0** | **0.7261** | **0.3354** | **0.4843** | **0.7692** | **+0.0422** | **BREAKTHROUGH** |
+
+### 5.3 关键发现
+
+1. **打破推理天花板**：DINO-S 从 0.4617 → 0.4843 (+0.0226)，首次通过训练侧架构改动突破推理极限
+2. **内容保持大幅改善**：DINO-C 0.6951 → 0.7692 (+0.0741)，LPIPS 0.4631 → 0.3354 (-0.1277)
+   - ASG 让平坦区域少受 style 干扰，内容结构得到更好保护
+3. **CLIP-S 几乎不变**：0.7298 → 0.7261 (-0.0037)，风格质量未受牺牲
+4. **训练效率极高**：23s/epoch，5 epoch 总训练约 2 分钟，VRAM 仅 2.91GB
+5. **距离 0.5 目标**：仅差 0.0157
+
+### 5.4 对称退化与 ASG 破局
+
+| 方向 | DINO-S | Δ vs ll05 | 机制 |
+|------|-------:|----------:|------|
+| 放大 style (S4 amp2.0) | 0.4479 | -0.0135 | 推理时放大 attention delta |
+| 稀释 style (S5 cov0.7) | 0.4478 | -0.0136 | 推理时混入 content 协方差 |
+| 稀释 style (S5 cov0.5) | 0.4478 | -0.0136 | 推理时 50% 混合 |
+| **ASG (训练侧)** | **0.4843** | **+0.0229** | 训练时学习空间 gate map |
+
+推理时任何方向的 style 信号扰动都退化到 ~0.4478 floor。ASG 通过**训练时学习 content-dependent 调制**，
+绕过了推理时标量 gate 的局部最优陷阱。
+
+### 5.5 下一步
+
+- **ASG 10ep**：5ep→10ep 在 B0 基线带来 +0.0144，ASG 可能进一步提升到 ~0.50
+- **ASG + WCT ll05 组合**：训练侧 ASG + 推理时 WCT 后处理，可能叠加增益
+- **ASG 架构调参**：更深的 MLP、不同 GroupNorm 组数
+- **D1-Plus Gram loss**：作为第二个训练侧方向，与 ASG 互补
+
+## 6. 速度对比
 
 | run | train_min | infer_sec | lancet_gen_sec | 备注 |
 |-----|----------:|----------:|---------------:|------|
@@ -109,7 +165,7 @@ B0 T11 是 Pareto 前沿上的最佳平衡点，作为后续 Style 改进的基�
 
 S0 推理最快（92.4s），因为 lancet_gen 仅 13.5s（vs B0 的 26.1s）。需排查 S0 和 B0 推理配置差异（可能是 batch 处理方式不同）。
 
-## 6. 下一步
+## 7. 下一步
 
 按 `docs/710/STYLE_IMPROVEMENT_PLAN.md` 推进：
 
@@ -120,10 +176,11 @@ S0 推理最快（92.4s），因为 lancet_gen 仅 13.5s（vs B0 的 26.1s）。
 5. 小范围 loss 扫描
 6. 最后才增加模块
 
-## 7. 数据来源
+## 8. 数据来源
 
 - Canonical DINO 结果：`I:/Github/Latent_Style/SchrodingerBridge/exp/710_canonical_dino_results.txt`
 - 速度数据：`I:/Github/Latent_Style/SchrodingerBridge/exp/710_results.txt`（B1-B8）
 - B0 速度数据：从训练/推理日志提取
 - S0 速度数据：从 `exp/710_b0_weave/full_eval/epoch_0010/summary.json` 提取
 - 所有 DINO 指标均使用 `--exclude_source_from_style_refs` 标志
+- T1 ASG 结果：`exp/t1_asg_5ep/full_eval/epoch_0005/summary.json` + DINO metrics

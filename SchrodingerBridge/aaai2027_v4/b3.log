@@ -65,149 +65,128 @@ For additional information on amsmath, use the `?' option.
 (c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsa.fd)
 (c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsb.fd)
 
-LaTeX Warning: Reference `fig:page1' on page 1 undefined on input line 62.
+LaTeX Warning: Reference `fig:page1' on page 1 undefined on input line 64.
 
 
+Underfull \vbox (badness 3375) has occurred while \output is active
 Underfull \vbox (badness 10000) has occurred while \output is active [1{c:/texl
 ive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/2026/texmf-di
 st/fonts/enc/dvips/newtx/ntx-ec-tlf.enc} <./fig_distinct5_page1_summary.pdf>]
+Underfull \vbox (badness 10000) has occurred while \output is active
 
 Package natbib Warning: Citation `gatys2015neural' on page 2 undefined on input
- line 95.
+ line 98.
 
 
 Package natbib Warning: Citation `huang2017arbitrary' on page 2 undefined on in
-put line 95.
+put line 98.
 
 
 Package natbib Warning: Citation `li2017universal' on page 2 undefined on input
- line 95.
+ line 98.
 
 
 Package natbib Warning: Citation `park2020cut' on page 2 undefined on input lin
-e 96.
+e 99.
 
 
 Package natbib Warning: Citation `rombach2022high' on page 2 undefined on input
- line 97.
+ line 101.
 
 
 Package natbib Warning: Citation `chung2024style' on page 2 undefined on input 
-line 98.
+line 102.
 
 
 Package natbib Warning: Citation `hertz2024style' on page 2 undefined on input 
-line 98.
+line 102.
 
 
 Package natbib Warning: Citation `liu2024samst' on page 2 undefined on input li
-ne 101.
+ne 105.
 
 
 Package natbib Warning: Citation `liu2024samam' on page 2 undefined on input li
-ne 101.
+ne 105.
 
 
 Package natbib Warning: Citation `zhang2018unreasonable' on page 2 undefined on
- input line 102.
+ input line 106.
 
 
 Package natbib Warning: Citation `wright2022artfid' on page 2 undefined on inpu
-t line 102.
+t line 106.
 
 
 Package natbib Warning: Citation `rahaman2019spectral' on page 2 undefined on i
-nput line 106.
+nput line 110.
 
 
 Package natbib Warning: Citation `yoo2019photorealistic' on page 2 undefined on
- input line 111.
+ input line 113.
 
 
 Package natbib Warning: Citation `phung2023wavelet' on page 2 undefined on inpu
-t line 111.
+t line 113.
 
 
 Package natbib Warning: Citation `rombach2022high' on page 2 undefined on input
- line 112.
+ line 114.
 
 
 Package natbib Warning: Citation `li2017universal' on page 2 undefined on input
- line 113.
+ line 115.
 
 [2]
 
-LaTeX Warning: Reference `fig:frequency-probes' on page 3 undefined on input li
-ne 164.
+Package natbib Warning: Citation `rombach2022high' on page 3 undefined on input
+ line 133.
 
-
-LaTeX Warning: Reference `fig:framework' on page 3 undefined on input line 175.
-
-
-
-Underfull \hbox (badness 4266) in paragraph at lines 180--183
-\T1/ntxtlf/m/n/10 Let $\OMS/cmsy/m/n/10 W\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 z[]\
-OT1/cmr/m/n/10 ) = (\OML/cmm/m/it/10 `[]; h[]; h[]; h[]\OT1/cmr/m/n/10 )$ \T1/n
-txtlf/m/n/10 and $\OMS/cmsy/m/n/10 W\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 u[]\OT1/c
-mr/m/n/10 ) =
-
-Underfull \hbox (badness 10000) in paragraph at lines 180--183
-\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 u[]; u[]; u[]; u[]\OT1/cmr/m/n/10 )$\T1/ntxtl
-f/m/n/10 . The WEAVE model re-ceives
-
-Underfull \hbox (badness 2809) in paragraph at lines 180--183
-\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 `[]; h[]; h[]; h[]\OT1/cmr/m/n/10 )$ \T1/ntxt
-lf/m/n/10 and pre-dicts three ve-loc-ity heads
-
-Underfull \hbox (badness 2253) in paragraph at lines 198--200
-[]\T1/ntxtlf/m/n/10 The pre-dicted one-step end-point is $[] \OT1/cmr/m/n/10 = 
-\OML/cmm/m/it/10 z[] \OT1/cmr/m/n/10 +
 
 LaTeX Warning: Reference `fig:frequency-probes' on page 3 undefined on input li
-ne 221.
+ne 172.
 
+
+LaTeX Warning: Reference `sec:eota' on page 3 undefined on input line 184.
+
+
+LaTeX Warning: Reference `fig:framework' on page 3 undefined on input line 190.
+
+
+
+Overfull \hbox (1.82243pt too wide) detected at line 202
+[]\OMS/cmsy/m/n/10 L[] \OT1/cmr/m/n/10 := \U/msb/m/n/10 E[]  [] \OML/cmm/m/it/1
+0 ;
+
+Underfull \hbox (badness 2119) in paragraph at lines 219--221
+ \T1/ntxtlf/b/n/10 End-point WCT. \T1/ntxtlf/m/n/10 Let $\OMS/cmsy/m/n/10 W\OT1
+/cmr/m/n/10 ([]) = ([]\OML/cmm/m/it/10 ; []; []; []\OT1/cmr/m/n/10 )$ \T1/ntxtl
+f/m/n/10 and
 [3]
-Underfull \hbox (badness 4291) in paragraph at lines 248--256
-\OMS/cmsy/m/n/10 f\OT1/cmr/m/n/10 1\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 2\OML/cmm
-/m/it/10 ; \OT1/cmr/m/n/10 3\OMS/cmsy/m/n/10 g$\T1/ntxtlf/m/n/10 , the whitenin
-g-coloring map is $\OML/cmm/m/it/10 T[]\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 a\OT1/
-cmr/m/n/10 ) =
+
+LaTeX Warning: Reference `fig:swd-separation' on page 4 undefined on input line
+ 247.
+
+
+LaTeX Warning: Reference `sec:ablation' on page 4 undefined on input line 257.
+
 [4 <./framework_sfm_main.png> <./fig_probe_combined.pdf> <./fig_probe_swd_separ
 ation.pdf>]
 
-LaTeX Warning: Reference `fig:swd-separation' on page 5 undefined on input line
- 270.
+LaTeX Warning: Reference `fig:radar' on page 5 undefined on input line 348.
 
 
-LaTeX Warning: Reference `sec:ablation' on page 5 undefined on input line 302.
+LaTeX Warning: Reference `sec:ablation' on page 5 undefined on input line 355.
 
-[5 <./fig_teaser_comparison.png (PNG copy)>]
+[5 <./fig_teaser_comparison.png (PNG copy)> <./radar_baselines_14.png>]
 
-LaTeX Warning: Reference `fig:radar' on page 6 undefined on input line 393.
+LaTeX Warning: Reference `fig:page1' on page 6 undefined on input line 367.
 
-
-LaTeX Warning: Reference `sec:ablation' on page 6 undefined on input line 400.
-
-[6 <./radar_baselines_14.png>]
-
-LaTeX Warning: Reference `fig:page1' on page 7 undefined on input line 412.
-
-
-LaTeX Warning: Reference `prop:attractor' on page 7 undefined on input line 417
-.
-
-
-Underfull \vbox (badness 1859) has occurred while \output is active [7]
-(./paper.bbl)
+[6] (./paper.bbl)
 
 Package natbib Warning: There were undefined citations.
 
-[8] (./paper.aux
-
-Package natbib Warning: Citation(s) may have changed.
-(natbib)                Rerun to get citations correct.
-
-)
+[7] (./paper.aux)
 
 LaTeX Warning: There were undefined references.
 
@@ -216,18 +195,17 @@ LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
  )
 (see the transcript file for additional information)<c:/texlive/2026/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmbx10.pfb><c:/texlive/2026/texmf-dist/fonts/ty
-pe1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/publi
-c/amsfonts/cm/cmmi10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfont
-s/cm/cmmi6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7
-.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/t
-exlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/texlive/2026
-/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb><c:/texlive/2026/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2026/texmf-dist/fonts/ty
-pe1/public/amsfonts/cm/cmsy7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public
-/amsfonts/cm/cmsy9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/
-symbols/msbm10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmb.pf
-b><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmr.pfb><c:/texlive/202
-6/texmf-dist/fonts/type1/public/newtx/ztmri.pfb>
-Output written on paper.pdf (8 pages, 1885424 bytes).
+/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2026/texmf-dist/fonts/ty
+pe1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/publi
+c/amsfonts/cm/cmmi6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts
+/cm/cmmi7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.
+pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/tex
+live/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb><c:/texlive/2026/t
+exmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2026/texmf-dist
+/fonts/type1/public/amsfonts/cm/cmsy7.pfb><c:/texlive/2026/texmf-dist/fonts/typ
+e1/public/amsfonts/cm/cmsy9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/
+amsfonts/symbols/msbm10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newt
+x/ztmb.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmr.pfb><c:/te
+xlive/2026/texmf-dist/fonts/type1/public/newtx/ztmri.pfb>
+Output written on paper.pdf (7 pages, 1861999 bytes).
 Transcript written on paper.log.

@@ -158,8 +158,21 @@
       "delta_vs_ll05": -0.0136,
       "verdict": "harmful_vs_ll05",
       "note": "Identical DINO-S to beta=0.7 (0.4478). All perturbation directions converge to ~0.4478 floor. DINO-S=0.5 NOT achievable through inference-time statistical manipulation."
+    },
+    {
+      "id": "t1_asg_5ep",
+      "category": "train_side_architecture",
+      "description": "Adaptive Style Gate (ASG): gate_map = tanh(style_gate + MLP(content_features)), zero-init MLP, 5 epochs, batch=24",
+      "dino_s": 0.4843,
+      "dino_c": 0.7692,
+      "clip_s": 0.7261,
+      "lpips": 0.3354,
+      "delta_vs_s0": 0.0422,
+      "delta_vs_ll05": 0.0229,
+      "verdict": "breakthrough",
+      "note": "FIRST training-side direction. DINO-S=0.4843 is the HIGHEST EVER, breaking the 0.4617 inference-time ceiling by +0.0229. ASG makes style gate content-dependent (spatial gate map [B,1,H,W]). Flat areas get less style (protect content), textured areas get more style (enhance style). DINO-C=0.7692 (+0.0741 vs S0), LPIPS=0.3354 (-0.1277, much better content). CLIP-S=0.7261 (-0.0037, neutral). Zero-init MLP ensures safe training start. Gap to 0.5 target: 0.0157. Train: 23s/epoch, VRAM: 2.91GB."
     }
   ],
-  "structural_pivot_needed": true,
-  "pivot_reason": "stale_count=9, all inference-time approaches exhausted. Latent WCT ceiling definitively confirmed at 0.4614-0.4617. All perturbation directions (amplify S4=0.4479, dilute S5=0.4478/0.4478, RGB methods=0.4285-0.4472) converge to ~0.4478 floor or worse. Trained WCT at beta=1.0 is confirmed local optimum. DINO-S=0.5 requires fundamentally different style injection mechanism — not achievable through inference-time manipulation of current model. Next: training-side architectural changes or accept 0.4617 as ceiling."
+  "structural_pivot_needed": false,
+  "pivot_reason": "BREAKTHROUGH achieved with ASG (DINO-S=0.4843). Training-side architectural change broke the inference-time ceiling (0.4617). stale_count reset to 0. Next: tune ASG (more epochs, MLP capacity) and explore D1-Plus Gram loss as complementary direction."
 }
