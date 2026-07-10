@@ -1,0 +1,15 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "num_res_blocks": 2
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/710_b7_2res"
+  },
+  "ablation": {
+    "name": "710_b7_2res",
+    "axis": "two_residual_blocks",
+    "stage": "710_phase_b",
+    "notes": "B7: num_res_blocks=2. Reduced depth."
+  }
+}

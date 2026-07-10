@@ -1,0 +1,12 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {"endpoint_adain_mode": "wct"},
+  "training": {"num_epochs": 10},
+  "checkpoint": {"save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/710_s3_wct_train"},
+  "ablation": {
+    "name": "710_s3_wct_train",
+    "axis": "train_side_wct_matched",
+    "stage": "710_phase_s3",
+    "notes": "Phase S3: training-side WCT (spatial fiber full covariance) matched with inference per_subband_wct. Goal: break DINO-S ceiling 0.4614."
+  }
+}

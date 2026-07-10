@@ -1,0 +1,15 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "base_dim": 32
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/710_b8_dim32"
+  },
+  "ablation": {
+    "name": "710_b8_dim32",
+    "axis": "width_32",
+    "stage": "710_phase_b",
+    "notes": "B8: base_dim=32. Reduced width."
+  }
+}

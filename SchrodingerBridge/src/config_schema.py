@@ -389,6 +389,20 @@ class ModelConfig:
     # "power": α(t) = t^progressive_alpha_power — 通用幂函数
     progressive_alpha_schedule: str = "none"
     progressive_alpha_power: float = 3.0
+    # 710 Phase S4: Style Amplification — 推理时放大 cross-attention style delta
+    # 理论: style_delta = gate * attended_2d, 放大 attended_2d 增强风格注入
+    # 与 style_extrap_alpha 不同 (后者放大输入统计, 已验证有害)
+    # 1.0 = 无放大 (默认), 1.5-2.0 = 适度放大, 3.0 = 强放大
+    inference_style_amplification: float = 1.0
+    # 710 Phase S5: WCT Covariance Interpolation
+    # 着色目标为 content 和 style 的统计插值, 减少过度扭曲
+    # 1.0 = full style (default), 0.7 = 70% style + 30% content stats
+    wct_cov_interp_beta: float = 1.0
+    # 710 Phase T1: Adaptive Style Gate (ASG)
+    # False (default): scalar gate tanh(style_gate) per block (existing behavior)
+    # True: spatial gate map tanh(style_gate + MLP(content_features)) — content-dependent style strength
+    # Theory: different regions need different style intensity. Zero-init MLP = identity at start.
+    adaptive_style_gate: bool = False
     # 630 Phase 4I.2: ODE solver 类型 (euler | heun | rk4)
     # "euler" (default, 一阶 O(h^2) 截断误差): 现有行为
     # "heun" (改进 Euler, 二阶 O(h^3) 截断误差): predictor-corrector, 相同步数下轨迹更准确

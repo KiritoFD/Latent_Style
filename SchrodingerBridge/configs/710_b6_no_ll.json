@@ -1,0 +1,15 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "spectral_w_ll": 0.0
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/710_b6_no_ll"
+  },
+  "ablation": {
+    "name": "710_b6_no_ll",
+    "axis": "no_ll_supervision",
+    "stage": "710_phase_b",
+    "notes": "B6: spectral_w_ll=0.0. No LL supervision."
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "iteration": 12,
+  "total_findings": 16,
+  "status": "all_inference_approaches_exhausted",
+  "stale_count": 9,
+  "best_dino_s": 0.4617,
+  "best_config": "per_subband_wct + LL WCT scale=0.5 + num_steps=16",
+  "target_dino_s": 0.5000,
+  "gap_to_target": 0.0383,
+  "last_updated": "2026-07-11T10:30:00Z",
+  "train_time_per_epoch": "29.7s (baseline), 28.8s (S0 10ep)",
+  "inf750_time": "93.88s baseline (bridge 57.42s + VAE 34.31s) -> ~85.0s with I3.1 cache (14.1% bridge speedup, 8.9s saved, output diff=0.00)",
+  "current_direction": "COMPLETED: all inference-time approaches exhausted. Latent WCT ceiling at 0.4614-0.4617 is fundamental limit.",
+  "rgb_postprocess_verdict": "ALL HARMFUL: RGB AdaIN=0.4285, RGB WCT=0.4364, VGG-opt=0.4472. RGB-space methods consistently break DINO CLS features.",
+  "latent_wct_ceiling": "0.4614-0.4617 DEFINITIVELY confirmed. 18 directions tried, all inference-time perturbations degrade DINO-S.",
+  "style_amplification_verdict": "HARMFUL: s4_amp20=0.4479, s1_extrap02=0.4338. Inference-time style signal amplification (both input and output side) consistently degrades DINO-S. Trained gate value is optimal.",
+  "cov_interp_verdict": "HARMFUL: s5_cov07=0.4478, s5_cov05=0.4478. Statistical interpolation (mixing content+style covariance) degrades DINO-S by same -0.0136 regardless of beta. All perturbation directions converge to ~0.4478 floor.",
+  "pivot_strategy": "All inference-time approaches exhausted (18 directions, stale_count=9). DINO-S=0.5 NOT achievable through inference-time manipulation. Options: (1) accept 0.4617 as ceiling and optimize other metrics, (2) training-side architectural changes (new style injection mechanism), (3) different style representation beyond WCT."
+}

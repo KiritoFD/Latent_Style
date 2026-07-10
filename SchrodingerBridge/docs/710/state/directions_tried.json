@@ -1,0 +1,165 @@
+{
+  "directions_tried": [
+    {
+      "id": "s1_per_subband",
+      "category": "inference_postprocess",
+      "description": "per_subband AdaIN (mean+std per HF subband)",
+      "dino_s": 0.4497,
+      "delta_vs_s0": 0.0076,
+      "verdict": "effective_but_weak"
+    },
+    {
+      "id": "s1_per_subband_wct",
+      "category": "inference_postprocess",
+      "description": "per_subband WCT (full covariance per HF subband, LL locked)",
+      "dino_s": 0.4538,
+      "delta_vs_s0": 0.0117,
+      "verdict": "effective"
+    },
+    {
+      "id": "s1_wct_ll_mean",
+      "category": "inference_postprocess",
+      "description": "LL mean-only transfer + HF WCT",
+      "dino_s": 0.4573,
+      "delta_vs_s0": 0.0152,
+      "verdict": "effective"
+    },
+    {
+      "id": "s1_wct_ll05",
+      "category": "inference_postprocess",
+      "description": "per_subband WCT + LL WCT scale=0.5",
+      "dino_s": 0.4614,
+      "delta_vs_s0": 0.0193,
+      "verdict": "best_inference"
+    },
+    {
+      "id": "s1_wct_ll10",
+      "category": "inference_postprocess",
+      "description": "per_subband WCT + LL WCT scale=1.0",
+      "dino_s": 0.4608,
+      "delta_vs_s0": 0.0187,
+      "verdict": "saturated"
+    },
+    {
+      "id": "s1_wct_ms2",
+      "category": "inference_postprocess",
+      "description": "multi-scale WCT (spectral_ode_levels=2)",
+      "dino_s": 0.4610,
+      "delta_vs_s0": 0.0189,
+      "verdict": "ineffective"
+    },
+    {
+      "id": "s1_wct_steps16",
+      "category": "inference_postprocess",
+      "description": "WCT + LL05 + num_steps=16",
+      "dino_s": 0.4617,
+      "delta_vs_s0": 0.0196,
+      "verdict": "ineffective"
+    },
+    {
+      "id": "s2_swd12",
+      "category": "train_side",
+      "description": "SWD weight 8->12, 15 epochs",
+      "dino_s": 0.4407,
+      "delta_vs_s0": -0.0014,
+      "verdict": "ineffective"
+    },
+    {
+      "id": "s2_reg03",
+      "category": "train_side",
+      "description": "w_style_strength_reg=0.3, 15 epochs",
+      "dino_s": 0.4407,
+      "delta_vs_s0": -0.0014,
+      "verdict": "ineffective"
+    },
+    {
+      "id": "s1_extrap02",
+      "category": "inference_postprocess",
+      "description": "style_extrap_alpha=0.2",
+      "dino_s": 0.4338,
+      "delta_vs_s0": -0.0083,
+      "verdict": "harmful"
+    },
+    {
+      "id": "s3_wct_train",
+      "category": "train_side",
+      "description": "matched retraining: train-side WCT (spatial fiber full cov)",
+      "dino_s": 0.4433,
+      "delta_vs_s0": 0.0012,
+      "verdict": "ineffective"
+    },
+    {
+      "id": "s3_wct_inference",
+      "category": "train_side",
+      "description": "matched retraining + WCT inference",
+      "dino_s": 0.4608,
+      "delta_vs_s0": 0.0187,
+      "verdict": "no_improvement_vs_unmatched"
+    },
+    {
+      "id": "s1_rgb_affine05",
+      "category": "rgb_postprocess",
+      "description": "RGB AdaIN (mean+std affine, strength=0.5) after VAE decode",
+      "dino_s": 0.4285,
+      "delta_vs_s0": -0.0136,
+      "verdict": "harmful"
+    },
+    {
+      "id": "s1_wct_ll05_rgb_wct03",
+      "category": "rgb_postprocess",
+      "description": "RGB WCT (strength=0.3) on top of latent WCT ll05",
+      "dino_s": 0.4364,
+      "delta_vs_s0": -0.0057,
+      "verdict": "harmful"
+    },
+    {
+      "id": "s1_vgg_opt_wct_ll05",
+      "category": "rgb_postprocess",
+      "description": "VGG Gram style optimization (iterative, 5 steps lr=0.02) on latent WCT ll05",
+      "dino_s": 0.4472,
+      "delta_vs_s0": 0.0051,
+      "verdict": "harmful_vs_ll05"
+    },
+    {
+      "id": "s4_amp20_wct_ll05",
+      "category": "inference_signal_amplification",
+      "description": "Style amplification factor=2.0 on cross-attention delta (attention output side)",
+      "dino_s": 0.4479,
+      "dino_c": 0.5957,
+      "clip_s": 0.7296,
+      "lpips": 0.5349,
+      "delta_vs_s0": 0.0058,
+      "delta_vs_ll05": -0.0135,
+      "verdict": "harmful_vs_ll05",
+      "note": "Inference-time style signal amplification on attention output. DINO-S dropped from 0.4614 (ll05) to 0.4479. Both input-side extrap (s1_extrap02=0.4338) and output-side amplification (s4_amp20=0.4479) harmful. Trained gate value is optimal — DINO-S sensitive to style signal strength."
+    },
+    {
+      "id": "s5_cov07_wct_ll05",
+      "category": "statistical_interpolation",
+      "description": "WCT covariance interpolation beta=0.7 (30% content + 70% style covariance)",
+      "dino_s": 0.4478,
+      "dino_c": 0.5957,
+      "clip_s": 0.7296,
+      "lpips": 0.5351,
+      "delta_vs_s0": 0.0057,
+      "delta_vs_ll05": -0.0136,
+      "verdict": "harmful_vs_ll05",
+      "note": "Mixing content covariance into style target dilutes style signal. Critical: both amplifying (S4=-0.0135) and diluting (S5=-0.0136) style signal hurt DINO-S equally. Trained WCT at beta=1.0 is local optimum."
+    },
+    {
+      "id": "s5_cov05_wct_ll05",
+      "category": "statistical_interpolation",
+      "description": "WCT covariance interpolation beta=0.5 (50% content + 50% style covariance)",
+      "dino_s": 0.4478,
+      "dino_c": 0.5956,
+      "clip_s": 0.7297,
+      "lpips": 0.5351,
+      "delta_vs_s0": 0.0057,
+      "delta_vs_ll05": -0.0136,
+      "verdict": "harmful_vs_ll05",
+      "note": "Identical DINO-S to beta=0.7 (0.4478). All perturbation directions converge to ~0.4478 floor. DINO-S=0.5 NOT achievable through inference-time statistical manipulation."
+    }
+  ],
+  "structural_pivot_needed": true,
+  "pivot_reason": "stale_count=9, all inference-time approaches exhausted. Latent WCT ceiling definitively confirmed at 0.4614-0.4617. All perturbation directions (amplify S4=0.4479, dilute S5=0.4478/0.4478, RGB methods=0.4285-0.4472) converge to ~0.4478 floor or worse. Trained WCT at beta=1.0 is confirmed local optimum. DINO-S=0.5 requires fundamentally different style injection mechanism — not achievable through inference-time manipulation of current model. Next: training-side architectural changes or accept 0.4617 as ceiling."
+}

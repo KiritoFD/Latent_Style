@@ -753,6 +753,112 @@ def _apply_postdecode_style_rgb_affine(
 
 
 @torch.no_grad()
+def _compute_style_rgb_wct_stats(
+    test_images: dict[int, tuple[str, list[Path]]],
+    *,
+    image_size: int,
+    ref_limit: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Compute per-style RGB mean (3,) and covariance (3, 3) for WCT."""
+    num_styles = max(test_images.keys(), default=-1) + 1
+    means = torch.full((num_styles, 3, 1, 1), 0.5, dtype=torch.float32)
+    covs = torch.zeros((num_styles, 3, 3), dtype=torch.float32)
+    limit = int(ref_limit)
+    for style_id, (_, paths) in test_images.items():
+        selected = list(paths)
+        if limit > 0:
+            selected = selected[:limit]
+        if not selected:
+            continue
+        sum_rgb = torch.zeros(3, dtype=torch.float64)
+        sumsq_rgb = torch.zeros(3, dtype=torch.float64)
+        all_pixels = None
+        pixel_count = 0
+        for path in selected:
+            try:
+                img = _load_eval_image_tensor(path, size=image_size).to(dtype=torch.float64)
+            except Exception:
+                continue
+            flat = img.view(3, -1)
+            sum_rgb += flat.sum(dim=1)
+            if all_pixels is None:
+                all_pixels = flat
+            else:
+                all_pixels = torch.cat([all_pixels, flat], dim=1)
+            pixel_count += int(flat.shape[1])
+        if pixel_count <= 0:
+            continue
+        mean = sum_rgb / float(pixel_count)
+        centered = all_pixels - mean.unsqueeze(1) if all_pixels is not None else None
+        if centered is not None and centered.shape[1] > 1:
+            cov = (centered @ centered.t()) / float(centered.shape[1] - 1)
+        else:
+            cov = torch.eye(3, dtype=torch.float64) * 0.01
+        means[int(style_id), :, 0, 0] = mean.to(dtype=torch.float32)
+        covs[int(style_id)] = cov.to(dtype=torch.float32)
+    return means, covs
+
+
+@torch.no_grad()
+def _apply_postdecode_style_rgb_wct(
+    images: torch.Tensor,
+    target_ids: torch.Tensor,
+    target_means: torch.Tensor | None,
+    target_covs: torch.Tensor | None,
+    *,
+    strength: float,
+    eps: float = 1e-5,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    """RGB-space WCT: match mean + full 3x3 covariance to target style."""
+    if target_means is None or target_covs is None or images.numel() == 0:
+        return images, {"postdecode_rgbwct_active": 0.0}
+    strength = max(0.0, min(1.0, float(strength)))
+    if strength <= 0.0:
+        return images, {"postdecode_rgbwct_active": 0.0}
+
+    target_ids = target_ids.to(device=images.device, dtype=torch.long).clamp(0, target_means.shape[0] - 1)
+    B, C, H, W = images.shape
+    img_f = images.float()
+    # Content stats
+    c_flat = img_f.reshape(B, C, -1)  # (B, 3, HW)
+    c_mean = c_flat.mean(dim=2, keepdim=True)  # (B, 3, 1)
+    c_centered = c_flat - c_mean
+    c_cov = (c_centered @ c_centered.transpose(1, 2)) / max(H * W - 1, 1)  # (B, 3, 3)
+    c_cov = c_cov + eps * torch.eye(C, device=c_cov.device)
+
+    # Style stats
+    tgt_mean = target_means.to(device=images.device, dtype=torch.float32)[target_ids]  # (B, 3, 1, 1)
+    tgt_cov = target_covs.to(device=images.device, dtype=torch.float32)[target_ids]  # (B, 3, 3)
+    tgt_cov = tgt_cov + eps * torch.eye(C, device=tgt_cov.device)
+
+    # WCT: whiten content, then color with style covariance
+    try:
+        c_eigvals, c_eigvecs = torch.linalg.eigh(c_cov.cpu())
+        c_eigvals = c_eigvals.clamp_min(eps)
+        c_inv_sqrt = c_eigvecs @ torch.diag_embed(c_eigvals.rsqrt()) @ c_eigvecs.transpose(1, 2)
+        c_whitened = c_inv_sqrt.to(c_centered.device) @ c_centered  # (B, 3, HW)
+
+        s_eigvals, s_eigvecs = torch.linalg.eigh(tgt_cov.cpu())
+        s_eigvals = s_eigvals.clamp_min(eps)
+        s_sqrt = s_eigvecs @ torch.diag_embed(s_eigvals.sqrt()) @ s_eigvecs.transpose(1, 2)
+        c_colored = s_sqrt.to(c_whitened.device) @ c_whitened  # (B, 3, HW)
+    except torch._C._LinAlgError:
+        # Fallback to AdaIN
+        c_std = c_flat.std(dim=2, keepdim=True).clamp_min(eps)
+        s_mean = tgt_mean.reshape(B, C, 1)
+        s_std = torch.diagonal(tgt_cov, dim1=1, dim2=2).sqrt().clamp_min(eps).unsqueeze(2)
+        c_colored = (c_flat - c_mean) / c_std * s_std + s_mean
+
+    c_colored = c_colored + tgt_mean.reshape(B, C, 1)  # add style mean
+    wct_result = c_colored.reshape(B, C, H, W).clamp(0.0, 1.0)
+    adjusted = images.lerp(wct_result.to(dtype=images.dtype), strength)
+    return adjusted, {
+        "postdecode_rgbwct_active": 1.0,
+        "postdecode_rgbwct_strength": float(strength),
+    }
+
+
+@torch.no_grad()
 def _compute_style_latent_stats(
     test_images: dict[int, tuple[str, list[Path]]],
     *,
@@ -912,6 +1018,156 @@ def _apply_latent_style_affine(
         "latent_style_affine_std_strength": float(std_strength),
         "latent_style_affine_mean_delta": float((tgt_mean - lat_mean).detach().abs().mean().cpu().item()),
         "latent_style_affine_std_delta": float((tgt_std - lat_std).detach().abs().mean().cpu().item()),
+    }
+
+
+# ---- VGG Gram Style Optimization (structural pivot: optimization vs closed-form matching) ----
+
+_VGG_STYLE_LAYERS = [3, 8, 17, 26]  # relu1_2, relu2_2, relu3_3, relu4_3 (0-indexed in vgg19 features)
+_VGG_CONTENT_LAYER = 21  # relu4_2
+_IMAGENET_MEAN = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
+_IMAGENET_STD = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
+
+
+def _load_vgg_features(device: str):
+    """Load frozen VGG-19 features for style loss computation."""
+    from torchvision.models import vgg19, VGG19_Weights
+    vgg = vgg19(weights=VGG19_Weights.DEFAULT).features
+    vgg = vgg.to(device=device).eval()
+    for p in vgg.parameters():
+        p.requires_grad_(False)
+    return vgg
+
+
+def _vgg_extract_features(vgg, images, layers):
+    """Extract features at specified layer indices. images: [B,3,H,W] in [0,1]."""
+    # ImageNet normalization
+    mean = _IMAGENET_MEAN.to(device=images.device, dtype=images.dtype)
+    std = _IMAGENET_STD.to(device=images.device, dtype=images.dtype)
+    x = (images - mean) / std
+    features = {}
+    for i in range(max(layers) + 1):
+        x = vgg[i](x)
+        if i in layers:
+            features[i] = x
+    return features
+
+
+def _gram_matrix(feat):
+    """Compute Gram matrix: [B,C,H,W] -> [B,C,C]."""
+    B, C, H, W = feat.shape
+    f = feat.reshape(B, C, H * W)
+    return f @ f.transpose(1, 2) / (C * H * W)
+
+
+@torch.no_grad()
+def _precompute_style_gram_matrices(
+    test_images: dict[int, tuple[str, list[Path]]],
+    vgg,
+    device: str,
+    image_size: int = 256,
+    ref_limit: int = 8,
+) -> dict[int, list[torch.Tensor]]:
+    """Pre-compute averaged Gram matrices per style at multiple VGG layers."""
+    from torchvision.transforms import functional as TF
+    style_grams: dict[int, list[torch.Tensor]] = {}
+    for style_id, (_, paths) in test_images.items():
+        selected = list(paths)
+        if ref_limit > 0:
+            selected = selected[:ref_limit]
+        if not selected:
+            continue
+        gram_sums = None
+        count = 0
+        for path in selected:
+            try:
+                img = Image.open(path).convert("RGB")
+                img = TF.resize(img, image_size)
+                img = TF.center_crop(img, image_size)
+                t = TF.to_tensor(img).unsqueeze(0).to(device=device)
+                feats = _vgg_extract_features(vgg, t, _VGG_STYLE_LAYERS)
+                grams = [_gram_matrix(feats[l]) for l in _VGG_STYLE_LAYERS]
+                if gram_sums is None:
+                    gram_sums = grams
+                else:
+                    gram_sums = [g0 + g1 for g0, g1 in zip(gram_sums, grams)]
+                count += 1
+            except Exception:
+                continue
+        if count > 0 and gram_sums is not None:
+            style_grams[int(style_id)] = [g / count for g in gram_sums]
+    return style_grams
+
+
+def _apply_latent_vgg_optimize(
+    latents: torch.Tensor,
+    target_ids: torch.Tensor,
+    vae,
+    vgg,
+    style_grams: dict[int, list[torch.Tensor]],
+    *,
+    num_steps: int = 5,
+    lr: float = 0.02,
+    style_weight: float = 1.0,
+    content_weight: float = 10.0,
+    image_size: int = 256,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    """Optimize latents with VGG Gram style loss (structural pivot from WCT).
+
+    Instead of closed-form statistical matching (WCT/AdaIN), iteratively
+    optimize the latent to minimize multi-layer VGG Gram style loss while
+    preserving content via L2 regularization on the latent.
+    """
+    import torch.nn.functional as F2
+
+    if latents.numel() == 0 or num_steps <= 0:
+        return latents, {"vgg_opt_active": 0.0}
+
+    latents_init = latents.detach().clone()
+    latents_opt = latents.detach().clone().requires_grad_(True)
+    optimizer = torch.optim.Adam([latents_opt], lr=lr)
+
+    style_loss_log = 0.0
+    content_loss_log = 0.0
+    for step in range(num_steps):
+        optimizer.zero_grad()
+        # Decode latent -> image (VAE, with grad)
+        with torch.autocast('cuda', dtype=torch.bfloat16):
+            imgs = vae.decode(latents_opt / vae.config.scaling_factor, return_dict=False)[0]
+        imgs = imgs.clamp(0, 1).float()
+        # Resize to image_size for VGG
+        if imgs.shape[-1] != image_size:
+            imgs = F2.interpolate(imgs, size=image_size, mode='bilinear', align_corners=False)
+
+        # Extract VGG features
+        feats = _vgg_extract_features(vgg, imgs, _VGG_STYLE_LAYERS)
+
+        # Style loss: Gram matrix matching
+        style_loss = torch.tensor(0.0, device=latents.device)
+        for b_idx in range(latents_opt.shape[0]):
+            sid = int(target_ids[b_idx].item()) if torch.is_tensor(target_ids) else int(target_ids)
+            grams_ref = style_grams.get(sid)
+            if grams_ref is None:
+                continue
+            for layer_idx, gram_ref in zip(_VGG_STYLE_LAYERS, grams_ref):
+                gram_gen = _gram_matrix(feats[layer_idx][b_idx:b_idx+1])
+                style_loss = style_loss + F2.mse_loss(gram_gen, gram_ref.to(gram_gen.device))
+
+        # Content loss: L2 on latent (preserve structure)
+        content_loss = F2.mse_loss(latents_opt, latents_init)
+
+        total_loss = style_weight * style_loss + content_weight * content_loss
+        total_loss.backward()
+        optimizer.step()
+
+        style_loss_log = float(style_loss.item())
+        content_loss_log = float(content_loss.item())
+
+    return latents_opt.detach().to(dtype=latents.dtype), {
+        "vgg_opt_active": 1.0,
+        "vgg_opt_steps": float(num_steps),
+        "vgg_opt_style_loss": style_loss_log,
+        "vgg_opt_content_loss": content_loss_log,
     }
 
 
@@ -2322,7 +2578,7 @@ def main(argv: list[str] | None = None):
         '--postprocess_mode',
         type=str,
         default=str(full_eval_defaults.get("postprocess_mode", "none")),
-        choices=["none", "style_rgb_affine"],
+        choices=["none", "style_rgb_affine", "style_rgb_wct"],
         help="Optional decoded-RGB postprocess before image save and metrics.",
     )
     parser.add_argument('--postprocess_strength', type=float, default=float(full_eval_defaults.get("postprocess_strength", 0.0)))
@@ -2333,13 +2589,25 @@ def main(argv: list[str] | None = None):
         '--latent_postprocess_mode',
         type=str,
         default=str(full_eval_defaults.get("latent_postprocess_mode", "none")),
-        choices=["none", "style_latent_affine", "spectral_denoise"],
+        choices=["none", "style_latent_affine", "spectral_denoise", "vgg_style_optimize"],
         help="Optional latent-space postprocess before VAE decode and metrics.",
     )
     parser.add_argument('--latent_postprocess_strength', type=float, default=float(full_eval_defaults.get("latent_postprocess_strength", 0.0)))
     parser.add_argument('--latent_postprocess_mean_strength', type=float, default=float(full_eval_defaults.get("latent_postprocess_mean_strength", 1.0)))
     parser.add_argument('--latent_postprocess_std_strength', type=float, default=float(full_eval_defaults.get("latent_postprocess_std_strength", 1.0)))
     parser.add_argument('--latent_postprocess_ref_limit', type=int, default=int(full_eval_defaults.get("latent_postprocess_ref_limit", 64)))
+    parser.add_argument('--vgg_opt_steps', type=int, default=int(full_eval_defaults.get("vgg_opt_steps", 5)),
+                        help="Number of optimization steps for vgg_style_optimize latent postprocess")
+    parser.add_argument('--vgg_opt_lr', type=float, default=float(full_eval_defaults.get("vgg_opt_lr", 0.02)),
+                        help="Learning rate for VGG style optimization")
+    parser.add_argument('--vgg_style_weight', type=float, default=float(full_eval_defaults.get("vgg_style_weight", 1.0)),
+                        help="Weight for VGG Gram style loss")
+    parser.add_argument('--vgg_content_weight', type=float, default=float(full_eval_defaults.get("vgg_content_weight", 10.0)),
+                        help="Weight for content preservation (L2 on latent)")
+    parser.add_argument('--vgg_image_size', type=int, default=int(full_eval_defaults.get("vgg_image_size", 256)),
+                        help="Image size for VGG feature extraction")
+    parser.add_argument('--vgg_ref_limit', type=int, default=int(full_eval_defaults.get("vgg_ref_limit", 8)),
+                        help="Number of style reference images per style for Gram matrix computation")
     parser.add_argument('--hf_soft_threshold', type=float, default=float(full_eval_defaults.get("hf_soft_threshold", 0.0)),
                         help="Soft-threshold τ for HF subbands in spectral_denoise mode (0=disabled)")
     parser.add_argument('--ll_color_align_strength', type=float, default=float(full_eval_defaults.get("ll_color_align_strength", 0.0)),
@@ -2646,7 +2914,7 @@ def main(argv: list[str] | None = None):
         test_images[style_id] = (style_name, images)
 
     postprocess_mode = str(args.postprocess_mode).strip().lower()
-    if postprocess_mode not in {"none", "style_rgb_affine"}:
+    if postprocess_mode not in {"none", "style_rgb_affine", "style_rgb_wct"}:
         raise ValueError(f"Unsupported postprocess_mode: {args.postprocess_mode}")
     metric_postprocess_requested = (
         (postprocess_mode != "none" and float(args.postprocess_strength) > 0.0)
@@ -2668,6 +2936,7 @@ def main(argv: list[str] | None = None):
         )
     post_rgb_means = None
     post_rgb_stds = None
+    post_rgb_covs = None
     if postprocess_mode == "style_rgb_affine" and float(args.postprocess_strength) > 0.0:
         post_rgb_means, post_rgb_stds = _compute_style_rgb_stats(
             test_images,
@@ -2681,8 +2950,19 @@ def main(argv: list[str] | None = None):
             f"std={float(args.postprocess_std_strength):.3f}, "
             f"ref_limit={int(args.postprocess_ref_limit)}"
         )
+    elif postprocess_mode == "style_rgb_wct" and float(args.postprocess_strength) > 0.0:
+        post_rgb_means, post_rgb_covs = _compute_style_rgb_wct_stats(
+            test_images,
+            image_size=256,
+            ref_limit=int(args.postprocess_ref_limit),
+        )
+        print(
+            "Post-decode RGB WCT enabled: "
+            f"strength={float(args.postprocess_strength):.3f}, "
+            f"ref_limit={int(args.postprocess_ref_limit)}"
+        )
     latent_postprocess_mode = str(args.latent_postprocess_mode).strip().lower()
-    if latent_postprocess_mode not in {"none", "style_latent_affine", "spectral_denoise"}:
+    if latent_postprocess_mode not in {"none", "style_latent_affine", "spectral_denoise", "vgg_style_optimize"}:
         raise ValueError(f"Unsupported latent_postprocess_mode: {args.latent_postprocess_mode}")
     latent_post_means = None
     latent_post_stds = None
@@ -2979,13 +3259,37 @@ def main(argv: list[str] | None = None):
                 f"std={float(args.latent_postprocess_std_strength):.3f}, "
                 f"ref_limit={int(args.latent_postprocess_ref_limit)}"
             )
+        vgg_model = None
+        vgg_style_grams = None
+        if latent_postprocess_mode == "vgg_style_optimize":
+            _load_diffusers_vae("VGG style optimization requires VAE decoder")
+            vgg_model = _load_vgg_features(device)
+            vgg_style_grams = _precompute_style_gram_matrices(
+                test_images,
+                vgg_model,
+                device=device,
+                image_size=int(args.vgg_image_size),
+                ref_limit=int(args.vgg_ref_limit),
+            )
+            print(
+                "VGG Gram style optimization enabled: "
+                f"steps={int(args.vgg_opt_steps)}, lr={float(args.vgg_opt_lr):.4f}, "
+                f"style_w={float(args.vgg_style_weight):.2f}, content_w={float(args.vgg_content_weight):.2f}, "
+                f"img_size={int(args.vgg_image_size)}, ref_limit={int(args.vgg_ref_limit)}, "
+                f"styles_with_grams={len(vgg_style_grams)}"
+            )
 
         def _decode_generated_jobs(jobs: list[tuple[torch.Tensor, list[tuple], dict | None, dict | None]]) -> None:
             nonlocal ort_vae
-            for latents_job, meta_job, chunk_runtime_observability, latent_post_debug in jobs:
-                if abs(scale_out - 1.0) > 1e-4:
-                    latents_job = latents_job * scale_out
-                for dec_start in range(0, latents_job.shape[0], vae_decode_bs):
+            if not jobs:
+                return
+            latents_job = torch.cat([job[0] for job in jobs], dim=0)
+            meta_job = [item for job in jobs for item in job[1]]
+            runtime_job = [job[2] for job in jobs for _ in job[1]]
+            latent_debug_job = [job[3] for job in jobs for _ in job[1]]
+            if abs(scale_out - 1.0) > 1e-4:
+                latents_job = latents_job * scale_out
+            for dec_start in range(0, latents_job.shape[0], vae_decode_bs):
                     dec_end = min(latents_job.shape[0], dec_start + vae_decode_bs)
                     t0 = time.perf_counter()
                     if ort_vae is not None:
@@ -3019,22 +3323,31 @@ def main(argv: list[str] | None = None):
                             scaling_factor=args.vae_decode_scale,
                         )
                     post_debug = None
-                    if postprocess_mode == "style_rgb_affine":
+                    if postprocess_mode in ("style_rgb_affine", "style_rgb_wct"):
                         dec_meta = meta_job[dec_start:dec_end]
                         dec_tgt_ids = torch.tensor(
                             [int(x[2]) for x in dec_meta],
                             device=imgs_gen.device,
                             dtype=torch.long,
                         )
-                        imgs_gen, post_debug = _apply_postdecode_style_rgb_affine(
-                            imgs_gen,
-                            dec_tgt_ids,
-                            post_rgb_means,
-                            post_rgb_stds,
-                            strength=float(args.postprocess_strength),
-                            mean_strength=float(args.postprocess_mean_strength),
-                            std_strength=float(args.postprocess_std_strength),
-                        )
+                        if postprocess_mode == "style_rgb_affine":
+                            imgs_gen, post_debug = _apply_postdecode_style_rgb_affine(
+                                imgs_gen,
+                                dec_tgt_ids,
+                                post_rgb_means,
+                                post_rgb_stds,
+                                strength=float(args.postprocess_strength),
+                                mean_strength=float(args.postprocess_mean_strength),
+                                std_strength=float(args.postprocess_std_strength),
+                            )
+                        else:  # style_rgb_wct
+                            imgs_gen, post_debug = _apply_postdecode_style_rgb_wct(
+                                imgs_gen,
+                                dec_tgt_ids,
+                                post_rgb_means,
+                                post_rgb_covs,
+                                strength=float(args.postprocess_strength),
+                            )
                     _sync_cuda_if(device, bool(args.profile_timing))
                     _add_timing(timings, "vae_decode", t0)
                     save_generated_images = bool(args.save_generated_images)
@@ -3058,6 +3371,9 @@ def main(argv: list[str] | None = None):
                         _add_timing(timings, "generated_cpu_copy", t0)
                     t0 = time.perf_counter()
                     for local_i, (src_item, tgt_name, tgt_id, out_name) in enumerate(meta_job[dec_start:dec_end]):
+                        item_index = dec_start + local_i
+                        chunk_runtime_observability = runtime_job[item_index]
+                        latent_post_debug = latent_debug_job[item_index]
                         runtime_observability = dict(chunk_runtime_observability) if chunk_runtime_observability else {}
                         if isinstance(latent_post_debug, dict):
                             runtime_observability.update(latent_post_debug)
@@ -3087,6 +3403,10 @@ def main(argv: list[str] | None = None):
                     if save_generated_images:
                         _add_timing(timings, "image_save_submit", t0)
                     del imgs_gen, imgs_gen_cpu, imgs_gen_u8_cpu
+            del latents_job
+
+        target_style_latent_cache: dict[int, torch.Tensor | None] = {}
+        pending_decode_jobs: list[tuple[torch.Tensor, list[tuple], dict | None, dict | None]] = []
 
         # Process in batches
         for b_start in range(0, num_src_total, generation_batch_size):
@@ -3161,30 +3481,29 @@ def main(argv: list[str] | None = None):
                         # FC-SB Phase 3 deepfix: 构造 style_latent_tensor (目标风格参考图 VAE latent)
                         # 让 model620.integrate_transport 的 N1 endpoint AdaIN 块 (T/U/V 方向) 能执行
                         # 训练时 target_style_for_model 是 (B,4,H,W) tensor; 推理时需从参考图重新 encode
-                        _target_style_latent_cache: dict[int, torch.Tensor] = {}
                         _style_latent_tensors: list[torch.Tensor] = []
                         if vae is None:
                             print("  WARNING: vae is None, skipping style_latent_tensor (N1 endpoint AdaIN will be skipped)")
                         else:
                             for _src_item, _tgt_name, tgt_id, _out_name in meta:
                                 tgt_id_int = int(tgt_id)
-                                if tgt_id_int not in _target_style_latent_cache:
+                                if tgt_id_int not in target_style_latent_cache:
                                     _tgt_entry = test_images.get(tgt_id_int)
                                     _tgt_paths = _tgt_entry[1] if _tgt_entry else None
                                     if not _tgt_paths:
                                         print(f"  WARNING: no reference images for target style id={tgt_id_int}")
-                                        _target_style_latent_cache[tgt_id_int] = None
+                                        target_style_latent_cache[tgt_id_int] = None
                                     else:
                                         try:
                                             _ref_img = _load_eval_image_tensor(_tgt_paths[0]).unsqueeze(0).to(device)
                                             _ref_latent = encode_image(vae, _ref_img, device)
                                             if abs(scale_in - 1.0) > 1e-4:
                                                 _ref_latent = _ref_latent * scale_in
-                                            _target_style_latent_cache[tgt_id_int] = _ref_latent.detach()
+                                            target_style_latent_cache[tgt_id_int] = _ref_latent.detach()
                                         except Exception as _exc:
                                             print(f"  WARNING: VAE encode failed for target style id={tgt_id_int}: {_exc}")
-                                            _target_style_latent_cache[tgt_id_int] = None
-                                _cached_latent = _target_style_latent_cache.get(tgt_id_int)
+                                            target_style_latent_cache[tgt_id_int] = None
+                                _cached_latent = target_style_latent_cache.get(tgt_id_int)
                                 if _cached_latent is not None:
                                     _style_latent_tensors.append(_cached_latent)
                             if len(_style_latent_tensors) != len(meta):
@@ -3236,6 +3555,20 @@ def main(argv: list[str] | None = None):
                                 hf_soft_threshold=float(getattr(args, 'hf_soft_threshold', 0.0)),
                                 ll_color_align_strength=float(getattr(args, 'll_color_align_strength', 0.0)),
                             )
+                        elif latent_postprocess_mode == "vgg_style_optimize":
+                            with torch.enable_grad():
+                                latents_gen, latent_post_debug = _apply_latent_vgg_optimize(
+                                    latents_gen,
+                                    tgt_ids,
+                                    vae,
+                                    vgg_model,
+                                    vgg_style_grams,
+                                    num_steps=int(args.vgg_opt_steps),
+                                    lr=float(args.vgg_opt_lr),
+                                    style_weight=float(args.vgg_style_weight),
+                                    content_weight=float(args.vgg_content_weight),
+                                    image_size=int(args.vgg_image_size),
+                                )
                         if bool(getattr(args, "eval_delta_observability", False)):
                             try:
                                 delta_flat = (latents_gen.detach().float() - repeated_latents.detach().float()).flatten(1).cpu()
@@ -3253,13 +3586,20 @@ def main(argv: list[str] | None = None):
                         _sync_cuda_if(device, bool(args.profile_timing))
                         _add_timing(timings, "lancet_generation", t0)
 
-                        _decode_generated_jobs([(latents_gen, meta, chunk_runtime_observability, latent_post_debug)])
+                        pending_decode_jobs.append((latents_gen, meta, chunk_runtime_observability, latent_post_debug))
                         del repeated_latents, tgt_ids, latents_gen, pair_latents, pair_tgt_ids
+
+        if pending_decode_jobs:
+            _decode_generated_jobs(pending_decode_jobs)
+            pending_decode_jobs.clear()
 
         diffusers_vae_loaded_for_generation = bool(vae is not None)
 
         # Unload Generation Models
         del lgt, vae
+        if vgg_model is not None:
+            del vgg_model
+            vgg_model = None
         if ort_vae is not None:
             del ort_vae
         torch.cuda.empty_cache()

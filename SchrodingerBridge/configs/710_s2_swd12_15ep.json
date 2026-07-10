@@ -1,0 +1,18 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "single_step_swd_weight": 12.0
+  },
+  "training": {
+    "num_epochs": 15
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/710_s2_swd12_15ep"
+  },
+  "ablation": {
+    "name": "710_s2_swd12_15ep",
+    "axis": "swd_weight_12_15ep",
+    "stage": "710_phase_s2",
+    "notes": "S2: SWD weight 8->12 + 15 epochs. Goal: improve DINO-S toward 0.5."
+  }
+}

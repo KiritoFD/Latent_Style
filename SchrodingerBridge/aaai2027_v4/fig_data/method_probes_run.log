@@ -1,0 +1,466 @@
+{
+  "frequency_probe": {
+    "definition": "For squared flow matching, gradient energy with respect to each predicted DWT band is proportional to the target residual energy in that band.",
+    "num_pairs": 5000,
+    "bands": [
+      "LL",
+      "LH",
+      "HL",
+      "HH"
+    ],
+    "mean_transport_energy": [
+      4.240808010101318,
+      0.6283203959465027,
+      0.6870923042297363,
+      0.5457288026809692
+    ],
+    "fm_gradient_energy_share": [
+      0.6949923634529114,
+      0.10297044366598129,
+      0.112602099776268,
+      0.0894351601600647
+    ],
+    "route_rows": [
+      {
+        "source": "Early_Renaissance",
+        "target": "Impressionism",
+        "energy_LL": 3.1878600120544434,
+        "energy_LH": 0.6503080129623413,
+        "energy_HL": 0.7144116163253784,
+        "energy_HH": 0.5799665451049805,
+        "share_LL": 0.6211069226264954,
+        "share_LH": 0.12670280039310455,
+        "share_HL": 0.13919243216514587,
+        "share_HH": 0.11299781501293182
+      },
+      {
+        "source": "Early_Renaissance",
+        "target": "Minimalism",
+        "energy_LL": 5.294233798980713,
+        "energy_LH": 0.5864784717559814,
+        "energy_HL": 0.6871287226676941,
+        "energy_HH": 0.49018290638923645,
+        "share_LL": 0.7501014471054077,
+        "share_LH": 0.08309385925531387,
+        "share_HL": 0.09735426306724548,
+        "share_HH": 0.06945044547319412
+      },
+      {
+        "source": "Early_Renaissance",
+        "target": "Rococo",
+        "energy_LL": 3.6299026012420654,
+        "energy_LH": 0.610813558101654,
+        "energy_HL": 0.7128465175628662,
+        "energy_HH": 0.5614255666732788,
+        "share_LL": 0.6581886410713196,
+        "share_LH": 0.11075518280267715,
+        "share_HL": 0.1292562186717987,
+        "share_HH": 0.10179995745420456
+      },
+      {
+        "source": "Early_Renaissance",
+        "target": "Ukiyo_e",
+        "energy_LL": 3.0595643520355225,
+        "energy_LH": 0.7159504294395447,
+        "energy_HL": 0.7930651903152466,
+        "energy_HH": 0.6477394700050354,
+        "share_LL": 0.5865370035171509,
+        "share_LH": 0.13725203275680542,
+        "share_HL": 0.15203538537025452,
+        "share_HH": 0.12417557090520859
+      },
+      {
+        "source": "Impressionism",
+        "target": "Early_Renaissance",
+        "energy_LL": 3.1287567615509033,
+        "energy_LH": 0.6442303657531738,
+        "energy_HL": 0.7096312642097473,
+        "energy_HH": 0.5776737928390503,
+        "share_LL": 0.6182956695556641,
+        "share_LH": 0.12731090188026428,
+        "share_HL": 0.14023523032665253,
+        "share_HH": 0.11415819078683853
+      },
+      {
+        "source": "Impressionism",
+        "target": "Minimalism",
+        "energy_LL": 5.38251256942749,
+        "energy_LH": 0.5644097924232483,
+        "energy_HL": 0.5991302132606506,
+        "energy_HH": 0.4503055810928345,
+        "share_LL": 0.769330620765686,
+        "share_LH": 0.08067194372415543,
+        "share_HL": 0.08563458919525146,
+        "share_HH": 0.06436285376548767
+      },
+      {
+        "source": "Impressionism",
+        "target": "Rococo",
+        "energy_LL": 3.663574695587158,
+        "energy_LH": 0.6051927804946899,
+        "energy_HL": 0.6348938345909119,
+        "energy_HH": 0.5397143363952637,
+        "share_LL": 0.673033595085144,
+        "share_LH": 0.11117968708276749,
+        "share_HL": 0.11663605272769928,
+        "share_HH": 0.09915067255496979
+      },
+      {
+        "source": "Impressionism",
+        "target": "Ukiyo_e",
+        "energy_LL": 3.2042112350463867,
+        "energy_LH": 0.6941571831703186,
+        "energy_HL": 0.7200868129730225,
+        "energy_HH": 0.6219440698623657,
+        "share_LL": 0.6114441752433777,
+        "share_LH": 0.13246266543865204,
+        "share_HL": 0.13741068542003632,
+        "share_HH": 0.11868257820606232
+      },
+      {
+        "source": "Minimalism",
+        "target": "Early_Renaissance",
+        "energy_LL": 5.159054279327393,
+        "energy_LH": 0.5893657207489014,
+        "energy_HL": 0.6856005191802979,
+        "energy_HH": 0.47930487990379333,
+        "share_LL": 0.7462479472160339,
+        "share_LH": 0.08525069057941437,
+        "share_HL": 0.09917087852954865,
+        "share_HH": 0.06933058798313141
+      },
+      {
+        "source": "Minimalism",
+        "target": "Impressionism",
+        "energy_LL": 5.1810173988342285,
+        "energy_LH": 0.5826427936553955,
+        "energy_HL": 0.6098927855491638,
+        "energy_HH": 0.4555222690105438,
+        "share_LL": 0.7586703896522522,
+        "share_LH": 0.08531796187162399,
+        "share_HL": 0.0893082544207573,
+        "share_HH": 0.06670335680246353
+      },
+      {
+        "source": "Minimalism",
+        "target": "Rococo",
+        "energy_LL": 6.088351726531982,
+        "energy_LH": 0.5388693809509277,
+        "energy_HL": 0.6019139885902405,
+        "energy_HH": 0.43777886033058167,
+        "share_LL": 0.79410719871521,
+        "share_LH": 0.07028504461050034,
+        "share_HL": 0.07850798964500427,
+        "share_HH": 0.05709974840283394
+      },
+      {
+        "source": "Minimalism",
+        "target": "Ukiyo_e",
+        "energy_LL": 4.896792888641357,
+        "energy_LH": 0.6242460608482361,
+        "energy_HL": 0.6796811819076538,
+        "energy_HH": 0.517578661441803,
+        "share_LL": 0.7288739085197449,
+        "share_LH": 0.09291727840900421,
+        "share_HL": 0.10116863995790482,
+        "share_HH": 0.07704013586044312
+      },
+      {
+        "source": "Rococo",
+        "target": "Early_Renaissance",
+        "energy_LL": 3.6273586750030518,
+        "energy_LH": 0.6346757411956787,
+        "energy_HL": 0.7221145033836365,
+        "energy_HH": 0.5783791542053223,
+        "share_LL": 0.6521061062812805,
+        "share_LH": 0.1140984296798706,
+        "share_HL": 0.1298176795244217,
+        "share_HH": 0.1039777472615242
+      },
+      {
+        "source": "Rococo",
+        "target": "Impressionism",
+        "energy_LL": 3.6497316360473633,
+        "energy_LH": 0.60262531042099,
+        "energy_HL": 0.6380556225776672,
+        "energy_HH": 0.5394957661628723,
+        "share_LL": 0.6721534132957458,
+        "share_LH": 0.11098258197307587,
+        "share_HL": 0.11750761419534683,
+        "share_HH": 0.09935632348060608
+      },
+      {
+        "source": "Rococo",
+        "target": "Minimalism",
+        "energy_LL": 6.411200523376465,
+        "energy_LH": 0.544664740562439,
+        "energy_HL": 0.5957281589508057,
+        "energy_HH": 0.43486911058425903,
+        "share_LL": 0.8027584552764893,
+        "share_LH": 0.06819849461317062,
+        "share_HL": 0.0745922401547432,
+        "share_HH": 0.05445077642798424
+      },
+      {
+        "source": "Rococo",
+        "target": "Ukiyo_e",
+        "energy_LL": 3.89021635055542,
+        "energy_LH": 0.6656306385993958,
+        "energy_HL": 0.7180600166320801,
+        "energy_HH": 0.606218159198761,
+        "share_LL": 0.6615872979164124,
+        "share_LH": 0.11320007592439651,
+        "share_HL": 0.12211644649505615,
+        "share_HH": 0.1030961275100708
+      },
+      {
+        "source": "Ukiyo_e",
+        "target": "Early_Renaissance",
+        "energy_LL": 3.163149833679199,
+        "energy_LH": 0.7183883190155029,
+        "energy_HL": 0.8023251891136169,
+        "energy_HH": 0.6488949060440063,
+        "share_LL": 0.5931546092033386,
+        "share_LH": 0.1347123384475708,
+        "share_HL": 0.15045221149921417,
+        "share_HH": 0.12168092280626297
+      },
+      {
+        "source": "Ukiyo_e",
+        "target": "Impressionism",
+        "energy_LL": 3.0748066902160645,
+        "energy_LH": 0.6916384696960449,
+        "energy_HL": 0.7045546770095825,
+        "energy_HH": 0.6112635135650635,
+        "share_LL": 0.6050074100494385,
+        "share_LH": 0.13608868420124054,
+        "share_HL": 0.13863010704517365,
+        "share_HH": 0.1202738881111145
+      },
+      {
+        "source": "Ukiyo_e",
+        "target": "Minimalism",
+        "energy_LL": 5.019567966461182,
+        "energy_LH": 0.6336718797683716,
+        "energy_HL": 0.690098762512207,
+        "energy_HH": 0.5295342803001404,
+        "share_LL": 0.7303449511528015,
+        "share_LH": 0.09219898283481598,
+        "share_HL": 0.10040906816720963,
+        "share_HH": 0.07704700529575348
+      },
+      {
+        "source": "Ukiyo_e",
+        "target": "Rococo",
+        "energy_LL": 4.104287624359131,
+        "energy_LH": 0.6684485077857971,
+        "energy_HL": 0.7226268649101257,
+        "energy_HH": 0.6067840456962585,
+        "share_LL": 0.672597348690033,
+        "share_LH": 0.10954317450523376,
+        "share_HL": 0.11842174828052521,
+        "share_HH": 0.09943780303001404
+      }
+    ]
+  },
+  "style_separability_probe": {
+    "definition": "Style separability is the between-style variance divided by within-style variance of per-image channel mean, standard deviation, and covariance statistics in each DWT band.",
+    "num_images": 5000,
+    "rows": [
+      {
+        "band": "LL",
+        "between_variance": 0.058106712996959686,
+        "within_variance": 0.49795928597450256,
+        "between_within_ratio": 0.11668968945741653,
+        "ratio_sem": 0.03479756414890289
+      },
+      {
+        "band": "LH",
+        "between_variance": 0.0009475501137785614,
+        "within_variance": 0.005097980611026287,
+        "between_within_ratio": 0.18586774170398712,
+        "ratio_sem": 0.051763273775577545
+      },
+      {
+        "band": "HL",
+        "between_variance": 0.0009946476202458143,
+        "within_variance": 0.00580166932195425,
+        "between_within_ratio": 0.17144162952899933,
+        "ratio_sem": 0.05062982812523842
+      },
+      {
+        "band": "HH",
+        "between_variance": 0.0015900570433586836,
+        "within_variance": 0.0028392490930855274,
+        "between_within_ratio": 0.5600273013114929,
+        "ratio_sem": 0.1341322958469391
+      }
+    ]
+  },
+  "endpoint_probe": {
+    "checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\710_infra_t11_distinct5_5ep\\epoch_0005.pt",
+    "num_pairs": 20,
+    "rows": [
+      {
+        "mode": "every-step",
+        "steps": 1,
+        "latent_content_mse": 0.09831053763628006,
+        "latent_content_sem": 0.01638128235936165,
+        "latent_target_mse": 1.4145276546478271,
+        "ll_content_mse": 0.3527117371559143,
+        "hf_content_mse": 0.01351013034582138,
+        "hf_content_sem": 0.0019214210333302617
+      },
+      {
+        "mode": "every-step",
+        "steps": 2,
+        "latent_content_mse": 0.11263871192932129,
+        "latent_content_sem": 0.021340249106287956,
+        "latent_target_mse": 1.4857040643692017,
+        "ll_content_mse": 0.355782687664032,
+        "hf_content_mse": 0.031590722501277924,
+        "hf_content_sem": 0.005186836700886488
+      },
+      {
+        "mode": "every-step",
+        "steps": 3,
+        "latent_content_mse": 0.09929988533258438,
+        "latent_content_sem": 0.01574968732893467,
+        "latent_target_mse": 1.5756680965423584,
+        "ll_content_mse": 0.2575293481349945,
+        "hf_content_mse": 0.0465567484498024,
+        "hf_content_sem": 0.00798217672854662
+      },
+      {
+        "mode": "every-step",
+        "steps": 4,
+        "latent_content_mse": 0.11135633289813995,
+        "latent_content_sem": 0.016217965632677078,
+        "latent_target_mse": 1.5871425867080688,
+        "ll_content_mse": 0.27080902457237244,
+        "hf_content_mse": 0.058205436915159225,
+        "hf_content_sem": 0.010058680549263954
+      },
+      {
+        "mode": "every-step",
+        "steps": 5,
+        "latent_content_mse": 0.11588748544454575,
+        "latent_content_sem": 0.016243329271674156,
+        "latent_target_mse": 1.6092380285263062,
+        "ll_content_mse": 0.26346999406814575,
+        "hf_content_mse": 0.06669330596923828,
+        "hf_content_sem": 0.011577406898140907
+      },
+      {
+        "mode": "every-step",
+        "steps": 6,
+        "latent_content_mse": 0.12002313137054443,
+        "latent_content_sem": 0.016265112906694412,
+        "latent_target_mse": 1.6208178997039795,
+        "ll_content_mse": 0.2618767321109772,
+        "hf_content_mse": 0.07273860275745392,
+        "hf_content_sem": 0.012646125629544258
+      },
+      {
+        "mode": "every-step",
+        "steps": 7,
+        "latent_content_mse": 0.1227574348449707,
+        "latent_content_sem": 0.016364749521017075,
+        "latent_target_mse": 1.6298696994781494,
+        "ll_content_mse": 0.2600659728050232,
+        "hf_content_mse": 0.07698793709278107,
+        "hf_content_sem": 0.013397518545389175
+      },
+      {
+        "mode": "every-step",
+        "steps": 8,
+        "latent_content_mse": 0.12463869899511337,
+        "latent_content_sem": 0.016382727771997452,
+        "latent_target_mse": 1.6363201141357422,
+        "ll_content_mse": 0.2586849331855774,
+        "hf_content_mse": 0.07995660603046417,
+        "hf_content_sem": 0.013921327888965607
+      },
+      {
+        "mode": "endpoint-only",
+        "steps": 1,
+        "latent_content_mse": 0.09831053763628006,
+        "latent_content_sem": 0.01638128235936165,
+        "latent_target_mse": 1.4145276546478271,
+        "ll_content_mse": 0.3527117371559143,
+        "hf_content_mse": 0.01351013034582138,
+        "hf_content_sem": 0.0019214210333302617
+      },
+      {
+        "mode": "endpoint-only",
+        "steps": 2,
+        "latent_content_mse": 0.10248561948537827,
+        "latent_content_sem": 0.022370023652911186,
+        "latent_target_mse": 1.4368091821670532,
+        "ll_content_mse": 0.3670465350151062,
+        "hf_content_mse": 0.014298640191555023,
+        "hf_content_sem": 0.0019835943821817636
+      },
+      {
+        "mode": "endpoint-only",
+        "steps": 3,
+        "latent_content_mse": 0.07313341647386551,
+        "latent_content_sem": 0.016820449382066727,
+        "latent_target_mse": 1.5100157260894775,
+        "ll_content_mse": 0.2517411708831787,
+        "hf_content_mse": 0.013597491197288036,
+        "hf_content_sem": 0.0019321712898090482
+      },
+      {
+        "mode": "endpoint-only",
+        "steps": 4,
+        "latent_content_mse": 0.07808299362659454,
+        "latent_content_sem": 0.01688382960855961,
+        "latent_target_mse": 1.4903984069824219,
+        "ll_content_mse": 0.27123087644577026,
+        "hf_content_mse": 0.013700363226234913,
+        "hf_content_sem": 0.0019370876252651215
+      },
+      {
+        "mode": "endpoint-only",
+        "steps": 5,
+        "latent_content_mse": 0.07612352073192596,
+        "latent_content_sem": 0.01688019558787346,
+        "latent_target_mse": 1.4984090328216553,
+        "ll_content_mse": 0.2635546922683716,
+        "hf_content_mse": 0.01364645641297102,
+        "hf_content_sem": 0.0019372084643691778
+      },
+      {
+        "mode": "endpoint-only",
+        "steps": 6,
+        "latent_content_mse": 0.07592441141605377,
+        "latent_content_sem": 0.016895879060029984,
+        "latent_target_mse": 1.4992371797561646,
+        "ll_content_mse": 0.2627342641353607,
+        "hf_content_mse": 0.013654455542564392,
+        "hf_content_sem": 0.0019331269431859255
+      },
+      {
+        "mode": "endpoint-only",
+        "steps": 7,
+        "latent_content_mse": 0.07601706683635712,
+        "latent_content_sem": 0.01685457117855549,
+        "latent_target_mse": 1.4984312057495117,
+        "ll_content_mse": 0.26313263177871704,
+        "hf_content_mse": 0.013645201921463013,
+        "hf_content_sem": 0.0019345670007169247
+      },
+      {
+        "mode": "endpoint-only",
+        "steps": 8,
+        "latent_content_mse": 0.0756571814417839,
+        "latent_content_sem": 0.01681828498840332,
+        "latent_target_mse": 1.499917984008789,
+        "ll_content_mse": 0.26168331503868103,
+        "hf_content_mse": 0.013648465275764465,
+        "hf_content_sem": 0.001934000407345593
+      }
+    ]
+  }
+}

@@ -715,7 +715,10 @@ class SpectralODEObjective620:
             "kinetic_energy": zero,
             "curvature": zero,
         }
-        self.last_debug = {k: v.detach().float().cpu().item() if v.numel() == 1 else 0.0 for k, v in metrics.items()}
+        self.last_debug = {
+            key: value.detach().float() if value.numel() == 1 else 0.0
+            for key, value in metrics.items()
+        }
         return metrics
 
     def update_weights_for_epoch(self, epoch: int, num_epochs: int = 3) -> dict:

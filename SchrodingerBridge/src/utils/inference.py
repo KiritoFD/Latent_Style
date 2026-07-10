@@ -61,6 +61,29 @@ class VAEDecodeWrapper(torch.nn.Module):
         return self.decoder(z)
 
 
+class _DecoderOnlyVAEConfig:
+    def __init__(self, scaling_factor: float) -> None:
+        self.scaling_factor = float(scaling_factor)
+
+
+class DecoderOnlyVAE:
+    """Minimal VAE-compatible holder for a serialized decoder module."""
+
+    def __init__(self, decoder: torch.nn.Module, *, scaling_factor: float) -> None:
+        self.compiled_decoder = decoder
+        self.config = _DecoderOnlyVAEConfig(scaling_factor)
+
+
+def load_torchscript_vae_decoder(
+    path: str | os.PathLike,
+    *,
+    device: str = "cuda",
+    scaling_factor: float = 0.18215,
+) -> DecoderOnlyVAE:
+    decoder = torch.jit.load(str(path), map_location=device).eval()
+    return DecoderOnlyVAE(decoder, scaling_factor=scaling_factor)
+
+
 def configure_torch_compile_cache(cache_dir: str | os.PathLike | None) -> None:
     if cache_dir is None or not str(cache_dir).strip():
         return
@@ -656,6 +679,20 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
         cache_dir = os.path.expanduser("~/.cache/huggingface/hub")
     os.makedirs(cache_dir, exist_ok=True)
 
+    ms_dest = os.path.join(cache_dir, "modelscope", model_id.replace("/", "_"))
+    local_model_root = _find_hf_repo_root(ms_dest)
+    if local_model_root:
+        try:
+            vae = AutoencoderKL.from_pretrained(
+                local_model_root,
+                torch_dtype=force_dtype,
+                local_files_only=True,
+            ).to(device)
+            vae.eval()
+            return vae
+        except Exception:
+            logger.debug("Direct local VAE load failed: %s", local_model_root, exc_info=True)
+
     try:
         vae = AutoencoderKL.from_pretrained(
             model_id,
@@ -668,7 +705,6 @@ def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
     except Exception:
         pass
 
-    ms_dest = os.path.join(cache_dir, "modelscope", model_id.replace("/", "_"))
     if os.path.exists(ms_dest):
         found = _find_hf_repo_root(ms_dest)
         if found:

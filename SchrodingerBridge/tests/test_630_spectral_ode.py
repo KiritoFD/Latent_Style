@@ -18,7 +18,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from config_schema import load_experiment_config  # noqa: E402
+from config_schema import BridgeConfig, ModelConfig, load_experiment_config  # noqa: E402
 from model import build_model_from_config  # noqa: E402
 from spectral_bridge620 import SpectralODEBridge620  # noqa: E402
 
@@ -56,6 +56,25 @@ def test_style_attn_mode_propagated_to_blocks():
             f"block[{idx}].attn_mode = {actual!r}, expected {expected_mode!r} "
             f"(from config style_attn_mode)"
         )
+
+
+def test_historical_target_dino_patches_uses_style_memory_contract():
+    """Retired DINO label must keep the historical non-intrinsic checkpoint shape."""
+    model_cfg = ModelConfig(
+        latent_channels=4,
+        num_styles=5,
+        base_dim=64,
+        time_dim=256,
+        num_res_blocks=4,
+        style_attn_num_heads=4,
+        tokenizer_dino_dim=384,
+        contract_family="620_spectral_ode",
+        style_condition_source="target_dino_patches",
+    )
+    model = build_model_from_config(model_cfg, bridge_cfg=BridgeConfig())
+    assert isinstance(model, SpectralODEBridge620)
+    assert model.use_intrinsic_style is False
+    assert model.intrinsic_style_cnn is None
 
 
 def test_forward_returns_three_velocity_subbands():

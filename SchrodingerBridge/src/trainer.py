@@ -1453,13 +1453,17 @@ class SBTrainer:
                 self.optimizer.zero_grad(set_to_none=True)
                 optimizer_time_total += max(0.0, time.perf_counter() - t0)
                 self.global_step += 1
-                milestone_metrics = {
-                    key: float((value / max(num_batches + 1, 1)).item())
-                    for key, value in metric_accum.items()
-                }
-                milestone_metrics["loss"] = float(loss.detach().item())
-                milestone_metrics["lr"] = float(self.optimizer.param_groups[0]["lr"])
-                self.maybe_save_step_checkpoint(epoch, step_idx, milestone_metrics)
+                if (
+                    self.global_step in self.save_step_milestones
+                    and self.global_step not in self._saved_step_milestones
+                ):
+                    milestone_metrics = {
+                        key: float((value / max(num_batches + 1, 1)).item())
+                        for key, value in metric_accum.items()
+                    }
+                    milestone_metrics["loss"] = float(loss.detach().item())
+                    milestone_metrics["lr"] = float(self.optimizer.param_groups[0]["lr"])
+                    self.maybe_save_step_checkpoint(epoch, step_idx, milestone_metrics)
                 if self.numeric_debug and (step_idx == 1 or step_idx % self.numeric_debug_interval == 0):
                     extra = {"clipped_grad_norm": float(total_grad_norm.item()) if total_grad_norm is not None else 0.0}
                     self._write_numeric_debug(

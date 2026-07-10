@@ -44,10 +44,43 @@ def _adain_match_subband(content: torch.Tensor, style: torch.Tensor) -> torch.Te
     return (content - pred_mean) / pred_std * target_std + target_mean
 
 
+def _precompute_style_wct_stats(
+    style_fiber: torch.Tensor,
+    target_batch: int = 1,
+    eps: float = 1e-6,
+) -> tuple[torch.Tensor, torch.Tensor] | None:
+    """Pre-compute style WCT statistics (mean, cov_sqrt) once for reuse across ODE steps.
+
+    Infra Phase I3.1: style_latent DWT 分解和 endpoint 统计只计算一次.
+    Returns (s_mean, s_sqrt) on the style_fiber's device, or None on eigh failure.
+    """
+    s_f = style_fiber.float() if style_fiber.dtype != torch.float32 else style_fiber
+    B_s, C, H, W = s_f.shape
+    B_target = max(target_batch, B_s)
+    if s_f.shape[0] == 1 and B_target > 1:
+        s_flat = s_f.expand(B_target, -1, -1, -1).reshape(B_target, C, -1)
+    else:
+        s_flat = s_f.reshape(B_s, C, -1)
+    s_mean = s_flat.mean(dim=2, keepdim=True)  # [B, C, 1]
+    s_centered = s_flat - s_mean
+    N = H * W
+    s_cov = (s_centered @ s_centered.transpose(1, 2)) / max(N - 1, 1)
+    s_cov = s_cov + eps * torch.eye(C, device=s_cov.device)
+    try:
+        s_eigvals, s_eigvecs = torch.linalg.eigh(s_cov.float().cpu())
+        s_eigvals = s_eigvals.clamp_min(eps)
+        s_sqrt = s_eigvecs @ torch.diag_embed(s_eigvals.sqrt()) @ s_eigvecs.transpose(1, 2)
+        return s_mean.squeeze(0) if B_s == 1 else s_mean, s_sqrt
+    except torch._C._LinAlgError:
+        return None
+
+
 def _wct_match_fiber(
     content_fiber: torch.Tensor,
     style_fiber: torch.Tensor,
     eps: float = 1e-6,
+    style_stats: tuple[torch.Tensor, torch.Tensor] | None = None,
+    cov_interp_beta: float = 1.0,
 ) -> torch.Tensor:
     """Whitening and Coloring Transform: 匹配 mean + 完整协方差 (Phase 4I.9).
 
@@ -58,22 +91,24 @@ def _wct_match_fiber(
         白化: f_w = Σ_c^{-1/2} @ (f - μ_c)   — 去除内容协方差
         着色: f_out = Σ_s^{1/2} @ f_w + μ_s  — 注入风格协方差
 
+    710 Phase S5: cov_interp_beta < 1.0 时, 着色目标为 content 和 style 的统计插值:
+        Σ_target = (1-β)·Σ_c + β·Σ_s
+        μ_target = (1-β)·μ_c + β·μ_s
+    理论: 在统计空间混合而非 pixel 空间, 减少过度扭曲的同时保持 style 迁移.
+
     对于 C=4 通道, 协方差是 4×4 矩阵, eigh 开销极小.
 
     输入: content_fiber, style_fiber — 形状 (B, C, H, W) 的高频 fiber
+          style_stats — optional pre-computed (s_mean, s_sqrt) for Infra I3.1 caching.
+                        When provided, style_fiber is ignored (may be None).
+          cov_interp_beta — 1.0=full style (default), <1.0=mix with content stats.
     输出: matched — 与 content_fiber 同形状, mean+协方差匹配到 style
     """
     orig_dtype = content_fiber.dtype
     # eigh 不支持 BFloat16, 全程在 float32 计算
     c_f = content_fiber.float()
-    s_f = style_fiber.float() if style_fiber.dtype != torch.float32 else style_fiber
     B, C, H, W = c_f.shape
-    # Flatten spatial: [B, C, HW]
     c_flat = c_f.reshape(B, C, -1)
-    if s_f.shape[0] == 1 and B > 1:
-        s_flat = s_f.expand(B, -1, -1, -1).reshape(B, C, -1)
-    else:
-        s_flat = s_f.reshape(B, C, -1)
 
     # Content 统计
     c_mean = c_flat.mean(dim=2, keepdim=True)  # [B, C, 1]
@@ -83,11 +118,27 @@ def _wct_match_fiber(
     # 数值稳定性: 对角线正则化防止 eigh 失败 (depth=6 等大模型特征矩阵可能病态)
     c_cov = c_cov + eps * torch.eye(c_cov.shape[1], device=c_cov.device)
 
-    # Style 统计
-    s_mean = s_flat.mean(dim=2, keepdim=True)  # [B, C, 1]
-    s_centered = s_flat - s_mean  # [B, C, HW]
-    s_cov = (s_centered @ s_centered.transpose(1, 2)) / max(N - 1, 1)  # [B, C, C]
-    s_cov = s_cov + eps * torch.eye(s_cov.shape[1], device=s_cov.device)
+    # Style 统计 — use pre-computed stats if available (Infra I3.1)
+    if style_stats is not None:
+        s_mean_raw, s_sqrt = style_stats
+        # Expand to content batch if style was batch=1
+        if s_mean_raw.shape[0] == 1 and B > 1:
+            s_mean = s_mean_raw.expand(B, -1, 1)
+            s_sqrt_exp = s_sqrt.expand(B, -1, -1)
+        else:
+            s_mean = s_mean_raw
+            s_sqrt_exp = s_sqrt
+    else:
+        s_f = style_fiber.float() if style_fiber is not None and style_fiber.dtype != torch.float32 else style_fiber
+        if s_f.shape[0] == 1 and B > 1:
+            s_flat = s_f.expand(B, -1, -1, -1).reshape(B, C, -1)
+        else:
+            s_flat = s_f.reshape(B, C, -1)
+        s_mean = s_flat.mean(dim=2, keepdim=True)  # [B, C, 1]
+        s_centered = s_flat - s_mean  # [B, C, HW]
+        s_cov = (s_centered @ s_centered.transpose(1, 2)) / max(N - 1, 1)  # [B, C, C]
+        s_cov = s_cov + eps * torch.eye(s_cov.shape[1], device=s_cov.device)
+        s_sqrt_exp = None  # will be computed below
 
     # 白化: Σ_c^{-1/2} = V_c @ diag(1/√λ_c) @ V_c^T
     # eigh 在 CPU 上计算 (GPU eigh 对小特征值的数值差异被 Λ^{-1/2} 放大, 导致 LPIPS 异常)
@@ -99,14 +150,50 @@ def _wct_match_fiber(
         c_whitened = c_inv_sqrt.to(c_centered.device) @ c_centered  # [B, C, HW]
 
         # 着色: Σ_s^{1/2} = V_s @ diag(√λ_s) @ V_s^T
-        s_eigvals, s_eigvecs = torch.linalg.eigh(s_cov.float().cpu())
-        s_eigvals = s_eigvals.clamp_min(eps)
-        s_sqrt = s_eigvecs @ torch.diag_embed(s_eigvals.sqrt()) @ s_eigvecs.transpose(1, 2)
-        c_colored = s_sqrt.to(c_whitened.device) @ c_whitened  # [B, C, HW]
+        if s_sqrt_exp is None:
+            # Need style_fiber's covariance — recompute from style_fiber
+            s_f = style_fiber.float() if style_fiber is not None and style_fiber.dtype != torch.float32 else style_fiber
+            if s_f.shape[0] == 1 and B > 1:
+                s_flat = s_f.expand(B, -1, -1, -1).reshape(B, C, -1)
+            else:
+                s_flat = s_f.reshape(B, C, -1)
+            s_mean = s_flat.mean(dim=2, keepdim=True)
+            s_centered = s_flat - s_mean
+            s_cov = (s_centered @ s_centered.transpose(1, 2)) / max(N - 1, 1)
+            s_cov = s_cov + eps * torch.eye(s_cov.shape[1], device=s_cov.device)
+            s_eigvals, s_eigvecs = torch.linalg.eigh(s_cov.float().cpu())
+            s_eigvals = s_eigvals.clamp_min(eps)
+            s_sqrt_exp = s_eigvecs @ torch.diag_embed(s_eigvals.sqrt()) @ s_eigvecs.transpose(1, 2)
+        c_colored = s_sqrt_exp.to(c_whitened.device) @ c_whitened  # [B, C, HW]
+
+        # 710 Phase S5: WCT covariance interpolation
+        # 在统计空间混合 content 和 style, 减少过度扭曲
+        if cov_interp_beta < 1.0:
+            # 从 s_sqrt_exp 反推 s_cov: Σ_s = Σ_s^{1/2} @ Σ_s^{1/2}
+            s_cov_recon = s_sqrt_exp.to(c_cov.device) @ s_sqrt_exp.to(c_cov.device)
+            # target 统计: content 和 style 的凸组合
+            target_cov = (1.0 - cov_interp_beta) * c_cov + cov_interp_beta * s_cov_recon
+            target_mean = (1.0 - cov_interp_beta) * c_mean + cov_interp_beta * s_mean
+            # 对 target_cov 做 eigh 得到 target_sqrt
+            t_eigvals, t_eigvecs = torch.linalg.eigh(target_cov.float().cpu())
+            t_eigvals = t_eigvals.clamp_min(eps)
+            t_sqrt = t_eigvecs @ torch.diag_embed(t_eigvals.sqrt()) @ t_eigvecs.transpose(1, 2)
+            # 重新着色: 用 target_sqrt 替代 s_sqrt
+            c_colored = t_sqrt.to(c_whitened.device) @ c_whitened
+            # 加回 target mean (而非 style mean)
+            c_colored = c_colored + target_mean.to(c_colored.device)
+            return c_colored.reshape(B, C, H, W).to(dtype=orig_dtype)
     except torch._C._LinAlgError:
         # 回退到 AdaIN: 仅匹配 mean+std (无协方差匹配)
         c_std = c_flat.std(dim=2, keepdim=True).clamp_min(eps)
-        s_std = s_flat.std(dim=2, keepdim=True).clamp_min(eps)
+        s_std = s_mean.new_zeros(s_mean.shape)  # fallback if style_stats was None
+        if style_stats is None and style_fiber is not None:
+            s_f2 = style_fiber.float()
+            if s_f2.shape[0] == 1 and B > 1:
+                s_flat2 = s_f2.expand(B, -1, -1, -1).reshape(B, C, -1)
+            else:
+                s_flat2 = s_f2.reshape(B, C, -1)
+            s_std = s_flat2.std(dim=2, keepdim=True).clamp_min(eps)
         c_colored = (c_flat - c_mean) / c_std * s_std + s_mean
 
     # 加回 style mean
@@ -214,11 +301,13 @@ class SpectralODEBridge620(nn.Module):
         self.time_dim = int(getattr(model_cfg, "time_dim", self.dim))
         self.dino_dim = int(getattr(model_cfg, "tokenizer_dino_dim", 384))
         self.style_condition_source = str(getattr(model_cfg, "style_condition_source", "style_memory")).strip().lower()
+        # T11 kept the historical ``target_dino_patches`` label after the
+        # external DINO path was retired; its active conditioner is style_memory.
+        # Only explicit latent sources enable the intrinsic reference CNN.
         self.use_intrinsic_style = self.style_condition_source in {
             "latent",
             "target_latent",
             "target_style_latent",
-            "target_dino_patches",
         }
 
         # Style conditioner (style_memory tokens -> bridge width)
@@ -280,6 +369,7 @@ class SpectralODEBridge620(nn.Module):
         # 630 Phase 72 方案 D: Direct Tone Bias Injection
         ll_tone_bias = bool(getattr(model_cfg, "ll_tone_bias", False))
         self.ll_tone_bias = ll_tone_bias
+        adaptive_style_gate = bool(getattr(model_cfg, "adaptive_style_gate", False))
         if ll_adaln_zero or ll_tone_bias:
             # 独立于 style_memory 的全局色调嵌入, 每个风格一个 dim 维向量
             # 专为 LL 色调调制训练, 不受 style_memory 高频偏向污染
@@ -297,6 +387,7 @@ class SpectralODEBridge620(nn.Module):
                 dwt_route_train_prob=dwt_route_train_prob,
                 ll_adaln_zero=ll_adaln_zero,
                 ll_tone_bias=ll_tone_bias,
+                adaptive_style_gate=adaptive_style_gate,
             )
             for idx in range(depth)
         ])
@@ -361,9 +452,28 @@ class SpectralODEBridge620(nn.Module):
             style_tokens = self.intrinsic_style_proj(style_tokens.float()).to(dtype=x.dtype)
             style_global = self.intrinsic_style_global(style_feat.mean(dim=[2, 3]).float()).to(dtype=x.dtype)
         else:
-            style_tokens, style_global = self.style_conditioner(
-                style_id=style_id, batch=x.shape[0], device=x.device, dtype=x.dtype,
-            )
+            # Infra optimization: cache style_conditioner output during inference (same style_id repeated across ODE steps)
+            if not self.training:
+                if torch.is_tensor(style_id) and style_id.numel() == 1:
+                    _cache_key = (int(style_id.item()), x.shape[0], x.device, x.dtype)
+                elif not torch.is_tensor(style_id):
+                    _cache_key = (int(style_id), x.shape[0], x.device, x.dtype)
+                else:
+                    _cache_key = None
+                if _cache_key is not None and hasattr(self, '_style_cache') and _cache_key in self._style_cache:
+                    style_tokens, style_global = self._style_cache[_cache_key]
+                else:
+                    style_tokens, style_global = self.style_conditioner(
+                        style_id=style_id, batch=x.shape[0], device=x.device, dtype=x.dtype,
+                    )
+                    if _cache_key is not None:
+                        if not hasattr(self, '_style_cache'):
+                            self._style_cache = {}
+                        self._style_cache[_cache_key] = (style_tokens, style_global)
+            else:
+                style_tokens, style_global = self.style_conditioner(
+                    style_id=style_id, batch=x.shape[0], device=x.device, dtype=x.dtype,
+                )
         # 630 Phase 72 方案 C/D: 提取独立 global_tone_embedding (AdaLN-Zero 或 Direct Tone Bias 共用)
         global_tone = None
         if self.ll_adaln_zero or self.ll_tone_bias:
@@ -531,6 +641,9 @@ class SpectralODEBridge620(nn.Module):
         adain_scale_hl: float,
         adain_scale_hh: float,
         endpoint_adain_scale: float,
+        style_dwt_decomp: dict | None = None,
+        style_wct_stats: dict | None = None,
+        wct_cov_interp_beta: float = 1.0,
     ) -> torch.Tensor:
         """Apply endpoint AdaIN/WCT style injection (4 modes).
 
@@ -538,6 +651,9 @@ class SpectralODEBridge620(nn.Module):
         - per_subband_wct: per-subband WCT (full covariance) with multi-scale α
         - spatial_fiber_wct: global WCT on spatial fiber
         - spatial_fiber (default): global AdaIN (mean+std) on spatial fiber
+
+        Infra I3.1: style_dwt_decomp and style_wct_stats are pre-computed once
+        in integrate_transport and passed here to avoid recomputing per ODE step.
         """
         def _lp(y: torch.Tensor) -> torch.Tensor:
             return dwt2_lowpass(y, levels=lowpass_levels, basis=lowpass_basis)
@@ -562,24 +678,35 @@ class SpectralODEBridge620(nn.Module):
             )
         elif adain_mode == "per_subband_wct":
             h_decomp = dwt2_haar_multi_decompose(h, levels=lowpass_levels)
-            s_latent = style_latent.to(dtype=h.dtype)
-            s_decomp = dwt2_haar_multi_decompose(s_latent, levels=lowpass_levels)
+            # Infra I3.1: use pre-computed style DWT decomp if available (extrap already baked in)
+            if style_dwt_decomp is not None:
+                s_decomp = style_dwt_decomp
+                _extrap_done = True
+            else:
+                s_latent = style_latent.to(dtype=h.dtype)
+                s_decomp = dwt2_haar_multi_decompose(s_latent, levels=lowpass_levels)
+                _extrap_done = False
             ll_K = h_decomp["ll_K"]
             if adain_scale_ll > 0.0:
                 s_ll = s_decomp["ll_K"]
-                if style_extrap_alpha > 0.0:
+                if style_extrap_alpha > 0.0 and not _extrap_done:
                     s_ll = s_ll * (1.0 + style_extrap_alpha)
-                ll_K = (1.0 - adain_scale_ll) * ll_K + adain_scale_ll * _wct_match_fiber(ll_K, s_ll)
+                _ll_stats = style_wct_stats.get("ll") if style_wct_stats else None
+                ll_K = (1.0 - adain_scale_ll) * ll_K + adain_scale_ll * _wct_match_fiber(ll_K, s_ll, style_stats=_ll_stats)
             new_subs = []
             for k, (lh, hl, hh) in enumerate(h_decomp["h"]):
                 s_lh, s_hl, s_hh = s_decomp["h"][k]
-                if style_extrap_alpha > 0.0:
+                if style_extrap_alpha > 0.0 and not _extrap_done:
                     s_lh = s_lh * (1.0 + style_extrap_alpha)
                     s_hl = s_hl * (1.0 + style_extrap_alpha)
                     s_hh = s_hh * (1.0 + style_extrap_alpha)
-                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
-                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
-                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
+                _h_stats = style_wct_stats.get(f"h{k}") if style_wct_stats else None
+                _lh_st = _hl_st = _hh_st = None
+                if _h_stats is not None:
+                    _lh_st, _hl_st, _hh_st = _h_stats
+                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh, style_stats=_lh_st)
+                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl, style_stats=_hl_st)
+                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh, style_stats=_hh_st)
                 new_subs.append((lh_new, hl_new, hh_new))
             return idwt2_haar_multi_reconstruct(
                 {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
@@ -611,9 +738,9 @@ class SpectralODEBridge620(nn.Module):
                     s_lh = s_lh * (1.0 + style_extrap_alpha)
                     s_hl = s_hl * (1.0 + style_extrap_alpha)
                     s_hh = s_hh * (1.0 + style_extrap_alpha)
-                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
-                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
-                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
+                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh, cov_interp_beta=wct_cov_interp_beta)
+                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl, cov_interp_beta=wct_cov_interp_beta)
+                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh, cov_interp_beta=wct_cov_interp_beta)
                 new_subs.append((lh_new, hl_new, hh_new))
             return idwt2_haar_multi_reconstruct(
                 {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
@@ -645,9 +772,9 @@ class SpectralODEBridge620(nn.Module):
                     s_lh = s_lh * (1.0 + style_extrap_alpha)
                     s_hl = s_hl * (1.0 + style_extrap_alpha)
                     s_hh = s_hh * (1.0 + style_extrap_alpha)
-                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
-                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
-                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
+                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh, cov_interp_beta=wct_cov_interp_beta)
+                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl, cov_interp_beta=wct_cov_interp_beta)
+                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh, cov_interp_beta=wct_cov_interp_beta)
                 new_subs.append((lh_new, hl_new, hh_new))
             return idwt2_haar_multi_reconstruct(
                 {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
@@ -683,9 +810,9 @@ class SpectralODEBridge620(nn.Module):
                     s_lh = s_lh * (1.0 + style_extrap_alpha)
                     s_hl = s_hl * (1.0 + style_extrap_alpha)
                     s_hh = s_hh * (1.0 + style_extrap_alpha)
-                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
-                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
-                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
+                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh, cov_interp_beta=wct_cov_interp_beta)
+                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl, cov_interp_beta=wct_cov_interp_beta)
+                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh, cov_interp_beta=wct_cov_interp_beta)
                 new_subs.append((lh_new, hl_new, hh_new))
             return idwt2_haar_multi_reconstruct(
                 {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
@@ -732,9 +859,9 @@ class SpectralODEBridge620(nn.Module):
                     s_lh = s_lh * (1.0 + style_extrap_alpha)
                     s_hl = s_hl * (1.0 + style_extrap_alpha)
                     s_hh = s_hh * (1.0 + style_extrap_alpha)
-                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh)
-                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl)
-                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh)
+                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh, cov_interp_beta=wct_cov_interp_beta)
+                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl, cov_interp_beta=wct_cov_interp_beta)
+                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh, cov_interp_beta=wct_cov_interp_beta)
                 new_subs.append((lh_new, hl_new, hh_new))
             return idwt2_haar_multi_reconstruct(
                 {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
@@ -840,6 +967,18 @@ class SpectralODEBridge620(nn.Module):
         _base_adain_scale_lh = adain_scale_lh
         _base_adain_scale_hl = adain_scale_hl
         _base_adain_scale_hh = adain_scale_hh
+        # 710 Phase S4: Style Amplification — 推理时放大 cross-attention style delta
+        # 理论: 不改变 style 输入统计 (style_extrap 已验证有害), 而是放大 attention 输出
+        # 在 velocity 计算时增强风格对 content features 的贡献
+        _style_amp = float(_cfg_get('inference_style_amplification', 1.0))
+        if not self.training and _style_amp != 1.0:
+            for _blk in self.blocks:
+                _blk._style_amp = _style_amp
+        else:
+            for _blk in self.blocks:
+                _blk._style_amp = 1.0
+        # 710 Phase S5: WCT covariance interpolation beta
+        _wct_cov_interp_beta = float(_cfg_get('wct_cov_interp_beta', 1.0))
         # 630 Phase 4I.2: ODE solver 类型 (euler | heun)
         # Heun (改进 Euler): 二阶精度 O(h^2), predictor-corrector, 相同步数下数值误差更低
         # 理论: 更低截断误差 → 更准确的 ODE 轨迹 → 风格注入更精准
@@ -901,6 +1040,35 @@ class SpectralODEBridge620(nn.Module):
 
         h = x
         dt = horizon / steps
+
+        # Infra I3.1: Pre-compute style DWT decomposition + WCT stats once (not per ODE step).
+        # style_latent is invariant across ODE steps, so its DWT decomp and WCT covariance
+        # eigh decomposition (CPU, expensive) can be cached. Saves 7 recomputations for 8-step.
+        _style_dwt_decomp = None
+        _style_wct_stats = None
+        if (not self.training and style_latent is not None and isinstance(style_latent, torch.Tensor)
+                and adain_mode.startswith("per_subband") and endpoint_adain_scale > 0.0):
+            s_latent_cached = style_latent.to(dtype=x.dtype)
+            _style_dwt_decomp = dwt2_haar_multi_decompose(s_latent_cached, levels=lowpass_levels)
+            # Apply extrap_alpha to cached decomp so WCT stats match what the branch computes
+            if style_extrap_alpha > 0.0:
+                _scale = 1.0 + style_extrap_alpha
+                _style_dwt_decomp = {
+                    "ll_K": _style_dwt_decomp["ll_K"] * _scale,
+                    "h": [tuple(s * _scale for s in tup) for tup in _style_dwt_decomp["h"]],
+                }
+            # Pre-compute WCT stats (s_mean, s_sqrt) per subband — skips CPU eigh in later steps
+            _style_wct_stats = {}
+            if adain_scale_ll > 0.0 and "ll_K" in _style_dwt_decomp:
+                _ll_stats = _precompute_style_wct_stats(_style_dwt_decomp["ll_K"], target_batch=x.shape[0])
+                if _ll_stats is not None:
+                    _style_wct_stats["ll"] = _ll_stats
+            for _k, (_s_lh, _s_hl, _s_hh) in enumerate(_style_dwt_decomp["h"]):
+                _lh_st = _precompute_style_wct_stats(_s_lh, target_batch=x.shape[0])
+                _hl_st = _precompute_style_wct_stats(_s_hl, target_batch=x.shape[0])
+                _hh_st = _precompute_style_wct_stats(_s_hh, target_batch=x.shape[0])
+                _style_wct_stats[f"h{_k}"] = (_lh_st, _hl_st, _hh_st)
+
         for i in range(steps):
             # 630 Phase 4I.5: 非线性 time schedule — 通过 _schedule 映射时间步
             t_curr = _schedule(float(i) / steps) * horizon
@@ -942,6 +1110,9 @@ class SpectralODEBridge620(nn.Module):
                     adain_scale_ll=adain_scale_ll, adain_scale_lh=adain_scale_lh,
                     adain_scale_hl=adain_scale_hl, adain_scale_hh=adain_scale_hh,
                     endpoint_adain_scale=endpoint_adain_scale,
+                    style_dwt_decomp=_style_dwt_decomp,
+                    style_wct_stats=_style_wct_stats,
+                    wct_cov_interp_beta=_wct_cov_interp_beta,
                 )
         return h
 

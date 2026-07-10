@@ -1,0 +1,113 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex)
+ restricted \write18 enabled.
+entering extended mode
+(./paper.tex
+LaTeX2e <2025-11-01>
+L3 programming layer <2026-01-19>
+(c:/texlive/2026/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+(c:/texlive/2026/texmf-dist/tex/latex/base/size10.clo)) (./aaai2027.sty
+Conference Style for AAAI for LaTeX 2e
+(c:/texlive/2026/texmf-dist/tex/generic/iftex/iftex.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/base/fontenc.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/newtx/newtxtext.sty
+`newtxtext' v1.744, 2024/04/01 Text macros taking advantage of TeXGyre Termes a
+nd its extensions (msharpe)
+(c:/texlive/2026/texmf-dist/tex/latex/xpatch/xpatch.sty
+(c:/texlive/2026/texmf-dist/tex/latex/l3kernel/expl3.sty
+(c:/texlive/2026/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def))
+(c:/texlive/2026/texmf-dist/tex/latex/l3packages/xparse/xparse.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/etoolbox/etoolbox.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/xcolor/xcolor.sty
+(c:/texlive/2026/texmf-dist/tex/latex/graphics-cfg/color.cfg)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics-def/pdftex.def)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/mathcolor.ltx))
+(c:/texlive/2026/texmf-dist/tex/latex/xkeyval/xkeyval.sty
+(c:/texlive/2026/texmf-dist/tex/generic/xkeyval/xkeyval.tex
+(c:/texlive/2026/texmf-dist/tex/generic/xkeyval/xkvutils.tex
+(c:/texlive/2026/texmf-dist/tex/generic/xkeyval/keyval.tex))))
+(c:/texlive/2026/texmf-dist/tex/latex/base/textcomp.sty)
+(c:/texlive/2026/texmf-dist/tex/generic/xstring/xstring.sty
+(c:/texlive/2026/texmf-dist/tex/generic/xstring/xstring.tex))
+(c:/texlive/2026/texmf-dist/tex/latex/base/ifthen.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/carlisle/scalefnt.sty)
+(c:/texlive/2026/texmf-dist/tex/generic/kastrup/binhex.tex)
+(c:/texlive/2026/texmf-dist/tex/latex/fontaxes/fontaxes.sty
+(c:/texlive/2026/texmf-dist/tex/latex/figureversions/figureversions.sty)))
+(c:/texlive/2026/texmf-dist/tex/latex/psnfss/helvet.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/psnfss/courier.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/placeins/placeins.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/url/url.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/graphicx.sty
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/graphics.sty
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/trig.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics-cfg/graphics.cfg)))
+(c:/texlive/2026/texmf-dist/tex/latex/natbib/natbib.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/caption/caption.sty
+(c:/texlive/2026/texmf-dist/tex/latex/caption/caption3.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(c:/texlive/2026/texmf-dist/tex/latex/amsmath/amstext.sty
+(c:/texlive/2026/texmf-dist/tex/latex/amsmath/amsgen.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/amsmath/amsbsy.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/amsmath/amsopn.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/amsfonts/amssymb.sty
+(c:/texlive/2026/texmf-dist/tex/latex/amsfonts/amsfonts.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/amscls/amsthm.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/booktabs/booktabs.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/multirow/multirow.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/sttools/cuted.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/newtx/t1ntxtlf.fd) (./paper.aux)
+(c:/texlive/2026/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (c:/texlive/2026/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+(c:/texlive/2026/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg))
+(c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsa.fd)
+(c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsb.fd)
+Underfull \vbox (badness 10000) has occurred while \output is active [1{c:/texl
+ive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/2026/texmf-di
+st/fonts/enc/dvips/newtx/ntx-ec-tlf.enc} <./fig_distinct5_page1_summary.pdf>]
+[2]
+Underfull \hbox (badness 4266) in paragraph at lines 180--183
+\T1/ntxtlf/m/n/10 Let $\OMS/cmsy/m/n/10 W\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 z[]\
+OT1/cmr/m/n/10 ) = (\OML/cmm/m/it/10 `[]; h[]; h[]; h[]\OT1/cmr/m/n/10 )$ \T1/n
+txtlf/m/n/10 and $\OMS/cmsy/m/n/10 W\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 u[]\OT1/c
+mr/m/n/10 ) =
+
+Underfull \hbox (badness 10000) in paragraph at lines 180--183
+\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 u[]; u[]; u[]; u[]\OT1/cmr/m/n/10 )$\T1/ntxtl
+f/m/n/10 . The WEAVE model re-ceives
+
+Underfull \hbox (badness 2809) in paragraph at lines 180--183
+\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 `[]; h[]; h[]; h[]\OT1/cmr/m/n/10 )$ \T1/ntxt
+lf/m/n/10 and pre-dicts three ve-loc-ity heads
+
+Underfull \hbox (badness 2253) in paragraph at lines 198--200
+[]\T1/ntxtlf/m/n/10 The pre-dicted one-step end-point is $[] \OT1/cmr/m/n/10 = 
+\OML/cmm/m/it/10 z[] \OT1/cmr/m/n/10 +
+[3]
+Underfull \hbox (badness 4291) in paragraph at lines 248--256
+\OMS/cmsy/m/n/10 f\OT1/cmr/m/n/10 1\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 2\OML/cmm
+/m/it/10 ; \OT1/cmr/m/n/10 3\OMS/cmsy/m/n/10 g$\T1/ntxtlf/m/n/10 , the whitenin
+g-coloring map is $\OML/cmm/m/it/10 T[]\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 a\OT1/
+cmr/m/n/10 ) =
+[4 <./framework_sfm_main.png> <./fig_probe_combined.pdf> <./fig_probe_swd_separ
+ation.pdf>] [5 <./fig_teaser_comparison.png (PNG copy)>]
+Underfull \vbox (badness 1430) has occurred while \output is active [6 <./radar
+_baselines_14.png>] [7] (./paper.bbl) [8] (./paper.aux) )
+(see the transcript file for additional information)<c:/texlive/2026/texmf-dist
+/fonts/type1/public/amsfonts/cm/cmbx10.pfb><c:/texlive/2026/texmf-dist/fonts/ty
+pe1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/publi
+c/amsfonts/cm/cmmi10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfont
+s/cm/cmmi6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7
+.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/t
+exlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/texlive/2026
+/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb><c:/texlive/2026/texmf-dist
+/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2026/texmf-dist/fonts/ty
+pe1/public/amsfonts/cm/cmsy7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public
+/amsfonts/cm/cmsy9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/
+symbols/msbm10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmb.pf
+b><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmr.pfb><c:/texlive/202
+6/texmf-dist/fonts/type1/public/newtx/ztmri.pfb>
+Output written on paper.pdf (8 pages, 1885499 bytes).
+Transcript written on paper.log.

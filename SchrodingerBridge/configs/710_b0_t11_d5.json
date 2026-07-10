@@ -1,0 +1,32 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "model": {
+    "dwt_route_train_prob": 0.8
+  },
+  "training": {
+    "batch_size": 24,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": false,
+    "full_eval_defer_until_training_end": false,
+    "test_image_dir": "I:/datasets/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache/hf"
+  },
+  "data": {
+    "data_root": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train",
+    "latent_cache_dir": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/packed",
+    "pairing_cache_path": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "pairing_cache_active_topk": 0,
+    "style_subdirs": ["Early_Renaissance", "Impressionism", "Minimalism", "Rococo", "Ukiyo_e"]
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/710_b0_t11"
+  },
+  "ablation": {
+    "name": "710_b0_t11",
+    "axis": "full_t11_baseline",
+    "stage": "710_phase_b",
+    "notes": "B0: Full T11 baseline (p=0.8, DWT route, per_subband_wct) on D5."
+  }
+}

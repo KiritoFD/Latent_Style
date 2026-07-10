@@ -1,0 +1,15 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "endpoint_adain_mode": "none"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/710_b4_no_wct"
+  },
+  "ablation": {
+    "name": "710_b4_no_wct",
+    "axis": "no_endpoint_wct",
+    "stage": "710_phase_b",
+    "notes": "B4: endpoint_adain_mode=none. No endpoint WCT."
+  }
+}

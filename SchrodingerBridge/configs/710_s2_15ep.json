@@ -1,0 +1,11 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "training": {"num_epochs": 15},
+  "checkpoint": {"save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/710_s2_15ep"},
+  "ablation": {
+    "name": "710_s2_15ep",
+    "axis": "train_length_only",
+    "stage": "710_phase_s2",
+    "notes": "Phase S2.1: pure 15 epochs (no other changes). Baseline for separating training length effect from other variables."
+  }
+}

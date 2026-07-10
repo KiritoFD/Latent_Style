@@ -1,0 +1,21 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "w_style_strength_reg": 0.3
+  },
+  "bridge": {
+    "w_style_strength_reg": 0.3
+  },
+  "training": {
+    "num_epochs": 15
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/710_s2_reg03_15ep"
+  },
+  "ablation": {
+    "name": "710_s2_reg03_15ep",
+    "axis": "style_strength_reg_03_15ep",
+    "stage": "710_phase_s2",
+    "notes": "S2: Enable style_strength_reg=0.3 + 15 epochs. Directly maximize style transfer magnitude."
+  }
+}
