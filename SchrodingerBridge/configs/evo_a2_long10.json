@@ -1,0 +1,23 @@
+{
+  "_base": "630_random20_heun_5ep.json",
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/evo_r20_a2_long10",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 10,
+    "patience": 3,
+    "full_eval_each_epoch": false,
+    "test_image_dir": "G:/GitHub/Latent_Style/Dataset/wikiart_random20_512/wikiart_random20_512/images/test"
+  },
+  "data": {
+    "pairing_cache_path": "",
+    "pairing_cache_active_topk": 0
+  },
+  "ablation": {
+    "name": "evo_a2_long10",
+    "axis": "longer_training",
+    "stage": "evo_r20",
+    "notes": "Evo A2: Longer training 5ep->10ep, patience 2->3. Baseline random20_heun: all_pairs clip=0.7213 lpips=0.2728. Hypothesis: more epochs improve clip style adherence. Target: clip->0.74, lpips<0.30."
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/t11_repro_15ep",
+    "resume_checkpoint": ""
+  },
+  "data": {
+    "data_root": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train",
+    "pairing_cache_path": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "latent_cache_dir": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/packed"
+  },
+  "training": {
+    "batch_size": 24,
+    "num_epochs": 15,
+    "patience": 3,
+    "full_eval_each_epoch": false,
+    "test_image_dir": "I:/datasets/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/eval_cache",
+    "full_eval_clip_hf_cache_dir": "C:/Users/Administrator/.cache/huggingface/hub"
+  },
+  "ablation": {
+    "name": "t11_repro_15ep",
+    "axis": "t11_reproduction_long_train",
+    "stage": "t11_evo",
+    "notes": "T11 baseline reproduction with 15 epochs (vs original 5ep). Original T11 (p=0.8, 5ep): clip=0.7213, lpips=0.2868. repro_i failed (bs=112, clip=0.7128). This uses original bs=24 + 15ep. Goal: confirm T11 reproduces and test if longer training improves clip toward 0.7319 target. Patience=3 for convergence."
+  }
+}

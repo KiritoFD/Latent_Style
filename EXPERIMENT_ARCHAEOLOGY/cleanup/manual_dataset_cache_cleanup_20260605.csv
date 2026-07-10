@@ -1,2 +1,0 @@
-"timestamp_local","location","path","item_type","files","size_mb","manual_evidence","reason","action","status"
-"2026-06-05","local","G:/GitHub/Latent_Style/SchrodingerBridge/scale/datasets/wikiart_81k","directory","6","63.948","opened recursively; only .cache/huggingface metadata, lock, and one 63.947MB .incomplete file; git ls-files empty","failed HuggingFace dataset download shell, no usable image/latent payload","delete","deleted"

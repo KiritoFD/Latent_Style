@@ -1,0 +1,24 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/630_local_t11_repro_i",
+    "resume_checkpoint": ""
+  },
+  "data": {
+    "data_root": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train",
+    "pairing_cache_path": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "latent_cache_dir": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/packed"
+  },
+  "training": {
+    "batch_size": 112,
+    "test_image_dir": "I:/datasets/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/eval_cache",
+    "full_eval_clip_hf_cache_dir": "C:/Users/Administrator/.cache/huggingface/hub"
+  },
+  "ablation": {
+    "name": "local_t11_repro_i",
+    "axis": "infra_repro",
+    "stage": "local_t11_repro",
+    "notes": "T11 基线复现: 用 I: 盘 samam 数据集跑 t11 配置 (spectral_ode=squared+global+kinetic_off, bs=24, 5ep). 目标: 验证 t11 在统一数据集上是否仍 3min/5ep. 若变慢则 infra regression, 若仍 3min 则 r4_spec_swd9 的慢来自方法 (cdf+cross-attn+region_spectral+kmeans)."
+  }
+}

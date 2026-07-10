@@ -1,0 +1,20 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/d1_gram_hf1_15ep",
+    "resume_checkpoint": ""
+  },
+  "bridge": {
+    "w_gram_hf": 1.0,
+    "w_gram_ll": 0.0
+  },
+  "training": {
+    "batch_size": 96
+  },
+  "ablation": {
+    "name": "d1_gram_hf1_15ep",
+    "axis": "M2_gram_matrix_hf",
+    "stage": "M2_architecture_additive_D1",
+    "notes": "D1: Gram matrix style loss on HF DWT subbands (LH/HL/HH). Captures inter-channel texture correlations that SWD marginal matching discards. w_gram_hf=1.0, w_gram_ll=0 (protect content). Goal: DINO-sty +0.015 without hurting CLIP-S/DINO-con."
+  }
+}

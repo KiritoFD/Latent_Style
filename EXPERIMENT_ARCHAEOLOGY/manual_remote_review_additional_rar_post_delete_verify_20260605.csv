@@ -1,8 +1,0 @@
-check,path,expected,observed,status,note
-rar_absent,I:\Github\Latent_Style\SchrodingerBridge\review_additional_experiments.rar,false,false,pass,"Deleted archive absent after exact-path Remove-Item."
-expanded_dir_present,I:\Github\Latent_Style\SchrodingerBridge\review_additional_experiments,true,true,pass,"Expanded evidence directory retained."
-expanded_file_count,I:\Github\Latent_Style\SchrodingerBridge\review_additional_experiments,58151,58151,pass,"Expanded directory file count unchanged after archive deletion."
-expanded_weight_count,I:\Github\Latent_Style\SchrodingerBridge\review_additional_experiments,9,9,pass,"Retained expanded weights unchanged."
-expanded_summary_count,I:\Github\Latent_Style\SchrodingerBridge\review_additional_experiments,77,77,pass,"summary.json evidence retained."
-expanded_training_csv_count,I:\Github\Latent_Style\SchrodingerBridge\review_additional_experiments,9,9,pass,"training CSV evidence retained."
-expanded_metric_like_count,I:\Github\Latent_Style\SchrodingerBridge\review_additional_experiments,183,183,pass,"summary/metric/result/status csv/json evidence retained."

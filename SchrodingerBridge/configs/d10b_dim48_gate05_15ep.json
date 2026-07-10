@@ -1,0 +1,22 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/d10b_dim48_gate05_15ep",
+    "resume_checkpoint": ""
+  },
+  "model": {
+    "base_dim": 48,
+    "style_cross_attn_gate_init": 0.5
+  },
+  "training": {
+    "batch_size": 96,
+    "num_epochs": 15,
+    "patience": 2
+  },
+  "ablation": {
+    "name": "d10b_dim48_gate05_15ep",
+    "axis": "capacity_reduction_plus_gate_boost",
+    "stage": "d10_disentangle",
+    "notes": "D10b: Capacity reduction (dim 64->48) + style gate boost (0.3->0.5). Combines D10a's content reduction with stronger style injection to compensate for potential content loss. Theory: reduced backbone has less content capacity, stronger gate forces remaining capacity toward style. Tests if style reliance can be actively boosted (not just passively increased by capacity reduction)."
+  }
+}

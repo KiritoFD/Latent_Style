@@ -1,0 +1,7 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "training": {
+    "num_epochs": 2,
+    "patience": 2
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "model": {
+    "num_res_blocks": 6
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/d7b_deep_backbone_lr5e5",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 96,
+    "grad_clip_norm": 0.5,
+    "learning_rate": 5e-5
+  },
+  "ablation": {
+    "name": "d7b_deep_backbone_lr5e5",
+    "axis": "M2_backbone_capacity_expansion_stable",
+    "stage": "M2_architectural_additive_D7b",
+    "notes": "D7b: Backbone capacity expansion with stable training. num_res_blocks 4→6, lr 2e-4→5e-5 (4x lower), grad_clip 1.0→0.5 (2x tighter). D7 (lr=2e-4) had nan at epoch 1 75%. Theory: deeper network has larger gradient variance, needs lower lr and tighter clipping. Goal: DINO-sty >= 0.49 with stable training."
+  }
+}

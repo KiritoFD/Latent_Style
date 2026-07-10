@@ -1,0 +1,21 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "model": {
+    "base_dim": 96
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/d8b_dim96_15ep",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 96,
+    "grad_clip_norm": 1.0,
+    "learning_rate": 2e-4
+  },
+  "ablation": {
+    "name": "d8b_dim96_15ep",
+    "axis": "M2_width_scaling_dim",
+    "stage": "M2_architectural_additive_D8b",
+    "notes": "D8b: Width scaling via model dimension. base_dim 64->96 (+50% width). Theory: D7b depth scaling failed because more layers over-stylize. D8b scales width instead — wider feature representation at same depth. More neurons per layer = richer style encoding without additional abstraction stages. Same 4 layers, same heads=4, same gate_init=0.3. bs=96 for VRAM safety (dim+50% adds ~2x params, need headroom)."
+  }
+}

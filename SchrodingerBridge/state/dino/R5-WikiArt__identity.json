@@ -1,0 +1,12 @@
+{
+  "status": "ok",
+  "dataset": "wikiart",
+  "note": "identity (output == content); dino_content=1.0 by definition; dino_style = mean over all (content,target-style) pairs of max cos(content, target-style refs), content excluded from refs",
+  "n_images": 750,
+  "n_style": 750,
+  "n_content": 150,
+  "n_skipped": 0,
+  "dino_content": 1.0,
+  "dino_style": 0.43263190451512734,
+  "dino_structure": 0.0
+}

@@ -1,7 +1,0 @@
-"timestamp","scope","check","path","expected","actual","status","files","mb","note"
-"2026-06-05Tcurrent","remote_cycle_nce_45_rar_archive_delete","archive_absent","I:\Github\Latent_Style\Cycle-NCE\45.rar","False","False","pass","","","original archive should be absent"
-"2026-06-05Tcurrent","remote_cycle_nce_45_rar_archive_delete","curated_package_present","I:\Github\Latent_Style\Cycle-NCE\_curated_45_nonweight_20260605","True","True","pass","6086","145.512","curated package retained"
-"2026-06-05Tcurrent","remote_cycle_nce_45_rar_archive_delete","curated_payload_dir_present","I:\Github\Latent_Style\Cycle-NCE\_curated_45_nonweight_20260605\45","True","True","pass","","","extracted nonweight payload dir retained"
-"2026-06-05Tcurrent","remote_cycle_nce_45_rar_archive_delete","manifest_present","I:\Github\Latent_Style\Cycle-NCE\_curated_45_nonweight_20260605\_curated_nonweight_manifest_20260605.csv","True","True","pass","","","package manifest retained"
-"2026-06-05Tcurrent","remote_cycle_nce_45_rar_archive_delete","removed_weight_ledger_present","I:\Github\Latent_Style\Cycle-NCE\_curated_45_nonweight_20260605\_removed_weight_files_20260605.csv","True","True","pass","","","removed weight ledger retained"
-"2026-06-05Tcurrent","remote_cycle_nce_45_rar_archive_delete","weight_extension_count","I:\Github\Latent_Style\Cycle-NCE\_curated_45_nonweight_20260605","0","0","pass","","","no weight-extension files in curated package"

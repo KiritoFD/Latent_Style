@@ -1,0 +1,37 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/hp_simple_swd12_15ep",
+    "resume_checkpoint": ""
+  },
+  "bridge": {
+    "single_step_swd_weight": 12.0,
+    "spectral_w_ll": 0.3,
+    "spectral_ode_enabled": true,
+    "swd_scale_mode": "global",
+    "swd_distance_mode": "squared",
+    "swd_semantic_mode": "off",
+    "kinetic_penalty_mode": "off"
+  },
+  "data": {
+    "data_root": "$index:samam_512_train",
+    "pairing_cache_path": "$index:samam_512_pairing",
+    "latent_cache_dir": "$index:samam_512_packed"
+  },
+  "training": {
+    "batch_size": 160,
+    "num_epochs": 15,
+    "patience": 2,
+    "full_eval_each_epoch": false,
+    "full_eval_save_generated_images": true,
+    "test_image_dir": "$index:samam_512_test",
+    "full_eval_cache_dir": "$index:eval_cache",
+    "full_eval_clip_hf_cache_dir": "$index:hf_cache"
+  },
+  "ablation": {
+    "name": "hp_simple_swd12_15ep",
+    "axis": "high_perf_simple_swd",
+    "stage": "hp_round5",
+    "notes": "High-perf config: t11 arch (region + simple SWD squared+global + spectral_ode + dwt_route p=0.8) with swd_w=12 (style-optimal from R3) + ll_w=0.3 (style-optimal). bs=160 to push VRAM to ~10.8G. 15ep for style sweet spot. Goal: test if simple SWD + spectral_ode can reach CLIP-S 0.72+ and DINO 0.72+ while training <5min. Uses $index: paths for portability."
+  }
+}

@@ -90,8 +90,8 @@ def _wct_match_fiber(
     s_cov = s_cov + eps * torch.eye(s_cov.shape[1], device=s_cov.device)
 
     # 白化: Σ_c^{-1/2} = V_c @ diag(1/√λ_c) @ V_c^T
-    # eigh 不支持 BFloat16 on CUDA, 强制 float32 (协方差矩阵仅 C×C=4×4, CPU 足够快)
-    # 数值稳定性: eigh 可能失败(病态矩阵), 回退到 AdaIN (mean+std matching)
+    # eigh 在 CPU 上计算 (GPU eigh 对小特征值的数值差异被 Λ^{-1/2} 放大, 导致 LPIPS 异常)
+    # fallback: CPU eigh -> AdaIN (mean+std matching)
     try:
         c_eigvals, c_eigvecs = torch.linalg.eigh(c_cov.float().cpu())
         c_eigvals = c_eigvals.clamp_min(eps)
@@ -145,6 +145,7 @@ def _wct_match_fiber_keep_mean(
     s_cov = (s_centered @ s_centered.transpose(1, 2)) / max(N - 1, 1)
     s_cov = s_cov + eps * torch.eye(s_cov.shape[1], device=s_cov.device)
 
+    # eigh 在 CPU 上计算 (同 _wct_match_fiber, 避免 GPU eigh 数值差异)
     try:
         c_eigvals, c_eigvecs = torch.linalg.eigh(c_cov.float().cpu())
         c_eigvals = c_eigvals.clamp_min(eps)
@@ -433,6 +434,9 @@ class SpectralODEBridge620(nn.Module):
         if v_hh is not None:
             self.last_debug["v_hh_abs"] = v_hh.detach().float().abs().mean()
             out["hh"] = v_hh
+        # D6: expose style_global for intrinsic style consistency loss
+        if style_global is not None:
+            out["style_global"] = style_global
         return out
 
     @torch.no_grad()

@@ -1,0 +1,106 @@
+{
+  "iteration": 11,
+  "total_findings": 25,
+  "status": "M4_T11_line_pivot_started",
+  "stale_count": 0,
+  "current_milestone": "M4_t11_evolution_from_historical_pareto_best",
+  "last_seen": "2026-07-10T13:30:00",
+  "baseline": {
+    "config": "hp_simple_swd12_15ep",
+    "clip_s": 0.7167,
+    "dino_sty": 0.4762,
+    "dino_con": 0.8052,
+    "1_LPIPS": 0.7010,
+    "musiq": 43.23
+  },
+  "targets": {
+    "dino_sty": 0.50,
+    "clip_s": 0.715,
+    "dino_con": 0.78,
+    "1_LPIPS": 0.68
+  },
+  "m1_status": {
+    "status": "complete",
+    "conclusion": "All 4 mechanisms necessary. No subtraction possible. DINO-sty changes within noise (±0.002). Path to DINO-sty≥0.50 must come from M2 architectural additions.",
+    "abl_no_edge": {"clip_s": 0.7176, "1_LPIPS": 0.6896, "dino_sty": 0.4744, "dino_con": 0.7977, "dino_str": 0.0243, "delta_dino_sty": -0.0018, "delta_dino_con": -0.0075},
+    "abl_no_terminal": {"clip_s": 0.7182, "1_LPIPS": 0.6950, "dino_sty": 0.4772, "dino_con": 0.7972, "dino_str": 0.0244, "delta_dino_sty": 0.0010, "delta_dino_con": -0.0080},
+    "abl_no_ep_content": {"clip_s": 0.7194, "1_LPIPS": 0.6914, "dino_sty": 0.4780, "dino_con": 0.7927, "dino_str": 0.0245, "delta_dino_sty": 0.0018, "delta_dino_con": -0.0125},
+    "abl_no_ll_fm": {"clip_s": 0.7195, "1_LPIPS": 0.6746, "dino_sty": 0.4697, "dino_con": 0.7701, "dino_str": 0.0250, "delta_dino_sty": -0.0065, "delta_dino_con": -0.0351},
+    "key_finding": "LL FM is most critical (-0.035 DINO-con if removed). Edge/terminal/ep_content all slightly hurt DINO-sty but help content preservation. No clean subtraction for DINO-sty gain."
+  },
+  "m2_status": {
+    "D1_gram_matrix": {
+      "status": "complete",
+      "conclusion": "w=1.0 is optimal: CLIP-S +0.0023, 1-LPIPS +0.0025, DINO-sty +0.0018 (near-lossless micro-gain). w=5.0 over-strengthens: 1-LPIPS +0.019 but CLIP-S -0.0011 and DINO-sty -0.0008. Gram helps style slightly but does not scale.",
+      "d1_gram_hf1": {"clip_s": 0.7190, "1_LPIPS": 0.7035, "dino_sty": 0.4780, "dino_con": 0.8030, "dino_str": 0.0242, "delta_clip_s": 0.0023, "delta_dino_sty": 0.0018},
+      "d1_gram_hf5": {"clip_s": 0.7156, "1_LPIPS": 0.7203, "dino_sty": 0.4754, "dino_con": 0.8060, "dino_str": 0.0242, "delta_clip_s": -0.0011, "delta_dino_sty": -0.0008},
+      "key_finding": "2nd-order inter-channel correlations (Gram) give micro-gain at w=1.0 but do not scale. DINO-sty ceiling ~0.478. Need higher-order or different mechanism for meaningful gain."
+    },
+    "D2_high_order_moment": {
+      "status": "complete",
+      "conclusion": "D2 FAILED: High-order moment matching trades style for content. CLIP-S -0.0084, DINO-sty -0.0030, but 1-LPIPS +0.013 and DINO-con +0.011. Same pattern as D1 w=5.0: stronger distribution constraints push output toward content, away from style. Statistical moment matching is wrong direction for DINO-sty.",
+      "d2_moment_hf1": {"clip_s": 0.7083, "1_LPIPS": 0.7138, "dino_sty": 0.4732, "dino_con": 0.8163, "dino_str": 0.0241, "delta_clip_s": -0.0084, "delta_dino_sty": -0.0030}
+    },
+    "D4_film_heads": {
+      "status": "complete",
+      "conclusion": "D4 FAILED: FiLM at velocity head disrupts flow matching. 1-LPIPS -0.117 (catastrophic content loss), DINO-sty -0.016, DINO-con -0.077. Direct style injection at velocity prediction point is harmful — velocity head must remain pure function of backbone features. Style must come through backbone cross-attention only.",
+      "d4_film_hf1": {"clip_s": 0.7194, "1_LPIPS": 0.5845, "dino_sty": 0.4603, "dino_con": 0.7279, "dino_str": 0.0255, "delta_clip_s": 0.0027, "delta_dino_sty": -0.0159, "delta_1_LPIPS": -0.1165, "delta_dino_con": -0.0773}
+    },
+    "inference_sweep": {
+      "status": "complete",
+      "conclusion": "ALL 4 inference-time parameter overrides FAILED catastrophically. Every metric degraded: CLIP-S -0.012~-0.015, 1-LPIPS -0.215~-0.251 (!), DINO-sty -0.050~-0.055, DINO-con -0.086~-0.124. Baseline checkpoint is already optimally tuned for its trained parameters. DINO-sty ceiling at 0.4762 is TRAINING-LEVEL, not inference-level. Cannot be broken by WCT/extrap adjustment.",
+      "sweep_wct_strong": {"clip_s": 0.7045, "1_LPIPS": 0.4528, "dino_sty": 0.4210, "dino_con": 0.6892},
+      "sweep_wct_ll": {"clip_s": 0.7098, "1_LPIPS": 0.4496, "dino_sty": 0.4237, "dino_con": 0.6811},
+      "sweep_extrap06": {"clip_s": 0.7018, "1_LPIPS": 0.4855, "dino_sty": 0.4264, "dino_con": 0.7189},
+      "sweep_combo06": {"clip_s": 0.7070, "1_LPIPS": 0.4195, "dino_sty": 0.4129, "dino_con": 0.6497}
+    },
+    "D6_intrinsic_style_consistency": {
+      "status": "complete",
+      "conclusion": "D6 FAILED: CLIP-S=0.7181(+0.001), 1-LPIPS=0.5931(-0.108!), DINO-sty=0.4623(-0.014), DINO-con=0.7376(-0.068). ROOT CAUSE: intrinsic_style_cnn is trainable and co-optimized with generation path → encoder degeneration. Model minimizes cosine loss by making encoder output similar vectors regardless of input, rather than making generated images more stylistically similar. Same pattern as D4: direct style signal disrupts content-style balance. Self-supervised style loss with trainable encoder is a dead end.",
+      "d6_style_consist_hf1": {"clip_s": 0.7181, "1_LPIPS": 0.5931, "dino_sty": 0.4623, "dino_con": 0.7376, "dino_str": 0.0254, "delta_clip_s": 0.0014, "delta_dino_sty": -0.0139, "delta_1_LPIPS": -0.1079, "delta_dino_con": -0.0676}
+    },
+    "D7_backbone_capacity_expansion": {
+      "status": "complete",
+      "description": "D7 (num_res_blocks=6, lr=2e-4) NaN crashed at epoch 1 75%. D7b (lr=5e-5, grad_clip=0.5) trained stably 15 epochs, 1,219,922 params (+15%).",
+      "conclusion": "D7b FAILED: deeper backbone (6 layers) REDUCED all metrics. CLIP-S=0.7092(-0.008), 1-LPIPS=0.6452(-0.056), DINO-sty=0.4591(-0.017), DINO-con=0.7798(-0.025). ROOT CAUSE: deeper network has more style injection points but also more content abstraction — the additional cross-attention layers over-stylize and destroy content structure. The 4-layer backbone is already at the optimal depth for the style-content tradeoff. Depth scaling is NOT the path to DINO-sty>=0.50.",
+      "d7_nan": {"status": "failed_nan", "epoch_crash": "1_75pct", "lr": 2e-4, "grad_clip": 1.0},
+      "d7b_stable": {"clip_s": 0.7092, "1_LPIPS": 0.6452, "dino_sty": 0.4591, "dino_con": 0.7798, "dino_str": 0.0248, "delta_clip_s": -0.0075, "delta_dino_sty": -0.0171, "delta_1_LPIPS": -0.0558, "delta_dino_con": -0.0254}
+    },
+    "D8_width_scaling": {
+      "status": "complete",
+      "description": "D8 tested 3 width-scaling configs: D8a (heads 4->8), D8b (base_dim 64->96), D8c (heads 8 + gate 0.3->0.5). All trained stably 15 epochs.",
+      "conclusion": "ALL 3 D8 width-scaling configs FAILED. D8a: CLIP-S=0.7214(+0.005), 1-LPIPS=0.5921(-0.109), DINO-sty=0.4620(-0.014), DINO-con=0.7329(-0.072). D8b: CLIP-S=0.7198(+0.003), 1-LPIPS=0.5566(-0.144), DINO-sty=0.4565(-0.020), DINO-con=0.7046(-0.101). D8c: CLIP-S=0.7181(+0.001), 1-LPIPS=0.5743(-0.127), DINO-sty=0.4526(-0.024), DINO-con=0.7086(-0.097). ROOT CAUSE: width scaling (more heads or wider dim) increases capacity but the extra capacity is used for content reconstruction (1-LPIPS drops) NOT style. More heads/wider dim lets the model memorize content better, reducing reliance on style features. The baseline 4-head/64-dim config is already optimal — it forces the model to rely on style injection for reconstruction. Width scaling is a DEAD END.",
+      "d8a_heads8": {"clip_s": 0.7214, "1_LPIPS": 0.5921, "dino_sty": 0.4620, "dino_con": 0.7329, "dino_str": 0.0255, "delta_clip_s": 0.0047, "delta_dino_sty": -0.0142, "delta_1_LPIPS": -0.1089, "delta_dino_con": -0.0723},
+      "d8b_dim96": {"clip_s": 0.7198, "1_LPIPS": 0.5566, "dino_sty": 0.4565, "dino_con": 0.7046, "dino_str": 0.0263, "delta_clip_s": 0.0031, "delta_dino_sty": -0.0197, "delta_1_LPIPS": -0.1444, "delta_dino_con": -0.1006},
+      "d8c_heads8_gate05": {"clip_s": 0.7181, "1_LPIPS": 0.5743, "dino_sty": 0.4526, "dino_con": 0.7086, "dino_str": 0.0260, "delta_clip_s": 0.0014, "delta_dino_sty": -0.0236, "delta_1_LPIPS": -0.1267, "delta_dino_con": -0.0966}
+    },
+    "D9_loss_reweighting": {
+      "status": "complete",
+      "description": "D9 tested 3 loss reweighting configs: D9a (swd 12->16), D9b (swd 12->20 + content 1.0->0.5), D9c (swd 12->24). All trained stably 15 epochs.",
+      "conclusion": "ALL 3 D9 loss reweighting configs FAILED. D9a: CLIP-S=0.7230(+0.006), 1-LPIPS=0.5787(-0.122), DINO-sty=0.4639(-0.012), DINO-con=0.7373(-0.068). D9b: CLIP-S=0.7232(+0.007), 1-LPIPS=0.5766(-0.124), DINO-sty=0.4653(-0.011), DINO-con=0.7366(-0.069). D9c: CLIP-S=0.7224(+0.006), 1-LPIPS=0.5704(-0.131), DINO-sty=0.4623(-0.014), DINO-con=0.7301(-0.075). ROOT CAUSE: Increasing SWD weight increases CLIP-S (style affinity in CLIP space) but DECREASES DINO-sty. SWD matches marginal distributions (texture/color statistics), but DINO-sty measures semantic style similarity. More aggressive SWD = better texture matching but worse semantic style capture. The DINO-sty ceiling at 0.476 is NOT a loss balance limit — it is a fundamental limit of the SWD-based style injection mechanism. Loss reweighting is a DEAD END.",
+      "d9a_swd16": {"clip_s": 0.7230, "1_LPIPS": 0.5787, "dino_sty": 0.4639, "dino_con": 0.7373, "dino_str": 0.0254, "delta_clip_s": 0.0063, "delta_dino_sty": -0.0123, "delta_1_LPIPS": -0.1223, "delta_dino_con": -0.0679},
+      "d9b_swd20_ep05": {"clip_s": 0.7232, "1_LPIPS": 0.5766, "dino_sty": 0.4653, "dino_con": 0.7366, "dino_str": 0.0254, "delta_clip_s": 0.0065, "delta_dino_sty": -0.0109, "delta_1_LPIPS": -0.1244, "delta_dino_con": -0.0686},
+      "d9c_swd24": {"clip_s": 0.7224, "1_LPIPS": 0.5704, "dino_sty": 0.4623, "dino_con": 0.7301, "dino_str": 0.0255, "delta_clip_s": 0.0057, "delta_dino_sty": -0.0139, "delta_1_LPIPS": -0.1306, "delta_dino_con": -0.0751}
+    },
+    "D3_multi_level_dwt": "deprioritized_statistical_ceiling",
+    "D5_freq_adaptive_gate": "not_started",
+    "D10_capacity_disentangle": {
+      "status": "abandoned",
+      "conclusion": "D10 OOM at bs=160, killed by user before any results. User directed pivot to T11 historical line (clip=0.7213, lpips=0.2868) instead of continuing D10 capacity reduction."
+    },
+    "T11_evolution": {
+      "status": "in_progress",
+      "pivot_rationale": "User directive: return to T11 historical Pareto best (clip=0.7213, lpips=0.2868) and evolve from there. T11 uses DWT route + per_subband_wct architecture (different from hp_simple_swd12 baseline). T11 lpips already passes target (<0.3068), only needs clip +0.0106 to reach 0.7319. Previous T12-T16 evolution attempts all failed (inference sweep, LL injection). New evolution directions test training-time parameter changes (not inference overrides).",
+      "t11_historical": {
+        "config": "630_local_t11_stochastic_dwt_p08",
+        "clip": 0.7213,
+        "lpips": 0.2868,
+        "architecture": "cross_attn_dwt_route=true, dwt_route_train_prob=0.8, endpoint_adain_mode=per_subband_wct, endpoint_adain_scale_ll=0.0 (LL bypass), style_extrap_alpha=0.4"
+      },
+      "t11_repro_15ep": {"status": "training_pending", "config": "T11 baseline, bs=24, 15ep", "hypothesis": "reproduce T11 + test if longer training improves clip"},
+      "t11e1_ll05": {"status": "training_pending", "config": "T11 + endpoint_adain_scale_ll 0.0->0.05", "hypothesis": "micro LL WCT injection to lift clip"},
+      "t11e2_extrap05": {"status": "training_pending", "config": "T11 + style_extrap_alpha 0.4->0.5", "hypothesis": "stronger style extrapolation"},
+      "t11e3_p09": {"status": "training_pending", "config": "T11 + dwt_route_train_prob 0.8->0.9", "hypothesis": "higher DWT proficiency, better clip-lpips tradeoff"}
+    }
+  }
+}

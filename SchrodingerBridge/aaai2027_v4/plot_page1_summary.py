@@ -11,9 +11,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 
 
-OUT_DIR = Path(__file__).resolve().parent
-DOC72_DIR = OUT_DIR.parent / "docs" / "72"
-SAMAM_CURVE_CSV = OUT_DIR.parent / "tools" / "samam_distinct5_scratch" / "curve_metrics_hf.csv"
+SCRIPT_DIR = Path(__file__).resolve().parent
+OUT_DIR = SCRIPT_DIR                                 # aaai2027_v4/
+DOC72_DIR = SCRIPT_DIR
+SAMAM_CURVE_CSV = SCRIPT_DIR / "fig_data" / "curve_metrics_hf.csv"
 
 IDT_CLIP = 0.6933
 

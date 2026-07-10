@@ -1,0 +1,35 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/t11evo/t11e_a_hf_boost",
+    "resume_checkpoint": ""
+  },
+  "data": {
+    "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train",
+    "pairing_cache_path": "",
+    "latent_cache_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train/.latent_cache/packed"
+  },
+  "model": {
+    "endpoint_adain_scale": 0.6,
+    "endpoint_adain_scale_ll": 0.0,
+    "endpoint_adain_scale_lh": 0.6,
+    "endpoint_adain_scale_hl": 0.6,
+    "endpoint_adain_scale_hh": 0.8,
+    "style_extrap_alpha": 0.5
+  },
+  "training": {
+    "batch_size": 16,
+    "num_epochs": 10,
+    "patience": 3,
+    "full_eval_each_epoch": false,
+    "test_image_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512/test",
+    "full_eval_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache/hf"
+  },
+  "ablation": {
+    "name": "t11e_a_hf_boost",
+    "axis": "hf_style_boost",
+    "stage": "t11evo",
+    "notes": "T11 evo A: Boost all HF subband scales. hh 0.5->0.8, lh/hl 0.3->0.6, overall scale 0.5->0.6, alpha 0.4->0.5. Hypothesis: lpips headroom (0.287<0.30) allows stronger style injection. Target: clip>0.73, lpips<0.30."
+  }
+}

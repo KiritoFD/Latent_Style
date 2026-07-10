@@ -711,81 +711,7 @@ class BridgeConfig:
     #   - 网络只学习高频纹理置换, 不再受逼迫破坏结构
     # 这是 4J.2 路线 (WCT-Aligned Target) 的完全体: 不修改推理, 只修改训练目标.
     structure_aligned_target: bool = False       # True=构造 x₁* (结构对齐目标), False=原始 x₁
-    # === FC-SB Phase 4 B2 V3: Brownian bridge noise ===
-    spectral_brownian_enabled: bool = False     # 启用 SB-style 前向噪声 x_t += sigma*sqrt(t*(1-t))*eps
-    spectral_brownian_sigma: float = 0.1        # 噪声幅度 (典型 0.05-0.2)
-    style_contrastive_temperature: float = 0.08
-    style_contrastive_pool_size: int = 4
-    w_residual_style_direction: float = 0.0
-    w_generated_delta_diversity: float = 0.0
-    w_plain_path_distill: float = 0.0
-    generated_delta_diversity_margin: float = 0.0
-    w_spectral_amplitude: float = 0.0
-    spectral_amplitude_channels: int = 2
-    spectral_amplitude_highpass: bool = True
-    sb_noise_epsilon: float = 0.0
-    retinex_target_blend: float = 0.0
-    retinex_kernel_size: int = 15
-    w_anisotropic_kinetic: float = 0.0
-    anisotropic_normal_weight: float = 25.0
-    anisotropic_tangent_weight: float = 0.25
-    anisotropic_edge_gate_gamma: float = 0.0
-    anisotropic_edge_gate_quantile: float = 0.0
-    anisotropic_edge_gate_power: float = 1.0
-    w_stokes_viscous: float = 0.0
-    kinetic_penalty_mode: str = "off"
-    kinetic_lambda_low: float = 1.0
-    kinetic_lambda_high: float = 0.02
-    kinetic_lowpass_kernel: int = 5
-    kinetic_spectral_cutoff: float = 12.0
-    kinetic_manifold_gamma: float = 10.0
-    structure_penalty_mode: str = "off"
-    style_energy_floor_ratio: float = 0.6
-    anchor_pool_size: int = 9
-    terminal_num_steps: int = 4
-    terminal_swd_on_identity: bool = False
-    w_kinetic: float = 1.0
-    w_flow: float = 0.0
-    w_curvature: float = 0.0
-    curvature_dt: float = 0.15
-    kinetic_mode: str = "endpoint"
-    kinetic_gate_exponent: float = 1.0
-    semantic_swd_num_projections: int = 64
-    terminal_swd_mode: str = "high_freq"
-    terminal_swd_axis_source: str = "semantic"
-    spectral_swd_low_weight: float = 1.0
-    spectral_swd_high_weight: float = 1.0
-    spectral_swd_low_kernel: int = 5
-    semantic_quotient_bins: int = 4
-    swd_distance_mode: str = "squared"
-    swd_use_high_freq: bool = True
-    swd_patch_sizes: list[int] = field(default_factory=lambda: [1, 3, 5, 9])
-    swd_num_projections: int = 64
-    swd_projection_chunk_size: int = 32
-    swd_cdf_num_bins: int = 32
-    swd_cdf_tau: float = 0.01
-    swd_cdf_sample_size: int = 256
-    swd_cdf_bin_chunk_size: int = 4
-    swd_cdf_sample_chunk_size: int = 128
-    swd_region_sample_size: int = 256
-    swd_hf_weight_ratio: float = 1.0
-    swd_micro_patch_max: int = 3
-    swd_macro_patch_min: int = 5
-    swd_micro_weight: float = 1.0
-    swd_macro_weight: float = 1.0
-    swd_deterministic_subsample: bool = True
-    swd_scale_invariant_patches: bool = False
-    swd_adaptive_highpass: bool = False
-    swd_highpass_kernel_size: int = 5
-    swd_use_dilated_projections: bool = False
-    swd_projection_dilation: int = 2
-    swd_patch_mode: str = "off"
-    swd_patch_weights: list[float] | None = None
-    swd_band_mode: str = "off"
-    swd_band_w_ll: float = 0.25
-    swd_band_w_lh: float = 1.0
-    swd_band_w_hl: float = 1.0
-    swd_band_w_hh: float = 1.5
+    # === Semantic SWD (Phase 2 低开销重构保留) ===
     swd_semantic_mode: str = "off"
     swd_semantic_regions: int = 4
     swd_semantic_kmeans_iters: int = 4
@@ -801,16 +727,10 @@ class BridgeConfig:
     swd_semantic_adaptive_k_threshold: float = 0.1
     swd_semantic_spectral_ll_weight: float = 1.0
     swd_semantic_spectral_hf_weight: float = 2.0
-    target_teacher_mode: str = "off"
-    target_teacher_decay: float = 0.99
-    target_teacher_weight: float = 0.0
-    cycle_consistency_weight: float = 0.0
-    cycle_consistency_num_steps: int = 4
     normalize_eps: float = 1e-8
     logit_clamp: float = 50.0
     velocity_clamp: float = 20.0
     endpoint_clamp: float = 24.0
-    proximal_target_weight: float = 0.0
     similarity_clamp: float = 50.0
     training_objective_mode: str = "velocity"
     w_endpoint_content: float = 1.0
@@ -1199,8 +1119,73 @@ def load_config(config_path: str | Path, *, _seen: set[Path] | None = None) -> d
     return _deep_merge(merged, raw)
 
 
+def _find_dataset_index(config_path: Path) -> Path | None:
+    """Search for dataset_index.json from config dir up to repo root."""
+    config_dir = config_path.resolve().parent
+    for d in [config_dir, *config_dir.parents]:
+        if (d / "src").is_dir() and (d / "dataset_index.json").is_file():
+            return d / "dataset_index.json"
+        if (d / "dataset_index.json").is_file():
+            return d / "dataset_index.json"
+    # Also check cwd as last resort
+    cwd_index = Path.cwd() / "dataset_index.json"
+    return cwd_index if cwd_index.is_file() else None
+
+
+_INDEX_CACHE: dict[str, dict] = {}
+
+
+def _load_dataset_index(index_path: Path) -> dict[str, list[str]]:
+    key = str(index_path)
+    if key not in _INDEX_CACHE:
+        try:
+            with open(index_path, "r", encoding="utf-8") as f:
+                _INDEX_CACHE[key] = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            _INDEX_CACHE[key] = {}
+    return _INDEX_CACHE[key]
+
+
+def _resolve_via_index(value: str, index: dict[str, list[str]]) -> str:
+    """If value starts with '$index:', resolve via index; else return as-is."""
+    if not isinstance(value, str) or not value.startswith("$index:"):
+        return value
+    key = value[len("$index:"):]
+    candidates = index.get(key, [])
+    for cand in candidates:
+        if Path(cand).exists():
+            return cand
+    # No candidate exists; return first candidate (will fail downstream with clear error) or original
+    return candidates[0] if candidates else value
+
+
+_INDEX_PATH_FIELDS = [
+    ("data", ["data_root", "pairing_cache_path", "latent_cache_dir"]),
+    ("training", ["test_image_dir", "full_eval_cache_dir", "full_eval_clip_hf_cache_dir"]),
+]
+
+
+def _resolve_dataset_paths_via_index(raw: dict[str, Any], config_path: str | Path) -> dict[str, Any]:
+    """Resolve $index: prefixed paths via dataset_index.json for portability."""
+    index_file = _find_dataset_index(Path(config_path))
+    if index_file is None:
+        return raw
+    index = _load_dataset_index(index_file)
+    if not index:
+        return raw
+    for section, fields_list in _INDEX_PATH_FIELDS:
+        if section not in raw or not isinstance(raw[section], dict):
+            continue
+        for field_name in fields_list:
+            if field_name in raw[section]:
+                raw[section][field_name] = _resolve_via_index(raw[section][field_name], index)
+    return raw
+
+
 def load_experiment_config(config_path: str | Path) -> ExperimentConfig:
-    return ExperimentConfig.from_mapping(load_config(config_path))
+    raw = load_config(config_path)
+    raw = _resolve_dataset_paths_via_index(raw, config_path)
+    return ExperimentConfig.from_mapping(raw)
 
 
 def _config_dict(config: dict[str, Any] | ExperimentConfig | None) -> dict[str, Any]:

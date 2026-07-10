@@ -1,0 +1,136 @@
+Found 750 generated images in results\R5-WikiArt\stylealigned (recursive)
+Content roots: ['datasets\\wikiart20_test', 'datasets\\wikiart5_test\\test']
+Loading facebook/dinov2-small on cuda...
+Precomputing style references...
+  Abstract_Expressionism: 30 refs
+  Art_Nouveau_Modern: 30 refs
+  Baroque: 30 refs
+  Color_Field_Painting: 30 refs
+  Cubism: 30 refs
+  Early_Renaissance: 30 refs
+  Expressionism: 30 refs
+  Fauvism: 30 refs
+  High_Renaissance: 30 refs
+  Impressionism: 30 refs
+  Mannerism_Late_Renaissance: 30 refs
+  Minimalism: 30 refs
+  Naive_Art_Primitivism: 30 refs
+  Northern_Renaissance: 30 refs
+  Pop_Art: 30 refs
+  Post_Impressionism: 30 refs
+  Rococo: 30 refs
+  Romanticism: 30 refs
+  Symbolism: 30 refs
+  Ukiyo_e: 30 refs
+  100/750 parsed=100 style=100 content=100 skip=0
+  200/750 parsed=200 style=200 content=200 skip=0
+  300/750 parsed=300 style=300 content=300 skip=0
+  400/750 parsed=400 style=400 content=400 skip=0
+  500/750 parsed=500 style=500 content=500 skip=0
+  600/750 parsed=600 style=600 content=600 skip=0
+  700/750 parsed=700 style=700 content=700 skip=0
+
+DINO-con=0.3149 DINO-sty=0.6494 DINO-str=0.0433 (style_n=750, content_n=750, skip=0)
+Saved state\dino\R5-WikiArt__stylealigned.json
+Found 740 generated images in results\R5-WikiArt\styleshot (recursive)
+Content roots: ['datasets\\wikiart20_test', 'datasets\\wikiart5_test\\test']
+Loading facebook/dinov2-small on cuda...
+Precomputing style references...
+  Abstract_Expressionism: 30 refs
+  Art_Nouveau_Modern: 30 refs
+  Baroque: 30 refs
+  Color_Field_Painting: 30 refs
+  Cubism: 30 refs
+  Early_Renaissance: 30 refs
+  Expressionism: 30 refs
+  Fauvism: 30 refs
+  High_Renaissance: 30 refs
+  Impressionism: 30 refs
+  Mannerism_Late_Renaissance: 30 refs
+  Minimalism: 30 refs
+  Naive_Art_Primitivism: 30 refs
+  Northern_Renaissance: 30 refs
+  Pop_Art: 30 refs
+  Post_Impressionism: 30 refs
+  Rococo: 30 refs
+  Romanticism: 30 refs
+  Symbolism: 30 refs
+  Ukiyo_e: 30 refs
+  100/740 parsed=100 style=100 content=100 skip=0
+  200/740 parsed=200 style=200 content=200 skip=0
+  300/740 parsed=300 style=300 content=300 skip=0
+  400/740 parsed=400 style=400 content=400 skip=0
+  500/740 parsed=500 style=500 content=500 skip=0
+  600/740 parsed=600 style=600 content=600 skip=0
+  700/740 parsed=700 style=700 content=700 skip=0
+
+DINO-con=0.3804 DINO-sty=0.4842 DINO-str=0.0341 (style_n=740, content_n=740, skip=0)
+Saved state\dino\R5-WikiArt__styleshot.json
+Found 750 generated images in results\R5-WikiArt\weave (recursive)
+Content roots: ['datasets\\wikiart20_test', 'datasets\\wikiart5_test\\test']
+Loading facebook/dinov2-small on cuda...
+Precomputing style references...
+  Abstract_Expressionism: 30 refs
+  Art_Nouveau_Modern: 30 refs
+  Baroque: 30 refs
+  Color_Field_Painting: 30 refs
+  Cubism: 30 refs
+  Early_Renaissance: 30 refs
+  Expressionism: 30 refs
+  Fauvism: 30 refs
+  High_Renaissance: 30 refs
+  Impressionism: 30 refs
+  Mannerism_Late_Renaissance: 30 refs
+  Minimalism: 30 refs
+  Naive_Art_Primitivism: 30 refs
+  Northern_Renaissance: 30 refs
+  Pop_Art: 30 refs
+  Post_Impressionism: 30 refs
+  Rococo: 30 refs
+  Romanticism: 30 refs
+  Symbolism: 30 refs
+  Ukiyo_e: 30 refs
+  100/750 parsed=100 style=100 content=100 skip=0
+  200/750 parsed=200 style=200 content=200 skip=0
+  300/750 parsed=300 style=300 content=300 skip=0
+  400/750 parsed=400 style=400 content=400 skip=0
+  500/750 parsed=500 style=500 content=500 skip=0
+  600/750 parsed=600 style=600 content=600 skip=0
+  700/750 parsed=700 style=700 content=700 skip=0
+
+DINO-con=0.8157 DINO-sty=0.4800 DINO-str=0.0247 (style_n=750, content_n=750, skip=0)
+Saved state\dino\R5-WikiArt__weave.json
+Found 750 generated images in results\R5-WikiArt\zstar (recursive)
+Content roots: ['datasets\\wikiart20_test', 'datasets\\wikiart5_test\\test']
+Loading facebook/dinov2-small on cuda...
+Precomputing style references...
+  Abstract_Expressionism: 30 refs
+  Art_Nouveau_Modern: 30 refs
+  Baroque: 30 refs
+  Color_Field_Painting: 30 refs
+  Cubism: 30 refs
+  Early_Renaissance: 30 refs
+  Expressionism: 30 refs
+  Fauvism: 30 refs
+  High_Renaissance: 30 refs
+  Impressionism: 30 refs
+  Mannerism_Late_Renaissance: 30 refs
+  Minimalism: 30 refs
+  Naive_Art_Primitivism: 30 refs
+  Northern_Renaissance: 30 refs
+  Pop_Art: 30 refs
+  Post_Impressionism: 30 refs
+  Rococo: 30 refs
+  Romanticism: 30 refs
+  Symbolism: 30 refs
+  Ukiyo_e: 30 refs
+  100/750 parsed=100 style=100 content=100 skip=0
+  200/750 parsed=200 style=200 content=200 skip=0
+  300/750 parsed=300 style=300 content=300 skip=0
+  400/750 parsed=400 style=400 content=400 skip=0
+  500/750 parsed=500 style=500 content=500 skip=0
+  600/750 parsed=600 style=600 content=600 skip=0
+  700/750 parsed=700 style=700 content=700 skip=0
+
+DINO-con=0.5261 DINO-sty=0.5142 DINO-str=0.0316 (style_n=750, content_n=750, skip=0)
+Saved state\dino\R5-WikiArt__zstar.json

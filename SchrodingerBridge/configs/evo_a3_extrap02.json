@@ -1,0 +1,26 @@
+{
+  "_base": "630_random20_heun_5ep.json",
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/evo_r20_a3_extrap02",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": false,
+    "test_image_dir": "G:/GitHub/Latent_Style/Dataset/wikiart_random20_512/wikiart_random20_512/images/test"
+  },
+  "data": {
+    "pairing_cache_path": "",
+    "pairing_cache_active_topk": 0
+  },
+  "model": {
+    "style_extrap_alpha": 0.2
+  },
+  "ablation": {
+    "name": "evo_a3_extrap02",
+    "axis": "style_extrap_alpha",
+    "stage": "evo_r20",
+    "notes": "Evo A3: Increase style_extrap_alpha 0.1->0.2 for stronger style extrapolation. Baseline random20_heun: all_pairs clip=0.7213 lpips=0.2728. Target: clip->0.74, lpips<0.30."
+  }
+}

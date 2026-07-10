@@ -59,7 +59,11 @@ Related_Works/**/*.png
 .codex_*/
 66688
 Dataset/
+_tmp/
+_tmp/**
 SchrodingerBridge/_codex_tmp/
+SchrodingerBridge/_tmp/
+SchrodingerBridge/_tmp/**
 tmp/
 SchrodingerBridge/tmp/
 SchrodingerBridge/aaai_submission/tmp_*/
@@ -114,6 +118,13 @@ SchrodingerBridge/aaai_submission/**/*.xdv
 SchrodingerBridge/aaai_submission/**/*.synctex.gz
 node_modules/
 .opencode/
+# Agent / tool scratch directories (never track)
+.claude/
+.deveco/
+.mimocode/
+.openclaude/
+.codeartsdoer/
+.codebuddy/
 *.stdout.log
 *.stderr.log
 package-lock.json

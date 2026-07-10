@@ -1,0 +1,9 @@
+{
+  "model": {
+    "endpoint_adain_scale": 0.5,
+    "endpoint_adain_scale_ll": 0.2,
+    "endpoint_adain_scale_lh": 0.5,
+    "endpoint_adain_scale_hl": 0.5,
+    "endpoint_adain_scale_hh": 0.8
+  }
+}

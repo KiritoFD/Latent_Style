@@ -1,0 +1,36 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/t11evo/t11e_d_pure_dwt_long",
+    "resume_checkpoint": ""
+  },
+  "data": {
+    "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train",
+    "pairing_cache_path": "",
+    "latent_cache_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train/.latent_cache/packed"
+  },
+  "model": {
+    "dwt_route_train_prob": 1.0,
+    "endpoint_adain_scale": 0.6,
+    "endpoint_adain_scale_ll": 0.0,
+    "endpoint_adain_scale_lh": 0.5,
+    "endpoint_adain_scale_hl": 0.5,
+    "endpoint_adain_scale_hh": 0.7,
+    "style_extrap_alpha": 0.5
+  },
+  "training": {
+    "batch_size": 16,
+    "num_epochs": 15,
+    "patience": 3,
+    "full_eval_each_epoch": false,
+    "test_image_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512/test",
+    "full_eval_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache/hf"
+  },
+  "ablation": {
+    "name": "t11e_d_pure_dwt_long",
+    "axis": "pure_dwt_long_train",
+    "stage": "t11evo",
+    "notes": "T11 evo D: Pure DWT (p=0.8->1.0) + 15 epochs. Removes 20% full-space fallback so q_proj fully specializes on DWT coefficients. Longer training for convergence. Moderate HF boost. Hypothesis: pure DWT + longer training = better style extraction. Target: clip>0.73, lpips<0.30."
+  }
+}

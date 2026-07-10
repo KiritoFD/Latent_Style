@@ -1,0 +1,6 @@
+$ErrorActionPreference = "SilentlyContinue"
+Write-Output "=== t11_repro quick_eval summary ==="
+Get-Content "I:\Github\Latent_Style\SchrodingerBridge\exp\t11_repro_15ep\quick_eval\epoch_0005\summary.json"
+Write-Output ""
+Write-Output "=== r4_spec_swd9_15ep ep15 summary ==="
+Get-Content "I:\Github\Latent_Style\SchrodingerBridge\exp\r4_spec_swd9_15ep\full_eval\epoch_0015\summary.json"

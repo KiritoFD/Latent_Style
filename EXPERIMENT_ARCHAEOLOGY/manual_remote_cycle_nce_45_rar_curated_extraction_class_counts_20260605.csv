@@ -1,8 +1,0 @@
-﻿"class","expected_entries","matched_entries","matched_mb","status"
-"config","4","4","0.014","pass"
-"generated_or_eval_image","6008","6008","116.955","pass"
-"metrics_csv","8","8","0.745","pass"
-"other","9","9","0.117","pass"
-"source_or_structured","42","42","26.704","pass"
-"summary_json","8","8","0.156","pass"
-"training_csv","5","5","0.04","pass"

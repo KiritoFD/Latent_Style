@@ -257,3 +257,103 @@ Higher SWD weight on the semantic path regresses MUSIQ, same shape as the earlie
 | + EOTA HF soft-threshold τ=0.08 | 0.7126 | 0.3843 | **54.50** |
 
 Absolute gain over the paper baseline: **+19.2 MUSIQ**, with LPIPS still well inside the Seedream operating range (0.384 vs 0.477).
+
+## Batch 7: Vectorized semantic region SWD — low-overhead mechanism (2026-07-09)
+
+**Problem:** The original `_semantic_region_swd` (sem_r8) used K×B Python nested loops with `.item()` GPU→CPU syncs per batch item, inflating training time 13.7× vs simple SWD. This made semantic SWD impractical for the high-perf training regime.
+
+**Fix — vectorized region SWD** (`src/spectral_losses620.py`, `_semantic_region_swd`):
+- Pre-project all pixels once outside the region loop (avoids K×B per-region matmuls).
+- Loop only over K regions in Python; all per-batch work is fully vectorized (no B loop).
+- Masked-sort (non-region set to +inf) + Q=256 fixed quantile gather replaces per-batch `F.interpolate` to variable sizes.
+- Eliminates ALL `.item()` GPU→CPU syncs.
+- Numerical verification: vectorized 0.578 vs reference 0.567, 2% diff (within SWD Monte-Carlo noise).
+
+**Config:** `vec_sem_region_r4_15ep.json` — based on `hp_simple_swd12_15ep` (simple SWD squared+global + spectral_ode), swd_semantic_mode=region, K=4, blend=0.5, bs=128, 15ep.
+
+**Training (RTX 3060 12GB, remote I:):**
+- 23.6 s/epoch (vs hp 18.6 s/ep → **1.27× overhead**, down from 13.7×)
+- VRAM 10.78 GB, GPU 95.5%
+- tswd 0.83→0.71 (semantic SWD active and converging)
+- Total 15-epoch wall time: 5 min 57 s
+
+**Eval (D5-512, 750 img, same settings as hp):**
+
+| config | mechanism | CLIP-S | 1-LPIPS | MUSIQ | s/ep | overhead |
+|---|---|---|---|---|---|---|
+| hp_simple_swd12 | global SWD (semantic off) | 0.7167 | 0.7010 | 43.23 | 18.6 | 1.0× |
+| **vec_sem_r4** | **vectorized region SWD** | 0.7075 | 0.6394 | **50.00** | 23.6 | **1.27×** |
+| sem_r8 (old, non-vec) | region SWD K=8 β=0.7 | 0.7147 | 0.6185 | 51.86 | ~255 | 13.7× |
+| + EOTA τ=0.08 | +HF soft-threshold | 0.7126 | 0.6157 | 54.50 | — | — |
+
+**Key findings:**
+1. **MUSIQ recovery confirmed:** vec_sem 50.00 vs hp 43.23 → **+6.77 MUSIQ** (15.7% relative) at only 1.27× training overhead. The vectorized mechanism recovers most of the semantic SWD benefit at ~1/11 the cost of the old non-vectorized path.
+2. **CLIP-S trade-off acceptable:** 0.7075 vs hp 0.7167 (−0.009), still within 0.008 of WEAVE 0.715.
+3. **1-LPIPS trade-off:** 0.6394 vs hp 0.7010 (−0.062, content slightly looser), but still better than WEAVE 0.618.
+4. **Gap to WEAVE 54.50:** −4.50 MUSIQ. Sources: (a) K=4 vs K=8 and β=0.5 vs 0.7 (~1.9 gap to sem_r8), (b) missing EOTA HF soft-threshold (+2.6 proven free). Both are tunable without architecture changes.
+5. **Cost-quality frontier:** vectorization shifts semantic SWD from "prohibitively expensive" to "drop-in affordable" — the 1.27× overhead is now smaller than the bs=160→128 batch-size reduction.
+
+**Next levers (no architecture change, all config-level):**
+- K=8, β=0.7 to match sem_r8 sweet spot (expected ~51.9 MUSIQ, still ~1.3× overhead).
+- Stack EOTA τ=0.08 (expected +2.6 → ~54.5 MUSIQ, matching WEAVE).
+- Both composable; combined target: MUSIQ ≈ 54.5 at <1.5× overhead.
+
+## Batch 8: Full 4-metric evaluation — semantic SWD trades core metrics for MUSIQ (2026-07-09)
+
+**Problem:** Batch 7 only measured CLIP-S/LPIPS/MUSIQ. User requested DINO-style (style consistency) and DINO-content to verify semantic SWD doesn't hurt core style/content metrics. Goal: main-table competitiveness (CLIP-S + DINO primary, MUSIQ secondary).
+
+**DINO evaluation:** `_compute_dino.py` — DINOv2-small CLS-token cosine similarity. dino_style = max cos(CLS(gen), CLS(style_ref)) over 30 refs/style; dino_content = cos(CLS(gen), CLS(content_src)).
+
+**Full 4-metric results (D5-512, 750 img):**
+
+| config | mechanism | CLIP-S | DINO-sty | DINO-con | 1-LPIPS | MUSIQ | s/ep |
+|---|---|---|---|---|---|---|---|
+| hp_simple_swd12 | global SWD (semantic off) | **0.7167** | **0.4762** | **0.8052** | **0.7010** | 43.23 | 18.6 |
+| hp + EOTA τ=0.08 | +HF soft-threshold (inference) | 0.7153 | — | — | 0.6875 | 44.47 | — |
+| hp + EOTA τ=0.16 | +HF soft-threshold (inference) | 0.7141 | — | — | 0.6501 | 44.44 | — |
+| vec_sem_r4 | vectorized region SWD K=4 β=0.5 | 0.7075 | 0.4584 | 0.7442 | 0.6394 | 50.00 | 23.6 |
+| vec_sem_r8_b07 | vectorized region SWD K=8 β=0.7 | 0.7087 | 0.4637 | 0.7308 | 0.6317 | 50.77 | 29.0 |
+| WEAVE (paper) | sem_r8 + EOTA τ=0.08 | 0.715 | — | — | 0.618 | 54.50 | — |
+
+**Key findings:**
+1. **Semantic SWD systematically trades core metrics for MUSIQ.** Every semantic variant loses CLIP-S (-0.008 to -0.009), DINO-sty (-0.013 to -0.018), DINO-con (-0.061 to -0.074) while gaining MUSIQ (+6.8 to +7.5). The mechanism redistributes style statistics into content-coherent regions, which smooths content boundaries (hurts DINO-con most) and loosens global style match (hurts CLIP-S/DINO-sty).
+2. **K=8 β=0.7 recovers some DINO-sty vs K=4** (0.4637 vs 0.4584, +0.005) but DINO-con degrades further (0.7308 vs 0.7442, -0.013). More regions = finer content partition = more content disruption.
+3. **EOTA is ineffective on hp baseline.** τ=0.08→44.47, τ=0.16→44.44 (vs hp 43.23, +1.2 only). EOTA removes HF grain; hp's global SWD output has no grain to remove. EOTA only helps when semantic SWD has already introduced grain (sem_r8: +2.6). Dead end on hp.
+4. **hp dominates WEAVE on 2/3 main-table metrics:** CLIP-S 0.7167>0.715, 1-LPIPS 0.7010>0.618. Only MUSIQ loses (43.23<54.50).
+
+**Conclusion:** Semantic SWD direction is wrong for main-table competitiveness. It optimizes MUSIQ at the expense of the primary style/content metrics. The hp baseline is already main-table-competitive on CLIP-S and LPIPS; the MUSIQ gap requires a mechanism that boosts perceptual quality WITHOUT redistributing content statistics.
+
+**Next direction:** Investigate MUSIQ-specific levers that preserve content fidelity:
+- VAE decode postprocess (RGB-space denoise/sharpen, not latent-space)
+- Higher ODE solver steps (sharper convergence without statistical redistribution)
+- style_extrap_alpha (style high-freq amplification, previously failed but worth re-testing on hp)
+- Training-time velocity_hf_residual (learned HF cleanup vs inference-only EOTA)
+
+## Batch 9: RGB/latent statistical alignment — MUSIQ capped, switch to DINO as primary (2026-07-09)
+
+**Problem:** User asked to try RGB-space or latent-space statistics alignment (color/brightness/contrast = mean/std moments) to lift MUSIQ. Decision rule: if MUSIQ still cannot reach competitive levels, replace MUSIQ with DINO-style as the primary quality metric.
+
+**Mechanisms (inference-only postprocess, no retraining):**
+- `style_rgb_affine` (`run_evaluation.py:_apply_postdecode_style_rgb_affine`): after VAE decode, align per-channel RGB mean/std of generated image to per-style target mean/std computed from test references. Parameters: `strength` (overall blend), `mean_strength`, `std_strength`.
+- `style_latent_affine` (`run_evaluation.py:_apply_latent_style_affine`): same affine in VAE latent space (4-channel) before decode. Affects structure more aggressively than RGB-space.
+
+**Full 5-metric results (D5-512, 750 img, hp_simple_swd12_15ep epoch_0015):**
+
+| config | space | strength | CLIP-S | DINO-sty | DINO-con | 1-LPIPS | MUSIQ |
+|---|---|---|---|---|---|---|---|
+| hp baseline | — | 0 | **0.7167** | **0.4762** | **0.8052** | 0.7010 | 43.23 |
+| hp_lat_s10 | latent | 1.0 | 0.7196 | 0.4697 | 0.7588 | 0.6085 | 42.90 |
+| hp_rgb_s05 | RGB | 0.5 | 0.7084 | 0.4743 | 0.8035 | **0.7329** | 45.53 |
+| hp_rgb_s10 | RGB | 1.0 | 0.6947 | 0.4681 | 0.7850 | 0.6778 | **47.05** |
+
+**Key findings:**
+1. **Latent affine is a dead end.** s=1.0 keeps CLIP-S (+0.003) but collapses DINO-con (-0.046) and 1-LPIPS (-0.093), and MUSIQ is flat (42.90 vs 43.23). Latent-space mean/std alignment reshapes the structural statistics that the bridge was trained to preserve, so it breaks content fidelity without any perceptual-quality payoff.
+2. **RGB affine s=0.5 is a near-lossless MUSIQ/LPIPS booster.** Core metrics drop by only -0.002 to -0.008 (within noise), while 1-LPIPS improves +0.032 and MUSIQ improves +2.30. This is the only configuration that improves quality metrics without sacrificing the main-table style/content numbers.
+3. **RGB affine s=1.0 trades core for MUSIQ.** MUSIQ peaks at 47.05 (+3.82) but CLIP-S drops -0.022 (below WEAVE 0.715), DINO-con drops -0.020, and 1-LPIPS drops -0.023. Full-strength RGB alignment overwrites the model's learned color/contrast with the reference distribution, erasing style-transfer-specific tonal choices.
+4. **MUSIQ is capped around 47 for this mechanism.** Even at s=1.0 (core metrics already degraded), MUSIQ reaches only 47.05 — still 7.45 below WEAVE's 54.50. The mean/std affine cannot recover the local-texture/sharpness cues MUSIQ rewards, because it only matches first/second moments, not histogram shape or spatial frequency.
+
+**Conclusion:** Per user decision rule ("MUSIQ if it cannot go up, replace with DINO"), RGB/latent statistical alignment does NOT unlock competitive MUSIQ. The max attainable MUSIQ (47.05) requires sacrificing CLIP-S below the WEAVE baseline, which violates the main-table competitiveness goal. **Switch primary quality metric from MUSIQ to DINO-style.**
+
+**Adopted configuration:**
+- Main result: **hp baseline** (no postprocess) — CLIP-S 0.7167, DINO-sty 0.4762, DINO-con 0.8052, 1-LPIPS 0.7010. Dominates WEAVE on CLIP-S (+0.002) and 1-LPIPS (+0.083); DINO-sty is the new primary quality axis (WEAVE has no DINO number).
+- Optional inference enhancement: **hp_rgb_s05** (RGB affine s=0.5) — near-lossless on core metrics, +2.3 MUSIQ / +0.032 1-LPIPS for settings where perceptual quality is weighted higher. Not used for the main table.

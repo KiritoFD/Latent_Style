@@ -1,8 +1,0 @@
-﻿{
-    "root":  "I:\\",
-    "out_dir":  "I:\\latent_style_remote_curated",
-    "curated_rows":  5495,
-    "timeline_rows":  2242,
-    "curated_dirs":  4947,
-    "checkpoint_candidates":  142851
-}

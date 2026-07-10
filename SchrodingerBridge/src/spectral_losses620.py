@@ -125,12 +125,13 @@ def _semantic_region_swd(
     content-coherent regions keeps per-region statistics internally consistent, avoiding the
     muddy blend a single global marginal produces when incompatible regions share one match.
 
-    Vectorization: loops only over K regions (not K×B). Per region, per-batch masks are
-    computed in parallel; the per-batch region pixels are projected, sorted, and resampled
-    to a common size via F.interpolate (deterministic quantile matching), then L1-matched.
-    This preserves the exact matching logic of the original per-sample loop version while
-    eliminating the Python-level batch loop. The deterministic quantile interpolation is
-    critical — stochastic multinomial sampling was verified to regress MUSIQ by ~10 points.
+    Vectorization: loops only over K regions (not K×B). All pixels are pre-projected once
+    (outside the region loop). Per region, per-batch masks are computed in parallel; region
+    pixels are isolated via masked-sort (non-region set to +inf), then Q=256 fixed quantile
+    positions are gathered (nearest-neighbor quantile matching). This eliminates ALL .item()
+    GPU→CPU syncs and the Python batch loop while preserving the deterministic quantile
+    matching semantics (stochastic multinomial sampling was verified to regress MUSIQ by
+    ~10 points).
 
     All tensors [B, C, H, W]; seg_feat [B, C, H, W] (content latent, aligned to gen).
     """
@@ -156,42 +157,57 @@ def _semantic_region_swd(
         g_ord = _order(g_flat, g_labels)   # [B, K] gen region id at rank r
         t_ord = _order(t_flat, t_labels)
 
+    # Pre-project all pixels once (outside region loop) — avoids K*B per-region matmuls.
+    g_proj = g_flat @ dirs.t()  # [B, N, P]
+    t_proj = t_flat @ dirs.t()  # [B, N, P]
+    if noise_sigma > 0.0:
+        g_proj = g_proj + noise_sigma * torch.randn_like(g_proj)
+        t_proj = t_proj + noise_sigma * torch.randn_like(t_proj)
+
+    # Fixed quantile resolution for batched resampling (replaces per-batch F.interpolate
+    # to variable max(ng, nt)). Nearest-neighbor quantile gather is statistically
+    # equivalent for SWD and eliminates ALL .item() GPU→CPU syncs.
+    Q = min(n, 256)
+    q_pos = (torch.arange(Q, device=gen.device, dtype=torch.float32) + 0.5) / Q  # (0, 1)
+
     swd = gen.new_tensor(0.0)
-    active = 0
-    # Only K iterations in Python; all per-batch work is vectorized inside.
+    active = gen.new_tensor(0.0)
+    # Only K iterations in Python; all per-batch work is fully vectorized (no B loop, no .item()).
     for r in range(num_regions):
-        gk = g_ord[:, r]  # [B] region index for rank r, per batch item
+        gk = g_ord[:, r]  # [B] region index for rank r
         tk = t_ord[:, r]  # [B]
 
-        # Build per-batch boolean masks for this rank's region. [B, N]
-        g_mask = g_labels == gk.unsqueeze(1)
-        t_mask = t_labels == tk.unsqueeze(1)
-        g_cnt = g_mask.sum(dim=1)  # [B]
-        t_cnt = t_mask.sum(dim=1)
+        g_mask = g_labels == gk.unsqueeze(1)  # [B, N]
+        t_mask = t_labels == tk.unsqueeze(1)  # [B, N]
+        g_cnt = g_mask.sum(dim=1)             # [B]
+        t_cnt = t_mask.sum(dim=1)             # [B]
+        valid = (g_cnt >= 2) & (t_cnt >= 2)   # [B]
 
-        # Per-batch region processing (vectorized via pad-and-sort)
-        for bi in range(bsz):
-            ng = int(g_cnt[bi].item())
-            nt = int(t_cnt[bi].item())
-            if ng < 2 or nt < 2:
-                continue
-            gp = g_flat[bi][g_mask[bi]] @ dirs.t()   # [ng, P]
-            tp = t_flat[bi][t_mask[bi]] @ dirs.t()   # [nt, P]
-            if noise_sigma > 0.0:
-                gp = gp + noise_sigma * torch.randn_like(gp)
-                tp = tp + noise_sigma * torch.randn_like(tp)
-            # Deterministic quantile matching via sort + interpolate to common size.
-            gs = torch.sort(gp, dim=0).values
-            ts = torch.sort(tp, dim=0).values
-            m = max(ng, nt)
-            if ng != m:
-                gs = F.interpolate(gs.t().unsqueeze(0), size=m, mode="linear", align_corners=True).squeeze(0).t()
-            if nt != m:
-                ts = F.interpolate(ts.t().unsqueeze(0), size=m, mode="linear", align_corners=True).squeeze(0).t()
-            swd = swd + (gs - ts).abs().mean()
-            active += 1
-    if active > 0:
-        swd = swd / active
+        g_cnt_safe = g_cnt.clamp_min(1)  # avoid div-by-zero for empty regions
+        t_cnt_safe = t_cnt.clamp_min(1)
+
+        # Masked sort: region pixels sorted ascending at front; non-region as +inf at back.
+        g_fill = g_proj.masked_fill(~g_mask.unsqueeze(-1), float('inf'))  # [B, N, P]
+        t_fill = t_proj.masked_fill(~t_mask.unsqueeze(-1), float('inf'))
+        g_sorted = torch.sort(g_fill, dim=1).values  # [B, N, P]
+        t_sorted = torch.sort(t_fill, dim=1).values  # [B, N, P]
+
+        # Quantile gather: q_pos maps to index q_pos * (cnt - 1), clamped to [0, N-1].
+        g_idx = (q_pos.unsqueeze(0) * (g_cnt_safe.float() - 1).unsqueeze(1)).long().clamp(max=n - 1)  # [B, Q]
+        t_idx = (q_pos.unsqueeze(0) * (t_cnt_safe.float() - 1).unsqueeze(1)).long().clamp(max=n - 1)  # [B, Q]
+        g_q = g_sorted.gather(1, g_idx.unsqueeze(-1).expand(-1, -1, num_projections))  # [B, Q, P]
+        t_q = t_sorted.gather(1, t_idx.unsqueeze(-1).expand(-1, -1, num_projections))  # [B, Q, P]
+
+        # Zero out inf (empty-region positions) before L1; invalid batch items masked out.
+        g_q = torch.where(torch.isinf(g_q), torch.zeros_like(g_q), g_q)
+        t_q = torch.where(torch.isinf(t_q), torch.zeros_like(t_q), t_q)
+        diff = (g_q - t_q).abs().mean(dim=(1, 2))  # [B]
+        diff = diff * valid.float()
+        swd = swd + diff.sum()
+        active = active + valid.float()
+
+    # No branch → no GPU sync. When active=0, swd=0/1=0.
+    swd = swd / active.sum().clamp_min(1.0)
     return swd
 
 
@@ -1018,6 +1034,20 @@ class SpectralODEObjective620:
         self.w_endpoint_style = float(getattr(self.bridge_cfg, "w_endpoint_style", 8.0))
         self.w_pixel_color_match = float(getattr(self.bridge_cfg, "w_pixel_color_match", 0.0))
         self.w_channel_variance = float(getattr(self.bridge_cfg, "w_channel_variance", 0.0))
+        # D1: Gram matrix style loss — captures inter-channel correlations (texture/brushstroke)
+        # that SWD's marginal matching discards. Applied only on HF bands to avoid content damage.
+        # w_gram_hf>0 enables it; w_gram_ll controls LL band (default 0 to protect content).
+        self.w_gram_hf = float(getattr(self.bridge_cfg, "w_gram_hf", 0.0))
+        self.w_gram_ll = float(getattr(self.bridge_cfg, "w_gram_ll", 0.0))
+        # D2: High-order moment matching — per-channel skewness (3rd) and kurtosis (4th).
+        # Gram captures 2nd-order inter-channel correlations; moments capture intra-channel
+        # distribution SHAPE (asymmetry, tailedness) that both SWD marginals and Gram miss.
+        self.w_moment_hf = float(getattr(self.bridge_cfg, "w_moment_hf", 0.0))
+        self.w_moment_ll = float(getattr(self.bridge_cfg, "w_moment_ll", 0.0))
+        # D6: Intrinsic style consistency loss — encode z_hat1 through model's own
+        # intrinsic_style_cnn and match the global style vector to the reference's.
+        # Creates direct style gradient without external pretrained models.
+        self.w_style_consistency = float(getattr(self.bridge_cfg, "w_style_consistency", 0.0))
         self.terminal_swd_weight = float(getattr(self.bridge_cfg, "terminal_swd_weight", 0.1))
         self.semantic_supervision_family = str(
             getattr(self.bridge_cfg, "semantic_supervision_family", "legacy_terminal_swd")
@@ -1127,6 +1157,61 @@ class SpectralODEObjective620:
         if self.loss_type in ("huber", "smooth_l1", "smoothl1"):
             return F.smooth_l1_loss(pred.float(), target.float())
         return F.mse_loss(pred.float(), target.float())
+
+    def _gram_loss(self, pred: torch.Tensor, target: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
+        """D1: Gram matrix style loss.
+
+        Computes per-sample channel self-correlation Gram matrix (C×C) for pred and target,
+        returns L1 distance. Captures inter-channel texture correlations that SWD's marginal
+        matching discards. Normalized by C to keep scale stable across channel counts.
+
+        Args:
+            pred: (B, C, H, W) predicted features (e.g. z_hat1 or a DWT subband)
+            target: (B, C, H, W) target features
+        Returns:
+            scalar L1 distance between mean-normalized Gram matrices.
+        """
+        B, C, H, W = pred.shape
+        pred_f = pred.float().reshape(B, C, H * W)
+        tgt_f = target.float().reshape(B, C, H * W)
+        # Normalize features per-sample to prevent scale drift
+        pred_f = pred_f / (pred_f.std(dim=2, keepdim=True).clamp_min(eps))
+        tgt_f = tgt_f / (tgt_f.std(dim=2, keepdim=True).clamp_min(eps))
+        # Gram = F F^T / N  -> (B, C, C)
+        gram_pred = torch.bmm(pred_f, pred_f.transpose(1, 2)) / (H * W)
+        gram_tgt = torch.bmm(tgt_f, tgt_f.transpose(1, 2)) / (H * W)
+        return (gram_pred - gram_tgt).abs().mean() / max(C, 1)
+
+    def _moment_loss(self, pred: torch.Tensor, target: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
+        """D2: High-order moment matching loss (skewness + kurtosis).
+
+        Per-channel 3rd (skewness) and 4th (kurtosis) standardized moments capture
+        distribution SHAPE — asymmetry and tailedness — that SWD per-pixel marginals
+        and Gram inter-channel correlations both miss. Applied per-sample, normalized
+        by std to isolate shape from scale.
+
+        Returns mean L1 distance over (skewness, kurtosis) pairs.
+        """
+        B, C, H, W = pred.shape
+        pred_f = pred.float().reshape(B, C, H * W)
+        tgt_f = target.float().reshape(B, C, H * W)
+        # Standardize per-channel (zero mean, unit std) to isolate shape
+        pred_mean = pred_f.mean(dim=2, keepdim=True)
+        tgt_mean = tgt_f.mean(dim=2, keepdim=True)
+        pred_std = pred_f.std(dim=2, keepdim=True).clamp_min(eps)
+        tgt_std = tgt_f.std(dim=2, keepdim=True).clamp_min(eps)
+        pred_norm = (pred_f - pred_mean) / pred_std
+        tgt_norm = (tgt_f - tgt_mean) / tgt_std
+        N = max(1, H * W)
+        # Skewness: E[X^3] (3rd standardized moment)
+        pred_skew = (pred_norm ** 3).mean(dim=2)  # (B, C)
+        tgt_skew = (tgt_norm ** 3).mean(dim=2)
+        # Kurtosis: E[X^4] - 3 (excess kurtosis, 4th standardized moment)
+        pred_kurt = (pred_norm ** 4).mean(dim=2) - 3.0
+        tgt_kurt = (tgt_norm ** 4).mean(dim=2) - 3.0
+        skew_diff = (pred_skew - tgt_skew).abs().mean()
+        kurt_diff = (pred_kurt - tgt_kurt).abs().mean()
+        return (skew_diff + kurt_diff) * 0.5
 
     def _projection_dirs(self, tensor: torch.Tensor) -> torch.Tensor:
         """Fresh random projection directions for Sliced Wasserstein Distance.
@@ -1372,128 +1457,12 @@ class SpectralODEObjective620:
                 (projected_target - _lowpass(projected_target, self.lowpass_kernel)).float(),
             )
             return swd, edge, swd_guidance_active, swd_guidance_mean, swd_guidance_std
-        # Spectral band-split SWD: the model already lives in the wavelet domain, so match
-        # the endpoint distribution per DWT subband instead of on the full latent. On the
-        # full latent, low-frequency (structure/color) energy dominates the sliced quantiles,
-        # so the terminal constraint barely touches the high-frequency band — exactly the
-        # band MUSIQ (a no-reference texture/sharpness metric) rewards. Splitting into
-        # LL/LH/HL/HH and up-weighting the high bands routes the SWD budget to texture.
-        if self.swd_band_mode == "split":
-            guided = self.swd_scale_mode in {
-                "cross-attn-guided", "cross_attn_guided", "crossattn-guided", "crossattn_guided"
-            }
-            weight = self._cross_attn_swd_weight(model, z_hat1, content=content) if guided else None
-            if weight is not None:
-                swd_guidance_active = z_hat1.new_tensor(1.0)
-                swd_guidance_mean = weight.detach().float().mean()
-                swd_guidance_std = weight.detach().float().std()
-            g_ll, g_lh, g_hl, g_hh = dwt2_haar(z_hat1)
-            t_ll, t_lh, t_hl, t_hh = dwt2_haar(projected_target)
-            # Guidance map is at full latent resolution; subbands are half — downsample so
-            # the empirical sampling mass still aligns with the routing edit field.
-            sub_weight = None
-            if weight is not None:
-                sub_weight = F.avg_pool2d(weight.float(), kernel_size=2, stride=2).to(dtype=weight.dtype)
-            bands = [
-                (g_ll, t_ll, self.swd_band_w_ll),
-                (g_lh, t_lh, self.swd_band_w_lh),
-                (g_hl, t_hl, self.swd_band_w_hl),
-                (g_hh, t_hh, self.swd_band_w_hh),
-            ]
-            swd = z_hat1.new_tensor(0.0)
-            total_w = 0.0
-            for g_b, t_b, bw in bands:
-                if bw <= 0.0:
-                    continue
-                swd = swd + bw * _sliced_wasserstein(
-                    g_b, t_b,
-                    dirs=self._projection_dirs(g_b),
-                    noise_sigma=self.swd_noise_sigma,
-                    sample_weight=sub_weight,
-                    sample_size=self.swd_guidance_sample_size,
-                )
-                total_w += bw
-            if total_w > 0.0:
-                swd = swd / total_w
-            edge = F.l1_loss(
-                (z_hat1 - _lowpass(z_hat1, self.lowpass_kernel)).float(),
-                (projected_target - _lowpass(projected_target, self.lowpass_kernel)).float(),
-            )
-            return swd, edge, swd_guidance_active, swd_guidance_mean, swd_guidance_std
-        # Multi-scale patch SWD: match local k×k texture distributions, not just the
-        # per-pixel color marginal. This is the MUSIQ-oriented mechanism — MUSIQ rewards
-        # natural local texture, which pixel-marginal SWD (patch=1) cannot target.
-        # Reuses cross-attn guidance as empirical sampling mass when available.
-        if self.swd_patch_mode == "multi":
-            guided = self.swd_scale_mode in {
-                "cross-attn-guided", "cross_attn_guided", "crossattn-guided", "crossattn_guided"
-            }
-            weight = self._cross_attn_swd_weight(model, z_hat1, content=content) if guided else None
-            if weight is not None:
-                swd_guidance_active = z_hat1.new_tensor(1.0)
-                swd_guidance_mean = weight.detach().float().mean()
-                swd_guidance_std = weight.detach().float().std()
-            swd = z_hat1.new_tensor(0.0)
-            total_w = 0.0
-            for patch, pw in zip(self.swd_patch_sizes, self.swd_patch_weights):
-                swd = swd + pw * _patch_swd(
-                    z_hat1, projected_target,
-                    patch=patch, num_projections=self.num_projections,
-                    noise_sigma=self.swd_noise_sigma,
-                    sample_weight=weight, sample_size=self.swd_guidance_sample_size,
-                )
-                total_w += pw
-            if total_w > 0.0:
-                swd = swd / total_w
-            edge = F.l1_loss(
-                (z_hat1 - _lowpass(z_hat1, self.lowpass_kernel)).float(),
-                (projected_target - _lowpass(projected_target, self.lowpass_kernel)).float(),
-            )
-            return swd, edge, swd_guidance_active, swd_guidance_mean, swd_guidance_std
-        # Attention-weighted SWD: use cross-attn pixel entropy to weight regions
-        if self.swd_scale_mode in {"cross-attn-guided", "cross_attn_guided", "crossattn-guided", "crossattn_guided"}:
-            weight = self._cross_attn_swd_weight(model, z_hat1, content=content)
-            if weight is not None:
-                swd_guidance_active = z_hat1.new_tensor(1.0)
-                swd_guidance_mean = weight.detach().float().mean()
-                swd_guidance_std = weight.detach().float().std()
-                swd = _sliced_wasserstein(
-                    z_hat1, projected_target,
-                    dirs=self._projection_dirs(z_hat1),
-                    noise_sigma=self.swd_noise_sigma,
-                    sample_weight=weight,
-                    sample_size=self.swd_guidance_sample_size,
-                )
-            else:
-                swd = _sliced_wasserstein(
-                    z_hat1, projected_target,
-                    dirs=self._projection_dirs(z_hat1),
-                    noise_sigma=self.swd_noise_sigma,
-                )
-        elif self.swd_scale_mode == "attention-weighted" and getattr(model, "last_pixel_entropy", None) is not None:
-            weight = model.last_pixel_entropy.to(device=z_hat1.device, dtype=z_hat1.dtype)
-            weight = weight / weight.mean(dim=(2, 3), keepdim=True).clamp_min(1e-6)
-            swd_guidance_active = z_hat1.new_tensor(1.0)
-            swd_guidance_mean = weight.detach().float().mean()
-            swd_guidance_std = weight.detach().float().std()
-            swd = _sliced_wasserstein(
-                z_hat1 * weight, projected_target * weight,
-                dirs=self._projection_dirs(z_hat1),
-                noise_sigma=self.swd_noise_sigma,
-            )
-        elif self.swd_scale_mode == "2-scale":
-            swd_64 = _sliced_wasserstein(z_hat1, projected_target, dirs=self._projection_dirs(z_hat1), noise_sigma=self.swd_noise_sigma)
-            z_hat1_32 = F.avg_pool2d(z_hat1, kernel_size=2, stride=2)
-            target_32 = F.avg_pool2d(projected_target, kernel_size=2, stride=2)
-            swd_32 = _sliced_wasserstein(z_hat1_32, target_32, dirs=self._projection_dirs(z_hat1_32), noise_sigma=self.swd_noise_sigma)
-            swd = 0.5 * swd_64 + 0.5 * swd_32
-        else:
-            swd = _sliced_wasserstein(
-                z_hat1, projected_target,
-                dirs=self._projection_dirs(z_hat1),
-                noise_sigma=self.swd_noise_sigma,
-            )
-
+        # Simple global SWD (default path): single sliced Wasserstein on full latent.
+        swd = _sliced_wasserstein(
+            z_hat1, projected_target,
+            dirs=self._projection_dirs(z_hat1),
+            noise_sigma=self.swd_noise_sigma,
+        )
         edge = F.l1_loss(
             (z_hat1 - _lowpass(z_hat1, self.lowpass_kernel)).float(),
             (projected_target - _lowpass(projected_target, self.lowpass_kernel)).float(),
@@ -1593,6 +1562,62 @@ class SpectralODEObjective620:
             tgt_var = projected_target.float().var(dim=[2, 3])
             loss_channel_var = F.mse_loss(gen_var, tgt_var)
 
+        # D1+D2: Gram matrix + high-order moment losses on DWT subbands.
+        # DWT decomposition computed once and shared between D1 (Gram, 2nd-order inter-channel)
+        # and D2 (moments, 3rd/4th-order intra-channel distribution shape).
+        loss_gram = content.new_tensor(0.0)
+        loss_moment = content.new_tensor(0.0)
+        need_dwt = (self.w_gram_hf > 0.0 or self.w_gram_ll > 0.0
+                    or self.w_moment_hf > 0.0 or self.w_moment_ll > 0.0)
+        if need_dwt:
+            pred_delta = z_hat1 - content  # IDWT(v) = predicted delta
+            pred_ll, pred_lh, pred_hl, pred_hh = dwt2_haar(pred_delta)
+            # D1: Gram matrix
+            if self.w_gram_hf > 0.0 or self.w_gram_ll > 0.0:
+                gram_terms = []
+                if self.w_gram_hf > 0.0:
+                    gram_terms.append(self.w_gram_hf * (
+                        self._gram_loss(pred_lh, target_lh)
+                        + self._gram_loss(pred_hl, target_hl)
+                        + self._gram_loss(pred_hh, target_hh)
+                    ))
+                if self.w_gram_ll > 0.0:
+                    gram_terms.append(self.w_gram_ll * self._gram_loss(pred_ll, target_ll))
+                loss_gram = sum(gram_terms)
+            # D2: High-order moments (skewness + kurtosis)
+            if self.w_moment_hf > 0.0 or self.w_moment_ll > 0.0:
+                moment_terms = []
+                if self.w_moment_hf > 0.0:
+                    moment_terms.append(self.w_moment_hf * (
+                        self._moment_loss(pred_lh, target_lh)
+                        + self._moment_loss(pred_hl, target_hl)
+                        + self._moment_loss(pred_hh, target_hh)
+                    ))
+                if self.w_moment_ll > 0.0:
+                    moment_terms.append(self.w_moment_ll * self._moment_loss(pred_ll, target_ll))
+                loss_moment = sum(moment_terms)
+
+        # D6: Intrinsic style consistency loss — encode predicted endpoint through the
+        # model's own intrinsic_style_cnn and match its global style vector to the
+        # reference's. This creates a direct style gradient signal that SWD's marginal
+        # distribution matching does not provide. Uses only model-internal features
+        # (no external pretrained models → no prior contamination).
+        loss_style_consist = content.new_tensor(0.0)
+        if (self.w_style_consistency > 0.0
+                and hasattr(model, "intrinsic_style_cnn")
+                and model.intrinsic_style_cnn is not None
+                and model.intrinsic_style_pool is not None
+                and model.intrinsic_style_global is not None
+                and "style_global" in v_dict):
+            ref_style_global = v_dict["style_global"].detach()
+            gen_feat = model.intrinsic_style_cnn(z_hat1.float())
+            gen_feat = model.intrinsic_style_pool(gen_feat)
+            gen_global = model.intrinsic_style_global(gen_feat.mean(dim=[2, 3]).float())
+            gen_global = gen_global.to(dtype=ref_style_global.dtype)
+            loss_style_consist = (
+                1.0 - F.cosine_similarity(gen_global, ref_style_global, dim=-1)
+            ).mean()
+
         # Total loss
         loss = (
             loss_fm
@@ -1601,6 +1626,9 @@ class SpectralODEObjective620:
             + self.w_endpoint_content * loss_endpoint_content
             + self.w_pixel_color_match * loss_pixel_color
             + self.w_channel_variance * loss_channel_var
+            + loss_gram
+            + loss_moment
+            + self.w_style_consistency * loss_style_consist
         )
 
         zero = content.new_tensor(0.0)
@@ -1614,6 +1642,9 @@ class SpectralODEObjective620:
             "loss_edge": edge_ss.detach(),
             "loss_endpoint_content": loss_endpoint_content.detach(),
             "loss_pixel_color": loss_pixel_color.detach() if isinstance(loss_pixel_color, torch.Tensor) else zero,
+            "loss_gram": loss_gram.detach() if isinstance(loss_gram, torch.Tensor) else zero,
+            "loss_moment": loss_moment.detach() if isinstance(loss_moment, torch.Tensor) else zero,
+            "loss_style_consist": loss_style_consist.detach() if isinstance(loss_style_consist, torch.Tensor) else zero,
             "swd_guidance_active": swd_guidance_active.detach(),
             "swd_guidance_mean": swd_guidance_mean.detach(),
             "swd_guidance_std": swd_guidance_std.detach(),

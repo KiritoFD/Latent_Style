@@ -1,8 +1,0 @@
-"timestamp","scope","exp_dir","exists","remaining_weight_count","remaining_weight_mb","config_exists","training_csv_count","decision_after_cleanup"
-"2026-06-05Tcurrent","remote_tokenizerclean_training_log_only_weight_cleanup","tokenizer_t01_carrier_base_b160","True","0","0","True","1","metadata_retained_weights_deleted"
-"2026-06-05Tcurrent","remote_tokenizerclean_training_log_only_weight_cleanup","wikiart_distinct5_ema_lancet_spectralstat_e2_b80","True","2","87.258","True","1","retained_downstream_resume_source"
-"2026-06-05Tcurrent","remote_tokenizerclean_training_log_only_weight_cleanup","wikiart_distinct5_ema_lancet_spectralstat_from_e8_e16_b56","True","0","0","True","1","metadata_retained_weights_deleted"
-"2026-06-05Tcurrent","remote_tokenizerclean_training_log_only_weight_cleanup","wikiart512_ema_pair_budget_tokonly_e1_b80","True","0","0","True","1","metadata_retained_weights_deleted"
-"2026-06-05Tcurrent","remote_tokenizerclean_training_log_only_weight_cleanup","wikiart512_ema_spectral_stat_full_e2_from_tok_b48","True","0","0","True","1","metadata_retained_weights_deleted_config_anomaly_recorded"
-"2026-06-05Tcurrent","remote_tokenizerclean_training_log_only_weight_cleanup","wikiart512_ema_tokenbudget_tokonly_e1_from_spectral_b48","True","0","0","True","1","metadata_retained_weights_deleted"
-"2026-06-05Tcurrent","remote_tokenizerclean_training_log_only_weight_cleanup","wikiart512_ema_trueint_stylepush_tsw40_kin025_e1_b48","True","1","43.625","True","1","retained_diagnostic_evaluated_payload"

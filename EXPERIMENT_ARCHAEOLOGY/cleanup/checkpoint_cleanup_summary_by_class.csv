@@ -1,7 +1,0 @@
-﻿scope,action,cleanup_class,files,size_mb
-local_G,deleted,likely_non_mainline_delete_candidate,329,11575.67
-local_G,skipped,likely_mainline_keep,8,260.552
-local_G,skipped,review_delete_candidate,38018,15983.362
-remote_I,deleted,non_mainline_delete_candidate,246,9074.318
-remote_I,skipped,likely_mainline_keep,151,15714.315
-remote_I,skipped,review_delete_candidate,142454,138112.399

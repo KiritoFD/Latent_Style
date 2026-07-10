@@ -1,0 +1,40 @@
+method,class,dataset,clip_s,lpips,musiq,params,train_min,infer
+Identity,identity,D5-512,0.693,0.000,58.31,0,free,0 s
+Identity,identity,P2A-256,0.663,0.000,56.83,0,free,0 s
+Identity,identity,R5-WikiArt,0.731,0.000,54.61,0,free,0 s
+AdaIN,classical,D5-512,0.668,0.743,53.55,0+144M,free,1 m
+AdaIN,classical,P2A-256,0.666,0.736,41.23,0+144M,free,1 m
+AdaIN,classical,R5-WikiArt,0.728,0.680,51.16,0+144M,free,1 m
+WCT (VGG19),classical,D5-512,0.706,0.635,21.68,0+144M,free,90 s
+WCT (VGG19),classical,P2A-256,0.688,0.738,40.33,0+144M,free,90 s
+WCT (VGG19),classical,R5-WikiArt,0.731,0.688,53.39,0+144M,free,90 s
+SD-Turbo,diffusion,D5-512,0.693,0.003,60.72,0+1.1B,free,2 m
+SD-Turbo,diffusion,P2A-256,0.674,0.603,52.19,0+1.1B,free,2 m
+SD-Turbo,diffusion,R5-WikiArt,0.767,0.449,63.23,0+1.1B,free,2 m
+IP-Adapter,diffusion,D5-512,0.829,0.636,50.51,0+1.4B,free,23.5 m
+IP-Adapter,diffusion,P2A-256,0.671,0.755,36.15,0+1.4B,free,23.5 m
+IP-Adapter,diffusion,R5-WikiArt,0.818,0.696,53.26,0+1.4B,free,23.5 m
+StyleAligned,diffusion,D5-512,0.780,0.869,62.49,0+1.1B,free,2 m
+StyleAligned,diffusion,P2A-256,0.768,0.786,58.74,0+1.1B,free,2 m
+StyleAligned,diffusion,R5-WikiArt,0.824,0.829,64.68,0+1.1B,free,2 m
+Z-STAR,diffusion,D5-512,0.784,0.347,54.35,0+1.1B,free,5 m
+Z-STAR,diffusion,P2A-256,0.786,0.332,45.65,0+1.1B,free,5 m
+Z-STAR,diffusion,R5-WikiArt,0.822,0.384,51.24,0+1.1B,free,5 m
+StyleShot,diffusion,D5-512,0.787,0.765,62.24,0+2.4B,free,30 m
+StyleShot,diffusion,P2A-256,0.774,0.713,40.00,0+2.4B,free,30 m
+StyleShot,diffusion,R5-WikiArt,0.787,0.795,45.24,0+2.4B,free,30 m
+CUT,GAN,D5-512,0.714,0.374,41.79,7.0M,322.6,5 m
+CUT,GAN,P2A-256,0.754,0.494,52.95,7.0M,322.6,5 m
+CUT,GAN,R5-WikiArt,0.710,0.620,41.79,7.0M,322.6,5 m
+SaMST,Mamba,D5-512,0.618,0.749,29.71,8.3M,39.5,10 m
+SaMST,Mamba,P2A-256,0.709,0.398,40.73,8.3M,39.5,10 m
+SaMST,Mamba,R5-WikiArt,0.667,0.612,66.65,8.3M,39.5,10 m
+SaMam,Mamba,D5-512,0.582,0.243,51.17,8.8M,436.0,17.6 m
+SaMam,Mamba,P2A-256,0.677,0.205,50.03,8.8M,436.0,17.6 m
+SaMam,Mamba,R5-WikiArt,0.712,0.227,52.89,8.8M,436.0,17.6 m
+Seedream 4.5,diffusion,D5-512,0.720,0.477,69.51,--,API,--
+Seedream 4.5,diffusion,P2A-256,0.752,0.227,64.00,--,API,--
+Seedream 4.5,diffusion,R5-WikiArt,0.742,0.486,70.36,--,API,--
+Ours (WEAVE),WEAVE,D5-512,0.715,0.382,54.50,903K+84M,3.08,83.7 s
+Ours (WEAVE),WEAVE,P2A-256,0.683,0.203,45.68,903K+84M,3.08,83.7 s
+Ours (WEAVE),WEAVE,R5-WikiArt,0.743,0.290,44.24,903K+84M,3.08,83.7 s

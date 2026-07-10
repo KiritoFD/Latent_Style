@@ -1,0 +1,16 @@
+{
+  "_base": "t11_repro_15ep.json",
+  "model": {
+    "endpoint_adain_scale_ll": 0.05
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/t11e1_ll05_15ep",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "t11e1_ll05_15ep",
+    "axis": "t11_evolution_ll_micro_injection",
+    "stage": "t11_evo",
+    "notes": "T11 evo-1: Micro LL style injection (endpoint_adain_scale_ll 0.0->0.05). T11's core contradiction: CLIP-S needs low-freq style, but LL bypass (scale=0.0) blocks it. T12 inference sweep proved 0.1 is too much (1:8 trade-off). 0.05 is HALF of 0.1, tests if micro LL WCT can lift clip without destroying lpips. Training-time change (not inference override), so model learns to compensate."
+  }
+}

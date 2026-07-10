@@ -1,3 +1,0 @@
-﻿"scope","duplicate_groups","exact_hash_match_groups","hash_mismatch_groups","potential_reclaim_mb_if_one_copy_retained","action","reason"
-"local_cache_roots","5","5","0","105.292363","audit_only_no_delete","Exact duplicate does not prove safe deletion because eval code may expect cache-local paths."
-"remote_cache_roots","26","24","2","583.884105","audit_only_no_delete","Exact duplicate does not prove safe deletion because eval code may expect cache-local paths."

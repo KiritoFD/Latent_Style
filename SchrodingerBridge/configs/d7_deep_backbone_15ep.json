@@ -1,0 +1,19 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "model": {
+    "num_res_blocks": 6
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/d7_deep_backbone_15ep",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 96
+  },
+  "ablation": {
+    "name": "d7_deep_backbone_15ep",
+    "axis": "M2_backbone_capacity_expansion",
+    "stage": "M2_architectural_additive_D7",
+    "notes": "D7: Backbone capacity expansion. num_res_blocks 4→6 (+50% cross-attention layers). Theory: ALL loss-level (D1/D2/D6) and velocity-head (D4) modifications failed. DINO-sty ceiling at 0.476 is a CAPACITY limit, not a loss problem. 6 layers of cross-attention = 50% more style injection points = higher style representation capacity. Pure structural scaling — no new loss terms, no velocity head modification, no external models. VRAM budget: current 9.08GB + ~1.5GB for 2 extra layers = ~10.6GB (within 11.2GB). bs=96 for VRAM safety. Goal: DINO-sty >= 0.49, CLIP-S >= 0.715."
+  }
+}

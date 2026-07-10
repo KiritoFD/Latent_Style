@@ -1,0 +1,26 @@
+{
+  "_base": "630_random20_heun_5ep.json",
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/evo_r20_a1_adain10",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": false,
+    "test_image_dir": "G:/GitHub/Latent_Style/Dataset/wikiart_random20_512/wikiart_random20_512/images/test"
+  },
+  "data": {
+    "pairing_cache_path": "",
+    "pairing_cache_active_topk": 0
+  },
+  "model": {
+    "endpoint_adain_scale": 1.0
+  },
+  "ablation": {
+    "name": "evo_a1_adain10",
+    "axis": "endpoint_adain_scale",
+    "stage": "evo_r20",
+    "notes": "Evo A1: Increase endpoint_adain_scale 0.8->1.0 to strengthen style injection. Baseline random20_heun: all_pairs clip=0.7213 lpips=0.2728. Target: clip->0.74 while keeping lpips<0.30."
+  }
+}

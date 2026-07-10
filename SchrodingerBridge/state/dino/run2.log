@@ -1,0 +1,100 @@
+
+### D5-512 / adain  (wikiart)
+
+### D5-512 / cut  (wikiart)
+
+### D5-512 / identity  (wikiart)
+
+### D5-512 / samam  (wikiart)
+
+### D5-512 / samst  (wikiart)
+
+### D5-512 / sdturbo  (wikiart)
+
+### D5-512 / seedream  (wikiart)
+
+### D5-512 / stylealigned  (wikiart)
+
+### D5-512 / styleid  (wikiart)
+
+### D5-512 / styleshot  (wikiart)
+
+### D5-512 / wct  (wikiart)
+
+### D5-512 / weave  (wikiart)
+
+### D5-512 / zstar  (wikiart)
+
+### P2A-256 / adain  (p2a)
+
+### P2A-256 / cut  (p2a)
+
+### P2A-256 / identity  (p2a)
+
+### P2A-256 / samam  (p2a)
+
+### P2A-256 / samst  (p2a)
+
+### P2A-256 / sdturbo  (p2a)
+
+### P2A-256 / seedream  (p2a)
+
+### P2A-256 / stylealigned  (p2a)
+
+### P2A-256 / styleid  (p2a)
+
+### P2A-256 / styleshot  (p2a)
+
+### P2A-256 / wct  (p2a)
+
+### P2A-256 / weave  (p2a)
+
+### P2A-256 / zstar  (p2a)
+
+### R5-WikiArt / cut  (wikiart)
+
+### R5-WikiArt / samam  (wikiart)
+
+### R5-WikiArt / samst  (wikiart)
+
+### R5-WikiArt / sdturbo  (wikiart)
+
+### R5-WikiArt / seedream  (wikiart)
+  DINO-con=0.7249 DINO-sty=0.5039 DINO-str=0.0302 (style_n=724, content_n=724, skip=0)
+  Saved g:\GitHub\Latent_Style\SchrodingerBridge\state\dino\R5-WikiArt__seedream.json
+
+### R5-WikiArt / styleid  (wikiart)
+
+WROTE g:\GitHub\Latent_Style\SchrodingerBridge\state\dino\dino_main.json  cells=32
+  D5-512|adain                 con=0.2135 sty=0.3362 str=0.0569 nS=750 nC=750
+  D5-512|cut                   con=0.7949 sty=0.4709 str=0.0240 nS=750 nC=750
+  D5-512|identity              con=1.0000 sty=0.4960 str=0.0000 nS=750 nC=750
+  D5-512|samam                 con=0.8117 sty=0.4771 str=0.0124 nS=750 nC=750
+  D5-512|samst                 con=0.1445 sty=0.2710 str=0.1406 nS=750 nC=750
+  D5-512|sdturbo               con=0.9221 sty=0.4838 str=0.0218 nS=750 nC=750
+  D5-512|seedream              con=0.7386 sty=0.4864 str=0.0299 nS=750 nC=720
+  D5-512|stylealigned          con=0.2394 sty=0.6751 str=0.0511 nS=750 nC=750
+  D5-512|styleid               con=0.4157 sty=0.5477 str=0.0395 nS=750 nC=750
+  D5-512|styleshot             con=0.3771 sty=0.5630 str=0.0388 nS=745 nC=745
+  D5-512|wct                   con=0.0253 sty=0.1358 str=0.2055 nS=750 nC=750
+  D5-512|weave                 con=0.7782 sty=0.4917 str=0.0254 nS=750 nC=750
+  D5-512|zstar                 con=0.5485 sty=0.4488 str=0.0340 nS=750 nC=750
+  P2A-256|adain                con=0.1864 sty=0.2896 str=0.0506 nS=600 nC=600
+  P2A-256|cut                  con= n/a   sty= n/a   str= n/a   nS=0 nC=0
+  P2A-256|identity             con=1.0000 sty=0.5230 str=0.0000 nS=600 nC=600
+  P2A-256|samam                con=0.8700 sty=0.5048 str=0.0114 nS=600 nC=600
+  P2A-256|samst                con=0.8376 sty=0.5006 str=0.0099 nS=600 nC=600
+  P2A-256|sdturbo              con=0.2787 sty=0.3406 str=0.0357 nS=600 nC=600
+  P2A-256|seedream             con= n/a   sty= n/a   str= n/a   nS=0 nC=0
+  P2A-256|stylealigned         con=0.3104 sty=0.6116 str=0.0445 nS=600 nC=600
+  P2A-256|styleid              con=0.1470 sty=0.2561 str=0.0381 nS=600 nC=600
+  P2A-256|styleshot            con=0.3347 sty=0.5516 str=0.0376 nS=600 nC=600
+  P2A-256|wct                  con=0.1952 sty=0.3050 str=0.0476 nS=600 nC=600
+  P2A-256|weave                con=0.8780 sty=0.5100 str=0.0098 nS=600 nC=600
+  P2A-256|zstar                con=0.5522 sty=0.4975 str=0.0296 nS=600 nC=600
+  R5-WikiArt|cut               con=0.8315 sty=0.4410 str=0.0208 nS=750 nC=15
+  R5-WikiArt|samam             con=0.9254 sty=0.5033 str=0.0074 nS=750 nC=750
+  R5-WikiArt|samst             con=0.6146 sty=0.4611 str=0.0299 nS=750 nC=750
+  R5-WikiArt|sdturbo           con=0.5383 sty=0.5051 str=0.0344 nS=1123 nC=1123
+  R5-WikiArt|seedream          con=0.7249 sty=0.5039 str=0.0302 nS=724 nC=724
+  R5-WikiArt|styleid           con=0.3854 sty=0.5512 str=0.0391 nS=750 nC=750
