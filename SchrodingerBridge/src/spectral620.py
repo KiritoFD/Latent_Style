@@ -99,179 +99,9 @@ def dwt2_haar_lowpass(x: torch.Tensor, levels: int = 1) -> torch.Tensor:
     return recon.to(dtype=x.dtype)
 
 
-# ---------------------------------------------------------------------------
-# Daubechies-2 (db2) wavelet — 4-tap, 2 vanishing moments, smooth & orthogonal.
-# Phase 4E: replaces Haar for endpoint lowpass path (user scheme 1).
-# Reference: Daubechies, I. (1988). "Orthonormal bases of compactly supported wavelets."
-# ---------------------------------------------------------------------------
-
-# db2 analysis (decomposition) filters — 4-tap, orthonormal.
-_DB2_LO_D = (0.4829629131445341, 0.8365163037378079, 0.2241438680420134, -0.1294095225512604)
-_DB2_HI_D = (-0.1294095225512604, -0.2241438680420134, 0.8365163037378079, -0.4829629131445341)
-
-
-def _db2_filters(device: torch.device, dtype: torch.dtype) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return (lo_d, hi_d) db2 analysis filters on the given device/dtype."""
-    lo_d = torch.tensor(_DB2_LO_D, device=device, dtype=dtype)
-    hi_d = torch.tensor(_DB2_HI_D, device=device, dtype=dtype)
-    return lo_d, hi_d
-
-
-def _db2_decompose_1d(x: torch.Tensor, dim: int = -1) -> tuple[torch.Tensor, torch.Tensor]:
-    """1D db2 DWT along ``dim`` with periodic (circular) boundary.
-
-    Input:  x of shape (..., N) where N is even.
-    Output: (low, high), each of shape (..., N/2).
-
-    Math (periodic):
-        y_low[k]  = sum_n  lo_d[n] * x[(2k + n) mod N],  k = 0..N/2-1
-        y_high[k] = sum_n  hi_d[n] * x[(2k + n) mod N]
-
-    Implementation: pre-compute index tensor ``(N/2, 4)`` of input positions,
-    gather, then weighted-sum. Avoids F.conv2d padding-alignment issues.
-    """
-    N = x.shape[dim]
-    if N % 2 != 0:
-        raise ValueError(f"db2 DWT requires even length along dim, got N={N}")
-    if N < 4:
-        raise ValueError(f"db2 DWT requires N >= 4 (filter length), got N={N}")
-
-    lo_d, hi_d = _db2_filters(x.device, x.dtype)
-    half = N // 2
-    # idx[k, n] = (2*k + n) % N, shape (half, 4)
-    k_idx = torch.arange(half, device=x.device)
-    n_idx = torch.arange(4, device=x.device)
-    idx = (2 * k_idx[:, None] + n_idx[None, :]) % N  # (half, 4)
-
-    # Move target dim to last for gather
-    x_t = x.transpose(dim, -1)  # (..., N)
-    x_gathered = x_t[..., idx]  # (..., half, 4)
-    low = (x_gathered * lo_d).sum(-1)   # (..., half)
-    high = (x_gathered * hi_d).sum(-1)  # (..., half)
-    # Move back
-    low = low.transpose(dim, -1)
-    high = high.transpose(dim, -1)
-    return low, high
-
-
-def _db2_reconstruct_1d(low: torch.Tensor, high: torch.Tensor, dim: int = -1) -> torch.Tensor:
-    """1D db2 IDWT (perfect reconstruction, periodic boundary).
-
-    Inputs:  low, high of shape (..., N/2).
-    Output:  x of shape (..., N) where N = 2 * (N/2).
-
-    Math (synthesis = transpose of analysis for orthonormal wavelets):
-        x[k] = sum_j  lo_d[(k - 2j) mod N] * low[j]
-             + sum_j  hi_d[(k - 2j) mod N] * high[j],   k = 0..N-1
-
-    where ``lo_d``/``hi_d`` are the *analysis* filters. db2 is orthonormal,
-    so the synthesis matrix is A^T (transpose of analysis). The filter is
-    4-tap, so the coefficient is **zero** when ``(k - 2j) mod N >= 4``
-    (not wrapped — the filter simply has no support there).
-    """
-    half = low.shape[dim]
-    N = half * 2
-    lo_d, hi_d = _db2_filters(low.device, low.dtype)
-    j_idx = torch.arange(half, device=low.device)
-    k_idx = torch.arange(N, device=low.device)
-    # offset[k, j] = (k - 2*j) mod N, shape (N, half), values in {0, ..., N-1}
-    offset = (k_idx[:, None] - 2 * j_idx[None, :]) % N
-    # Filter is 4-tap: zero outside indices {0, 1, 2, 3}.
-    mask = offset < 4  # (N, half) boolean
-    # Safe gather: clamp to valid filter range, then mask out invalid positions.
-    offset_safe = offset.clamp(max=3)  # (N, half), values in {0, 1, 2, 3}
-    zeros = torch.zeros((N, half), device=low.device, dtype=low.dtype)
-    coef_lo = torch.where(mask, lo_d[offset_safe], zeros)  # (N, half)
-    coef_hi = torch.where(mask, hi_d[offset_safe], zeros)
-
-    # Apply along dim: x[..., k] = sum_j coef_lo[k,j] * low[..., j] + ...
-    low_t = low.transpose(dim, -1)   # (..., half)
-    high_t = high.transpose(dim, -1)
-    x_t = torch.einsum('kj,...j->...k', coef_lo, low_t) \
-        + torch.einsum('kj,...j->...k', coef_hi, high_t)
-    return x_t.transpose(dim, -1)
-
-
-def dwt2_db2(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Single-level 2D db2 DWT. Input (B,C,H,W) -> (LL, LH, HL, HH), each (B,C,H/2,W/2).
-
-    Convention (matches ``dwt2_haar``):
-        LL = low-pass on rows (W) + low-pass on cols (H)   — lowest freq
-        LH = low-pass on rows + high-pass on cols          — vertical detail
-        HL = high-pass on rows + low-pass on cols          — horizontal detail
-        HH = high-pass on both                              — diagonal detail
-
-    Uses periodic (circular) boundary → exact Perfect Reconstruction.
-    """
-    # Apply 1D DWT along W (last dim)
-    L_w, H_w = _db2_decompose_1d(x, dim=-1)   # each (B, C, H, W/2)
-    # Apply 1D DWT along H (second-to-last dim) on each
-    LL, LH_v = _db2_decompose_1d(L_w, dim=-2)  # LL (B,C,H/2,W/2), LH_v vertical detail
-    HL, HH = _db2_decompose_1d(H_w, dim=-2)   # HL horizontal detail, HH diagonal
-    return LL, LH_v, HL, HH
-
-
-def idwt2_db2(
-    ll: torch.Tensor, lh: torch.Tensor, hl: torch.Tensor, hh: torch.Tensor
-) -> torch.Tensor:
-    """Single-level 2D db2 IDWT (exact inverse of ``dwt2_db2``).
-
-    Inputs: 4 tensors of shape (B, C, H/2, W/2).
-    Output: tensor of shape (B, C, H, W).
-
-    Reconstruction order (reverse of decomposition):
-        1. IDWT along H: combine (LL, LH) -> L_w, (HL, HH) -> H_w
-        2. IDWT along W: combine (L_w, H_w) -> x
-    """
-    # Step 1: reconstruct along H (dim=-2)
-    L_w = _db2_reconstruct_1d(ll, lh, dim=-2)  # (B, C, H, W/2)
-    H_w = _db2_reconstruct_1d(hl, hh, dim=-2)   # (B, C, H, W/2)
-    # Step 2: reconstruct along W (dim=-1)
-    x = _db2_reconstruct_1d(L_w, H_w, dim=-1)   # (B, C, H, W)
-    return x
-
-
-def dwt2_db2_lowpass(x: torch.Tensor, levels: int = 1) -> torch.Tensor:
-    """N-level db2 DWT lowpass: only keep LL_n, zero other subbands, IDWT back.
-
-    Same semantics as ``dwt2_haar_lowpass`` but with db2 (smooth, 4-tap) filters.
-    Used by endpoint AdaIN's ep_base = lp(y), ep_fiber = y - ep_base.
-    """
-    if levels <= 0:
-        return x
-    current = x.float()
-    for _ in range(levels):
-        ll, _, _, _ = dwt2_db2(current)
-        current = ll
-    recon = current
-    for _ in range(levels):
-        zero = torch.zeros_like(recon)
-        recon = idwt2_db2(recon, zero, zero, zero)
-    return recon.to(dtype=x.dtype)
-
-
-# ---------------------------------------------------------------------------
-# Wavelet dispatcher — picks basis by name.
-# ---------------------------------------------------------------------------
-
-_WAVELET_LOWPASS = {
-    "haar": dwt2_haar_lowpass,
-    "db2": dwt2_db2_lowpass,
-}
-
-
 def dwt2_lowpass(x: torch.Tensor, levels: int = 1, basis: str = "haar") -> torch.Tensor:
-    """N-level DWT lowpass with selectable wavelet basis.
-
-    Args:
-        x: input tensor (B, C, H, W)
-        levels: decomposition levels (1=LL_1, 2=LL_2, ...)
-        basis: "haar" (default, 2-tap) or "db2" (4-tap, smooth)
-    Returns:
-        Lowpass-filtered tensor of same shape as x.
-    """
-    fn = _WAVELET_LOWPASS.get(basis.lower(), dwt2_haar_lowpass)
-    return fn(x, levels=levels)
+    """N-level Haar DWT lowpass (db2 basis removed — verified ineffective in Phase 4E)."""
+    return dwt2_haar_lowpass(x, levels=levels)
 
 
 # ---------------------------------------------------------------------------
@@ -327,3 +157,62 @@ def idwt2_haar_multi_reconstruct(decomp: dict, levels: int = 1) -> torch.Tensor:
         lh, hl, hh = subs[k]
         recon = idwt2_haar(recon, lh, hl, hh)
     return recon
+
+
+# === 712 Phase SF1: Subband-aware Time Schedule γ_k(t) ===
+# 理论: 不同频带在不同时间段活跃 — 先底色(LL), 再边缘(LH/HL), 后笔触(HH).
+# 训练时 FM loss 按 γ_k(t) 加权, 推理时 ODE 积分按 γ_k(t) 加权, 训练-推理一致.
+import math as _math
+
+
+def subband_gamma(t: float, schedule: str) -> float:
+    """Subband-aware time schedule γ_k(t) ∈ [0, 1].
+
+    Physical intuition: 一幅画先画大块底色(LL), 再画边缘(LH/HL), 最后画笔触细节(HH).
+    通过 γ_k(t) 让不同频带在不同时间段主导 ODE 积分, 缓解早期训练梯度冲突.
+
+    Schedules:
+        "uniform"     — γ(t) = 1.0 (default, no scheduling)
+        "early_peak"  — γ(t) = max(0, sin(2πt)), peak at t=0.25, zero after t=0.5
+        "late_burst"  — γ(t) = max(0, -sin(2πt)), dormant before t=0.5, peak at t=0.75
+        "mid_focus"   — γ(t) = sin(πt), peak at t=0.5
+        "early_decay" — γ(t) = (1-t)^0.5, monotonically decreasing (LL protect)
+        "late_ramp"   — γ(t) = t^0.5, monotonically increasing (HH detail)
+    """
+    t = max(0.0, min(1.0, float(t)))
+    if schedule == "uniform" or schedule == "":
+        return 1.0
+    if schedule == "early_peak":
+        # sin(2πt): peaks at t=0.25, zero at t=0 and t=0.5, negative after → clip to 0
+        return max(0.0, _math.sin(2.0 * _math.pi * t))
+    if schedule == "late_burst":
+        # -sin(2πt): dormant [0, 0.5], peaks at t=0.75, zero at t=0.5 and t=1
+        return max(0.0, -_math.sin(2.0 * _math.pi * t))
+    if schedule == "mid_focus":
+        # sin(πt): peaks at t=0.5, zero at t=0 and t=1
+        return _math.sin(_math.pi * t)
+    if schedule == "early_decay":
+        # Monotonically decreasing: strong early, weak late (protects content structure)
+        return (1.0 - t) ** 0.5
+    if schedule == "late_ramp":
+        # Monotonically increasing: weak early, strong late (style detail injection)
+        return t ** 0.5
+    return 1.0
+
+
+def subband_gamma_tensor(t: torch.Tensor, schedule: str) -> torch.Tensor:
+    """Vectorized γ_k(t) for batched time values. t shape [B] → [B,1,1,1]."""
+    t_clamped = t.clamp(0.0, 1.0).float()
+    if schedule == "uniform" or schedule == "":
+        return torch.ones_like(t_clamped)
+    if schedule == "early_peak":
+        return torch.clamp(torch.sin(2.0 * _math.pi * t_clamped), min=0.0)
+    if schedule == "late_burst":
+        return torch.clamp(-torch.sin(2.0 * _math.pi * t_clamped), min=0.0)
+    if schedule == "mid_focus":
+        return torch.sin(_math.pi * t_clamped)
+    if schedule == "early_decay":
+        return (1.0 - t_clamped) ** 0.5
+    if schedule == "late_ramp":
+        return t_clamped ** 0.5
+    return torch.ones_like(t_clamped)

@@ -17,32 +17,9 @@ from torch import nn
 from spectral620 import dwt2_haar, idwt2_haar
 
 
-class RMSNorm(nn.Module):
-    """Root Mean Square Normalization — preserves mean (unlike GroupNorm).
-
-    GroupNorm normalizes both mean→0 and variance→1, which destroys
-    style statistics (brightness = mean, contrast = std).
-    RMSNorm only normalizes by RMS (≈std), keeping the mean intact.
-    This is critical for style transfer where color/brightness carry style identity.
-    """
-    def __init__(self, num_features: int, eps: float = 1e-6):
-        super().__init__()
-        self.eps = eps
-        self.weight = nn.Parameter(torch.ones(num_features))
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: [B, C, H, W] or [B, L, C]
-        rms = torch.sqrt(x.float().pow(2).mean(dim=-1, keepdim=True) + self.eps)
-        x_norm = (x.float() / rms).to(x.dtype)
-        return x_norm * self.weight[None, ...] if x.dim() == 3 else x_norm * self.weight[None, :, None, None]
-
-
-def _make_norm(norm_type: str, dim: int) -> nn.Module:
-    """Factory: create normalization layer."""
-    if norm_type == "rms_norm":
-        return RMSNorm(dim)
-    else:
-        return nn.GroupNorm(1, dim, affine=False)
+def _make_norm(dim: int) -> nn.Module:
+    """Normalization layer (RMSNorm removed — GroupNorm hardcoded)."""
+    return nn.GroupNorm(1, dim, affine=False)
 
 
 class SpatialBridgeBlock620(nn.Module):
@@ -112,12 +89,8 @@ class SpatialBridgeBlock620(nn.Module):
             nn.init.normal_(self.tone_proj.weight, std=0.01)
             nn.init.zeros_(self.tone_proj.bias)
             self.tone_alpha = nn.Parameter(torch.tensor(0.1))
-        # 710 Phase T1: asg_proj kept for checkpoint compatibility (unused in forward)
-        self.asg_proj = nn.Conv2d(self.dim, 1, kernel_size=1)
-        nn.init.zeros_(self.asg_proj.weight)
-        nn.init.zeros_(self.asg_proj.bias)
         # 630 Phase 72 清理: norm_type/group_norm, attn_mode/relu2, gate_mode/tanh_gate 硬编码 (已验证最优)
-        self.norm1 = _make_norm("group_norm", self.dim)
+        self.norm1 = _make_norm(self.dim)
         self.time_adaln = nn.Sequential(nn.SiLU(), nn.Linear(self.dim, self.dim * 3))
         # Self-attention: content Q/K/V
         self.sa_qkv = nn.Linear(self.dim, self.dim * 3)
@@ -127,15 +100,14 @@ class SpatialBridgeBlock620(nn.Module):
         self.k_proj = nn.Linear(self.dim, self.dim)
         self.v_proj = nn.Linear(self.dim, self.dim)
         self.out_proj = nn.Linear(self.dim, self.dim)
-        self.norm2 = _make_norm("group_norm", self.dim)
+        self.norm2 = _make_norm(self.dim)
         self.ffn = nn.Sequential(
-            _make_norm("group_norm", self.dim),
+            _make_norm(self.dim),
             nn.Conv2d(self.dim, self.dim * 4, kernel_size=1),
             nn.SiLU(),
             nn.Conv2d(self.dim * 4, self.dim, kernel_size=1),
         )
         self.style_gate = nn.Parameter(torch.tensor(float(style_gate_init)))
-        self.style_gate_mode = "tanh_gate"  # 630 Phase 72: 硬编码 (已验证最优)
         self._gate_init = float(style_gate_init)
         self.attn_mode = str(attn_mode).lower().strip()  # default "relu2" (629 D19-D22 最优); "softmax" 用 flash attention 适配像素空间大分辨率
         self.attn_temperature = float(attn_temperature)
