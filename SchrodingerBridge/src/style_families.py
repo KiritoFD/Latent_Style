@@ -4,10 +4,6 @@ TOKENIZER_FAMILIES = {
     "legacy_factorized",
     "pure_latent_spatial",
     "affine_connection_tokenizer",
-    "tok_a_dino_dict",
-    "tok_b_cross_image",
-    "tok_c_residual_adapter",
-    "tok_d_vlm_prompt",
     "smoe_translator",
 }
 
@@ -76,15 +72,11 @@ BACKBONE_ATTENTION_FAMILIES = {
 SOLVER_FAMILIES = {
     "euler_legacy",
     "solver_i2sb",
-    "solver_tangent_rk",
     "solver_pc",
-    "solver_unsb_cycle",
 }
 
 SEMANTIC_SUPERVISION_FAMILIES = {
     "legacy_terminal_swd",
-    "dino_masked_swd",
-    "fiberwise_swd",
 }
 
 TRANSPORT_PREDICTION_MODES = {
