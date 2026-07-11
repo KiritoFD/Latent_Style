@@ -1,0 +1,16 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 24
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/refactor_clean_baseline"
+  },
+  "ablation": {
+    "name": "refactor_clean_baseline",
+    "axis": "code_cleanup_verification",
+    "stage": "refactor",
+    "notes": "Clean baseline after ASG removal. Verify codebase produces >= original baseline (CLIP-S>=0.7261, DINO-S>=0.4843). 5 epochs, batch=24, no ASG."
+  }
+}
