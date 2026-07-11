@@ -389,25 +389,10 @@ class ModelConfig:
     # "power": α(t) = t^progressive_alpha_power — 通用幂函数
     progressive_alpha_schedule: str = "none"
     progressive_alpha_power: float = 3.0
-    # 710 Phase S4: Style Amplification — 推理时放大 cross-attention style delta
-    # 理论: style_delta = gate * attended_2d, 放大 attended_2d 增强风格注入
-    # 与 style_extrap_alpha 不同 (后者放大输入统计, 已验证有害)
-    # 1.0 = 无放大 (默认), 1.5-2.0 = 适度放大, 3.0 = 强放大
-    inference_style_amplification: float = 1.0
     # 710 Phase S5: WCT Covariance Interpolation
     # 着色目标为 content 和 style 的统计插值, 减少过度扭曲
     # 1.0 = full style (default), 0.7 = 70% style + 30% content stats
     wct_cov_interp_beta: float = 1.0
-    # 710 Phase T1: Adaptive Style Gate (ASG)
-    # False (default): scalar gate tanh(style_gate) per block (existing behavior)
-    # True: spatial gate map tanh(style_gate + MLP(content_features)) — content-dependent style strength
-    # Theory: different regions need different style intensity. Zero-init MLP = identity at start.
-    adaptive_style_gate: bool = False
-    # 710 Phase T2: Frequency-aware ASG — per-subband gates
-    # False (default): unified gate on iDWT-reconstructed output (T1 behavior)
-    # True: independent gates for LH/HL/HH before iDWT — frequency-dependent style strength
-    # Requires adaptive_style_gate=True. LL bypass unchanged. Zero-init MLPs = identity at start.
-    per_subband_gate: bool = False
     # 710 Phase T4: Adaptive WCT scales — content-dependent endpoint WCT strength
     # False (default): fixed scales (ll=0.0, lh=0.3, hl=0.3, hh=0.5)
     # True: scales adjusted by content/style energy ratio per subband
@@ -668,12 +653,6 @@ class BridgeConfig:
     sinkhorn_unbalanced_tau_tgt: float = 1.0
     sinkhorn_unbalanced_dummy_cost: float = 0.0
     sinkhorn_unbalanced_dummy_offdiag_cost: float = 8.0
-    swd_scale_mode: str = "global"
-    swd_noise_sigma: float = 0.0
-    swd_guidance_source: str = "style_delta"
-    swd_guidance_floor: float = 0.25
-    swd_guidance_power: float = 1.0
-    swd_guidance_sample_size: int = 256
     w_attn_entropy_reg: float = 0.0
     w_style_strength_reg: float = 0.0
     bridge_sigma: float = 0.05
@@ -702,12 +681,6 @@ class BridgeConfig:
     training_bridge_noise_projection_mode: str = "none"
     training_bridge_noise_projection_kernel: int = 5
     training_bridge_noise_projection_preserve_rms: bool = True
-    terminal_swd_weight: float = 0.1
-    terminal_swd_aux_weight: float = 0.0
-    single_step_swd_weight: float = 8.0
-    single_step_edge_weight: float = 0.1
-    swd_replace_with_mse: bool = False              # ablation: replace SWD with pointwise MSE
-    semantic_supervision_family: str = "legacy_terminal_swd"
     w_variance_penalty: float = 0.0
     w_style_energy_floor: float = 0.0
     w_lowfreq_velocity: float = 0.0
@@ -716,7 +689,6 @@ class BridgeConfig:
     w_content_lowpass_anchor: float = 0.0
     w_content_edge_anchor: float = 0.0
     content_anchor_lowpass_kernel: int = 9
-    w_style_contrastive: float = 0.0
     contrastive_margin: float = 0.1
     contrastive_temperature: float = 0.1
     # === FC-SB Phase 4 A4: Output Variance Matching (W 方向重生) ===
@@ -736,12 +708,6 @@ class BridgeConfig:
     #   - 网络只学习高频纹理置换, 不再受逼迫破坏结构
     # 这是 4J.2 路线 (WCT-Aligned Target) 的完全体: 不修改推理, 只修改训练目标.
     structure_aligned_target: bool = False       # True=构造 x₁* (结构对齐目标), False=原始 x₁
-    # === Semantic SWD (Phase 2 低开销重构保留) ===
-    swd_semantic_mode: str = "off"
-    swd_semantic_regions: int = 4
-    swd_semantic_kmeans_iters: int = 4
-    swd_semantic_blend: float = 0.5
-    swd_symmetric_regions: bool = False              # ablation: symmetric content-based region SWD (gen and target share content-defined labels)
     w_style_contrastive: float = 0.0                 # weight for style-contrastive SWD (batch-level distribution separation; replaces legacy SWD when > 0)
     style_contrastive_margin: float = 0.05           # hinge margin for cross-style separation
     style_contrastive_projections: int = 64          # number of random projections for contrastive SWD
@@ -755,17 +721,6 @@ class BridgeConfig:
     endpoint_clamp: float = 24.0
     similarity_clamp: float = 50.0
     training_objective_mode: str = "velocity"
-    w_endpoint_content: float = 1.0
-    w_endpoint_style: float = 8.0
-    w_endpoint_velocity_reg: float = 0.0
-    two_stage_enabled: bool = False
-    two_stage_s1_epochs: int = 2
-    two_stage_s1_w_endpoint_content: float = 0.3
-    two_stage_s1_w_endpoint_style: float = 16.0
-    two_stage_s1_w_style_strength_reg: float = 0.5
-    two_stage_s2_w_endpoint_content: float = 1.0
-    two_stage_s2_w_endpoint_style: float = 8.0
-    two_stage_s2_w_style_strength_reg: float = 0.5
     w_flow_scale: float = 1.0   # FM loss 缩放因子，<1 降低 FM 主导
     cfg_dropout_prob: float = 0.0  # 0=no dropout(default), >0=CFG unconditional training prob
     cfg_null_token_init_std: float = 0.02  # std for learnable null tokens

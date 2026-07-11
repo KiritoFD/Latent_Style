@@ -69,8 +69,6 @@ class SpatialBridgeBlock620(nn.Module):
         ll_adaln_zero: bool = False,
         ll_tone_bias: bool = False,
         attn_mode: str = "relu2",
-        adaptive_style_gate: bool = False,
-        per_subband_gate: bool = False,
     ) -> None:
         super().__init__()
 
@@ -93,17 +91,6 @@ class SpatialBridgeBlock620(nn.Module):
         self.ll_adaln_zero = bool(ll_adaln_zero)
         # 630 Phase 72 方案 D: Direct Tone Bias Injection (无 GroupNorm, 强制注入)
         self.ll_tone_bias = bool(ll_tone_bias)
-        # 710 Phase T1: Adaptive Style Gate (ASG) — gate from content-dependent MLP
-        # 理论: 不同空间区域需要不同 style 强度. 标量 gate 过度 stylize 平坦区域, under-stylize 纹理区域.
-        # ASG: gate_map = tanh(base_gate + MLP(content_features)), 零初始化 MLP 使训练初期等价于标量 gate.
-        # NOTE: module init deferred to after self.dim assignment (see below).
-        self.adaptive_style_gate = bool(adaptive_style_gate)
-        # 710 Phase T2: Frequency-aware ASG — per-subband gates for LH/HL/HH
-        # 理论: 不同频率子带需要不同 style 强度. LH(水平边缘) / HL(垂直边缘) / HH(对角纹理) 的 style 需求不同.
-        # Per-subband gate: gate_i = tanh(base_gate_i + MLP_i(content_subband_i)), 零初始化 MLP.
-        # LL 不加 gate (保持 bypass). 在 iDWT 重建前应用, 替代统一 gate.
-        self.per_subband_gate = bool(per_subband_gate)
-
         self.shortcut_alpha = float(style_shortcut_alpha) if not isinstance(style_shortcut_alpha, (list, tuple)) else (
             float(style_shortcut_alpha[self.layer_idx]) if self.layer_idx < len(style_shortcut_alpha) else 1.0
         )
@@ -125,23 +112,10 @@ class SpatialBridgeBlock620(nn.Module):
             nn.init.normal_(self.tone_proj.weight, std=0.01)
             nn.init.zeros_(self.tone_proj.bias)
             self.tone_alpha = nn.Parameter(torch.tensor(0.1))
-        # 710 Phase T1: ASG modules (必须在 self.dim 赋值之后初始化)
-        if self.adaptive_style_gate:
-            self.asg_norm = nn.GroupNorm(min(self.dim, 8), self.dim, affine=False)
-            self.asg_proj = nn.Conv2d(self.dim, 1, kernel_size=1)
-            nn.init.zeros_(self.asg_proj.weight)
-            nn.init.zeros_(self.asg_proj.bias)
-        # 710 Phase T2: Per-subband ASG modules (独立的 gate + MLP for LH/HL/HH)
-        if self.adaptive_style_gate and self.per_subband_gate:
-            for sb_name in ("lh", "hl", "hh"):
-                gate_param = nn.Parameter(torch.tensor(float(style_gate_init)))
-                setattr(self, f"style_gate_{sb_name}", gate_param)
-                norm = nn.GroupNorm(min(self.dim, 8), self.dim, affine=False)
-                proj = nn.Conv2d(self.dim, 1, kernel_size=1)
-                nn.init.zeros_(proj.weight)
-                nn.init.zeros_(proj.bias)
-                setattr(self, f"asg_norm_{sb_name}", norm)
-                setattr(self, f"asg_proj_{sb_name}", proj)
+        # 710 Phase T1: asg_proj kept for checkpoint compatibility (unused in forward)
+        self.asg_proj = nn.Conv2d(self.dim, 1, kernel_size=1)
+        nn.init.zeros_(self.asg_proj.weight)
+        nn.init.zeros_(self.asg_proj.bias)
         # 630 Phase 72 清理: norm_type/group_norm, attn_mode/relu2, gate_mode/tanh_gate 硬编码 (已验证最优)
         self.norm1 = _make_norm("group_norm", self.dim)
         self.time_adaln = nn.Sequential(nn.SiLU(), nn.Linear(self.dim, self.dim * 3))
@@ -175,45 +149,13 @@ class SpatialBridgeBlock620(nn.Module):
         """Update the current training step for gate warmup scheduling."""
         self._current_step = int(step)
 
-    def _effective_gate_value(self, content_feat: torch.Tensor | None = None) -> torch.Tensor:
-        """Compute effective gate value with warmup schedule.
-
-        710 Phase T1: When adaptive_style_gate is enabled and content_feat is provided,
-        returns a spatial gate map [B, 1, H, W] instead of a scalar.
-        gate_map = tanh(style_gate + asg_proj(norm(content_feat)))
-        Zero-init asg_proj ensures training-start equivalence to scalar gate.
-        """
-        if self.adaptive_style_gate and content_feat is not None:
-            base = torch.tanh(self.style_gate)
-            asg_delta = self.asg_proj(self.asg_norm(content_feat.float()).to(dtype=content_feat.dtype))
-            gate_map = torch.tanh(base + asg_delta)  # [B, 1, H, W]
-            if self.gate_warmup_steps > 0 and self.training:
-                warmup_factor = min(1.0, self._current_step / max(1, self.gate_warmup_steps))
-                gate_map = gate_map * warmup_factor
-            return gate_map
+    def _effective_gate_value(self) -> torch.Tensor:
+        """Compute effective gate value with warmup schedule."""
         raw = torch.tanh(self.style_gate)
         if self.gate_warmup_steps <= 0 or not self.training:
             return raw
         warmup_factor = min(1.0, self._current_step / max(1, self.gate_warmup_steps))
         return raw * warmup_factor
-
-    def _subband_gate_value(self, content_subband: torch.Tensor, sb_name: str) -> torch.Tensor:
-        """710 Phase T2: Per-subband adaptive gate map.
-
-        gate_i = tanh(style_gate_i + asg_proj_i(norm_i(content_subband_i)))
-        Returns [B, 1, hf_h, hf_w] — spatial gate map at subband resolution.
-        Zero-init asg_proj_i ensures training-start equivalence to scalar gate_i.
-        """
-        gate_param = getattr(self, f"style_gate_{sb_name}")
-        norm = getattr(self, f"asg_norm_{sb_name}")
-        proj = getattr(self, f"asg_proj_{sb_name}")
-        base = torch.tanh(gate_param)
-        delta = proj(norm(content_subband.float()).to(dtype=content_subband.dtype))
-        gate_map = torch.tanh(base + delta)  # [B, 1, hf_h, hf_w]
-        if self.gate_warmup_steps > 0 and self.training:
-            warmup_factor = min(1.0, self._current_step / max(1, self.gate_warmup_steps))
-            gate_map = gate_map * warmup_factor
-        return gate_map
 
     def _compute_use_dwt(self) -> bool:
         """Decide whether to use DWT-routed cross-attention for this forward call.
@@ -350,30 +292,11 @@ class SpatialBridgeBlock620(nn.Module):
                     alpha = torch.tanh(self.tone_alpha)  # 限制在 [-1, 1] 防止发散
                     ll_f = ll_f * (1.0 + alpha * gamma[:, :, None, None]) + alpha * beta[:, :, None, None]
                 # LL bypass: 完全保留内容锚, 仅高频子带注入 style (4J.1 原始设计)
-                # 710 Phase T2: Frequency-aware ASG — per-subband gates before iDWT
-                if self.per_subband_gate and self.adaptive_style_gate:
-                    gate_lh = self._subband_gate_value(lh_f, "lh")
-                    gate_hl = self._subband_gate_value(hl_f, "hl")
-                    gate_hh = self._subband_gate_value(hh_f, "hh")
-                    lh_out = gate_lh.to(dtype=lh_out.dtype) * lh_out
-                    hl_out = gate_hl.to(dtype=hl_out.dtype) * hl_out
-                    hh_out = gate_hh.to(dtype=hh_out.dtype) * hh_out
                 attended_2d = idwt2_haar(ll_f, lh_out, hl_out, hh_out).to(dtype=x.dtype)
         else:
             attended_2d = attended.transpose(1, 2).reshape(b, c, h, w)
-        # 710 Phase T2: Frequency-aware ASG — per-subband gates applied before iDWT
-        if self.per_subband_gate and self.adaptive_style_gate and ca_is_dwt:
-            # Per-subband gates already applied above (lh_out/hl_out/hh_out modulated)
-            # attended_2d is the iDWT reconstruction of gated subbands
-            style_delta = attended_2d
-        else:
-            # 710 Phase T1: ASG — pass content features (x after SA) for spatial gate
-            gate_val = self._effective_gate_value(x)
-            style_delta = gate_val.to(dtype=x.dtype) * attended_2d
-        # 710 Phase S4: Style Amplification — 推理时放大 cross-attention style delta
-        _style_amp = getattr(self, '_style_amp', 1.0)
-        if _style_amp != 1.0:
-            style_delta = style_delta * _style_amp
+        gate_val = self._effective_gate_value()
+        style_delta = gate_val.to(dtype=x.dtype) * attended_2d
         self.pixel_entropy = pixel_entropy
         self.cross_attn_entropy = attn_entropy
         self.cross_attn_guidance = style_delta.detach().float().abs().mean(dim=1, keepdim=True).to(dtype=x.dtype)

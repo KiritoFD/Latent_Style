@@ -369,8 +369,6 @@ class SpectralODEBridge620(nn.Module):
         # 630 Phase 72 方案 D: Direct Tone Bias Injection
         ll_tone_bias = bool(getattr(model_cfg, "ll_tone_bias", False))
         self.ll_tone_bias = ll_tone_bias
-        adaptive_style_gate = bool(getattr(model_cfg, "adaptive_style_gate", False))
-        per_subband_gate = bool(getattr(model_cfg, "per_subband_gate", False))
         if ll_adaln_zero or ll_tone_bias:
             # 独立于 style_memory 的全局色调嵌入, 每个风格一个 dim 维向量
             # 专为 LL 色调调制训练, 不受 style_memory 高频偏向污染
@@ -388,8 +386,6 @@ class SpectralODEBridge620(nn.Module):
                 dwt_route_train_prob=dwt_route_train_prob,
                 ll_adaln_zero=ll_adaln_zero,
                 ll_tone_bias=ll_tone_bias,
-                adaptive_style_gate=adaptive_style_gate,
-                per_subband_gate=per_subband_gate,
             )
             for idx in range(depth)
         ])
@@ -988,16 +984,6 @@ class SpectralODEBridge620(nn.Module):
         _base_adain_scale_lh = adain_scale_lh
         _base_adain_scale_hl = adain_scale_hl
         _base_adain_scale_hh = adain_scale_hh
-        # 710 Phase S4: Style Amplification — 推理时放大 cross-attention style delta
-        # 理论: 不改变 style 输入统计 (style_extrap 已验证有害), 而是放大 attention 输出
-        # 在 velocity 计算时增强风格对 content features 的贡献
-        _style_amp = float(_cfg_get('inference_style_amplification', 1.0))
-        if not self.training and _style_amp != 1.0:
-            for _blk in self.blocks:
-                _blk._style_amp = _style_amp
-        else:
-            for _blk in self.blocks:
-                _blk._style_amp = 1.0
         # 710 Phase S5: WCT covariance interpolation beta
         _wct_cov_interp_beta = float(_cfg_get('wct_cov_interp_beta', 1.0))
         # 710 Phase T4: Adaptive WCT scales
