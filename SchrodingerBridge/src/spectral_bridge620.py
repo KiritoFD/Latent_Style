@@ -322,6 +322,9 @@ class SpectralODEBridge620(nn.Module):
         # 630 Phase 72 方案 D: Direct Tone Bias Injection
         ll_tone_bias = bool(getattr(model_cfg, "ll_tone_bias", False))
         self.ll_tone_bias = ll_tone_bias
+        # 710 Phase T1: Adaptive Style Gate — content-dependent spatial gate
+        adaptive_style_gate = bool(getattr(model_cfg, "adaptive_style_gate", False))
+        self.adaptive_style_gate = adaptive_style_gate
         if ll_adaln_zero or ll_tone_bias:
             # 独立于 style_memory 的全局色调嵌入, 每个风格一个 dim 维向量
             # 专为 LL 色调调制训练, 不受 style_memory 高频偏向污染
@@ -339,6 +342,7 @@ class SpectralODEBridge620(nn.Module):
                 dwt_route_train_prob=dwt_route_train_prob,
                 ll_adaln_zero=ll_adaln_zero,
                 ll_tone_bias=ll_tone_bias,
+                adaptive_style_gate=adaptive_style_gate,
             )
             for idx in range(depth)
         ])

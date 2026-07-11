@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import importlib
+import runpy
 import sys
 from pathlib import Path
 
@@ -10,9 +10,11 @@ def main() -> None:
     src_dir = root / "src"
     if str(src_dir) not in sys.path:
         sys.path.insert(0, str(src_dir))
-    # Import by module name so multiprocessing can re-import in worker processes.
-    module = importlib.import_module("run")
-    module.main()
+    # Delegate to src/run.py (the actual training entry). Use runpy with the
+    # src/run.py file path so the module is loaded by file location, avoiding
+    # the self-import recursion bug where `import run` resolves to this file.
+    sys.argv[0] = str(src_dir / "run.py")
+    runpy.run_path(str(src_dir / "run.py"), run_name="__main__")
 
 
 if __name__ == "__main__":
