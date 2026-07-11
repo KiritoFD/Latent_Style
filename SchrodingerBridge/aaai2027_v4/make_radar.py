@@ -50,7 +50,7 @@ DATA = {
     "SaMST":          [(0.618, 0.749, 0.145, 0.271), (0.709, 0.398, 0.838, 0.501), (0.667, 0.612, 0.615, 0.461)],
     "SaMam":          [(0.582, 0.243, 0.812, 0.477), (0.677, 0.205, 0.870, 0.505), (0.712, 0.227, 0.925, 0.503)],
     "Seedream 4.5":   [(0.720, 0.477, 0.739, 0.486), (0.752, 0.227, 0.785, 0.517), (0.742, 0.486, 0.725, 0.504)],
-    "Ours (WEAVE)":   [(0.715, 0.382, 0.778, 0.492), (0.683, 0.203, 0.878, 0.510), (0.743, 0.290, 0.816, 0.480)],
+    "Ours (WEAVE)":   [(0.7261, 0.3354, 0.7692, 0.4843), (0.6695, 0.3648, 0.8245, 0.4745), (0.7657, 0.3353, 0.7403, 0.5152)],
 }
 DATASETS = ["D5-512", "P2A-256", "R5-WikiArt"]
 
@@ -66,7 +66,7 @@ TRAIN_SEC = {
     "SaMST":          39.5  * 60.0,    # 39.5 min
     "SaMam":          436.0 * 60.0,    # 436.0 min
     "Seedream 4.5":   math.nan,        # API
-    "Ours (WEAVE)":   3.08  * 60.0,    # 3.08 min
+    "Ours (WEAVE)":   2.07  * 60.0,    # 2.07 min
 }
 INFER_SEC = {
     "Identity":       math.nan,        # 0 s dropped (training-free -> gap on infer axis)
@@ -79,7 +79,7 @@ INFER_SEC = {
     "SaMST":          10.0 * 60.0,     # 10 m   (not re-measured on 3060; prior value)
     "SaMam":          17.6 * 60.0,     # 17.6 m (not re-measured on 3060; prior value)
     "Seedream 4.5":   math.nan,        # --
-    "Ours (WEAVE)":   83.7,            # 83.7 s (actual 750-pair run, RTX3060)
+    "Ours (WEAVE)":   53.8,            # 53.8 s (b16 optimized, RTX3060)
 }
 
 # radar method name -> local results/<ds>/<dir> name (for DINO lookup)

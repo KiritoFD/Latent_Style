@@ -1,0 +1,19 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "single_step_swd_weight": 0.0
+  },
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 24
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/abl_wo_swd"
+  },
+  "ablation": {
+    "name": "abl_wo_swd",
+    "axis": "loss_function",
+    "stage": "destructive_ablation",
+    "notes": "Remove SWD loss entirely (weight=0). Only FM loss (MSE) drives training. Tests whether distribution matching is necessary at all."
+  }
+}

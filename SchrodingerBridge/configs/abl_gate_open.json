@@ -1,0 +1,19 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "style_cross_attn_gate_init": 3.0
+  },
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 24
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/abl_gate_open"
+  },
+  "ablation": {
+    "name": "abl_gate_open",
+    "axis": "architecture",
+    "stage": "destructive_ablation",
+    "notes": "Open cross-attention gate from 0.05 to 3.0 (tanh(3.0)=0.995, near full strength). Tests whether cross-attention can inject style when gate is fully open. If still no effect, cross-attention architecture is fundamentally broken."
+  }
+}

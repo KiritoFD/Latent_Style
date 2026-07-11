@@ -40,6 +40,20 @@ def list_style_images(style_dir: Path) -> list[Path]:
 def load_dino(model_name: str, device: str, cache_dir: str, allow_network: bool):
     os.environ["HF_HUB_OFFLINE"] = "0" if allow_network else "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "0" if allow_network else "1"
+    # If cache_dir has a local snapshot, use it directly to avoid network
+    if not allow_network and cache_dir:
+        from pathlib import Path as _P
+        # Try standard HF hub layout: <cache_dir>/hub/models--<org>--<name>/snapshots/<rev>
+        parts = model_name.split("/")
+        if len(parts) == 2:
+            repo_dir = _P(cache_dir) / "hub" / f"models--{parts[0]}--{parts[1]}"
+            snap_root = repo_dir / "snapshots"
+            if snap_root.exists():
+                revisions = [p for p in snap_root.iterdir() if p.is_dir()]
+                if revisions:
+                    local_path = str(revisions[0])
+                    print(f"[INFO] Loading DINOv2 from local snapshot: {local_path}")
+                    return AutoModel.from_pretrained(local_path).to(device).eval()
     kwargs = {"cache_dir": cache_dir} if cache_dir else {}
     return AutoModel.from_pretrained(model_name, **kwargs).to(device).eval()
 

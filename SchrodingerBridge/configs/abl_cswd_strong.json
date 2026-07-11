@@ -1,0 +1,28 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "w_style_contrastive": 40.0,
+    "style_contrastive_margin": 0.15,
+    "style_contrastive_projections": 64,
+    "style_contrastive_temperature": 0.1,
+    "style_contrastive_w_same": 1.0,
+    "style_contrastive_w_diff": 1.0,
+    "style_contrastive_w_centroid": 2.0,
+    "single_step_swd_weight": 0.0,
+    "single_step_edge_weight": 0.0,
+    "w_endpoint_content": 0.0
+  },
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 24
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/abl_cswd_strong"
+  },
+  "ablation": {
+    "name": "abl_cswd_strong",
+    "axis": "loss_function",
+    "stage": "destructive_ablation",
+    "notes": "Strong contrastive SWD: w=40 (5x), margin=0.15 (3x), w_centroid=2.0 (InfoNCE dominant). Tests whether stronger contrastive signal improves DINO-S/CLIP-S."
+  }
+}

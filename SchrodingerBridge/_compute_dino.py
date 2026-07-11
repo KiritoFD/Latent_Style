@@ -36,8 +36,9 @@ DINO_TRANSFORM = T.Compose([
     T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-KNOWN_WIKIART_STYLES = ["Early_Renaissance", "Impressionism", "Minimalism",
-                        "Rococo", "Ukiyo_e"]
+DEFAULT_WIKIART_STYLES = ["Early_Renaissance", "Impressionism", "Minimalism",
+                          "Rococo", "Ukiyo_e"]
+KNOWN_WIKIART_STYLES = list(DEFAULT_WIKIART_STYLES)  # will be overridden by --style_subdirs if given
 KNOWN_WIKIART_STYLES_SORTED = sorted(KNOWN_WIKIART_STYLES, key=len, reverse=True)
 IMG_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".bmp"]
 
@@ -46,10 +47,14 @@ IMG_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".bmp"]
 # Filename parsing
 # --------------------------------------------------------------------------- #
 def parse_wikiart(stem):
-    """'{SrcStyle}_{artist}_to_{TgtStyle}' (single-underscore _to_ separator)."""
-    if "_to_" not in stem:
+    """Parse '{SrcStyle}__{artist}__to__{TgtStyle}' or '{SrcStyle}_{artist}_to_{TgtStyle}'."""
+    # Try __to__ (double-underscore) format first
+    if "__to__" in stem:
+        left, tgt = stem.rsplit("__to__", 1)
+    elif "_to_" in stem:
+        left, tgt = stem.rsplit("_to_", 1)
+    else:
         return None
-    left, tgt = stem.rsplit("_to_", 1)  # rsplit: artist name may contain "_to_"
     tgt_style = None
     for s in KNOWN_WIKIART_STYLES:
         if tgt == s or tgt.startswith(s):
@@ -75,10 +80,19 @@ def parse_wikiart(stem):
                 changed = True
     if not artist:
         return None
+    artist = artist.lstrip("_")  # strip leading underscores from double-style prefix
+    if not artist:
+        return None
+    # For __to__ format with double style prefix ({Style}__{Style}__{artist}),
+    # strip the repeated style prefix
+    if src_style and artist.startswith(src_style + "__"):
+        artist = artist[len(src_style) + 2:]
+    if not artist:
+        return None
     return src_style, artist, tgt_style
 
 
-_P2A_RE = re.compile(r"^(?P<src>[a-zA-Z]+)_(?P<id>\d+)_to_(?P<tgt>[a-zA-Z]+)$")
+_P2A_RE = re.compile(r"^(?P<src>[a-zA-Z]+)_(?P<id>.+?)_to_(?P<tgt>[a-zA-Z]+)$")
 
 
 def parse_p2a(stem):
@@ -116,18 +130,20 @@ def find_content_wikiart(test_dir, src_style, artist):
 
 def find_content_p2a(test_dir, src, id_):
     fmap = _folder_map(test_dir)
-    base_name = f"{src}_{id_}"
+    # Try both "{src}_{id}" and "{id}" filename patterns (test dirs may use ID-only)
+    candidates = [f"{src}_{id_}", id_]
     folder = fmap.get(src.lower())
-    if folder is not None:
+    for base_name in candidates:
+        if folder is not None:
+            for ext in IMG_EXTS:
+                p = folder / f"{base_name}{ext}"
+                if p.exists():
+                    return p
+        # fallback across folders
         for ext in IMG_EXTS:
-            p = folder / f"{base_name}{ext}"
-            if p.exists():
-                return p
-    # fallback across folders
-    for ext in IMG_EXTS:
-        for d in Path(test_dir).iterdir():
-            if d.is_dir() and (d / f"{base_name}{ext}").exists():
-                return d / f"{base_name}{ext}"
+            for d in Path(test_dir).iterdir():
+                if d.is_dir() and (d / f"{base_name}{ext}").exists():
+                    return d / f"{base_name}{ext}"
     return None
 
 
@@ -179,7 +195,14 @@ def main():
     ap.add_argument("--hf_cache", default="")
     ap.add_argument("--max_refs", type=int, default=30)
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--style_subdirs", default="", help="Comma-separated style names to override default wikiart styles")
     args = ap.parse_args()
+
+    # Override known wikiart styles if --style_subdirs is given
+    global KNOWN_WIKIART_STYLES, KNOWN_WIKIART_STYLES_SORTED
+    if args.style_subdirs:
+        KNOWN_WIKIART_STYLES = [s.strip() for s in args.style_subdirs.split(",") if s.strip()]
+        KNOWN_WIKIART_STYLES_SORTED = sorted(KNOWN_WIKIART_STYLES, key=len, reverse=True)
 
     out_path = Path(args.output)
     if args.resume and out_path.exists():

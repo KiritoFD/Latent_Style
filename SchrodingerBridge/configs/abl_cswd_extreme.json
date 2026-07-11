@@ -1,0 +1,28 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "w_style_contrastive": 80.0,
+    "style_contrastive_margin": 0.20,
+    "style_contrastive_projections": 128,
+    "style_contrastive_temperature": 0.05,
+    "style_contrastive_w_same": 0.5,
+    "style_contrastive_w_diff": 1.0,
+    "style_contrastive_w_centroid": 4.0,
+    "single_step_swd_weight": 0.0,
+    "single_step_edge_weight": 0.0,
+    "w_endpoint_content": 0.0
+  },
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 24
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/abl_cswd_extreme"
+  },
+  "ablation": {
+    "name": "abl_cswd_extreme",
+    "axis": "loss_function",
+    "stage": "destructive_ablation",
+    "notes": "Extreme contrastive SWD: w=80 (10x baseline), margin=0.20 (4x), P=128, temp=0.05 (harder), w_centroid=4.0 (InfoNCE dominant), w_same=0.5 (relax consistency). Tests maximum style separation pressure."
+  }
+}

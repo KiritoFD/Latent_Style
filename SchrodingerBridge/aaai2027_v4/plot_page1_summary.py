@@ -62,7 +62,6 @@ BASELINES = [
     point("AdaIN", 0.6679, 0.7425, "classical"),
     point("WCT", 0.7063, 0.6348, "classical", label=True),
     point("SD-Turbo", 0.6933, 0.0033, "diffusion"),
-    point("StyleID", 0.8223, 0.5523, "diffusion", label=True),
     point("StyleAligned", 0.8739, 0.7825, "training_free", label=True),
     point("IP-Adapter", 0.8288, 0.6363, "training_free", label=True),
     
@@ -73,8 +72,10 @@ BASELINES = [
 ]
 
 OURS_FRONTIER = [
-    point("T10", 0.7083, 0.2480, "ours", label=True, display="WEAVE", train_min=3.08),
-    point("T11", 0.7213, 0.2868, "ours", label=True, display="Ours", train_min=3.08),
+    # T1 ASG 5ep: current best (CLIP-S=0.7261, LPIPS=0.3354)
+    point("T1-ASG", 0.7261, 0.3354, "ours", label=True, display="WEAVE", train_min=2.07),
+    # D1 Gram (hf=5): lower LPIPS operating point (CLIP-S=0.7156, LPIPS=0.2797)
+    point("D1-Gram", 0.7156, 0.2797, "ours", label=True, display="Ours", train_min=2.07),
 ]
 
 ALL_POINTS = BASELINES + OURS_FRONTIER
@@ -93,22 +94,21 @@ GROUP_STYLE = {
 LABEL_POS = {
     "Identity": {"xytext": (0, 8), "ha": "center", "va": "bottom", "arrow": False},
     "WCT": {"xytext": (14, 0), "ha": "left", "va": "center", "arrow": False},
-    "StyleID": {"xytext": (0, -8), "ha": "center", "va": "top", "arrow": False},
     "StyleAligned": {"xytext": (12, 0), "ha": "left", "va": "center", "arrow": False},
     "IP-Adapter": {"xytext": (-12, 0), "ha": "right", "va": "center", "arrow": False},
-    
+
     "CUT": {"xytext": (-6, 10), "ha": "right", "va": "bottom", "arrow": False},
     "SaMST": {"xytext": (12, 10), "ha": "left", "va": "bottom", "arrow": False},
     "SaMam": {"xytext": (-8, 10), "ha": "right", "va": "bottom", "arrow": False},
     "Seedream 4.5": {"xytext": (-6, 10), "ha": "right", "va": "bottom", "arrow": False},
-    "T10": {"xytext": (8, -2), "ha": "left", "va": "center", "arrow": False},
-    "T11": {"xytext": (0, 8), "ha": "center", "va": "bottom", "arrow": False},
+    "T1-ASG": {"xytext": (14, -10), "ha": "left", "va": "top", "arrow": False},
+    "D1-Gram": {"xytext": (0, 8), "ha": "center", "va": "bottom", "arrow": False},
 }
 
 ARTFID_BARS = [
     {"name": "IDT", "value": 216.5, "time": "ref", "color": "#8F63BF"},
     {"name": "SaMam", "value": 146.1, "time": "7.6h", "color": "#3B82C4"},
-    {"name": "WEAVE", "value": 300.9, "time": "3.08m", "color": "#D6452F"},
+    {"name": "WEAVE", "value": 300.9, "time": "2.07m", "color": "#D6452F"},
     {"name": "Seedream\n4.5", "value": 311.5, "time": "API", "color": "#C98B00"},
 ]
 
@@ -159,7 +159,7 @@ def bubble_size(p: dict) -> float:
     t = p.get("train_min")
     if t is None or t <= 0:
         return math.pi * (2.8**2)
-    timed_values = [3.08, 39.5, 322.6, 436.0]
+    timed_values = [2.07, 39.5, 322.6, 436.0]
     t_min = min(timed_values)
     t_max = max(timed_values)
     r_min = 2.8
@@ -259,9 +259,9 @@ def build_scatter(ax: plt.Axes) -> None:
         zorder=7,
     )
 
-    t11 = next(p for p in ALL_POINTS if p["name"] == "T11")
+    t11 = next(p for p in ALL_POINTS if p["name"] == "T1-ASG")
     ax.annotate(
-        "3.08 min, RTX 3060",
+        "2.07 min, RTX 3060",
         xy=(t11["x"], t11["clip"]),
         xytext=(58, 38),
         textcoords="offset points",

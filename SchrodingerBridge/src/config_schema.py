@@ -403,6 +403,16 @@ class ModelConfig:
     # True: spatial gate map tanh(style_gate + MLP(content_features)) — content-dependent style strength
     # Theory: different regions need different style intensity. Zero-init MLP = identity at start.
     adaptive_style_gate: bool = False
+    # 710 Phase T2: Frequency-aware ASG — per-subband gates
+    # False (default): unified gate on iDWT-reconstructed output (T1 behavior)
+    # True: independent gates for LH/HL/HH before iDWT — frequency-dependent style strength
+    # Requires adaptive_style_gate=True. LL bypass unchanged. Zero-init MLPs = identity at start.
+    per_subband_gate: bool = False
+    # 710 Phase T4: Adaptive WCT scales — content-dependent endpoint WCT strength
+    # False (default): fixed scales (ll=0.0, lh=0.3, hl=0.3, hh=0.5)
+    # True: scales adjusted by content/style energy ratio per subband
+    # Inference-only, no training needed. High style/content energy ratio = scale up.
+    adaptive_wct_scales: bool = False
     # 630 Phase 4I.2: ODE solver 类型 (euler | heun | rk4)
     # "euler" (default, 一阶 O(h^2) 截断误差): 现有行为
     # "heun" (改进 Euler, 二阶 O(h^3) 截断误差): predictor-corrector, 相同步数下轨迹更准确
@@ -696,6 +706,7 @@ class BridgeConfig:
     terminal_swd_aux_weight: float = 0.0
     single_step_swd_weight: float = 8.0
     single_step_edge_weight: float = 0.1
+    swd_replace_with_mse: bool = False              # ablation: replace SWD with pointwise MSE
     semantic_supervision_family: str = "legacy_terminal_swd"
     w_variance_penalty: float = 0.0
     w_style_energy_floor: float = 0.0
@@ -730,6 +741,14 @@ class BridgeConfig:
     swd_semantic_regions: int = 4
     swd_semantic_kmeans_iters: int = 4
     swd_semantic_blend: float = 0.5
+    swd_symmetric_regions: bool = False              # ablation: symmetric content-based region SWD (gen and target share content-defined labels)
+    w_style_contrastive: float = 0.0                 # weight for style-contrastive SWD (batch-level distribution separation; replaces legacy SWD when > 0)
+    style_contrastive_margin: float = 0.05           # hinge margin for cross-style separation
+    style_contrastive_projections: int = 64          # number of random projections for contrastive SWD
+    style_contrastive_temperature: float = 0.1       # InfoNCE temperature for centroid contrastive (lower = harder)
+    style_contrastive_w_same: float = 1.0            # weight for same-style consistency term
+    style_contrastive_w_diff: float = 1.0            # weight for cross-style hinge separation term
+    style_contrastive_w_centroid: float = 1.0        # weight for centroid InfoNCE term
     normalize_eps: float = 1e-8
     logit_clamp: float = 50.0
     velocity_clamp: float = 20.0

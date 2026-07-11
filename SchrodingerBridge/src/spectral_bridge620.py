@@ -370,6 +370,7 @@ class SpectralODEBridge620(nn.Module):
         ll_tone_bias = bool(getattr(model_cfg, "ll_tone_bias", False))
         self.ll_tone_bias = ll_tone_bias
         adaptive_style_gate = bool(getattr(model_cfg, "adaptive_style_gate", False))
+        per_subband_gate = bool(getattr(model_cfg, "per_subband_gate", False))
         if ll_adaln_zero or ll_tone_bias:
             # 独立于 style_memory 的全局色调嵌入, 每个风格一个 dim 维向量
             # 专为 LL 色调调制训练, 不受 style_memory 高频偏向污染
@@ -388,6 +389,7 @@ class SpectralODEBridge620(nn.Module):
                 ll_adaln_zero=ll_adaln_zero,
                 ll_tone_bias=ll_tone_bias,
                 adaptive_style_gate=adaptive_style_gate,
+                per_subband_gate=per_subband_gate,
             )
             for idx in range(depth)
         ])
@@ -644,6 +646,7 @@ class SpectralODEBridge620(nn.Module):
         style_dwt_decomp: dict | None = None,
         style_wct_stats: dict | None = None,
         wct_cov_interp_beta: float = 1.0,
+        adaptive_wct_scales: bool = False,
     ) -> torch.Tensor:
         """Apply endpoint AdaIN/WCT style injection (4 modes).
 
@@ -704,9 +707,27 @@ class SpectralODEBridge620(nn.Module):
                 _lh_st = _hl_st = _hh_st = None
                 if _h_stats is not None:
                     _lh_st, _hl_st, _hh_st = _h_stats
-                lh_new = (1.0 - adain_scale_lh) * lh + adain_scale_lh * _wct_match_fiber(lh, s_lh, style_stats=_lh_st)
-                hl_new = (1.0 - adain_scale_hl) * hl + adain_scale_hl * _wct_match_fiber(hl, s_hl, style_stats=_hl_st)
-                hh_new = (1.0 - adain_scale_hh) * hh + adain_scale_hh * _wct_match_fiber(hh, s_hh, style_stats=_hh_st)
+                # 710 Phase T4: Adaptive WCT scales — content/style energy ratio
+                if adaptive_wct_scales:
+                    ce_lh = lh.detach().float().abs().mean()
+                    ce_hl = hl.detach().float().abs().mean()
+                    ce_hh = hh.detach().float().abs().mean()
+                    se_lh = s_lh.detach().float().abs().mean()
+                    se_hl = s_hl.detach().float().abs().mean()
+                    se_hh = s_hh.detach().float().abs().mean()
+                    ratio_lh = (se_lh / (ce_lh + 1e-6)).clamp(0.5, 2.0)
+                    ratio_hl = (se_hl / (ce_hl + 1e-6)).clamp(0.5, 2.0)
+                    ratio_hh = (se_hh / (ce_hh + 1e-6)).clamp(0.5, 2.0)
+                    sc_lh = (adain_scale_lh * ratio_lh).clamp(0.0, 1.0)
+                    sc_hl = (adain_scale_hl * ratio_hl).clamp(0.0, 1.0)
+                    sc_hh = (adain_scale_hh * ratio_hh).clamp(0.0, 1.0)
+                else:
+                    sc_lh = adain_scale_lh
+                    sc_hl = adain_scale_hl
+                    sc_hh = adain_scale_hh
+                lh_new = (1.0 - sc_lh) * lh + sc_lh * _wct_match_fiber(lh, s_lh, style_stats=_lh_st)
+                hl_new = (1.0 - sc_hl) * hl + sc_hl * _wct_match_fiber(hl, s_hl, style_stats=_hl_st)
+                hh_new = (1.0 - sc_hh) * hh + sc_hh * _wct_match_fiber(hh, s_hh, style_stats=_hh_st)
                 new_subs.append((lh_new, hl_new, hh_new))
             return idwt2_haar_multi_reconstruct(
                 {"ll_K": ll_K, "h": new_subs}, levels=lowpass_levels
@@ -979,6 +1000,8 @@ class SpectralODEBridge620(nn.Module):
                 _blk._style_amp = 1.0
         # 710 Phase S5: WCT covariance interpolation beta
         _wct_cov_interp_beta = float(_cfg_get('wct_cov_interp_beta', 1.0))
+        # 710 Phase T4: Adaptive WCT scales
+        _adaptive_wct_scales = bool(_cfg_get('adaptive_wct_scales', False))
         # 630 Phase 4I.2: ODE solver 类型 (euler | heun)
         # Heun (改进 Euler): 二阶精度 O(h^2), predictor-corrector, 相同步数下数值误差更低
         # 理论: 更低截断误差 → 更准确的 ODE 轨迹 → 风格注入更精准
@@ -1113,6 +1136,7 @@ class SpectralODEBridge620(nn.Module):
                     style_dwt_decomp=_style_dwt_decomp,
                     style_wct_stats=_style_wct_stats,
                     wct_cov_interp_beta=_wct_cov_interp_beta,
+                    adaptive_wct_scales=_adaptive_wct_scales,
                 )
         return h
 

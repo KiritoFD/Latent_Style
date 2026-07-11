@@ -1,0 +1,19 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "spectral_w_ll": 1.0
+  },
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 24
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/abl_ll_equal"
+  },
+  "ablation": {
+    "name": "abl_ll_equal",
+    "axis": "frequency_routing",
+    "stage": "destructive_ablation",
+    "notes": "Set LL subband weight to 1.0 (equal to LH/HL). Tests whether reduced LL weight (0.3) is necessary for content preservation."
+  }
+}

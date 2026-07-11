@@ -1,0 +1,12 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "endpoint_adain_only_last_step": true
+  },
+  "ablation": {
+    "name": "abl_endpoint_only",
+    "axis": "inference",
+    "stage": "destructive_ablation",
+    "notes": "Inference-time ablation: apply Endpoint AdaIN only at the last ODE step (not every step). Tests whether per-step AdaIN (current default) is necessary or if endpoint-only alignment (as described in paper) is sufficient."
+  }
+}

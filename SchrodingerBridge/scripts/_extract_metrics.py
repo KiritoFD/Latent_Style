@@ -1,57 +1,92 @@
-"""Extract key metrics from summary.json."""
+"""Extract metrics from summary.json and config.json for Latent-WCT and T1 ASG."""
 import json
 import sys
+from pathlib import Path
 
-path = sys.argv[1] if len(sys.argv) > 1 else r"I:\Github\Latent_Style\SchrodingerBridge\exp\t1_asg_5ep\full_eval\epoch_0005\summary.json"
-with open(path, encoding="utf-8") as f:
-    data = json.load(f)
+# Latent-WCT summary
+wct_summary_path = Path(r"I:\Github\Latent_Style\SchrodingerBridge\exp\latent_wct_baseline\full_eval\epoch_0000\summary.json")
+if wct_summary_path.exists():
+    s = json.load(open(wct_summary_path))
+    a = s.get("analysis", {})
+    t = a.get("style_transfer_ability", {})
+    ap = a.get("all_pairs_overview", {})
+    print("=== Latent-WCT Results ===")
+    print(f"CLIP-S (transfer): {t.get('clip_style', 'N/A')}")
+    print(f"LPIPS (transfer):  {t.get('content_lpips', 'N/A')}")
+    print(f"CLIP-S (allpairs): {ap.get('clip_style', 'N/A')}")
+    print(f"LPIPS (allpairs):  {ap.get('content_lpips', 'N/A')}")
+    print(f"Generated count:   {s.get('generated_count', 'N/A')}")
+else:
+    print("WCT summary not found!")
 
-# Print top-level keys
-print("=== TOP-LEVEL KEYS ===")
-for k in data.keys():
-    v = data[k]
-    if isinstance(v, dict):
-        print(f"  {k}: dict with {len(v)} keys")
-    elif isinstance(v, list):
-        print(f"  {k}: list with {len(v)} items")
-    else:
-        print(f"  {k}: {v}")
+# DINO results
+dino_path = Path(r"I:\Github\Latent_Style\SchrodingerBridge\exp\_dino_results\latent_wct.json")
+if dino_path.exists():
+    d = json.load(open(dino_path))
+    print(f"\nDINO-con: {d.get('dino_content', 'N/A')}")
+    print(f"DINO-sty: {d.get('dino_style', 'N/A')}")
+else:
+    print("\nDINO results not found!")
 
-# Look for metrics in common locations
-print("\n=== METRICS ===")
-for key in ["metrics", "aggregate_metrics", "scores", "results", "evaluation"]:
-    if key in data:
-        print(f"\n--- {key} ---")
-        metrics = data[key]
-        if isinstance(metrics, dict):
-            for k, v in metrics.items():
-                if isinstance(v, (int, float)):
-                    print(f"  {k}: {v}")
-                elif isinstance(v, dict) and "mean" in v:
-                    print(f"  {k}: mean={v['mean']}")
-                elif isinstance(v, dict):
-                    for k2, v2 in v.items():
-                        if isinstance(v2, (int, float)):
-                            print(f"  {k}.{k2}: {v2}")
+# T1 ASG config
+print("\n=== T1 ASG Config ===")
+cfg_path = Path(r"I:\Github\Latent_Style\SchrodingerBridge\exp\t1_asg_5ep\config.json")
+if cfg_path.exists():
+    c = json.load(open(cfg_path))
+    m = c.get("model", {})
+    print(f"adaptive_style_gate: {m.get('adaptive_style_gate')}")
+    print(f"lowpass_mode: {m.get('lowpass_mode')}")
+    print(f"spectral_ode_enabled: {m.get('spectral_ode_enabled')}")
+    print(f"endpoint_adain_mode: {m.get('endpoint_adain_mode')}")
+    print(f"cross_attn_dwt_route: {m.get('cross_attn_dwt_route')}")
+    print(f"dwt_route_train_prob: {m.get('dwt_route_train_prob')}")
+    print(f"style_condition_source: {m.get('style_condition_source')}")
+    print(f"contract_family: {m.get('contract_family')}")
+    print(f"per_subband_gate: {m.get('per_subband_gate')}")
+    print(f"style_gate_mode: {m.get('style_gate_mode')}")
+    print(f"style_attn_mode: {m.get('style_attn_mode')}")
+    fe = c.get("full_eval", {})
+    print(f"full_eval.num_steps: {fe.get('num_steps')}")
+    b = c.get("bridge", {})
+    print(f"single_step_swd_weight: {b.get('single_step_swd_weight')}")
+    print(f"terminal_swd_weight: {b.get('terminal_swd_weight')}")
+    print(f"bridge_path_mode: {b.get('bridge_path_mode')}")
+    print(f"training_target_projection_mode: {b.get('training_target_projection_mode')}")
+else:
+    print("Config not found!")
 
-# Search recursively for clip/lpips/dino keys
-print("\n=== SEARCH RESULTS ===")
-def search(obj, prefix="", depth=0):
-    if depth > 3:
-        return
-    if isinstance(obj, dict):
-        for k, v in obj.items():
-            kl = k.lower()
-            if any(t in kl for t in ["clip", "lpips", "dino", "style_sim", "content_sim", "musiq"]):
-                if isinstance(v, (int, float)):
-                    print(f"  {prefix}{k}: {v}")
-                elif isinstance(v, dict) and "mean" in v:
-                    print(f"  {prefix}{k}: mean={v['mean']}")
-                elif isinstance(v, dict):
-                    search(v, prefix=f"{prefix}{k}.", depth=depth+1)
-            elif isinstance(v, dict):
-                search(v, prefix=f"{prefix}{k}.", depth=depth+1)
-    elif isinstance(obj, list) and len(obj) > 0:
-        search(obj[0], prefix=f"{prefix}[0].", depth=depth+1)
+# T1 ASG existing eval results
+print("\n=== T1 ASG Existing Eval ===")
+t1_summary = Path(r"I:\Github\Latent_Style\SchrodingerBridge\exp\t1_asg_5ep\full_eval\epoch_0005\summary.json")
+if t1_summary.exists():
+    s = json.load(open(t1_summary))
+    a = s.get("analysis", {})
+    t = a.get("style_transfer_ability", {})
+    ap = a.get("all_pairs_overview", {})
+    print(f"CLIP-S (transfer): {t.get('clip_style', 'N/A')}")
+    print(f"LPIPS (transfer):  {t.get('content_lpips', 'N/A')}")
+    print(f"CLIP-S (allpairs): {ap.get('clip_style', 'N/A')}")
+    print(f"LPIPS (allpairs):  {ap.get('content_lpips', 'N/A')}")
+    print(f"Generated count:   {s.get('generated_count', 'N/A')}")
+else:
+    print("T1 ASG summary not found!")
 
-search(data)
+# T1 ASG DINO results
+t1_dino_paths = [
+    Path(r"I:\Github\Latent_Style\SchrodingerBridge\exp\_dino_results\t1_asg_5ep.json"),
+    Path(r"I:\Github\Latent_Style\SchrodingerBridge\exp\_dino_results\t1_asg.json"),
+]
+for p in t1_dino_paths:
+    if p.exists():
+        d = json.load(open(p))
+        print(f"\nDINO-con: {d.get('dino_content', 'N/A')}")
+        print(f"DINO-sty: {d.get('dino_style', 'N/A')}")
+        break
+else:
+    print("\nT1 ASG DINO results not found in expected locations")
+    # Search for it
+    dino_dir = Path(r"I:\Github\Latent_Style\SchrodingerBridge\exp\_dino_results")
+    if dino_dir.exists():
+        print("Available DINO results:")
+        for f in sorted(dino_dir.glob("*.json")):
+            print(f"  {f.name}")
