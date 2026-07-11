@@ -1,0 +1,19 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 96,
+    "torch_compile": false,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/infra_train_b96"
+  },
+  "ablation": {
+    "name": "infra_train_b96",
+    "axis": "infra_optimization",
+    "stage": "710_infra",
+    "notes": "Infra optimization: batch=96 + channels_last + no gpu_monitor. Pushing batch size further."
+  }
+}

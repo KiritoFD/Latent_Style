@@ -715,6 +715,15 @@ class BridgeConfig:
     style_contrastive_w_same: float = 1.0            # weight for same-style consistency term
     style_contrastive_w_diff: float = 1.0            # weight for cross-style hinge separation term
     style_contrastive_w_centroid: float = 1.0        # weight for centroid InfoNCE term
+    # === 712 Phase SF1: Subband-aware Time Schedule (方案2: 时频耦合流形调度) ===
+    # 理论: 不同频带在不同时间段主导 ODE 积分 — 先底色(LL), 再边缘(LH/HL), 后笔触(HH).
+    # 训练 FM loss 按 γ_k(t) 加权, 推理 ODE 积分按 γ_k(t) 加权, 训练-推理一致.
+    # Schedules: "uniform"(默认), "early_peak", "late_burst", "mid_focus", "early_decay", "late_ramp"
+    subband_time_schedule_enabled: bool = False       # master switch
+    subband_gamma_ll: str = "early_peak"              # LL: 前期流动 (先画底色)
+    subband_gamma_lh: str = "uniform"                 # LH: 全程均匀 (中频结构)
+    subband_gamma_hl: str = "uniform"                 # HL: 全程均匀 (中频结构)
+    subband_gamma_hh: str = "late_burst"              # HH: 后期爆发 (后画笔触)
     normalize_eps: float = 1e-8
     logit_clamp: float = 50.0
     velocity_clamp: float = 20.0

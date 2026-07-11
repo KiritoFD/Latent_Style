@@ -1,0 +1,19 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 48,
+    "torch_compile": false,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/infra_train_opt"
+  },
+  "ablation": {
+    "name": "infra_train_opt",
+    "axis": "infra_optimization",
+    "stage": "710_infra",
+    "notes": "Infra optimization: torch.compile(reduce-overhead) + batch_size=48 + channels_last + no gpu_monitor. Goal: minimize epoch_time."
+  }
+}
