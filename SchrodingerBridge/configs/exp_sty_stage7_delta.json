@@ -1,0 +1,31 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "style_delta_head_enabled": true,
+    "style_delta_init_std": 0.1,
+    "style_delta_gate_init": 0.0,
+    "style_cross_attn_gate_init": 0.5,
+    "cross_attn_dwt_route": true,
+    "dwt_route_train_prob": 0.5,
+    "enable_hh_head": true
+  },
+  "bridge": {
+    "structure_aligned_target": true
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/stage7_delta"
+  },
+  "ablation": {
+    "name": "stage7_delta",
+    "axis": "style_injection",
+    "stage": "712_sty_inject_stage7_delta",
+    "notes": "独立风格增量分支: v = v_content + tanh(gate)*v_style. v_style 独立从 style_pooled 生成, 不调制主干. 与 stage6_strong 直接 A/B (modulation vs increment). SAT+DWT route+HH head 保持一致."
+  }
+}

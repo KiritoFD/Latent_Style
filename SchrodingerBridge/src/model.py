@@ -265,6 +265,66 @@ class StyleConditionedVelocityHead(nn.Module):
         return self.conv(self.act(h))
 
 
+class StyleDeltaVelocityHead(nn.Module):
+    """独立风格增量分支 (Stage7 方向3).
+
+    与 StyleConditionedVelocityHead 区别: 不是调制主干, 而是直接生成独立的风格增量.
+
+    结构:
+      v_content = content_head(h)              # 纯内容预测 (不带 style)
+      v_style   = style_head(style_pooled, h)  # 独立风格增量 (从 style 直接生成)
+      v = v_content + gate * v_style           # 组合
+
+    style_head 结构:
+      style_pooled -> MLP -> style_feat (B, dim)
+      h -> norm -> broadcast_mul(style_feat) -> conv -> v_style
+      零初始化 conv, 让 gate 控制风格增量强度
+
+    gate 是可学习参数, 初始化为 0 (初始等价 baseline), 训练中逐步学习风格增量.
+    但为避免零初始化陷阱, 用非零 init_std 初始化 style_head 的最后一层.
+    """
+
+    def __init__(self, dim: int, latent_channels: int, init_std: float = 0.1, gate_init: float = 0.0) -> None:
+        super().__init__()
+        self.dim = dim
+        # 内容分支: 纯内容预测 (等价于 baseline VelocityHead)
+        self.content_norm = nn.GroupNorm(1, dim)
+        self.content_act = nn.SiLU()
+        self.content_conv = nn.Conv2d(dim, latent_channels, kernel_size=3, padding=1)
+        nn.init.normal_(self.content_conv.weight, mean=0.0, std=1e-3)
+        nn.init.zeros_(self.content_conv.bias)
+        # 风格增量分支: 独立从 style 生成风格化增量
+        self.style_mlp = nn.Sequential(
+            nn.Linear(dim, dim),
+            nn.SiLU(),
+            nn.Linear(dim, dim),
+        )
+        nn.init.normal_(self.style_mlp[-1].weight, std=init_std)
+        nn.init.normal_(self.style_mlp[-1].bias, std=init_std)
+        # style_feat 与 h 融合后过 conv 生成 v_style
+        self.style_norm = nn.GroupNorm(1, dim)
+        self.style_act = nn.SiLU()
+        self.style_conv = nn.Conv2d(dim, latent_channels, kernel_size=3, padding=1)
+        # 非零初始化 style_conv, 避免风格分支梯度假死
+        nn.init.normal_(self.style_conv.weight, mean=0.0, std=init_std)
+        nn.init.zeros_(self.style_conv.bias)
+        # 可学习 gate, 初始 = gate_init (0 = 初始等价 baseline)
+        self.style_gate = nn.Parameter(torch.tensor(float(gate_init)))
+
+    def forward(self, h: torch.Tensor, style_pooled: torch.Tensor) -> torch.Tensor:
+        # 内容分支: 纯内容预测
+        v_content = self.content_conv(self.content_act(self.content_norm(h)))
+        # 风格增量分支: style_pooled -> style_feat -> 与 h 融合 -> v_style
+        style_feat = self.style_mlp(style_pooled.to(dtype=h.dtype))  # (B, dim)
+        h_normed = self.style_norm(h)
+        # style_feat 广播到空间维度, 与 h_normed 相乘融合
+        h_styled = h_normed * (1.0 + style_feat[:, :, None, None])
+        v_style = self.style_conv(self.style_act(h_styled))
+        # 组合: v = v_content + tanh(gate) * v_style
+        gate = torch.tanh(self.style_gate)
+        return v_content + gate * v_style
+
+
 class WEAVE(nn.Module):
     """Native Spectral ODE Bridge with shared backbone + 4 velocity heads."""
 
@@ -365,8 +425,21 @@ class WEAVE(nn.Module):
         self.style_velocity_head_enabled = bool(getattr(model_cfg, "style_velocity_head_enabled", False))
         self.style_vhead_hf_nonzero_init = bool(getattr(model_cfg, "style_vhead_hf_nonzero_init", False))
         self.style_vhead_hf_init_std = float(getattr(model_cfg, "style_vhead_hf_init_std", 0.02))
+        # Stage7 方向3: 独立风格增量分支 — style 直接生成 v_style, 不调制主干
+        self.style_delta_head_enabled = bool(getattr(model_cfg, "style_delta_head_enabled", False))
+        self.style_delta_init_std = float(getattr(model_cfg, "style_delta_init_std", 0.1))
+        self.style_delta_gate_init = float(getattr(model_cfg, "style_delta_gate_init", 0.0))
         _head_cls = StyleConditionedVelocityHead if self.style_velocity_head_enabled else VelocityHead
-        if self.style_velocity_head_enabled and self.style_vhead_hf_nonzero_init:
+        if self.style_delta_head_enabled:
+            # Stage7: 独立风格增量分支
+            # LL 保持纯 VelocityHead (结构不变), HF 用 StyleDeltaVelocityHead
+            _delta_std = self.style_delta_init_std
+            _delta_gate = self.style_delta_gate_init
+            self.head_ll = VelocityHead(self.dim, self.latent_channels)
+            self.head_lh = StyleDeltaVelocityHead(self.dim, self.latent_channels, init_std=_delta_std, gate_init=_delta_gate)
+            self.head_hl = StyleDeltaVelocityHead(self.dim, self.latent_channels, init_std=_delta_std, gate_init=_delta_gate)
+            self.head_hh = StyleDeltaVelocityHead(self.dim, self.latent_channels, init_std=_delta_std, gate_init=_delta_gate) if self.enable_hh_head else None
+        elif self.style_velocity_head_enabled and self.style_vhead_hf_nonzero_init:
             # LL 保结构零初始化, HF 风格头非零初始化避免梯度假死
             # init_std 控制 FiLM 信号强度: 0.02(弱) -> 0.1(中) -> 0.2(强)
             _hf_std = self.style_vhead_hf_init_std
@@ -457,7 +530,8 @@ class WEAVE(nn.Module):
         h = self.input_proj(stacked)
         # 712 Phase StyleInject: style_pooled 用于 AdaLN 和 VelocityHead FiLM
         # shape: (B, dim) — 从 style_tokens (B, N, dim) 沿 token 维取均值
-        if self.style_adaln_enabled or self.style_velocity_head_enabled:
+        # Stage7 方向3: StyleDeltaVelocityHead 也需要 style_pooled 生成 v_style
+        if self.style_adaln_enabled or self.style_velocity_head_enabled or self.style_delta_head_enabled:
             style_pooled = style_tokens.mean(dim=1).to(dtype=x.dtype)
         else:
             style_pooled = None
@@ -500,8 +574,9 @@ class WEAVE(nn.Module):
             self.last_cross_attn_guidance = None
         # Velocity heads (HH re-enabled behind enable_hh_head for semantic-SWD high-freq)
         # 712 Phase StyleInject: 方向1 — style-conditioned head 需要 style_pooled 参数
-        if self.style_velocity_head_enabled:
-            v_ll = self.head_ll(h, style_pooled)
+        # Stage7 方向3: StyleDeltaVelocityHead 也需要 style_pooled
+        if self.style_velocity_head_enabled or self.style_delta_head_enabled:
+            v_ll = self.head_ll(h, style_pooled) if isinstance(self.head_ll, (StyleConditionedVelocityHead, StyleDeltaVelocityHead)) else self.head_ll(h)
             v_lh = self.head_lh(h, style_pooled)
             v_hl = self.head_hl(h, style_pooled)
             v_hh = self.head_hh(h, style_pooled) if self.head_hh is not None else None

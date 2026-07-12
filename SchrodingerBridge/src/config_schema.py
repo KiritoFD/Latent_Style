@@ -408,6 +408,13 @@ class ModelConfig:
     style_adaln_nonzero_init: bool = False
     style_adaln_init_std: float = 0.1
     style_vhead_hf_init_std: float = 0.02
+    # Stage7 方向3: 独立风格增量分支 — style 直接生成 v_style, 不调制主干
+    # v = v_content + tanh(gate) * v_style
+    # style_delta_init_std: style_conv / style_mlp 最后一层非零初始化标准差
+    # style_delta_gate_init: 可学习 gate 初值 (0=初始等价 baseline, 0.5=初始即有中等风格贡献)
+    style_delta_head_enabled: bool = False
+    style_delta_init_std: float = 0.1
+    style_delta_gate_init: float = 0.0
     # style_gate_mode / body_norm_type / style_attn_mode are fixed in blocks.py.
     style_moe_enabled: bool = False
     style_moe_num_experts: int = 4
