@@ -34,6 +34,9 @@ class FlowMatchingObjective:
         # Stage9: 训练时 Endpoint AdaIN
         self.train_adain_enabled = bool(getattr(self.bridge_cfg, "train_adain_enabled", False))
         self.train_adain_scale = float(getattr(self.bridge_cfg, "train_adain_scale", 0.0))
+        # Stage10: LL 子带部分风格化
+        self.ll_partial_style_enabled = bool(getattr(self.bridge_cfg, "ll_partial_style_enabled", False))
+        self.ll_partial_alpha = float(getattr(self.bridge_cfg, "ll_partial_alpha", 0.0))
         # 712 Phase StyleInject: 高频统计矩损失
         self.hf_stat_loss_enabled = bool(getattr(self.bridge_cfg, "hf_stat_loss_enabled", False))
         self.hf_stat_weight = float(getattr(self.bridge_cfg, "hf_stat_weight", 2.0))
@@ -86,6 +89,37 @@ class FlowMatchingObjective:
         ep_fiber_matched = (ep_fiber - pred_mean) / pred_std * target_std + target_mean
         return ep_base + (1.0 - alpha) * ep_fiber + alpha * ep_fiber_matched
 
+    def _partial_style_ll(
+        self, ll_content: torch.Tensor, ll_style: torch.Tensor, alpha: float
+    ) -> torch.Tensor:
+        """Stage10: LL 子带部分风格化 — AdaIN(LL_c -> LL_s) 混合.
+
+        数学:
+            LL_style_matched = (LL_c - μ_c)/σ_c · σ_s + μ_s
+                保留 content LL 的归一化空间结构, 采用 style LL 的色彩统计.
+            LL_blended = (1-α)·LL_c + α·LL_style_matched
+                α=0: 完全锁死 (等价原 SAT)
+                α=1: 完全替换为 style-matched LL
+        输入: ll_content, ll_style — 形状 (B, C, H_ll, W_ll)
+        输出: LL_blended — 与 ll_content 同形状
+        """
+        c_f = ll_content.float()
+        s_f = ll_style.float().to(device=c_f.device)
+        B_c = c_f.shape[0]
+        # style batch=1 时广播到 content batch
+        if s_f.shape[0] == 1 and B_c > 1:
+            s_mean = s_f.mean(dim=[2, 3], keepdim=True).expand(B_c, -1, 1, 1)
+            s_std = s_f.std(dim=[2, 3], keepdim=True).clamp_min(1e-6).expand(B_c, -1, 1, 1)
+        else:
+            s_mean = s_f.mean(dim=[2, 3], keepdim=True)
+            s_std = s_f.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        c_mean = c_f.mean(dim=[2, 3], keepdim=True)
+        c_std = c_f.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        # AdaIN: 把 content LL 的统计量匹配到 style LL
+        ll_style_matched = (c_f - c_mean) / c_std * s_std + s_mean
+        ll_blended = (1.0 - alpha) * c_f + alpha * ll_style_matched
+        return ll_blended.to(dtype=ll_content.dtype)
+
     def _statistical_loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """高频统计矩损失: 匹配空间均值和标准差, 允许纹理空间错位但要求分布一致.
 
@@ -121,7 +155,13 @@ class FlowMatchingObjective:
         target = target_style
         if self.structure_aligned_target:
             ll_c, _, _, _ = dwt2_haar(content)
-            _, lh_t, hl_t, hh_t = dwt2_haar(target)
+            ll_t, lh_t, hl_t, hh_t = dwt2_haar(target)
+            # Stage10: LL 子带部分风格化
+            # 默认 SAT: target = IDWT(LL_c, LH_s, HL_s, HH_s) — LL 完全锁死
+            # 部分解锁: target = IDWT(LL_blended, LH_s, HL_s, HH_s)
+            #   LL_blended = (1-α)·LL_c + α·AdaIN(LL_c -> LL_s)
+            if self.ll_partial_style_enabled and 0.0 < self.ll_partial_alpha <= 1.0:
+                ll_c = self._partial_style_ll(ll_c, ll_t, self.ll_partial_alpha)
             target = idwt2_haar(ll_c, lh_t, hl_t, hh_t)
 
         # Stage9: 训练时 Endpoint AdaIN — 对 target 做 spatial_fiber mean+std matching

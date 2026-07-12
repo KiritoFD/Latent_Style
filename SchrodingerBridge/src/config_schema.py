@@ -799,6 +799,16 @@ class BridgeConfig:
     # train_adain_scale: AdaIN 强度 (0=禁用, 1.0=完全匹配 style 统计量, 典型值 0.5-1.0)
     train_adain_enabled: bool = False
     train_adain_scale: float = 0.0
+    # === Stage10: LL 子带部分风格化 (Partial LL Style Injection) ===
+    # 理论: SAT 把 target 的 LL 完全锁死为 content LL, 导致 DINOv2 敏感的色彩/对比度
+    #   统计无法迁移, DINO-sty 卡在 0.48 天花板. 部分解锁 LL:
+    #   LL_blended = (1-α)·LL_c + α·AdaIN(LL_c -> LL_s)
+    #   AdaIN(LL_c -> LL_s) = (LL_c - μ_c)/σ_c · σ_s + μ_s
+    #   保留 content LL 的归一化空间结构 (笔画位置/轮廓), 采用 style LL 的色彩统计 (μ_s, σ_s).
+    # target = IDWT(LL_blended, LH_s, HL_s, HH_s)
+    # ll_partial_alpha: LL 风格化强度 (0=完全锁死, 1=完全替换, 典型值 0.3-0.7)
+    ll_partial_style_enabled: bool = False
+    ll_partial_alpha: float = 0.0
     # === 712 Phase StyleInject: 高频统计矩损失 (Moment Matching Loss) ===
     # 理论: MSE 对高频纹理施加"像素级严格对齐"惩罚, 导致网络输出模糊平均值.
     # hf_stat_loss_enabled: 对 LH/HL/HH 子带额外施加均值+方差匹配损失, 允许纹理空间错位但要求分布一致.
