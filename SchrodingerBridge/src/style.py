@@ -4,8 +4,8 @@ import torch
 from torch import nn
 
 
-class StyleConditioner620(nn.Module):
-    """Project learnable style_memory tokens into the 620 bridge width.
+class StyleConditioner(nn.Module):
+    """Project learnable style-memory tokens into the WEAVE width.
 
     628/629 清理: adapter/local_cnn/text 三个死分支已删除 (clean_base_v2 全 false, 从未启用).
     630 清理: deprecated 兼容参数已连根拔起 (调用点同步精简).

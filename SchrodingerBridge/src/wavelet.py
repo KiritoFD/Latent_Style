@@ -1,6 +1,6 @@
 """FC-SB Phase 4 B2: Native Spectral ODE — Haar wavelet utilities.
 
-精确 Haar DWT/IDWT (正交变换, 完美重建). 与 model620.py 内的近似 haar_inv 不同,
+精确 Haar DWT/IDWT (正交变换, 完美重建).
 此处使用标准 Haar 矩阵 [1,1;1,-1]/sqrt(2) 实现, 保证 IDWT(DWT(x)) = x.
 """
 from __future__ import annotations

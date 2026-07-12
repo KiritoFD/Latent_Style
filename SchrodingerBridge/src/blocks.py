@@ -1,4 +1,4 @@
-"""Spatial Bridge Block 620 — cleaned active path only.
+"""Residual attention block used by WEAVE.
 
 628/629 cleanup: removed dead attn_modes (gated/gated_raw/style_select/sparsemax),
 FiLM modulation, style MoE, learnable shortcut, skip_coarse,
@@ -14,7 +14,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from spectral620 import dwt2_haar, idwt2_haar
+from wavelet import dwt2_haar, idwt2_haar
 
 
 def _make_norm(dim: int) -> nn.Module:
@@ -22,7 +22,7 @@ def _make_norm(dim: int) -> nn.Module:
     return nn.GroupNorm(1, dim, affine=False)
 
 
-class SpatialBridgeBlock620(nn.Module):
+class ResidualBlock(nn.Module):
     """AdaLN(time) → Self-Attention → Cross-Attention(style) → FFN.
 
     Active path (clean_base_v2): relu2 attention, tanh_gate, single k/v proj,
@@ -335,7 +335,7 @@ class SpatialBridgeBlock620(nn.Module):
             return attn_entropy, pixel_entropy.view(q.shape[0], 1, h, w)
 
 
-def sinusoidal_time_embedding_620(t: torch.Tensor, dim: int) -> torch.Tensor:
+def sinusoidal_time_embedding(t: torch.Tensor, dim: int) -> torch.Tensor:
     t = t.float().view(-1, 1)
     half = max(1, dim // 2)
     freqs = torch.exp(torch.arange(half, device=t.device, dtype=torch.float32) * (-math.log(10000.0) / max(1, half - 1)))

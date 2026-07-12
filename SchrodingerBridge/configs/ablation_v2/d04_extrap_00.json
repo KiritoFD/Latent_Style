@@ -1,0 +1,15 @@
+{
+  "_base": "../refactor_clean_baseline.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/ablation_v2/d04_extrap_00"
+  },
+  "ablation": {
+    "name": "d04_extrap_00",
+    "axis": "ablation_v2",
+    "stage": "comprehensive_extreme",
+    "notes": "Extreme: extrap_alpha=0 (no extrapolation)"
+  },
+  "model": {
+    "style_extrap_alpha": 0.0
+  }
+}

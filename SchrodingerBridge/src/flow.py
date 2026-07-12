@@ -14,10 +14,10 @@ from typing import Dict
 import torch
 import torch.nn.functional as F
 from config_schema import ExperimentConfig
-from spectral620 import dwt2_haar, idwt2_haar, subband_gamma_tensor
+from wavelet import dwt2_haar, idwt2_haar, subband_gamma_tensor
 
 
-class SpectralODEObjective620:
+class FlowMatchingObjective:
     """Spectral ODE objective: per-subband FM losses."""
 
     def __init__(self, config: ExperimentConfig) -> None:
