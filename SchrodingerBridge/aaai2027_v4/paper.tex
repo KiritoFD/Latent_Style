@@ -38,7 +38,7 @@ Current style transfer methods face two primary challenges. First, state-of-the-
 
 We trace this to frequency dominance in shared representation spaces: low-frequency structural energy overwhelms high-frequency style gradients, pushing lightweight models toward identity-like solutions.
 
-We argue that an effective style transfer method should outperform the identity baseline while remaining computationally affordable. To this end, we propose WEAVE: a single-level Haar wavelet transform splits the VAE latent into a low-frequency structure band and high-frequency style bands; a compact rectified-flow network learns a structure-preserving velocity field; and per-step statistical alignment (Per-step AdaIN) injects the target style into the high-frequency subbands. This decoupling separates content transport from style injection, letting WEAVE train in 2 minutes on a single consumer GPU.
+We argue that an effective style transfer method should outperform the identity baseline while remaining computationally affordable. To this end, we propose WEAVE: a single-level Haar wavelet transform splits the VAE latent into a low-frequency structure band and high-frequency style bands; a compact rectified-flow network learns a structure-preserving velocity field; and per-step statistical alignment (AdaIN) injects the target style into the high-frequency subbands. This decoupling separates content transport from style injection, letting WEAVE train in 2 minutes on a single consumer GPU.
 
 We also introduce an identity-floor-aware evaluation protocol, under which WEAVE clears the identity baseline with only 903K parameters, making high-quality style transfer both effective and affordable.
 
@@ -58,7 +58,7 @@ Right: target-pooled ArtFID on the same benchmark, with numbers inside the bars 
 \section{Introduction}
 
 Style transfer faces two problems in deployment and evaluation.
-On one hand, state-of-the-art diffusion models (e.g., FLUX.1 and Kolors) and their training-free variants demand more than 60\,GB of GPU memory, making them unusable on consumer hardware.
+On one hand, state-of-the-art diffusion models (e.g., FLUX.2 and Qwen-image) and their training-free variants demand more than 60\,GB of GPU memory, making them unusable on consumer hardware.
 On the other hand, certain lightweight alternatives that avoid these heavy generative backbones can struggle to achieve genuine style transfer.
 Specifically, the style affinity of outputs from certain lightweight models can fall below that of the unchanged source image (i.e., the identity mapping).
 This problem has been hidden by conventional evaluation protocols, such as LPIPS and ArtFID, which heavily reward structural reconstruction but rarely include the identity mapping as an explicit baseline.
@@ -281,7 +281,7 @@ CUT & 0.714 & 0.374 & 0.795 & 0.471 & 0.754 & 0.494 & 0.702 & 0.539 & 0.710 & 0.
 SaMST & 0.618 & 0.749 & 0.145 & 0.271 & 0.709 & 0.398 & 0.838 & 0.501 & 0.667 & 0.612 & 0.615 & 0.461 & 8.3M & 39.5 & 10\,m \\
 SaMam & 0.582 & \underline{0.243} & 0.812 & 0.477 & 0.677 & 0.205 & 0.870 & 0.505 & 0.712 & 0.227 & 0.925 & 0.503 & 8.8M & 436.0 & 17.6\,m \\
 Seedream 4.5 & 0.720 & 0.477 & 0.739 & 0.486 & 0.752 & 0.227 & 0.785 & 0.517 & 0.742 & 0.486 & 0.725 & 0.504 & -- & API & -- \\
-Latent-WCT & 0.658 & 0.441 & 0.559 & 0.362 & -- & -- & -- & -- & -- & -- & -- & -- & 0 & free & 18\,s \\
+Latent-WCT & 0.673 & 0.441 & 0.559 & 0.362 & 0.738 & 0.585 & -- & -- & 0.710 & 0.444 & -- & -- & 0 & free & 18\,s \\
 \midrule
 \textbf{Ours} & 0.7261 & 0.3354 & 0.7692 & 0.4843 & 0.6695 & 0.3648 & 0.8245 & 0.4745 & 0.7657 & \underline{0.3353} & 0.7403 & \underline{0.5152} & \textbf{903K$^{+84M}$} & \textbf{2.07} & \textbf{53.8\,s} \\
 \bottomrule
@@ -344,7 +344,7 @@ The inference cost of 53.8\,s for 750 pairs is dominated by VAE decode (40.9\,s)
 \paragraph{Mechanistic diagnosis and comparison.}
 As the frequency-dominance analysis predicts, SaMam shows the style-suppression pattern (sub-IDT CLIP-S 0.5816 despite low LPIPS 0.2434), while StyleID shows the predicted per-step decay ($r_n(\alpha)=(1-\alpha)^n$, LPIPS 0.5523); WEAVE's per-step high-frequency WCT avoids this decay, reaching comparable positive-IDT transfer at far lower damage.
 Relative to Seedream~4.5, WEAVE cuts LPIPS by 39.8\% with under one million parameters and runs entirely on a single consumer GPU.
-The comparison with Latent-WCT (0.658 CLIP-S, 0.441 LPIPS) confirms that wavelet decomposition alone, without learned transport, is insufficient: the 8-step Rectified Flow integration is the mechanism that converts the static statistical alignment into a dynamic content-to-style trajectory.
+The comparison with Latent-WCT (0.673 CLIP-S, 0.441 LPIPS) confirms that wavelet decomposition alone, without learned transport, is insufficient: the 8-step Rectified Flow integration is the mechanism that converts the static statistical alignment into a dynamic content-to-style trajectory.
 
 \paragraph{Auxiliary metrics agree with the main reading.}
 Figure~\ref{fig:page1} (right) shows target-pooled ArtFID of 300.9 for WEAVE versus 311.5 for Seedream~4.5; on all-pairs evaluation WEAVE reaches 0.7261 CLIP-S / 0.3354 LPIPS, confirming the conclusion under the ablation protocol.
@@ -385,7 +385,7 @@ num\_steps $=1$ & 0.709 & 0.476 & 0.376 & 0.448 \\
 \end{table}
 
 \paragraph{Latent-WCT baseline.}
-Replacing the learned transport with a single-shot covariance match (VAE-encode $\to$ Haar DWT $\to$ full-covariance WCT on high-frequency subbands $\to$ VAE-decode, zero trainable parameters) collapses on all four metrics (0.658 CLIP-S, 0.441 LPIPS, 0.559 DINO-C, 0.362 DINO-S vs.\ 0.726 / 0.335 / 0.769 / 0.484 for WEAVE), confirming that the 8-step Rectified Flow---not the wavelet operations alone---is the key mechanism.
+Replacing the learned transport with a single-shot covariance match (VAE-encode $\to$ Haar DWT $\to$ full-covariance WCT on high-frequency subbands $\to$ VAE-decode, zero trainable parameters) collapses on all four metrics (0.673 CLIP-S, 0.441 LPIPS, 0.559 DINO-C, 0.362 DINO-S vs.\ 0.726 / 0.335 / 0.769 / 0.484 for WEAVE), confirming that the 8-step Rectified Flow---not the wavelet operations alone---is the key mechanism.
 
 \paragraph{Summary.}
 WEAVE's behavior is governed by three principal components (Per-step AdaIN, Flow Matching, ODE step count) and one sensitive hyperparameter (learning rate), while the remaining knobs are robust under $10{\times}$--$20{\times}$ perturbation---a consequence of the wavelet-decoupled geometry that separates structure and style into orthogonal coordinates.
