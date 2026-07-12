@@ -827,6 +827,19 @@ class BridgeConfig:
     #   Over-stylization 让模型学到更强的 HF 风格注入, 生成图像纹理更接近 style.
     # Risk: beta>1.0 可能导致 target 超出正常范围, 建议 beta<=1.5.
     hf_overstylize_beta: float = 1.0
+    # === Round9 brk_ac: FFT power spectrum loss (global frequency energy matching) ===
+    # Math: 在 VAE latent 空间对 velocity v_full 和 target_delta 计算 2D FFT 功率谱.
+    #   V = FFT2(IDWT2(v_ll, v_lh, v_hl, v_hh)),  T = FFT2(target_delta)
+    #   P_V = |V|^2,  P_T = |T|^2
+    #   L_fft = mean( |log(P_V + eps) - log(P_T + eps)| )   (L1 on log power spectrum)
+    # Theory: FM loss 是 wavelet 域逐系数 MSE (局部), FFT 功率谱是全局频域能量分布.
+    #   两个信号可有相同 wavelet 系数统计但不同 FFT 功率谱. DINOv2 CLS 通过 global
+    #   self-attention 捕获全局模式, FFT 功率谱提供互补的全局频率结构信息.
+    #   Log 功率谱强调相对能量分布而非绝对幅度, 动态范围更稳定.
+    # Weight: 小权重 (0.1) 作为 FM 的辅助, 不主导优化方向.
+    fft_loss_enabled: bool = False
+    fft_loss_weight: float = 0.1
+    fft_loss_eps: float = 1e-6
     # === Round6 brk_y: Multi-level DWT (mid-frequency independent migration) ===
     # Math: LL1 -> DWT2 -> {LL2, LH2, HL2, HH2}. LL2 locked (lowest-freq content core),
     #   LH2/HL2/HH2 partially stylized (mid-freq tones). Reconstruct LL1 from DWT2.

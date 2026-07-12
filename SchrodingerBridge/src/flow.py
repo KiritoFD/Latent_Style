@@ -44,6 +44,10 @@ class FlowMatchingObjective:
         self.alpha_aug_max = float(getattr(self.bridge_cfg, "alpha_aug_max", 0.4))
         # Round8 brk_ab: HF over-stylization — beta>1.0 放大 HF 风格差异
         self.hf_overstylize_beta = float(getattr(self.bridge_cfg, "hf_overstylize_beta", 1.0))
+        # Round9 brk_ac: FFT power spectrum loss — 全局频域能量分布匹配
+        self.fft_loss_enabled = bool(getattr(self.bridge_cfg, "fft_loss_enabled", False))
+        self.fft_loss_weight = float(getattr(self.bridge_cfg, "fft_loss_weight", 0.1))
+        self.fft_loss_eps = float(getattr(self.bridge_cfg, "fft_loss_eps", 1e-6))
         # Round6 brk_y: Multi-level DWT — mid-frequency independent migration
         self.multi_level_dwt_enabled = bool(getattr(self.bridge_cfg, "multi_level_dwt_enabled", False))
         self.multi_level_dwt_alpha2 = float(getattr(self.bridge_cfg, "multi_level_dwt_alpha2", 0.5))
@@ -253,6 +257,34 @@ class FlowMatchingObjective:
         loss_std = F.mse_loss(std_pred, std_tgt)
         return loss_mu + loss_std
 
+    def _fft_power_spectrum_loss(self, pred_full: torch.Tensor, target_full: torch.Tensor) -> torch.Tensor:
+        """Round9 brk_ac: FFT 功率谱损失 — 全局频域能量分布匹配.
+
+        Math:
+            V = FFT2(pred_full),  T = FFT2(target_full)   (2D FFT per channel)
+            P_V = |V|^2,  P_T = |T|^2                     (power spectrum)
+            L = mean( |log(P_V + eps) - log(P_T + eps)| ) (L1 on log power spectrum)
+
+        与 wavelet FM loss 的互补性:
+            - FM loss: wavelet 域逐系数 MSE, 捕获局部空间-频率误差 (需空间对齐)
+            - FFT loss: 全局频域能量分布, 空间移位不变, 捕获跨频率能量相关性
+            - DINOv2 CLS 通过 global self-attention 捕获全局模式,
+              FFT 功率谱提供与 wavelet 互补的全局频率结构信号.
+
+        Log 功率谱动机: 功率谱动态范围大 (DC 分量 >> 高频), log 压缩使
+            优化梯度不被 DC 主导, 强调相对能量分布.
+        """
+        pred_f = pred_full.float()
+        target_f = target_full.float()
+        # 2D FFT: rfftn 输出 [B, C, H, W//2+1] (利用 Hermitian 对称性, 更高效)
+        V = torch.fft.rfftn(pred_f, dim=(-2, -1), norm="ortho")
+        T = torch.fft.rfftn(target_f, dim=(-2, -1), norm="ortho")
+        P_V = (V.real ** 2 + V.imag ** 2)  # |V|^2
+        P_T = (T.real ** 2 + T.imag ** 2)  # |T|^2
+        log_PV = torch.log(P_V + self.fft_loss_eps)
+        log_PT = torch.log(P_T + self.fft_loss_eps)
+        return (log_PV - log_PT).abs().mean()
+
     def compute(
         self, model, *, content, target_style, target_style_id,
         source_style_id=None, aux_target_style=None, aux_target_valid=None,
@@ -375,7 +407,18 @@ class FlowMatchingObjective:
                 loss_stat = loss_stat + self._statistical_loss(v_dict["hh"], target_hh)
             loss_stat = self.hf_stat_weight * loss_stat
 
-        loss = loss_fm + loss_stat
+        # Round9 brk_ac: FFT 功率谱损失 — 全局频域能量分布匹配
+        # 重建完整 velocity v_full = IDWT2(v_ll, v_lh, v_hl, v_hh), 与 target_delta 做 FFT 功率谱匹配
+        loss_fft = content.new_tensor(0.0)
+        if self.fft_loss_enabled:
+            v_hh_pred = v_dict.get("hh", None)
+            if v_hh_pred is not None:
+                v_full = idwt2_haar(v_dict["ll"], v_dict["lh"], v_dict["hl"], v_hh_pred)
+            else:
+                v_full = idwt2_haar(v_dict["ll"], v_dict["lh"], v_dict["hl"], torch.zeros_like(v_dict["lh"]))
+            loss_fft = self.fft_loss_weight * self._fft_power_spectrum_loss(v_full, target_delta)
+
+        loss = loss_fm + loss_stat + loss_fft
 
         metrics: Dict[str, torch.Tensor] = {
             "loss": loss,
@@ -386,6 +429,7 @@ class FlowMatchingObjective:
             "t_mean": t.detach().float().mean(),
             "flow": loss_fm.detach(),
             "stat": loss_stat.detach(),
+            "fft": loss_fft.detach(),
         }
 
         return metrics
