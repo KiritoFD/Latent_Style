@@ -1,15 +1,16 @@
 {
-  "iteration": 13,
-  "total_findings": 10,
-  "status": "exhausted_current_directions",
+  "iteration": 15,
+  "total_findings": 16,
+  "status": "round4_adain_finetune_running",
   "stale_count": 0,
-  "best_dino_s": 0.4833,
-  "best_config": "brk_a_ll03_10ep_override_adain12 (α=0.3, 10ep, seed42, adain_scale=1.2)",
+  "best_dino_s": 0.4859,
+  "best_config": "brk_q_adain20 (α=0.3, 10ep, seed42, adain_scale=2.0) - DINO-S breaks 0.485 ceiling but CLIP-S=0.7075",
+  "best_balanced_config": "brk_r_adain18 (adain_scale=1.8) - DINO-S=0.4846, CLIP-S=0.7152, 3/4 Pareto improvement",
   "baseline_dino_s": 0.4794,
   "target_dino_s": 0.485,
-  "gap_to_target": 0.0017,
-  "last_seen": "2026-07-12T23:15:00Z",
-  "current_direction": null,
+  "gap_to_target": 0.0,
+  "last_seen": "2026-07-13T04:15:00Z",
+  "current_direction": "round4_adain_finetune_s_t",
   "directions_tried": [
     "stage7_delta_branch",
     "stage8_cfg",
@@ -32,7 +33,16 @@
     "brk_j_ll03_zwct_10ep",
     "brk_k_ll03_seed7",
     "brk_a_extrap02_inference",
-    "brk_a_adain12_inference"
+    "brk_a_adain12_inference",
+    "brk_l_w_lh_hl_15",
+    "brk_m_adain15",
+    "brk_n_two_stage",
+    "brk_o_endpoint_high_03",
+    "brk_p_lr_0003",
+    "brk_q_adain20_BREAKTHROUGH",
+    "brk_r_adain18",
+    "brk_s_adain16_RUNNING",
+    "brk_t_adain17_PENDING"
   ],
   "key_conclusions": {
     "wll_liberation": "FAILED - w_ll controls content fidelity not style transfer; increasing w_ll strengthens LL lock and decreases DINO-S",
@@ -41,6 +51,8 @@
     "seed_variance": "±0.004 (seed42=0.4832, seed7=0.4795); 0.4832 was a favorable seed",
     "inference_tuning": "Negligible effect (extrap/adain ±0.0001)",
     "zero_step_wct": "No additional effect when combined with α=0.3",
-    "ceiling": "0.4833 under current architecture (α=0.3 + adain_scale=1.2)"
+    "round4_failed_directions": "w_lh/w_hl boost (brk_l): high-freq weight HURTS; two_stage (brk_n): NO effect; endpoint_high (brk_o): NO effect; lr=0.0003 (brk_p): HURTS content",
+    "adain_scale_breakthrough": "endpoint_adain_scale is a powerful style injection lever. Monotonic trade-off: adain↑ boosts DINO-S/DINO-C/LPIPS but costs CLIP-S. adain=2.0 breaks 0.485 ceiling (DINO-S=0.4859) but CLIP-S drops to 0.7075. adain=1.8 is balanced (DINO-S=0.4846, CLIP-S=0.7152).",
+    "round4_goal": "Make main table more prominent: adain_scale sweep found 3/4 Pareto improvements. brk_q and brk_r both achieve 3/4 > brk_a. Fine-tuning adain=1.6/1.7 to find optimal point."
   }
 }
