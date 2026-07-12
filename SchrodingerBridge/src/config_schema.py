@@ -415,6 +415,14 @@ class ModelConfig:
     style_delta_head_enabled: bool = False
     style_delta_init_std: float = 0.1
     style_delta_gate_init: float = 0.0
+    # Stage8: Classifier-Free Guidance (CFG)
+    # 训练时以 cfg_dropout_prob 概率随机将 style_tokens 替换为可学习 null token,
+    # 让模型同时学习条件 v_cond 和无条件 v_uncond 两种预测.
+    # 推理时: v = v_uncond + cfg_scale * (v_cond - v_uncond), 放大风格方向.
+    # cfg_scale=0 表示禁用 CFG (普通推理), 典型值 1.0-3.0.
+    cfg_dropout_prob: float = 0.0
+    cfg_scale: float = 0.0
+    cfg_null_token_init_std: float = 0.02
     # style_gate_mode / body_norm_type / style_attn_mode are fixed in blocks.py.
     style_moe_enabled: bool = False
     style_moe_num_experts: int = 4
@@ -785,6 +793,12 @@ class BridgeConfig:
     #   - 网络只学习高频纹理置换, 不再受逼迫破坏结构
     # 这是 4J.2 路线 (WCT-Aligned Target) 的完全体: 不修改推理, 只修改训练目标.
     structure_aligned_target: bool = False       # True=构造 x₁* (结构对齐目标), False=原始 x₁
+    # === Stage9: 训练时 Endpoint AdaIN ===
+    # 把推理时 Endpoint AdaIN (spatial_fiber mean+std matching) 移到训练时 target 上.
+    # 训练时对 target 做 AdaIN, 让模型直接学习生成 AdaIN 后的输出, 推理时不再需要后处理.
+    # train_adain_scale: AdaIN 强度 (0=禁用, 1.0=完全匹配 style 统计量, 典型值 0.5-1.0)
+    train_adain_enabled: bool = False
+    train_adain_scale: float = 0.0
     # === 712 Phase StyleInject: 高频统计矩损失 (Moment Matching Loss) ===
     # 理论: MSE 对高频纹理施加"像素级严格对齐"惩罚, 导致网络输出模糊平均值.
     # hf_stat_loss_enabled: 对 LH/HL/HH 子带额外施加均值+方差匹配损失, 允许纹理空间错位但要求分布一致.

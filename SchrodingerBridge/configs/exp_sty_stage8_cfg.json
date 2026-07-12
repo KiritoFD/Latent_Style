@@ -1,0 +1,34 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "style_delta_head_enabled": true,
+    "style_delta_init_std": 0.1,
+    "style_delta_gate_init": 0.0,
+    "style_cross_attn_gate_init": 0.5,
+    "cross_attn_dwt_route": true,
+    "dwt_route_train_prob": 0.5,
+    "enable_hh_head": true,
+    "cfg_dropout_prob": 0.15,
+    "cfg_scale": 1.5,
+    "cfg_null_token_init_std": 0.02
+  },
+  "bridge": {
+    "structure_aligned_target": true
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/stage8_cfg"
+  },
+  "ablation": {
+    "name": "stage8_cfg",
+    "axis": "style_injection",
+    "stage": "712_sty_inject_stage8_cfg",
+    "notes": "CFG (Classifier-Free Guidance): 训练时 15% 概率 drop style->null token, 推理时 cfg_scale=1.5 放大风格方向. 基于 stage7_delta (增量分支), 验证 CFG 能否突破 DINO-S 0.48 天花板."
+  }
+}

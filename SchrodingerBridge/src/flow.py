@@ -14,7 +14,7 @@ from typing import Dict
 import torch
 import torch.nn.functional as F
 from config_schema import ExperimentConfig
-from wavelet import dwt2_haar, idwt2_haar, subband_gamma_tensor
+from wavelet import dwt2_haar, idwt2_haar, dwt2_lowpass, subband_gamma_tensor
 
 
 class FlowMatchingObjective:
@@ -31,6 +31,9 @@ class FlowMatchingObjective:
         self.w_hh = float(getattr(self.bridge_cfg, "spectral_w_hh", 2.0))
         self.loss_type = str(getattr(self.bridge_cfg, "loss_type", "mse")).lower().strip()
         self.structure_aligned_target = bool(getattr(self.bridge_cfg, "structure_aligned_target", False))
+        # Stage9: 训练时 Endpoint AdaIN
+        self.train_adain_enabled = bool(getattr(self.bridge_cfg, "train_adain_enabled", False))
+        self.train_adain_scale = float(getattr(self.bridge_cfg, "train_adain_scale", 0.0))
         # 712 Phase StyleInject: 高频统计矩损失
         self.hf_stat_loss_enabled = bool(getattr(self.bridge_cfg, "hf_stat_loss_enabled", False))
         self.hf_stat_weight = float(getattr(self.bridge_cfg, "hf_stat_weight", 2.0))
@@ -57,6 +60,31 @@ class FlowMatchingObjective:
         if self.loss_type in ("huber", "smooth_l1", "smoothl1"):
             return F.smooth_l1_loss(pred.float(), target.float())
         return F.mse_loss(pred.float(), target.float())
+
+    def _apply_train_adain(self, h: torch.Tensor, style_latent: torch.Tensor) -> torch.Tensor:
+        """Stage9: 训练时 Endpoint AdaIN (spatial_fiber mean+std matching, 带梯度).
+
+        与推理时 _apply_endpoint_adain(mode=spatial_fiber) 逻辑一致:
+        ep_base = lowpass(h), ep_fiber = h - ep_base
+        style_fiber = style_latent - lowpass(style_latent)
+        ep_fiber_matched = (ep_fiber - mean(ep_fiber)) / std(ep_fiber) * std(style_fiber) + mean(style_fiber)
+        out = ep_base + (1-α)*ep_fiber + α*ep_fiber_matched
+        """
+        alpha = self.train_adain_scale
+        ep_base = dwt2_lowpass(h, levels=1, basis="haar")
+        ep_fiber = h - ep_base
+        style_fiber = style_latent.to(dtype=h.dtype) - dwt2_lowpass(style_latent.to(dtype=h.dtype), levels=1, basis="haar")
+        B_c = ep_fiber.shape[0]
+        if style_fiber.shape[0] == 1 and B_c > 1:
+            target_mean = style_fiber.mean(dim=[2, 3], keepdim=True).expand(B_c, -1, 1, 1)
+            target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6).expand(B_c, -1, 1, 1)
+        else:
+            target_mean = style_fiber.mean(dim=[2, 3], keepdim=True)
+            target_std = style_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        pred_mean = ep_fiber.mean(dim=[2, 3], keepdim=True)
+        pred_std = ep_fiber.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        ep_fiber_matched = (ep_fiber - pred_mean) / pred_std * target_std + target_mean
+        return ep_base + (1.0 - alpha) * ep_fiber + alpha * ep_fiber_matched
 
     def _statistical_loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """高频统计矩损失: 匹配空间均值和标准差, 允许纹理空间错位但要求分布一致.
@@ -95,6 +123,11 @@ class FlowMatchingObjective:
             ll_c, _, _, _ = dwt2_haar(content)
             _, lh_t, hl_t, hh_t = dwt2_haar(target)
             target = idwt2_haar(ll_c, lh_t, hl_t, hh_t)
+
+        # Stage9: 训练时 Endpoint AdaIN — 对 target 做 spatial_fiber mean+std matching
+        # 让模型直接学习生成 AdaIN 后的输出, 推理时不再需要后处理
+        if self.train_adain_enabled and self.train_adain_scale > 0.0 and torch.is_tensor(style_latent):
+            target = self._apply_train_adain(target, style_latent)
 
         t = self._sample_t(content)
         t_view = t.view(-1, 1, 1, 1).to(dtype=content.dtype)

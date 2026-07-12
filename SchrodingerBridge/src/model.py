@@ -453,6 +453,18 @@ class WEAVE(nn.Module):
             self.head_hl = _head_cls(self.dim, self.latent_channels)
             self.head_hh = _head_cls(self.dim, self.latent_channels) if self.enable_hh_head else None
 
+        # Stage8: Classifier-Free Guidance (CFG)
+        # 可学习 null style token, 训练时以 cfg_dropout_prob 概率替换 style_tokens
+        # 推理时 cfg_scale>0 时做两次 forward (cond + uncond) 并组合
+        self.cfg_dropout_prob = float(getattr(model_cfg, "cfg_dropout_prob", 0.0))
+        self.cfg_scale = float(getattr(model_cfg, "cfg_scale", 0.0))
+        _cfg_null_std = float(getattr(model_cfg, "cfg_null_token_init_std", 0.02))
+        if self.cfg_dropout_prob > 0.0 or self.cfg_scale > 0.0:
+            self.null_style_tokens = nn.Parameter(torch.zeros(1, 256, self.dim))
+            nn.init.normal_(self.null_style_tokens, std=_cfg_null_std)
+        else:
+            self.null_style_tokens = None
+
         self.last_debug: dict = {}
         # 712 Phase SF1: Subband-aware time schedule γ_k(t) for inference ODE integration
         self.subband_time_schedule_enabled = bool(
@@ -480,6 +492,7 @@ class WEAVE(nn.Module):
         style_id: torch.Tensor | int | None = None,
         style_latent: torch.Tensor | None = None,
         style_text_tokens: torch.Tensor | None = None,
+        cfg_unconditional: bool = False,
         **_: object,
     ) -> dict[str, torch.Tensor]:
         """Returns dict with 3 velocities: {'ll': v_ll, 'lh': v_lh, 'hl': v_hl} (HH removed - 628 L8 DEAD)."""
@@ -524,6 +537,17 @@ class WEAVE(nn.Module):
                 style_tokens = self.style_conditioner(
                     style_id=style_id, batch=x.shape[0], device=x.device, dtype=x.dtype,
                 )
+        # Stage8: CFG — 训练时随机 drop style (替换为 null token), 推理时 cfg_unconditional 强制 null
+        if self.null_style_tokens is not None:
+            if self.training and self.cfg_dropout_prob > 0.0:
+                _drop_mask = torch.rand(x.shape[0], device=x.device) < self.cfg_dropout_prob
+                if _drop_mask.any():
+                    _null = self.null_style_tokens.expand(x.shape[0], -1, -1).to(dtype=x.dtype)
+                    style_tokens = torch.where(
+                        _drop_mask[:, None, None], _null, style_tokens
+                    )
+            elif cfg_unconditional:
+                style_tokens = self.null_style_tokens.expand(x.shape[0], -1, -1).to(dtype=x.dtype)
         time_emb = self.time_proj(
             sinusoidal_time_embedding(t_tensor, self.time_dim).to(device=x.device, dtype=x.dtype)
         )
@@ -613,46 +637,56 @@ class WEAVE(nn.Module):
         style_id: torch.Tensor | int | None,
         style_text_tokens: torch.Tensor | None,
         style_latent: torch.Tensor | None,
+        cfg_scale: float = 0.0,
     ) -> torch.Tensor:
         """Advance one ODE step via the configured solver (euler | heun | rk4).
 
         Spectral-domain integration: DWT decompose h, integrate LL/LH/HL
         subbands independently with the velocity field, iDWT reconstruct.
+        Stage8: cfg_scale>0 时对每次 forward 做 CFG 组合 (cond + uncond).
         """
+        # Stage8: CFG 辅助函数 — 封装 forward + 条件/无条件组合
+        _cfg_active = cfg_scale > 0.0 and self.null_style_tokens is not None
+        def _f(x_in, t_in):
+            v_cond = self.forward(x_in, t=t_in, style_id=style_id,
+                                  style_text_tokens=style_text_tokens, style_latent=style_latent)
+            if _cfg_active:
+                v_uncond = self.forward(x_in, t=t_in, style_id=style_id,
+                                        style_text_tokens=style_text_tokens, style_latent=style_latent,
+                                        cfg_unconditional=True)
+                for _k in list(v_cond.keys()):
+                    v_cond[_k] = v_uncond[_k] + cfg_scale * (v_cond[_k] - v_uncond[_k])
+            return v_cond
+
         t_batch = torch.full((h.shape[0],), t_curr, device=h.device, dtype=h.dtype)
         if solver_type == "rk4":
             # 630 Phase 4I.6: Classic RK4 (四阶精度 O(h^4))
             ll0, lh0, hl0, hh0 = dwt2_haar(h)
             t_mid_b = torch.full((h.shape[0],), t_mid, device=h.device, dtype=h.dtype)
             t_next_b = torch.full((h.shape[0],), t_next, device=h.device, dtype=h.dtype)
-            k1 = self.forward(h, t=t_batch, style_id=style_id,
-                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            k1 = _f(h, t_batch)
             ll_k2 = ll0 + (k1["ll"] * dt / 2.0 if not lock_ll else 0.0)
             lh_k2 = lh0 + k1["lh"] * dt / 2.0
             hl_k2 = hl0 + k1["hl"] * dt / 2.0
             h_k2 = idwt2_haar(ll_k2, lh_k2, hl_k2, hh0)
-            k2 = self.forward(h_k2, t=t_mid_b, style_id=style_id,
-                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            k2 = _f(h_k2, t_mid_b)
             ll_k3 = ll0 + (k2["ll"] * dt / 2.0 if not lock_ll else 0.0)
             lh_k3 = lh0 + k2["lh"] * dt / 2.0
             hl_k3 = hl0 + k2["hl"] * dt / 2.0
             h_k3 = idwt2_haar(ll_k3, lh_k3, hl_k3, hh0)
-            k3 = self.forward(h_k3, t=t_mid_b, style_id=style_id,
-                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            k3 = _f(h_k3, t_mid_b)
             ll_k4 = ll0 + (k3["ll"] * dt if not lock_ll else 0.0)
             lh_k4 = lh0 + k3["lh"] * dt
             hl_k4 = hl0 + k3["hl"] * dt
             h_k4 = idwt2_haar(ll_k4, lh_k4, hl_k4, hh0)
-            k4 = self.forward(h_k4, t=t_next_b, style_id=style_id,
-                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            k4 = _f(h_k4, t_next_b)
             ll_new = ll0 + ((k1["ll"] + 2.0*k2["ll"] + 2.0*k3["ll"] + k4["ll"]) / 6.0 * dt if not lock_ll else 0.0)
             lh_new = lh0 + (k1["lh"] + 2.0*k2["lh"] + 2.0*k3["lh"] + k4["lh"]) / 6.0 * dt
             hl_new = hl0 + (k1["hl"] + 2.0*k2["hl"] + 2.0*k3["hl"] + k4["hl"]) / 6.0 * dt
             return idwt2_haar(ll_new, lh_new, hl_new, hh0)
         elif solver_type == "heun":
             # 630 Phase 4I.2: Heun's method (二阶精度 O(h^3))
-            v1 = self.forward(h, t=t_batch, style_id=style_id,
-                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            v1 = _f(h, t_batch)
             ll1, lh1, hl1, hh1 = dwt2_haar(h)
             # 712 Phase SF1: γ_k(t) applied to predictor step
             if self.subband_time_schedule_enabled:
@@ -671,8 +705,7 @@ class WEAVE(nn.Module):
                 hh_pred = hh1
             h_pred = idwt2_haar(ll_pred, lh_pred, hl_pred, hh_pred if self.subband_time_schedule_enabled and "hh" in v1 else hh1)
             t_batch2 = torch.full((h_pred.shape[0],), t_next, device=h.device, dtype=h.dtype)
-            v2 = self.forward(h_pred, t=t_batch2, style_id=style_id,
-                              style_text_tokens=style_text_tokens, style_latent=style_latent)
+            v2 = _f(h_pred, t_batch2)
             if self.subband_time_schedule_enabled:
                 ll_new = ll1 + (g_ll * (v1["ll"] + v2["ll"]) / 2.0 * dt if not lock_ll else 0.0)
                 lh_new = lh1 + g_lh * (v1["lh"] + v2["lh"]) / 2.0 * dt
@@ -688,8 +721,7 @@ class WEAVE(nn.Module):
                 return idwt2_haar(ll_new, lh_new, hl_new, hh1)
         else:
             # Euler (一阶) — Spectral: integrate LL/LH/HL independently
-            v_dict = self.forward(h, t=t_batch, style_id=style_id,
-                                  style_text_tokens=style_text_tokens, style_latent=style_latent)
+            v_dict = _f(h, t_batch)
             ll, lh, hl, hh = dwt2_haar(h)
             # 712 Phase SF1: γ_k(t) subband-aware time schedule
             if self.subband_time_schedule_enabled:
@@ -1037,11 +1069,13 @@ class WEAVE(nn.Module):
                 adain_scale_hl = _base_adain_scale_hl * _alpha_mult
                 adain_scale_hh = _base_adain_scale_hh * _alpha_mult
             # ODE solver step (euler | heun | rk4) — spectral-domain integration
+            # Stage8: 传递 cfg_scale 给 _solver_step 做 CFG 组合
             h = self._solver_step(
                 h, t_curr=t_curr, t_mid=t_mid, t_next=t_next, dt=dt,
                 solver_type=solver_type, lock_ll=lock_ll,
                 style_id=style_id, style_text_tokens=style_text_tokens,
                 style_latent=style_latent,
+                cfg_scale=self.cfg_scale if not self.training else 0.0,
             )
             # 630 Phase 4H.1: EOTA — 只在最后一步应用 AdaIN (解耦 ODE 求解与风格注入)
             apply_adain_this_step = (not only_last_step) or (i == steps - 1)
