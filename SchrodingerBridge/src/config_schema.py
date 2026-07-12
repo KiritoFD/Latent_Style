@@ -809,6 +809,34 @@ class BridgeConfig:
     ll_partial_style_enabled: bool = False
     ll_partial_alpha: float = 0.0
     ll_partial_mode: str = "adain"
+    # === Round7 brk_aa: Alpha augmentation (训练时 α 随机采样) ===
+    # Math: 当前训练用固定 α=0.3 构造 SAT target, 模型只见过单一 α.
+    #   Alpha augmentation: 训练时 α~Uniform(α_min, α_max), 让模型对不同
+    #   风格强度鲁棒. E[α]=(α_min+α_max)/2 决定平均风格强度, Var[α]>0 提供数据增强.
+    #   推理时模型可适应更激进的 endpoint_adain_scale 而不崩溃.
+    # Theory: 固定 α 导致 v(x_t,t) 过拟合到单一 target; α augmentation 让模型
+    #   学到 v 的条件期望 E[v|α~U(a,b)], 减少方差, 提升泛化.
+    alpha_aug_enabled: bool = False
+    alpha_aug_min: float = 0.2
+    alpha_aug_max: float = 0.4
+    # === Round8 brk_ab: HF over-stylization (beta>1.0) ===
+    # Math: 当前 HF 子带完全替换 (beta=1.0): target_hf = hf_t.
+    #   Over-stylization (beta>1.0): target_hf = (1-beta)*hf_c + beta*hf_t
+    #   = hf_c + beta*(hf_t - hf_c), 放大 HF 风格差异.
+    # Theory: DINOv2 CLS 对纹理/笔触强度敏感. 当前 beta=1.0 可能不够激进.
+    #   Over-stylization 让模型学到更强的 HF 风格注入, 生成图像纹理更接近 style.
+    # Risk: beta>1.0 可能导致 target 超出正常范围, 建议 beta<=1.5.
+    hf_overstylize_beta: float = 1.0
+    # === Round6 brk_y: Multi-level DWT (mid-frequency independent migration) ===
+    # Math: LL1 -> DWT2 -> {LL2, LH2, HL2, HH2}. LL2 locked (lowest-freq content core),
+    #   LH2/HL2/HH2 partially stylized (mid-freq tones). Reconstruct LL1 from DWT2.
+    #   target = IDWT1(IDWT2(LL2_c, LH2_blend, HL2_blend, HH2_blend), LH1_s, HL1_s, HH1_s)
+    # Theory: single-level alpha=0.3 stylizes the entire LL1 (incl mid-freq) coarsely.
+    #   Multi-level separates mid-freq from lowest-freq, allowing aggressive mid-freq
+    #   migration (alpha2=0.5-0.7) without breaking the content core (LL2 locked).
+    #   DINOv2 CLS token is sensitive to mid-freq color statistics.
+    multi_level_dwt_enabled: bool = False
+    multi_level_dwt_alpha2: float = 0.5
     # === Stage15: 高频子带 WCT (HF Subband WCT) ===
     # 理论: SAT 默认用 style 的高频子带作 target, 完全替换 content 空间结构.
     #   WCT 对 content 高频子带做白化+着色, 保留 content 归一化空间结构,

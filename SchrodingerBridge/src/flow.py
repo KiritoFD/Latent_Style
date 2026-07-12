@@ -38,6 +38,15 @@ class FlowMatchingObjective:
         self.ll_partial_style_enabled = bool(getattr(self.bridge_cfg, "ll_partial_style_enabled", False))
         self.ll_partial_alpha = float(getattr(self.bridge_cfg, "ll_partial_alpha", 0.0))
         self.ll_partial_mode = str(getattr(self.bridge_cfg, "ll_partial_mode", "adain")).strip().lower()
+        # Round7 brk_aa: Alpha augmentation — 训练时 α~Uniform(α_min, α_max)
+        self.alpha_aug_enabled = bool(getattr(self.bridge_cfg, "alpha_aug_enabled", False))
+        self.alpha_aug_min = float(getattr(self.bridge_cfg, "alpha_aug_min", 0.2))
+        self.alpha_aug_max = float(getattr(self.bridge_cfg, "alpha_aug_max", 0.4))
+        # Round8 brk_ab: HF over-stylization — beta>1.0 放大 HF 风格差异
+        self.hf_overstylize_beta = float(getattr(self.bridge_cfg, "hf_overstylize_beta", 1.0))
+        # Round6 brk_y: Multi-level DWT — mid-frequency independent migration
+        self.multi_level_dwt_enabled = bool(getattr(self.bridge_cfg, "multi_level_dwt_enabled", False))
+        self.multi_level_dwt_alpha2 = float(getattr(self.bridge_cfg, "multi_level_dwt_alpha2", 0.5))
         # Stage15: 高频子带 WCT — 对 content LH/HL/HH 做 WCT 匹配 style 协方差
         # 保留 content 空间结构 (白化保留归一化结构), 迁移 style 通道间相关性
         # hf_wct_beta: 协方差插值系数 (1.0=完全 style, <1.0=混合 content+style)
@@ -262,12 +271,31 @@ class FlowMatchingObjective:
         if self.structure_aligned_target:
             ll_c, lh_c, hl_c, hh_c = dwt2_haar(content)
             ll_t, lh_t, hl_t, hh_t = dwt2_haar(target)
-            # Stage10: LL 子带部分风格化
-            # 默认 SAT: target = IDWT(LL_c, LH_s, HL_s, HH_s) — LL 完全锁死
-            # 部分解锁: target = IDWT(LL_blended, LH_s, HL_s, HH_s)
-            #   LL_blended = (1-α)·LL_c + α·AdaIN(LL_c -> LL_s)
-            if self.ll_partial_style_enabled and 0.0 < self.ll_partial_alpha <= 1.0:
-                ll_c = self._partial_style_ll(ll_c, ll_t, self.ll_partial_alpha)
+            # Round6 brk_y: Multi-level DWT — LL1 二级分解, 中频独立迁移
+            # Math: LL1 -> DWT2 -> {LL2, LH2, HL2, HH2}
+            #   LL2 locked (lowest-freq content core), LH2/HL2/HH2 partially stylized
+            #   LL1_recon = IDWT2(LL2_c, LH2_blend, HL2_blend, HH2_blend)
+            # Theory: DINOv2 CLS token sensitive to mid-freq color stats;
+            #   multi-level separates mid-freq from lowest-freq, allowing aggressive
+            #   mid-freq migration without breaking content core.
+            if self.multi_level_dwt_enabled:
+                ll2_c, lh2_c, hl2_c, hh2_c = dwt2_haar(ll_c)
+                ll2_t, lh2_t, hl2_t, hh2_t = dwt2_haar(ll_t)
+                a2 = self.multi_level_dwt_alpha2
+                lh2_blend = (1.0 - a2) * lh2_c + a2 * lh2_t
+                hl2_blend = (1.0 - a2) * hl2_c + a2 * hl2_t
+                hh2_blend = (1.0 - a2) * hh2_c + a2 * hh2_t
+                ll_c = idwt2_haar(ll2_c, lh2_blend, hl2_blend, hh2_blend)
+            elif self.ll_partial_style_enabled and 0.0 < self.ll_partial_alpha <= 1.0:
+                # Stage10: LL 子带部分风格化 (fallback when multi_level_dwt disabled)
+                # LL_blended = (1-α)·LL_c + α·AdaIN(LL_c -> LL_s)
+                # Round7 brk_aa: Alpha augmentation — 训练时 α~Uniform(α_min, α_max)
+                # 让模型对不同风格强度鲁棒, 推理时可用更激进 endpoint_adain_scale
+                if self.alpha_aug_enabled and getattr(model, 'training', False):
+                    alpha = float(torch.empty(1).uniform_(self.alpha_aug_min, self.alpha_aug_max).item())
+                else:
+                    alpha = self.ll_partial_alpha
+                ll_c = self._partial_style_ll(ll_c, ll_t, alpha)
             # Stage15: 高频子带 WCT — 保留 content 空间结构, 迁移 style 协方差
             # target_hf = WCT(content_hf -> style_hf, beta)
             # beta=1.0: 完全 style 协方差; beta<1.0: 混合协方差 (更保守)
@@ -275,6 +303,14 @@ class FlowMatchingObjective:
                 lh_t = self._wct_match_hf(lh_c, lh_t, self.hf_wct_beta)
                 hl_t = self._wct_match_hf(hl_c, hl_t, self.hf_wct_beta)
                 hh_t = self._wct_match_hf(hh_c, hh_t, self.hf_wct_beta)
+            # Round8 brk_ab: HF over-stylization — beta>1.0 放大 HF 风格差异
+            # target_hf = (1-beta)*hf_c + beta*hf_t = hf_c + beta*(hf_t - hf_c)
+            # beta=1.0: 标准替换; beta>1.0: 放大风格差异, 增强纹理注入
+            if self.hf_overstylize_beta > 1.0:
+                b = self.hf_overstylize_beta
+                lh_t = (1.0 - b) * lh_c + b * lh_t
+                hl_t = (1.0 - b) * hl_c + b * hl_t
+                hh_t = (1.0 - b) * hh_c + b * hh_t
             target = idwt2_haar(ll_c, lh_t, hl_t, hh_t)
 
         # Stage9: 训练时 Endpoint AdaIN — 对 target 做 spatial_fiber mean+std matching

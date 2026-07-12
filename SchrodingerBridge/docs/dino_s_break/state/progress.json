@@ -1,16 +1,16 @@
 {
-  "iteration": 16,
-  "total_findings": 18,
-  "status": "round5_architecture_liberation_running",
-  "stale_count": 0,
+  "iteration": 23,
+  "total_findings": 25,
+  "status": "round8_complete_10_directions_all_failed",
+  "stale_count": 7,
   "best_dino_s": 0.4859,
   "best_config": "brk_q_adain20 (adain_scale=2.0) - DINO-S=0.4859 but CLIP-S=0.7075",
-  "best_balanced_config": "brk_s_adain16 (adain_scale=1.6) - DINO-S=0.4845, CLIP-S=0.7179, 4/4 Pareto improvement over brk_a, avg=0.6012 (peak)",
+  "best_balanced_config": "brk_s_adain16 (adain_scale=1.6) - DINO-S=0.4845, CLIP-S=0.7179, avg=0.6012 (peak)",
   "baseline_dino_s": 0.4794,
   "target_dino_s": 0.49,
   "gap_to_target": 0.0041,
-  "last_seen": "2026-07-13T00:50:00Z",
-  "current_direction": "round5_architecture_liberation",
+  "last_seen": "2026-07-13T02:45:01Z",
+  "current_direction": "round9_design_or_pivot",
   "directions_tried": [
     "stage7_delta_branch",
     "stage8_cfg",
@@ -43,10 +43,16 @@
     "brk_r_adain18",
     "brk_s_adain16_PEAK_AVG",
     "brk_t_adain17",
-    "brk_u_hh_head_RUNNING",
-    "brk_v_train_adain_PENDING",
-    "brk_w_hf_wct_PENDING",
-    "brk_x_dim96_PENDING"
+    "brk_u_hh_head_FAILED",
+    "brk_v_train_adain_NEUTRAL",
+    "brk_w_hf_wct_WRONG_DIR",
+    "brk_x_dim96_FAILED",
+    "brk_y_ml_dwt_FAILED",
+    "brk_z_ll_wct_NEUTRAL",
+    "brk_aa_aug24_FAILED",
+    "brk_aa_aug35_FAILED",
+    "brk_ab_hf_ovs13_FAILED",
+    "brk_ab_hf_ovs15_FAILED"
   ],
   "key_conclusions": {
     "wll_liberation": "FAILED - w_ll controls content fidelity not style transfer",
@@ -54,8 +60,14 @@
     "epoch_optimal": "10ep is optimal; 5ep undertrained, 15ep overfits",
     "seed_variance": "+-0.004 (seed42=0.4832, seed7=0.4795)",
     "round4_failed_directions": "w_lh/w_hl boost, two_stage, endpoint_high, lr=0.0003 all failed or neutral",
-    "adain_scale_breakthrough": "endpoint_adain_scale is powerful style injection lever. Monotonic trade-off: adain up boosts DINO-S/DINO-C/LPIPS but costs CLIP-S. Peak average at adain=1.5-1.6 (brk_m/brk_s, avg=0.6012). adain=2.0 breaks 0.485 ceiling (DINO-S=0.4859) but CLIP-S drops to 0.7075.",
-    "adain_scale_is_inference_only": "Key discovery: endpoint_adain_scale only affects inference, NOT training. All brk_a/brk_m/brk_s/brk_t/brk_r/brk_q checkpoints are IDENTICAL (same training config). Only inference-time adain_scale differs.",
-    "round5_goal": "Architecture liberation: 4 directions from mathematical analysis. (1) brk_u: HH head enable for brushstroke supervision; (2) brk_v: train-time AdaIN alignment to fix train-test mismatch; (3) brk_w: HF WCT for full covariance texture transfer; (4) brk_x: backbone expansion dim=96 for expressiveness. Target: DINO-S>0.49 + CLIP-S>0.72 + radar chart dominance."
+    "adain_scale_breakthrough": "endpoint_adain_scale is powerful style injection lever. Peak average at adain=1.5-1.6. adain=2.0 breaks 0.485 ceiling but CLIP-S drops.",
+    "adain_scale_is_inference_only": "endpoint_adain_scale only affects inference, NOT training. All adain sweep checkpoints are IDENTICAL.",
+    "round5_failure": "Round 5 architecture liberation ALL 4 directions FAILED. Architecture capacity is NOT the bottleneck.",
+    "round6_failure": "Round 6 structural pivot BOTH directions FAILED. DINOv2 CLS NOT sensitive to mid-freq color stats NOR LL channel correlations.",
+    "round7_failure": "Round 7 alpha augmentation BOTH directions FAILED. Model insensitive to alpha DISTRIBUTION, only to E[alpha].",
+    "round8_failure": "Round 8 HF over-stylization BOTH directions FAILED. beta>1.0 breaks content structure, DINO-S and DINO-C both drop monotonically with increasing beta.",
+    "round8_root_cause": "Over-stylization pushes target beyond normal range. DINOv2 CLS sensitive to image quality, distorted images deviate from style features.",
+    "overall_assessment": "10 directions across 4 rounds (architecture, frequency structure, target variation, HF intensity) ALL FAILED. DINO-S 0.4832 ceiling (with adain=1.0) is extremely robust. Only inference-time endpoint_adain_scale can push DINO-S to 0.4859 (adain=2.0) but at CLIP-S cost. Without DINO/CLIP in training loss, DINO-S cannot be directly optimized.",
+    "round9_options": "A) Accept 0.485 ceiling, optimize radar chart balance. B) Lift DINO/CLIP ban, add DINOv2 feature loss. C) Try FFT power spectrum loss or VAE Gram matrix loss (last loss-level options without external models)."
   }
 }
