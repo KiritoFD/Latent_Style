@@ -13,7 +13,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 OUT_DIR = SCRIPT_DIR                                 # aaai2027_v4/
 DOC72_DIR = SCRIPT_DIR
 
-IDT_DINO = 0.419
+# IDT floor for the averaged style axis: mean(IDT_DINO_S, IDT_CLIP_S) = mean(0.419, 0.693)
+IDT_AVG = 0.556
 
 plt.rcParams.update(
     {
@@ -34,6 +35,7 @@ plt.rcParams.update(
 def point(
     name: str,
     dino_s: float,
+    clip_s: float,
     lpips: float,
     group: str,
     *,
@@ -41,10 +43,13 @@ def point(
     display: str | None = None,
     train_min: float | None = None,
 ) -> dict:
+    avg = 0.5 * (dino_s + clip_s)
     return {
         "name": name,
         "display": display or name,
         "dino_s": dino_s,
+        "clip_s": clip_s,
+        "avg": avg,
         "lpips": lpips,
         "x": 1.0 - lpips,
         "group": group,
@@ -53,25 +58,26 @@ def point(
     }
 
 
-# DINO-S values from fig_data/dino_main.json (D5-512).
+# DINO-S from fig_data/dino_main.json (D5-512). CLIP-S from main table / earlier baseline sweep.
 BASELINES = [
-    point("Identity", 0.4185, 0.0000, "control", label=True),
-    point("AdaIN", 0.3362, 0.7425, "classical"),
-    point("WCT", 0.1358, 0.6348, "classical", label=True),
-    point("SD-Turbo", 0.4838, 0.0033, "diffusion"),
-    point("StyleAligned", 0.6751, 0.8690, "training_free", label=True),
-    point("CUT", 0.4709, 0.3743, "trained", label=True, train_min=322.6),
-    point("SaMST", 0.2710, 0.7490, "trained", label=True, train_min=39.5),
-    point("SaMam", 0.4771, 0.2434, "trained", label=True, train_min=436.0),
-    point("StyleShot", 0.5630, 0.7650, "external", label=True),
-    point("Seedream 4.5", 0.4864, 0.4767, "external", label=True),
+    point("Identity", 0.4185, 0.6933, 0.0000, "control", label=True),
+    point("AdaIN", 0.3362, 0.6679, 0.7425, "classical"),
+    point("WCT", 0.1358, 0.7063, 0.6348, "classical", label=True),
+    point("SD-Turbo", 0.4838, 0.6933, 0.0033, "diffusion"),
+    point("StyleAligned", 0.6751, 0.8739, 0.8690, "training_free", label=True),
+    point("CUT", 0.4709, 0.7137, 0.3743, "trained", label=True, train_min=322.6),
+    point("SaMST", 0.2710, 0.6183, 0.7490, "trained", label=True, train_min=39.5),
+    point("SaMam", 0.4771, 0.5816, 0.2434, "trained", label=True, train_min=436.0),
+    point("StyleShot", 0.5630, 0.7870, 0.7650, "external", label=True),
+    point("Seedream 4.5", 0.4864, 0.7198, 0.4767, "external", label=True),
+    point("Latent-WCT", 0.3620, 0.6730, 0.4410, "classical"),
 ]
 
 OURS_FRONTIER = [
-    # brk_a (adain=1.0): DINO-S=0.4832, LPIPS=0.2938 — secondary operating point
-    point("WEAVE-a10", 0.4832, 0.2938, "ours", label=True, display="WEAVE", train_min=2.07),
-    # brk_q (adain=2.0): DINO-S=0.4859, LPIPS=0.2583 — primary operating point (main table)
-    point("WEAVE-a20", 0.4859, 0.2583, "ours", label=True, display="Ours", train_min=2.07),
+    # brk_q (adain=2.0): DINO-S=0.4859, CLIP-S=0.7075, LPIPS=0.2583 — secondary point (max DINO-S)
+    point("WEAVE-q", 0.4859, 0.7075, 0.2583, "ours", label=True, display="WEAVE", train_min=2.07),
+    # brk_m (adain=1.5): DINO-S=0.4843, CLIP-S=0.7180, LPIPS=0.2925 — primary point (main table, 4/4 Pareto)
+    point("WEAVE-m", 0.4843, 0.7180, 0.2925, "ours", label=True, display="Ours", train_min=2.07),
 ]
 
 ALL_POINTS = BASELINES + OURS_FRONTIER
@@ -96,8 +102,8 @@ LABEL_POS = {
     "SaMam": {"xytext": (-8, 10), "ha": "right", "va": "bottom", "arrow": False},
     "StyleShot": {"xytext": (12, 0), "ha": "left", "va": "center", "arrow": False},
     "Seedream 4.5": {"xytext": (-6, 10), "ha": "right", "va": "bottom", "arrow": False},
-    "WEAVE-a10": {"xytext": (14, -10), "ha": "left", "va": "top", "arrow": False},
-    "WEAVE-a20": {"xytext": (0, 10), "ha": "center", "va": "bottom", "arrow": False},
+    "WEAVE-q": {"xytext": (14, -10), "ha": "left", "va": "top", "arrow": False},
+    "WEAVE-m": {"xytext": (0, 10), "ha": "center", "va": "bottom", "arrow": False},
 }
 
 ARTFID_BARS = [
@@ -122,7 +128,7 @@ def annotate_point(ax: plt.Axes, p: dict) -> None:
         arrowprops = {"arrowstyle": "-", "lw": 0.9, "color": "#5B6270", "shrinkA": 4, "shrinkB": 6}
     text = ax.annotate(
         p["display"],
-        xy=(p["x"], p["dino_s"]),
+        xy=(p["x"], p["avg"]),
         xytext=opts["xytext"],
         textcoords="offset points",
         ha=opts["ha"],
@@ -154,12 +160,12 @@ def bubble_size(p: dict) -> float:
 
 
 def build_scatter(ax: plt.Axes) -> None:
-    ax.axhspan(0.10, IDT_DINO, color="#F4F5F8", zorder=0)
-    ax.axhline(IDT_DINO, color="#4C566A", lw=1.2, linestyle=(0, (3, 3)), zorder=1)
-    ax.text(0.212, IDT_DINO + 0.006, "IDT floor", color="#3B4252", fontsize=9.2, va="bottom", ha="left")
+    ax.axhspan(0.35, IDT_AVG, color="#F4F5F8", zorder=0)
+    ax.axhline(IDT_AVG, color="#4C566A", lw=1.2, linestyle=(0, (3, 3)), zorder=1)
+    ax.text(0.212, IDT_AVG + 0.006, "IDT floor", color="#3B4252", fontsize=9.2, va="bottom", ha="left")
     ax.text(
         0.212,
-        IDT_DINO - 0.024,
+        IDT_AVG - 0.022,
         "Below this line: failed target-direction transfer",
         color="#5B6270",
         fontsize=8.5,
@@ -174,7 +180,7 @@ def build_scatter(ax: plt.Axes) -> None:
         style = GROUP_STYLE[group_name]
         ax.scatter(
             [p["x"] for p in pts],
-            [p["dino_s"] for p in pts],
+            [p["avg"] for p in pts],
             s=[bubble_size(p) for p in pts],
             marker=style["marker"],
             facecolor=style["face"],
@@ -187,7 +193,7 @@ def build_scatter(ax: plt.Axes) -> None:
     frontier = sorted(OURS_FRONTIER, key=lambda p: p["x"])
     ax.plot(
         [p["x"] for p in frontier],
-        [p["dino_s"] for p in frontier],
+        [p["avg"] for p in frontier],
         color="#D6452F",
         lw=1.8,
         alpha=0.92,
@@ -200,8 +206,8 @@ def build_scatter(ax: plt.Axes) -> None:
 
     samam = next(p for p in ALL_POINTS if p["name"] == "SaMam")
     ax.annotate(
-        "SaMam\nnear IDT",
-        xy=(samam["x"], samam["dino_s"]),
+        "SaMam\nbelow IDT",
+        xy=(samam["x"], samam["avg"]),
         xytext=(34, -2),
         textcoords="offset points",
         ha="left",
@@ -219,10 +225,10 @@ def build_scatter(ax: plt.Axes) -> None:
         zorder=7,
     )
 
-    t11 = next(p for p in ALL_POINTS if p["name"] == "WEAVE-a20")
+    t11 = next(p for p in ALL_POINTS if p["name"] == "WEAVE-m")
     ax.annotate(
         "2.07 min, RTX 3060",
-        xy=(t11["x"], t11["dino_s"]),
+        xy=(t11["x"], t11["avg"]),
         xytext=(58, 38),
         textcoords="offset points",
         ha="center",
@@ -243,7 +249,7 @@ def build_scatter(ax: plt.Axes) -> None:
     sd_turbo = next(p for p in ALL_POINTS if p["name"] == "SD-Turbo")
     ax.annotate(
         "SD-Turbo",
-        xy=(sd_turbo["x"], sd_turbo["dino_s"]),
+        xy=(sd_turbo["x"], sd_turbo["avg"]),
         xytext=(0, -8),
         textcoords="offset points",
         ha="center",
@@ -261,9 +267,9 @@ def build_scatter(ax: plt.Axes) -> None:
     )
 
     ax.set_xlim(0.20, 1.02)
-    ax.set_ylim(0.10, 0.72)
+    ax.set_ylim(0.40, 0.82)
     ax.set_xlabel("Content fidelity (1 - LPIPS)")
-    ax.set_ylabel("Style affinity (DINO-S)")
+    ax.set_ylabel(r"Style affinity $\frac{1}{2}$(DINO-S + CLIP-S)")
     ax.grid(axis="both", color="#D6D9DF", alpha=0.55, linewidth=0.6)
 
 

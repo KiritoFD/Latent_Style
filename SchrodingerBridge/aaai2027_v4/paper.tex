@@ -49,10 +49,10 @@ We also introduce an identity-floor-aware evaluation protocol, under which WEAVE
 \begin{strip}
 \noindent\includegraphics[width=\textwidth]{fig_distinct5_page1_summary.pdf}
 \captionof{figure}{IDT-calibrated comparison on Distinct5-WikiArt.
-Left: DINO-S versus $1-\mathrm{LPIPS}$, with bubble area encoding training time.
+Left: style affinity $\frac{1}{2}(\mathrm{DINO\text{-}S}+\mathrm{CLIP\text{-}S})$ versus $1-\mathrm{LPIPS}$, with bubble area encoding training time.
 The red points mark two WEAVE operating points.
 Square markers denote training-free diffusion editors (StyleAligned).
-The dashed line marks the IDT floor (0.419); methods below it have not moved in the requested direction.
+The dashed line marks the IDT floor (0.556); methods below it have not moved in the requested direction.
 Right: target-pooled ArtFID on the same benchmark, with numbers inside the bars indicating training or response time.}
 \label{fig:page1}
 \end{strip}
