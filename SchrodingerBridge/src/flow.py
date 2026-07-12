@@ -38,6 +38,11 @@ class FlowMatchingObjective:
         self.ll_partial_style_enabled = bool(getattr(self.bridge_cfg, "ll_partial_style_enabled", False))
         self.ll_partial_alpha = float(getattr(self.bridge_cfg, "ll_partial_alpha", 0.0))
         self.ll_partial_mode = str(getattr(self.bridge_cfg, "ll_partial_mode", "adain")).strip().lower()
+        # Stage15: 高频子带 WCT — 对 content LH/HL/HH 做 WCT 匹配 style 协方差
+        # 保留 content 空间结构 (白化保留归一化结构), 迁移 style 通道间相关性
+        # hf_wct_beta: 协方差插值系数 (1.0=完全 style, <1.0=混合 content+style)
+        self.hf_wct_enabled = bool(getattr(self.bridge_cfg, "hf_wct_enabled", False))
+        self.hf_wct_beta = float(getattr(self.bridge_cfg, "hf_wct_beta", 1.0))
         # 712 Phase StyleInject: 高频统计矩损失
         self.hf_stat_loss_enabled = bool(getattr(self.bridge_cfg, "hf_stat_loss_enabled", False))
         self.hf_stat_weight = float(getattr(self.bridge_cfg, "hf_stat_weight", 2.0))
@@ -156,6 +161,71 @@ class FlowMatchingObjective:
         ll_blended = (1.0 - alpha) * c_f + alpha * ll_style_matched
         return ll_blended.to(dtype=ll_content.dtype)
 
+    def _wct_match_hf(
+        self, content_hf: torch.Tensor, style_hf: torch.Tensor, beta: float = 1.0
+    ) -> torch.Tensor:
+        """Stage15: 高频子带 WCT — 保留 content 空间结构, 迁移 style 协方差.
+
+        数学:
+            白化: f_w = Σ_c^{-1/2} @ (hf_c - μ_c)   — 去除 content 通道相关性
+            着色: f_out = Σ_target^{1/2} @ f_w + μ_target
+            当 beta=1.0: Σ_target = Σ_s, μ_target = μ_s (完全 style 协方差)
+            当 beta<1.0: Σ_target = (1-β)·Σ_c + β·Σ_s, μ_target = (1-β)·μ_c + β·μ_s
+                (混合协方差, 更保守, 减少结构扭曲)
+
+        与直接用 style 子带作 target 的区别:
+            - 直接用 style 子带: 完全替换空间结构 -> content 结构丢失
+            - WCT: 保留 content 的归一化空间结构, 只迁移通道间相关性
+        """
+        c_f = content_hf.float()
+        s_f = style_hf.float().to(device=c_f.device)
+        B, C, H, W = c_f.shape
+        if s_f.shape[0] == 1 and B > 1:
+            s_f = s_f.expand(B, -1, -1, -1)
+
+        c_flat = c_f.reshape(B, C, -1)
+        s_flat = s_f.reshape(B, C, -1)
+        c_mean = c_flat.mean(dim=2, keepdim=True)
+        s_mean = s_flat.mean(dim=2, keepdim=True)
+        c_centered = c_flat - c_mean
+        s_centered = s_flat - s_mean
+        N = H * W
+        eps = 1e-6
+        c_cov = (c_centered @ c_centered.transpose(1, 2)) / max(N - 1, 1) + eps * torch.eye(C, device=c_f.device)
+        s_cov = (s_centered @ s_centered.transpose(1, 2)) / max(N - 1, 1) + eps * torch.eye(C, device=s_f.device)
+
+        try:
+            # 白化: Σ_c^{-1/2}
+            c_eigvals, c_eigvecs = torch.linalg.eigh(c_cov.float().cpu())
+            c_eigvals = c_eigvals.clamp_min(eps)
+            c_inv_sqrt = c_eigvecs @ torch.diag_embed(c_eigvals.rsqrt()) @ c_eigvecs.transpose(1, 2)
+            c_whitened = c_inv_sqrt.to(c_centered.device) @ c_centered
+
+            # 着色目标协方差
+            if beta < 1.0:
+                target_cov = (1.0 - beta) * c_cov + beta * s_cov
+                target_mean = (1.0 - beta) * c_mean + beta * s_mean
+            else:
+                target_cov = s_cov
+                target_mean = s_mean
+
+            t_eigvals, t_eigvecs = torch.linalg.eigh(target_cov.float().cpu())
+            t_eigvals = t_eigvals.clamp_min(eps)
+            t_sqrt = t_eigvecs @ torch.diag_embed(t_eigvals.sqrt()) @ t_eigvecs.transpose(1, 2)
+            c_colored = t_sqrt.to(c_whitened.device) @ c_whitened + target_mean.to(c_whitened.device)
+            return c_colored.reshape(B, C, H, W).to(dtype=content_hf.dtype)
+        except torch._C._LinAlgError:
+            # fallback: AdaIN (mean+std 匹配)
+            c_std = c_flat.std(dim=2, keepdim=True).clamp_min(eps)
+            s_std = s_flat.std(dim=2, keepdim=True).clamp_min(eps)
+            if beta < 1.0:
+                t_std = (1.0 - beta) * c_std + beta * s_std
+                t_mean = (1.0 - beta) * c_mean + beta * s_mean
+            else:
+                t_std = s_std
+                t_mean = s_mean
+            return ((c_flat - c_mean) / c_std * t_std + t_mean).reshape(B, C, H, W).to(dtype=content_hf.dtype)
+
     def _statistical_loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """高频统计矩损失: 匹配空间均值和标准差, 允许纹理空间错位但要求分布一致.
 
@@ -190,7 +260,7 @@ class FlowMatchingObjective:
 
         target = target_style
         if self.structure_aligned_target:
-            ll_c, _, _, _ = dwt2_haar(content)
+            ll_c, lh_c, hl_c, hh_c = dwt2_haar(content)
             ll_t, lh_t, hl_t, hh_t = dwt2_haar(target)
             # Stage10: LL 子带部分风格化
             # 默认 SAT: target = IDWT(LL_c, LH_s, HL_s, HH_s) — LL 完全锁死
@@ -198,6 +268,13 @@ class FlowMatchingObjective:
             #   LL_blended = (1-α)·LL_c + α·AdaIN(LL_c -> LL_s)
             if self.ll_partial_style_enabled and 0.0 < self.ll_partial_alpha <= 1.0:
                 ll_c = self._partial_style_ll(ll_c, ll_t, self.ll_partial_alpha)
+            # Stage15: 高频子带 WCT — 保留 content 空间结构, 迁移 style 协方差
+            # target_hf = WCT(content_hf -> style_hf, beta)
+            # beta=1.0: 完全 style 协方差; beta<1.0: 混合协方差 (更保守)
+            if self.hf_wct_enabled:
+                lh_t = self._wct_match_hf(lh_c, lh_t, self.hf_wct_beta)
+                hl_t = self._wct_match_hf(hl_c, hl_t, self.hf_wct_beta)
+                hh_t = self._wct_match_hf(hh_c, hh_t, self.hf_wct_beta)
             target = idwt2_haar(ll_c, lh_t, hl_t, hh_t)
 
         # Stage9: 训练时 Endpoint AdaIN — 对 target 做 spatial_fiber mean+std matching

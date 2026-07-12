@@ -809,6 +809,13 @@ class BridgeConfig:
     ll_partial_style_enabled: bool = False
     ll_partial_alpha: float = 0.0
     ll_partial_mode: str = "adain"
+    # === Stage15: 高频子带 WCT (HF Subband WCT) ===
+    # 理论: SAT 默认用 style 的高频子带作 target, 完全替换 content 空间结构.
+    #   WCT 对 content 高频子带做白化+着色, 保留 content 归一化空间结构,
+    #   只迁移 style 通道间协方差相关性.
+    # hf_wct_beta: 协方差插值 (1.0=完全 style, <1.0=混合 content+style, 更保守)
+    hf_wct_enabled: bool = False
+    hf_wct_beta: float = 1.0
     # === 712 Phase StyleInject: 高频统计矩损失 (Moment Matching Loss) ===
     # 理论: MSE 对高频纹理施加"像素级严格对齐"惩罚, 导致网络输出模糊平均值.
     # hf_stat_loss_enabled: 对 LH/HL/HH 子带额外施加均值+方差匹配损失, 允许纹理空间错位但要求分布一致.
