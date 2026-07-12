@@ -1,34 +1,48 @@
-# Task: Break DINO-S 0.485 Ceiling
+# Task: WEAVE Radar Chart Dominance (Round 5+)
 
 ## Goal
-将 WEAVE 的 DINO-S 从当前 0.4794 (D5-512) 提升到 **0.485 以上**，同时保持结构优势：
-- LPIPS ≤ 0.32 (当前 0.3111)
-- DINO-C ≥ 0.78 (当前 0.7899)
-- CLIP-S ≥ 0.715 (当前 0.7217)
+通过架构解放（改架构/loss/扩容）让 WEAVE 在雷达图对比中胜出。
+第一目标：DINO-S（突破 0.49）；第二目标：CLIP-S（恢复 ≥0.72）；内容保持合理领先（LPIPS<0.30, DINO-C>0.80）。
 
-## Background
-Stage7-16 共 10 个实验确认 DINO-S 0.48 是 SAT+908K+5ep+D5 的 fundamental limit。
-所有变体（增量分支/CFG/训练时AdaIN/LL部分风格化/HF WCT/Huber loss）收敛到 0.480±0.003。
+## Current State (Round 4 complete)
+- adain_scale sweep 完成，发现 adain_scale 是推理参数（不影响训练）
+- brk_s (adain=1.6) 是平均数峰值：avg=0.6012, 4/4 Pareto 改进 brk_a
+- brk_q (adain=2.0) DINO-S 最高=0.4859 但 CLIP-S=0.7075
+- 所有 adain sweep 的 checkpoint 相同（训练配置一致）
 
-根因：LL 子带携带 DINOv2 敏感的色彩/对比度统计，但被 SAT 结构性锁死。
+## Round 5 Directions (4 architecture liberation experiments)
+
+### Direction 1: brk_u_hh_head — HH 子带笔触监督
+**数学动机**：当前 HH head 禁用，对角高频（笔触方向）无监督。启用后：
+$$\mathcal{L}_{fm} = 0.3\mathcal{L}_{ll} + 1.0\mathcal{L}_{lh} + 1.0\mathcal{L}_{hl} + 2.0\mathcal{L}_{hh}$$
+**配置**：enable_hh_head=true, spectral_w_hh=2.0
+**预期**：DINO-S↑（笔触是风格关键维度），CLIP-S 中性
+
+### Direction 2: brk_v_train_adain — 训练时 AdaIN 对齐
+**数学动机**：endpoint_adain_scale=1.0 推理时生效，但训练 target 未经过 AdaIN，导致 train-test mismatch。
+$$x_1^{*,train} = \text{AdaIN}(x_1^*, x_s, \alpha_{train}=1.0)$$
+**配置**：train_adain_enabled=true, train_adain_scale=1.0
+**预期**：CLIP-S↑（mismatch 消除），DINO-S 保持
+
+### Direction 3: brk_w_hf_wct — 高频 WCT（完整协方差迁移）
+**数学动机**：AdaIN 仅匹配对角协方差（mean+std），WCT 匹配完整协方差：
+$$f_w = \Sigma_c^{-1/2}(f - \mu_c), \quad f_{colored} = \Sigma_s^{1/2} f_w + \mu_s$$
+**配置**：hf_wct_enabled=true, hf_wct_beta=0.5
+**预期**：DINO-S↑（更丰富纹理统计），CLIP-S 中性
+
+### Direction 4: brk_x_dim96 — backbone 扩容
+**数学动机**：backbone 315K（35%）表达力不足，dim 64→96 扩容到 ~710K（+125%）
+**配置**：base_dim=96, batch_size=64（VRAM 安全）
+**预期**：所有指标↑（更强表达力），需更长训练
 
 ## Success Criteria
-1. DINO-S ≥ 0.485 (D5-512, 750 test pairs)
-2. LPIPS ≤ 0.32
-3. DINO-C ≥ 0.78
-4. 训练显存 ≤ 11.2GB
-5. 评估显存 ≤ 7GB
+1. DINO-S > 0.49（突破当前 0.4859 天花板）
+2. CLIP-S > 0.72（恢复到 baseline 水平）
+3. LPIPS < 0.30, DINO-C > 0.80（内容保持合理领先）
+4. 雷达图上 4 指标整体胜出 baseline
 
-## Milestones
-- M1: 识别 3+ 个结构性突破方向（不同于 Stage7-16 已试过的）
-- M2: 远程训练 + 本地评估第一轮实验
-- M3: 如未达 0.485，pivot 方向并启动第二轮
-- M4: 达标后更新雷达图
-
-## Constraints (from project_memory)
+## Constraints
 - 远程 RTX 3060 12GB via SSH
-- 训练 Patience=2, max=10, 至少 5 epochs
-- 数据集 D5 (非 Twenty-style)
-- 不引入 DINO/CLIP 等外部预训练模型（避免先验污染）
-- 评估 batch_size=2, full_eval_batch_size=2, ref_feature_batch_size=2
-- DataLoader: num_workers=0, pin_memory=False, persistent_workers=False
+- 训练显存 ≤ 11.2GB
+- 评估显存 ≤ 7GB
+- 不引入 DINO/CLIP 外部预训练模型到训练
