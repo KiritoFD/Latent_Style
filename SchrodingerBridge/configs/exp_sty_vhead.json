@@ -1,0 +1,23 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "style_adaln_enabled": false,
+    "style_velocity_head_enabled": true
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/vhead"
+  },
+  "ablation": {
+    "name": "sty_vhead",
+    "axis": "style_injection",
+    "stage": "712_sty_inject",
+    "notes": "方向1 only: Style-Conditioned Velocity Head. VelocityHead + style FiLM (norm后conv前). 零初始化FiLM保证初始等价baseline."
+  }
+}

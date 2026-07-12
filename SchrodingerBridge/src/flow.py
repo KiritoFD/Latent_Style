@@ -31,6 +31,9 @@ class FlowMatchingObjective:
         self.w_hh = float(getattr(self.bridge_cfg, "spectral_w_hh", 2.0))
         self.loss_type = str(getattr(self.bridge_cfg, "loss_type", "mse")).lower().strip()
         self.structure_aligned_target = bool(getattr(self.bridge_cfg, "structure_aligned_target", False))
+        # 712 Phase StyleInject: 高频统计矩损失
+        self.hf_stat_loss_enabled = bool(getattr(self.bridge_cfg, "hf_stat_loss_enabled", False))
+        self.hf_stat_weight = float(getattr(self.bridge_cfg, "hf_stat_weight", 2.0))
         # 712 Phase SF1: Subband-aware time schedule γ_k(t)
         self.subband_time_schedule_enabled = bool(
             getattr(self.bridge_cfg, "subband_time_schedule_enabled", False)
@@ -54,6 +57,24 @@ class FlowMatchingObjective:
         if self.loss_type in ("huber", "smooth_l1", "smoothl1"):
             return F.smooth_l1_loss(pred.float(), target.float())
         return F.mse_loss(pred.float(), target.float())
+
+    def _statistical_loss(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        """高频统计矩损失: 匹配空间均值和标准差, 允许纹理空间错位但要求分布一致.
+
+        解决 MSE 对高频纹理的"平滑化诅咒": MSE 惩罚笔触的空间位置偏差,
+        导致网络输出模糊平均值. 统计损失只要求分布矩一致, 解除空间约束.
+        """
+        pred_f = pred.float()
+        target_f = target.float()
+        # 空间均值 [B, C, 1, 1]
+        mu_pred = pred_f.mean(dim=[2, 3], keepdim=True)
+        mu_tgt = target_f.mean(dim=[2, 3], keepdim=True)
+        # 空间标准差 [B, C, 1, 1]
+        std_pred = pred_f.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        std_tgt = target_f.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        loss_mu = F.mse_loss(mu_pred, mu_tgt)
+        loss_std = F.mse_loss(std_pred, std_tgt)
+        return loss_mu + loss_std
 
     def compute(
         self, model, *, content, target_style, target_style_id,
@@ -121,7 +142,18 @@ class FlowMatchingObjective:
         if "hh" in v_dict:
             loss_fm = loss_fm + self.w_hh * loss_hh
 
-        loss = loss_fm
+        # 712 Phase StyleInject: 高频统计矩损失
+        # 对 LH/HL/HH 额外施加均值+方差匹配, 解除 MSE 的空间约束, 允许纹理分布级匹配
+        loss_stat = content.new_tensor(0.0)
+        if self.hf_stat_loss_enabled:
+            stat_lh = self._statistical_loss(v_dict["lh"], target_lh)
+            stat_hl = self._statistical_loss(v_dict["hl"], target_hl)
+            loss_stat = stat_lh + stat_hl
+            if "hh" in v_dict:
+                loss_stat = loss_stat + self._statistical_loss(v_dict["hh"], target_hh)
+            loss_stat = self.hf_stat_weight * loss_stat
+
+        loss = loss_fm + loss_stat
 
         metrics: Dict[str, torch.Tensor] = {
             "loss": loss,
@@ -131,6 +163,7 @@ class FlowMatchingObjective:
             "loss_fm_spectral_hh": loss_hh.detach(),
             "t_mean": t.detach().float().mean(),
             "flow": loss_fm.detach(),
+            "stat": loss_stat.detach(),
         }
 
         return metrics

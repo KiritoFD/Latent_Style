@@ -200,10 +200,89 @@ _RETIRED_BRIDGE_KEYS = {
     "w_head_color_energy",
     "w_head_amp_energy",
     "w_warp_curl_reward",
+    "source_endpoint_aux_weight",
+    "endpoint_energy_band_weight",
+    "w_attn_entropy_reg",
+    "w_style_strength_reg",
+    "w_variance_penalty",
+    "w_style_energy_floor",
+    "w_lowfreq_velocity",
+    "w_content_lowpass_anchor",
+    "w_content_edge_anchor",
+    "content_anchor_lowpass_kernel",
+    "contrastive_margin",
+    "contrastive_temperature",
+    "w_output_variance",
+    "output_variance_band",
+    "w_style_contrastive",
+    "style_contrastive_margin",
+    "style_contrastive_projections",
+    "style_contrastive_temperature",
+    "style_contrastive_pool_size",
+    "style_contrastive_w_same",
+    "style_contrastive_w_diff",
+    "style_contrastive_w_centroid",
+    "w_residual_style_direction",
+    "w_generated_delta_diversity",
+    "w_plain_path_distill",
+    "w_spectral_amplitude",
+    "w_anisotropic_kinetic",
+    "w_stokes_viscous",
+    "style_energy_floor_ratio",
+    "w_kinetic",
+    "w_flow",
+    "w_curvature",
+    "single_step_swd_weight",
+    "terminal_swd_weight",
+    "terminal_swd_aux_weight",
+    "terminal_swd_on_identity",
+    "terminal_swd_mode",
+    "terminal_swd_axis_source",
+    "dino_masked_swd_weight",
+    "semantic_swd_num_projections",
+    "spectral_swd_low_weight",
+    "spectral_swd_high_weight",
+    "spectral_swd_low_kernel",
+    "swd_scale_mode",
+    "swd_noise_sigma",
+    "swd_distance_mode",
+    "swd_use_high_freq",
+    "swd_patch_sizes",
+    "swd_num_projections",
+    "swd_projection_chunk_size",
+    "swd_cdf_num_bins",
+    "swd_cdf_tau",
+    "swd_cdf_sample_size",
+    "swd_cdf_bin_chunk_size",
+    "swd_cdf_sample_chunk_size",
+    "swd_hf_weight_ratio",
+    "swd_micro_patch_max",
+    "swd_macro_patch_min",
+    "swd_micro_weight",
+    "swd_macro_weight",
+    "swd_deterministic_subsample",
+    "swd_scale_invariant_patches",
+    "swd_adaptive_highpass",
+    "swd_highpass_kernel_size",
+    "swd_use_dilated_projections",
+    "swd_projection_dilation",
+    "w_endpoint_content",
+    "w_endpoint_style",
+    "w_endpoint_velocity_reg",
+    "two_stage_s1_w_endpoint_content",
+    "two_stage_s1_w_endpoint_style",
+    "two_stage_s1_w_style_strength_reg",
+    "two_stage_s2_w_endpoint_content",
+    "two_stage_s2_w_endpoint_style",
+    "two_stage_s2_w_style_strength_reg",
 }
 
 
 _RETIRED_MODEL_KEYS = {
+    "eval_only_dwt_route",
+    "ll_global_style_inject",
+    "ll_global_style_gate_init",
+    "ll_style_inject_source",
     "style_spatial_pre_gain_16",
     "style_spatial_mode",
     "style_spatial_num_prototypes",
@@ -211,6 +290,18 @@ _RETIRED_MODEL_KEYS = {
     "style_spatial_content_hidden_dim",
     "style_id_spatial_jitter_px",
     "ablation_disable_spatial_prior",
+    "cross_attn_dwt_ll_route_alpha",
+    "ll_adaln_zero",
+    "ll_tone_bias",
+    "style_film_enabled",
+    "style_film_init_std",
+    "style_film_heads",
+    "style_adaln_mode",
+    "style_adaln_rank",
+    "style_adaln_layers",
+    "style_adaln_init_gain",
+    "style_adaln_max_scale",
+    "style_adaln_max_shift",
 }
 
 
@@ -277,29 +368,10 @@ class ModelConfig:
     # True: 在 cross-attention 前对特征图做 Haar DWT, LL bypass, 仅高频(LH/HL/HH) query style_mem
     # 理论: 解放 style_mem, 让它 100% 容量表达笔触/色彩, 不再被迫学"维持结构"
     cross_attn_dwt_route: bool = False
-    # 630 Remote T2: Soft LL Route — LL 以 alpha 残差注入 style, 不完全 bypass
-    # 理论: 少量 LL style 提供色彩/对比度风格, 同时不严重破坏结构
-    # 0.0=完全bypass(默认), >0.0=LL参与cross-attention并以alpha残差注入
-    cross_attn_dwt_ll_route_alpha: float = 0.0
     # 630 Local T10: Stochastic DWT Route — 训练时以概率p使用DWT route, 推理时始终使用
     # 解决T5分布不匹配: q_proj同时学习DWT系数和空间特征, style_mem同时学习高频和完整风格
     # 0.0=不启用(默认), >0.0=训练时以该概率使用DWT route
     dwt_route_train_prob: float = 0.0
-    # 630 Phase 72 方案 C: Global AdaLN-Zero on LL (打破 1:8 trade-off)
-    # 理论: LL 同时承载内容(结构)和风格(色调). DWT route 的 LL bypass 保护结构但丢失色调.
-    # 方案 C 新增独立 global_tone_embedding (每个风格一个 dim 维向量), 通过 AdaLN-Zero
-    # 调制 LL 的 mean/std: LL_new = LL + γ(S_global)⊙Norm(LL) + β(S_global).
-    # γ/β 零初始化 (训练初期恒等), 逐渐学习色调调制. 线性操作不破坏边缘结构.
-    # 与 style_memory 独立: global_tone_embedding 专为全局色调训练, 不受高频偏向污染.
-    ll_adaln_zero: bool = False
-    # 630 Phase 72 方案 D: Direct Tone Bias Injection (Plan C 失败后的结构性 pivot)
-    # Plan C (T21) 失败根因: AdaLN-Zero 的 GroupNorm 让模型学到抑制 LL (γ→0) 而非注入风格.
-    # Plan D 移除 GroupNorm, 直接对 LL 做 scale+shift: LL = LL * (1 + α*γ) + α*β
-    # γ/β 从 global_tone_embedding 投影而来 (dim -> 2*dim), α 为可学习标量 (init=0.1).
-    # 无 GroupNorm 内容归一化, 模型无法通过归一化抑制, 必须学习风格色调注入.
-    # 理论: 全局 scale+shift 只改变 LL 的色彩统计 (mean/std), 不改变空间结构 (边缘/梯度),
-    # 因此 LPIPS 中性 (结构保留) 而 CLIP 正向 (色彩迁移).
-    ll_tone_bias: bool = False
     time_dim: int = 256
     base_dim: int = 64
     lift_channels: int | None = None
@@ -321,7 +393,15 @@ class ModelConfig:
     style_attn_sharpen_scale: float = 0
     style_attn_temperature: float = 1.0  # 630 Phase 72: 修复重复定义 bug (旧 L307=0.08 已删), <1 sharpens, >1 smooths
     style_cross_attn_gate_init: float = 0.05
-    # 630 Phase 72 清理: style_gate_mode / body_norm_type / style_attn_mode 已硬编码进 blocks620.py (已验证最优)
+    style_cross_attention_enabled: bool = True
+    # 712 Phase StyleInject: 训练时 style 注入改进（方向1+2）
+    # style_adaln_enabled: 在 ResidualBlock 的 Self-Attn 前用 time+style 联合 AdaLN 替代纯 time AdaLN
+    # style_velocity_head_enabled: 在 VelocityHead 中加 style FiLM 调制，让 velocity 预测感知目标 style
+    # style_vhead_hf_nonzero_init: HF heads (LH/HL/HH) 非零初始化打破零初始化陷阱, LL 保持零初始化
+    style_adaln_enabled: bool = False
+    style_velocity_head_enabled: bool = False
+    style_vhead_hf_nonzero_init: bool = False
+    # style_gate_mode / body_norm_type / style_attn_mode are fixed in blocks.py.
     style_moe_enabled: bool = False
     style_moe_num_experts: int = 4
     style_moe_router_hidden_dim: int = 128
@@ -334,16 +414,14 @@ class ModelConfig:
     style_image_dropout_prob: float = 0.15
     style_text_null_token_init_std: float = 0.02
     style_image_null_token_init_std: float = 0.02
-    style_film_enabled: bool = False
-    style_film_init_std: float = 0.02  # init std for block-level style_film_proj/film_q_proj/style_bias_proj; 0.0 = zero-init (FiLM=identity, gradient=0 — lethal); 0.02 = small random (breaks symmetry); 0.1+ = strong break
-    # 630 Phase 72 清理: style_attn_mode 已硬编码进 blocks620.py (relu2, 629 D19-D22 已验证)
+    # style_attn_mode is fixed in blocks.py.
     # 630 Phase 72 清理: style_mask_ratio/mask_mode/freq_lowpass_alpha/freq_lowpass_kernel/freq_mode 已删除
     #   (T11 SOTA 全部使用默认 no-op, Phase 2/4B 实验已验证无效)
     endpoint_head_mode: str = "endpoint_lowhigh"
     endpoint_style_hidden_dim: int = 128
     endpoint_lowpass_kernel: int = 5
     # 630 Phase 72 清理: endpoint_lowpass_levels=1 (4D 多级已验证无效) + endpoint_lowpass_basis="haar" (4E db2 已验证无效)
-    #   已硬编码进 spectral_bridge620.py integrate_transport
+    #   fixed in model.py integrate_transport
     # 630 Phase 4G: 全频域 ODE (用户方案五: 真·LL 锁死)
     # False (default): Euler 积分时应用 v_ll (现有行为, LL 漂移)
     # True: 推理时跳过 v_ll 应用, ll_new = ll_old (LL 完全锁死为内容锚)
@@ -628,8 +706,6 @@ class BridgeConfig:
     t_sampling_mode: str = "logit_normal"     # "uniform_power" | "beta" | "logit_normal" (629 D30: logit_normal confirmed effective)
     t_sampling_logit_mean: float = 0.0          # Logit-Normal 的 μ（正值偏向 t→1，笔触生成关键期）
     t_sampling_logit_std: float = 1.0           # Logit-Normal 的 σ（越小越集中，0.5=70%样本集中在 μ±1）
-    source_endpoint_aux_weight: float = 0.0
-    endpoint_energy_band_weight: float = 0.0
     identity_endpoint: bool = False
     eps: float = 1e-4
     coupling_solver: str = "sinkhorn"
@@ -653,8 +729,6 @@ class BridgeConfig:
     sinkhorn_unbalanced_tau_tgt: float = 1.0
     sinkhorn_unbalanced_dummy_cost: float = 0.0
     sinkhorn_unbalanced_dummy_offdiag_cost: float = 8.0
-    w_attn_entropy_reg: float = 0.0
-    w_style_strength_reg: float = 0.0
     bridge_sigma: float = 0.05
     bridge_noise_mode: str = "gaussian"
     bridge_noise_schedule: str = "auto"
@@ -681,19 +755,8 @@ class BridgeConfig:
     training_bridge_noise_projection_mode: str = "none"
     training_bridge_noise_projection_kernel: int = 5
     training_bridge_noise_projection_preserve_rms: bool = True
-    w_variance_penalty: float = 0.0
-    w_style_energy_floor: float = 0.0
-    w_lowfreq_velocity: float = 0.0
     proximal_trust_ratio: float = 0.0
     proximal_trust_weight: float = 0.0
-    w_content_lowpass_anchor: float = 0.0
-    w_content_edge_anchor: float = 0.0
-    content_anchor_lowpass_kernel: int = 9
-    contrastive_margin: float = 0.1
-    contrastive_temperature: float = 0.1
-    # === FC-SB Phase 4 A4: Output Variance Matching (W 方向重生) ===
-    w_output_variance: float = 0.0            # 输出 fiber 方差匹配 loss 权重（替代失效的 W2 hinge）
-    output_variance_band: str = "hh"          # "hh" | "mid" | "all" — 匹配哪个频带的方差
     # === FC-SB Phase 4 B2: Spectral ODE per-subband FM weights ===
     spectral_w_ll: float = 0.0                  # 低频速度 loss 权重 (0=锁死低频保 LPIPS)
     spectral_w_lh: float = 1.0                  # 水平低/垂直高 频带权重
@@ -708,13 +771,12 @@ class BridgeConfig:
     #   - 网络只学习高频纹理置换, 不再受逼迫破坏结构
     # 这是 4J.2 路线 (WCT-Aligned Target) 的完全体: 不修改推理, 只修改训练目标.
     structure_aligned_target: bool = False       # True=构造 x₁* (结构对齐目标), False=原始 x₁
-    w_style_contrastive: float = 0.0                 # weight for style-contrastive SWD (batch-level distribution separation; replaces legacy SWD when > 0)
-    style_contrastive_margin: float = 0.05           # hinge margin for cross-style separation
-    style_contrastive_projections: int = 64          # number of random projections for contrastive SWD
-    style_contrastive_temperature: float = 0.1       # InfoNCE temperature for centroid contrastive (lower = harder)
-    style_contrastive_w_same: float = 1.0            # weight for same-style consistency term
-    style_contrastive_w_diff: float = 1.0            # weight for cross-style hinge separation term
-    style_contrastive_w_centroid: float = 1.0        # weight for centroid InfoNCE term
+    # === 712 Phase StyleInject: 高频统计矩损失 (Moment Matching Loss) ===
+    # 理论: MSE 对高频纹理施加"像素级严格对齐"惩罚, 导致网络输出模糊平均值.
+    # hf_stat_loss_enabled: 对 LH/HL/HH 子带额外施加均值+方差匹配损失, 允许纹理空间错位但要求分布一致.
+    # hf_stat_weight: 统计损失权重 (建议 1.0-5.0), 与 MSE 叠加: total_hf = MSE + w_stat * stat_loss
+    hf_stat_loss_enabled: bool = False
+    hf_stat_weight: float = 2.0
     # === 712 Phase SF1: Subband-aware Time Schedule (方案2: 时频耦合流形调度) ===
     # 理论: 不同频带在不同时间段主导 ODE 积分 — 先底色(LL), 再边缘(LH/HL), 后笔触(HH).
     # 训练 FM loss 按 γ_k(t) 加权, 推理 ODE 积分按 γ_k(t) 加权, 训练-推理一致.
@@ -1003,7 +1065,7 @@ class ExperimentConfig:
             raw_bridge_payload=raw_bridge_payload,
         )
         contract_family = str(getattr(cfg.model, "contract_family", "legacy") or "legacy").strip().lower()
-        if contract_family not in ("620_spatial_bridge", "620_spectral_ode"):
+        if contract_family != "weave":
             validate_i2sb_contract(
                 solver_family=str(getattr(cfg.model, "solver_family", "euler_legacy")),
                 transport_prediction_mode=str(getattr(cfg.model, "transport_prediction_mode", "endpoint")),
