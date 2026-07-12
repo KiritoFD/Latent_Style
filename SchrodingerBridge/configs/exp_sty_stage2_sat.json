@@ -1,0 +1,27 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "style_adaln_enabled": true,
+    "style_velocity_head_enabled": true,
+    "style_vhead_hf_nonzero_init": true
+  },
+  "bridge": {
+    "structure_aligned_target": true
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/stage2_sat"
+  },
+  "ablation": {
+    "name": "stage2_sat",
+    "axis": "style_injection",
+    "stage": "712_sty_inject_stage2",
+    "notes": "阶段2: 非零init(AdaLN+VHead) + structure_aligned_target. 组合两个已验证安全的组件. 废弃统计矩损失."
+  }
+}

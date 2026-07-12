@@ -232,7 +232,7 @@ class StyleConditionedVelocityHead(nn.Module):
     zero_init=False: 小正态初始化, 强制网络从第一步就面对 style 影响 (适合 HF 风格头)
     """
 
-    def __init__(self, dim: int, latent_channels: int, zero_init: bool = True) -> None:
+    def __init__(self, dim: int, latent_channels: int, zero_init: bool = True, init_std: float = 0.02) -> None:
         super().__init__()
         self.dim = dim
         self.zero_init = zero_init
@@ -250,8 +250,9 @@ class StyleConditionedVelocityHead(nn.Module):
             nn.init.zeros_(self.style_film[-1].bias)
         else:
             # 非零初始化: 强制 style 分支从训练初期就激活, 避免梯度停滞导致"假死"
-            nn.init.normal_(self.style_film[-1].weight, std=0.02)
-            nn.init.normal_(self.style_film[-1].bias, std=0.02)
+            # init_std 越大, style 信号越强 (0.02=弱, 0.1=中, 0.2=强)
+            nn.init.normal_(self.style_film[-1].weight, std=init_std)
+            nn.init.normal_(self.style_film[-1].bias, std=init_std)
         self.conv = nn.Conv2d(dim, latent_channels, kernel_size=3, padding=1)
         nn.init.normal_(self.conv.weight, mean=0.0, std=1e-3)
         nn.init.zeros_(self.conv.bias)
@@ -336,6 +337,8 @@ class WEAVE(nn.Module):
         dwt_route_train_prob = float(getattr(model_cfg, "dwt_route_train_prob", 0.0))
         # 712 Phase StyleInject: 方向2 Style-AdaLN flag
         self.style_adaln_enabled = bool(getattr(model_cfg, "style_adaln_enabled", False))
+        self.style_adaln_nonzero_init = bool(getattr(model_cfg, "style_adaln_nonzero_init", False))
+        self.style_adaln_init_std = float(getattr(model_cfg, "style_adaln_init_std", 0.1))
         self.blocks = nn.ModuleList([
             ResidualBlock(
                 dim=self.dim, num_heads=heads, style_gate_init=gate_init,
@@ -346,6 +349,8 @@ class WEAVE(nn.Module):
                 dwt_route=dwt_route,
                 dwt_route_train_prob=dwt_route_train_prob,
                 style_adaln_enabled=self.style_adaln_enabled,
+                style_adaln_nonzero_init=self.style_adaln_nonzero_init,
+                style_adaln_init_std=self.style_adaln_init_std,
             )
             for idx in range(depth)
         ])
@@ -359,13 +364,16 @@ class WEAVE(nn.Module):
         # hf_zero_init: HF heads (LH/HL/HH) 使用非零初始化打破零初始化陷阱, LL 保持零初始化保结构
         self.style_velocity_head_enabled = bool(getattr(model_cfg, "style_velocity_head_enabled", False))
         self.style_vhead_hf_nonzero_init = bool(getattr(model_cfg, "style_vhead_hf_nonzero_init", False))
+        self.style_vhead_hf_init_std = float(getattr(model_cfg, "style_vhead_hf_init_std", 0.02))
         _head_cls = StyleConditionedVelocityHead if self.style_velocity_head_enabled else VelocityHead
         if self.style_velocity_head_enabled and self.style_vhead_hf_nonzero_init:
             # LL 保结构零初始化, HF 风格头非零初始化避免梯度假死
+            # init_std 控制 FiLM 信号强度: 0.02(弱) -> 0.1(中) -> 0.2(强)
+            _hf_std = self.style_vhead_hf_init_std
             self.head_ll = StyleConditionedVelocityHead(self.dim, self.latent_channels, zero_init=True)
-            self.head_lh = StyleConditionedVelocityHead(self.dim, self.latent_channels, zero_init=False)
-            self.head_hl = StyleConditionedVelocityHead(self.dim, self.latent_channels, zero_init=False)
-            self.head_hh = StyleConditionedVelocityHead(self.dim, self.latent_channels, zero_init=False) if self.enable_hh_head else None
+            self.head_lh = StyleConditionedVelocityHead(self.dim, self.latent_channels, zero_init=False, init_std=_hf_std)
+            self.head_hl = StyleConditionedVelocityHead(self.dim, self.latent_channels, zero_init=False, init_std=_hf_std)
+            self.head_hh = StyleConditionedVelocityHead(self.dim, self.latent_channels, zero_init=False, init_std=_hf_std) if self.enable_hh_head else None
         else:
             self.head_ll = _head_cls(self.dim, self.latent_channels)
             self.head_lh = _head_cls(self.dim, self.latent_channels)

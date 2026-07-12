@@ -1,0 +1,22 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "structure_aligned_target": true
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/sat_only"
+  },
+  "ablation": {
+    "name": "sat_only",
+    "axis": "style_injection",
+    "stage": "712_sty_inject_ablation",
+    "notes": "只开structure_aligned_target, 不改model. 测试SAT本身是否导致崩溃."
+  }
+}

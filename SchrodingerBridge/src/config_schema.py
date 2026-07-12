@@ -401,6 +401,13 @@ class ModelConfig:
     style_adaln_enabled: bool = False
     style_velocity_head_enabled: bool = False
     style_vhead_hf_nonzero_init: bool = False
+    # 712 Phase Stage6: 强化风格通路信号 — 打破零初始化陷阱
+    # style_adaln_nonzero_init: AdaLN 非零初始化, 让 style_pooled 梯度从训练初期就非零
+    # style_adaln_init_std: AdaLN 非零初始化的标准差 (0.1=中, 0.2=强)
+    # style_vhead_hf_init_std: Velocity Head FiLM 非零初始化标准差 (0.02=弱, 0.1=中, 0.2=强)
+    style_adaln_nonzero_init: bool = False
+    style_adaln_init_std: float = 0.1
+    style_vhead_hf_init_std: float = 0.02
     # style_gate_mode / body_norm_type / style_attn_mode are fixed in blocks.py.
     style_moe_enabled: bool = False
     style_moe_num_experts: int = 4

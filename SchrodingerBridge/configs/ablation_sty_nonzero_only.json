@@ -1,0 +1,24 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "style_adaln_enabled": true,
+    "style_velocity_head_enabled": true,
+    "style_vhead_hf_nonzero_init": true
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/nonzero_only"
+  },
+  "ablation": {
+    "name": "nonzero_only",
+    "axis": "style_injection",
+    "stage": "712_sty_inject_ablation",
+    "notes": "只开非零初始化+AdaLN+VHead, 不改bridge. 测试非零init本身是否安全."
+  }
+}

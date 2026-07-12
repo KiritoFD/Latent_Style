@@ -39,6 +39,8 @@ class ResidualBlock(nn.Module):
         dwt_route_train_prob: float = 0.0,
         attn_mode: str = "relu2",
         style_adaln_enabled: bool = False,
+        style_adaln_nonzero_init: bool = False,
+        style_adaln_init_std: float = 0.1,
     ) -> None:
         super().__init__()
 
@@ -66,12 +68,19 @@ class ResidualBlock(nn.Module):
         # True: time_style_adaln(concat([time_emb, style_pooled])) -> scale, shift, gate
         # 零初始化保证启用时初始等价于 baseline（style 部分贡献为 0）
         self.style_adaln_enabled = bool(style_adaln_enabled)
+        self.style_adaln_nonzero_init = bool(style_adaln_nonzero_init)
+        self.style_adaln_init_std = float(style_adaln_init_std)
         if self.style_adaln_enabled:
             self.time_style_adaln = nn.Sequential(
                 nn.SiLU(), nn.Linear(self.dim * 2, self.dim * 3)
             )
-            nn.init.zeros_(self.time_style_adaln[-1].weight)
-            nn.init.zeros_(self.time_style_adaln[-1].bias)
+            if self.style_adaln_nonzero_init:
+                # 非零初始化: 强制 style 通路从训练初期就激活, 避免 style_pooled 梯度永远为零
+                nn.init.normal_(self.time_style_adaln[-1].weight, std=self.style_adaln_init_std)
+                nn.init.normal_(self.time_style_adaln[-1].bias, std=self.style_adaln_init_std)
+            else:
+                nn.init.zeros_(self.time_style_adaln[-1].weight)
+                nn.init.zeros_(self.time_style_adaln[-1].bias)
         else:
             self.time_adaln = nn.Sequential(nn.SiLU(), nn.Linear(self.dim, self.dim * 3))
         # Self-attention: content Q/K/V
@@ -94,9 +103,11 @@ class ResidualBlock(nn.Module):
         self.attn_mode = str(attn_mode).lower().strip()  # default "relu2" (629 D19-D22 最优); "softmax" 用 flash attention 适配像素空间大分辨率
         self.attn_temperature = float(attn_temperature)
         # Zero-init the AdaLN output projection (time_adaln or time_style_adaln)
-        _adaln_mod = self.time_style_adaln if self.style_adaln_enabled else self.time_adaln
-        nn.init.zeros_(_adaln_mod[-1].weight)
-        nn.init.zeros_(_adaln_mod[-1].bias)
+        # 注意: style_adaln_nonzero_init=True 时已在上面设置非零初始化, 这里不覆盖
+        if not (self.style_adaln_enabled and self.style_adaln_nonzero_init):
+            _adaln_mod = self.time_style_adaln if self.style_adaln_enabled else self.time_adaln
+            nn.init.zeros_(_adaln_mod[-1].weight)
+            nn.init.zeros_(_adaln_mod[-1].bias)
         nn.init.zeros_(self.sa_out.bias)
         nn.init.zeros_(self.out_proj.bias)
         self.last_debug: dict[str, torch.Tensor] = {}
