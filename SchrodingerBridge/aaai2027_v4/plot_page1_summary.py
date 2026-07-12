@@ -96,7 +96,7 @@ GROUP_STYLE = {
 LABEL_POS = {
     "Identity": {"xytext": (0, 8), "ha": "center", "va": "bottom", "arrow": False},
     "WCT": {"xytext": (14, 0), "ha": "left", "va": "center", "arrow": False},
-    "StyleAligned": {"xytext": (12, 0), "ha": "left", "va": "center", "arrow": False},
+    "StyleAligned": {"xytext": (14, -28), "ha": "left", "va": "top", "arrow": True},
     "CUT": {"xytext": (-6, 10), "ha": "right", "va": "bottom", "arrow": False},
     "SaMST": {"xytext": (12, 10), "ha": "left", "va": "bottom", "arrow": False},
     "SaMam": {"xytext": (-8, 10), "ha": "right", "va": "bottom", "arrow": False},
@@ -190,6 +190,24 @@ def build_scatter(ax: plt.Axes) -> None:
             alpha=0.95,
         )
 
+    # StyleAligned sits above the y-axis ceiling; redraw it with clip_on=False
+    # so the marker and its label remain visible above the upper bound.
+    sa = next((p for p in ALL_POINTS if p["name"] == "StyleAligned"), None)
+    if sa is not None:
+        style = GROUP_STYLE["training_free"]
+        ax.scatter(
+            [sa["x"]],
+            [sa["avg"]],
+            s=[bubble_size(sa)],
+            marker=style["marker"],
+            facecolor=style["face"],
+            edgecolor=style["edge"],
+            linewidth=1.0,
+            zorder=style["z"],
+            alpha=0.95,
+            clip_on=False,
+        )
+
     frontier = sorted(OURS_FRONTIER, key=lambda p: p["x"])
     ax.plot(
         [p["x"] for p in frontier],
@@ -267,7 +285,7 @@ def build_scatter(ax: plt.Axes) -> None:
     )
 
     ax.set_xlim(0.20, 1.02)
-    ax.set_ylim(0.40, 0.82)
+    ax.set_ylim(0.40, 0.70)
     ax.set_xlabel("Content fidelity (1 - LPIPS)")
     ax.set_ylabel(r"Style affinity $\frac{1}{2}$(DINO-S + CLIP-S)")
     ax.grid(axis="both", color="#D6D9DF", alpha=0.55, linewidth=0.6)
