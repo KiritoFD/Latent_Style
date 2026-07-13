@@ -1,8 +1,8 @@
 {
-  "iteration": 24,
-  "total_findings": 26,
-  "status": "round9_complete_11_directions_all_failed_last_loss_level_exhausted",
-  "stale_count": 8,
+  "iteration": 28,
+  "total_findings": 30,
+  "status": "round10_adaIN_deepening_complete_4_directions_all_failed",
+  "stale_count": 9,
   "best_dino_s": 0.4859,
   "best_config": "brk_q_adain20 (adain_scale=2.0) - DINO-S=0.4859 but CLIP-S=0.7075",
   "best_balanced_config": "brk_s_adain16 (adain_scale=1.6) - DINO-S=0.4845, CLIP-S=0.7179, avg=0.6012 (peak)",
@@ -53,7 +53,11 @@
     "brk_aa_aug35_FAILED",
     "brk_ab_hf_ovs13_FAILED",
     "brk_ab_hf_ovs15_FAILED",
-    "brk_ac_fft_loss_FAILED"
+    "brk_ac_fft_loss_FAILED",
+    "brk_ad_adain_base_FAILED",
+    "brk_ad_adain_hfonly_FAILED",
+    "brk_ad_adain_hi_FAILED",
+    "brk_ad_adain_lo_FAILED"
   ],
   "key_conclusions": {
     "wll_liberation": "FAILED - w_ll controls content fidelity not style transfer",
@@ -72,6 +76,8 @@
     "round9_options": "A) Accept 0.485 ceiling, optimize radar chart balance. B) Lift DINO/CLIP ban, add DINOv2 feature loss. C) Try FFT power spectrum loss or VAE Gram matrix loss (last loss-level options without external models).",
     "round9_failure": "Round 9 FFT power spectrum loss FAILED. DINO-S=0.4772 (-0.006 vs baseline 0.4832). FFT loss is shift-invariant, conflicts with FM spatial alignment, degrades DINO-C (-0.033) without style benefit.",
     "round9_root_cause": "FFT power spectrum loss gradient pulls model toward global frequency energy matching at expense of spatial structure. Content preservation degraded, no style transfer gain.",
-    "decision_point": "A) Accept 0.485 ceiling, optimize radar chart balance with brk_s (adain=1.6) as peak. B) Lift DINO/CLIP training ban, add DINOv2 feature loss to directly optimize DINO-S. C) Explore inference-time techniques (multi-step, CFG, blending) to push DINO-S without training changes."
+    "decision_point": "A) Accept 0.485 ceiling, optimize radar chart balance with brk_s (adain=1.6) as peak. B) Lift DINO/CLIP training ban, add DINOv2 feature loss to directly optimize DINO-S. C) Explore inference-time techniques (multi-step, CFG, blending) to push DINO-S without training changes.",
+    "round10_failure": "AdaIN blending on HF subbands is content-protective: systematically reduces DINO-S (0.4753-0.4778) while improving DINO-C (0.8140-0.8182). Hard replacement is better for style transfer.",
+    "round10_root_cause": "AdaIN mean+std matching retains content spatial layout, reducing the style difference signal that the model needs to learn."
   }
 }
