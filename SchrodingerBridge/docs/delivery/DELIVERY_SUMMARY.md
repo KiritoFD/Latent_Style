@@ -45,6 +45,31 @@ Important comparisons:
 | Latent-WCT | 0.362 | 0.441 | 0.559 | Wavelet statistics alone are insufficient. |
 | WEAVE | 0.4859 | 0.2583 | 0.8287 | Balanced paper point. |
 
+### 2.1 内容-风格上下界夹逼分析
+
+为量化各方法在内容-风格 Pareto 前沿上的位置，我们在同一评估管线下建立了两个理论边界：
+
+| 基准 | 含义 | CLIP-S ↑ | DINO-S ↑ | LPIPS ↓ | DINO-C ↑ |
+|------|------|----------|----------|---------|----------|
+| **Target Style** | 风格上界 + 内容下界 | 0.8737 | 1.0000 | 0.7332 | 0.1760 |
+| **IDT (Identity)** | 内容上界 + 风格下界 | 0.6532 | 0.3700 | 0.0000 | 1.0000 |
+
+> Target Style: 直接将目标风格参考图作为输出。CLIP-S=0.874 是理论风格上限（同风格图之间的 CLIP 相似度），LPIPS=0.733 是理论内容下限（和内容图完全没有关系）。
+> IDT: 直接将内容图作为输出。LPIPS=0 是完美内容保持，DINO-S=0.370 是跨风格 DINOv2 相似度基线（即使不做迁移，不同风格图之间也有 0.37 的 DINOv2 CLS 余弦相似度）。
+
+**StyleAligned 内容崩溃量化：**
+
+| 方法 | LPIPS | DINO-C | vs Target Style LPIPS | vs IDT DINO-C |
+|------|-------|--------|----------------------|---------------|
+| Target Style (下界) | 0.7332 | 0.1760 | — | — |
+| **StyleAligned** | **0.869** | **0.239** | **+0.136 (更差!)** | **-0.761** |
+| Seedream 4.5 | 0.477 | 0.739 | -0.256 | -0.261 |
+| WEAVE (ours) | 0.2583 | 0.8287 | -0.475 | -0.171 |
+
+**结论：StyleAligned 的 LPIPS=0.869 比 Target Style 下界（0.733）还差 0.136**，即其生成图和内容图的感知距离，比直接拿一张完全无关的目标风格图还要大。这是内容崩溃的定量证据——StyleAligned 不是"内容保留差"，而是"内容被破坏到比随机图还差"。
+
+我们的 WEAVE 在 LPIPS 上距离下界有 0.475 的安全边际，DINO-C 距离上界仅差 0.171，是唯一同时在风格和内容上都不崩溃的 learned 方法。Seedream 4.5 虽然 DINO-S 接近我们（0.486 vs 0.486），但 LPIPS 差了近一倍（0.477 vs 0.258），内容代价远高于我们。
+
 ---
 
 ## 3. Current Mechanism Diagnosis
