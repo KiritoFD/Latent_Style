@@ -1,0 +1,1367 @@
+{
+  "config": "configs\\exp_probe_target_hf_subband_current_delta_ft6.json",
+  "checkpoint": "exp\\model_probe\\target_hf_subband_current_delta_ft6\\epoch_0006.pt",
+  "device": "cuda",
+  "batch_size": 4,
+  "data_root": "I:\\datasets\\wikiart_distinct5_samam_512_latents_ema\\train",
+  "latent_cache_mode": "off",
+  "load_info": {
+    "missing": 0,
+    "unexpected": 0
+  },
+  "objective_focus": {
+    "structure_aligned_target": true,
+    "ll_partial_style_enabled": true,
+    "ll_partial_alpha": 0.3,
+    "spectral_w_ll": 0.3,
+    "spectral_w_lh": 1.0,
+    "spectral_w_hl": 1.0,
+    "spectral_w_hh": 2.0,
+    "train_hf_stat_loss_enabled_in_config": false,
+    "probe_hf_stat_loss_enabled": false,
+    "probe_hf_stat_weight": 2.0,
+    "target_latent_hf_subband_fusion_enabled": true,
+    "style_cross_attention_enabled": true,
+    "cfg_dropout_prob": 0.0
+  },
+  "group_gradient_cosines": {},
+  "residual_activation_gradients": {
+    "loss": {
+      "lh": {
+        "output_rms": 0.07678348571062088,
+        "output_abs": 0.06141213700175285,
+        "grad_rms": 8.677880396135151e-05,
+        "grad_abs": 6.765485159121454e-05,
+        "grad_over_output": 0.0011301753646255457
+      },
+      "hl": {
+        "output_rms": 0.0720164030790329,
+        "output_abs": 0.060021355748176575,
+        "grad_rms": 9.953068365575746e-05,
+        "grad_abs": 7.67704623285681e-05,
+        "grad_over_output": 0.0013820557456215568
+      },
+      "hh": {
+        "output_rms": 0.13218006491661072,
+        "output_abs": 0.10864599049091339,
+        "grad_rms": 0.0001700690045254305,
+        "grad_abs": 0.00013212983321864158,
+        "grad_over_output": 0.0012866463988456683
+      }
+    },
+    "loss_fm_hf_total": {
+      "lh": {
+        "output_rms": 0.07678348571062088,
+        "output_abs": 0.06141213700175285,
+        "grad_rms": 8.677880396135151e-05,
+        "grad_abs": 6.765485159121454e-05,
+        "grad_over_output": 0.0011301753646255457
+      },
+      "hl": {
+        "output_rms": 0.0720164030790329,
+        "output_abs": 0.060021355748176575,
+        "grad_rms": 9.953068365575746e-05,
+        "grad_abs": 7.67704623285681e-05,
+        "grad_over_output": 0.0013820557456215568
+      },
+      "hh": {
+        "output_rms": 0.13218006491661072,
+        "output_abs": 0.10864599049091339,
+        "grad_rms": 0.0001700690045254305,
+        "grad_abs": 0.00013212983321864158,
+        "grad_over_output": 0.0012866463988456683
+      }
+    },
+    "loss_stat": {
+      "lh": {
+        "output_rms": 0.07678348571062088,
+        "output_abs": 0.06141213700175285,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hl": {
+        "output_rms": 0.0720164030790329,
+        "output_abs": 0.060021355748176575,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hh": {
+        "output_rms": 0.13218006491661072,
+        "output_abs": 0.10864599049091339,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      }
+    },
+    "loss_fm_spectral_lh": {
+      "lh": {
+        "output_rms": 0.07678348571062088,
+        "output_abs": 0.06141213700175285,
+        "grad_rms": 8.677880396135151e-05,
+        "grad_abs": 6.765485159121454e-05,
+        "grad_over_output": 0.0011301753646255457
+      },
+      "hl": {
+        "output_rms": 0.0720164030790329,
+        "output_abs": 0.060021355748176575,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hh": {
+        "output_rms": 0.13218006491661072,
+        "output_abs": 0.10864599049091339,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      }
+    },
+    "loss_stat_lh": {
+      "lh": {
+        "output_rms": 0.07678348571062088,
+        "output_abs": 0.06141213700175285,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hl": {
+        "output_rms": 0.0720164030790329,
+        "output_abs": 0.060021355748176575,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hh": {
+        "output_rms": 0.13218006491661072,
+        "output_abs": 0.10864599049091339,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      }
+    },
+    "loss_fm_spectral_hl": {
+      "lh": {
+        "output_rms": 0.07678348571062088,
+        "output_abs": 0.06141213700175285,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hl": {
+        "output_rms": 0.0720164030790329,
+        "output_abs": 0.060021355748176575,
+        "grad_rms": 9.953068365575746e-05,
+        "grad_abs": 7.67704623285681e-05,
+        "grad_over_output": 0.0013820557456215568
+      },
+      "hh": {
+        "output_rms": 0.13218006491661072,
+        "output_abs": 0.10864599049091339,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      }
+    },
+    "loss_stat_hl": {
+      "lh": {
+        "output_rms": 0.07678348571062088,
+        "output_abs": 0.06141213700175285,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hl": {
+        "output_rms": 0.0720164030790329,
+        "output_abs": 0.060021355748176575,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hh": {
+        "output_rms": 0.13218006491661072,
+        "output_abs": 0.10864599049091339,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      }
+    },
+    "loss_fm_spectral_hh": {
+      "lh": {
+        "output_rms": 0.07678348571062088,
+        "output_abs": 0.06141213700175285,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hl": {
+        "output_rms": 0.0720164030790329,
+        "output_abs": 0.060021355748176575,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hh": {
+        "output_rms": 0.13218006491661072,
+        "output_abs": 0.10864599049091339,
+        "grad_rms": 0.0001700690045254305,
+        "grad_abs": 0.00013212983321864158,
+        "grad_over_output": 0.0012866463988456683
+      }
+    },
+    "loss_stat_hh": {
+      "lh": {
+        "output_rms": 0.07678348571062088,
+        "output_abs": 0.06141213700175285,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hl": {
+        "output_rms": 0.0720164030790329,
+        "output_abs": 0.060021355748176575,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      },
+      "hh": {
+        "output_rms": 0.13218006491661072,
+        "output_abs": 0.10864599049091339,
+        "grad_rms": 0.0,
+        "grad_abs": 0.0,
+        "grad_over_output": 0.0
+      }
+    }
+  },
+  "condition_interventions": {
+    "target_latent_full_vs_content_condition": {
+      "ll": {
+        "delta_rms": 0.0,
+        "delta_abs": 0.0,
+        "base_rms": 0.1755327582359314,
+        "delta_over_base": 0.0
+      },
+      "lh": {
+        "delta_rms": 0.01299921702593565,
+        "delta_abs": 0.01051262579858303,
+        "base_rms": 0.1559125930070877,
+        "delta_over_base": 0.08337502940035983
+      },
+      "hl": {
+        "delta_rms": 0.018288996070623398,
+        "delta_abs": 0.013394519686698914,
+        "base_rms": 0.17336152493953705,
+        "delta_over_base": 0.10549628054377416
+      },
+      "hh": {
+        "delta_rms": 0.014052046462893486,
+        "delta_abs": 0.011094076558947563,
+        "base_rms": 0.11154881864786148,
+        "delta_over_base": 0.1259721674608421
+      }
+    },
+    "single_target_band_vs_content_condition": {
+      "ll": {
+        "ll": {
+          "delta_rms": 0.0,
+          "delta_abs": 0.0,
+          "base_rms": 0.1755327582359314,
+          "delta_over_base": 0.0
+        },
+        "lh": {
+          "delta_rms": 5.304623300617095e-07,
+          "delta_abs": 8.865920619882672e-08,
+          "base_rms": 0.1559125930070877,
+          "delta_over_base": 3.4023058678409168e-06
+        },
+        "hl": {
+          "delta_rms": 6.512293566629523e-07,
+          "delta_abs": 7.644183597221854e-08,
+          "base_rms": 0.17336152493953705,
+          "delta_over_base": 3.756481473535283e-06
+        },
+        "hh": {
+          "delta_rms": 8.522607686245465e-07,
+          "delta_abs": 6.300048482899001e-08,
+          "base_rms": 0.11154881864786148,
+          "delta_over_base": 7.640249165769583e-06
+        }
+      },
+      "lh": {
+        "ll": {
+          "delta_rms": 0.0,
+          "delta_abs": 0.0,
+          "base_rms": 0.1755327582359314,
+          "delta_over_base": 0.0
+        },
+        "lh": {
+          "delta_rms": 0.012999210506677628,
+          "delta_abs": 0.010512624867260456,
+          "base_rms": 0.1559125930070877,
+          "delta_over_base": 0.08337498758681612
+        },
+        "hl": {
+          "delta_rms": 3.190100699157483e-07,
+          "delta_abs": 3.657112301880261e-08,
+          "base_rms": 0.17336152493953705,
+          "delta_over_base": 1.840143422972131e-06
+        },
+        "hh": {
+          "delta_rms": 1.2382280374367838e-06,
+          "delta_abs": 1.1665792953863274e-07,
+          "base_rms": 0.11154881864786148,
+          "delta_over_base": 1.1100324077250294e-05
+        }
+      },
+      "hl": {
+        "ll": {
+          "delta_rms": 0.0,
+          "delta_abs": 0.0,
+          "base_rms": 0.1755327582359314,
+          "delta_over_base": 0.0
+        },
+        "lh": {
+          "delta_rms": 4.5316906494008435e-07,
+          "delta_abs": 8.811291252186493e-08,
+          "base_rms": 0.1559125930070877,
+          "delta_over_base": 2.9065584517382565e-06
+        },
+        "hl": {
+          "delta_rms": 0.018288997933268547,
+          "delta_abs": 0.013394524343311787,
+          "base_rms": 0.17336152493953705,
+          "delta_over_base": 0.10549629128805638
+        },
+        "hh": {
+          "delta_rms": 9.063462016456469e-07,
+          "delta_abs": 7.471341234577267e-08,
+          "base_rms": 0.11154881864786148,
+          "delta_over_base": 8.125108025560408e-06
+        }
+      },
+      "hh": {
+        "ll": {
+          "delta_rms": 0.0,
+          "delta_abs": 0.0,
+          "base_rms": 0.1755327582359314,
+          "delta_over_base": 0.0
+        },
+        "lh": {
+          "delta_rms": 1.058408656717802e-06,
+          "delta_abs": 1.437207686194597e-07,
+          "base_rms": 0.1559125930070877,
+          "delta_over_base": 6.78847446699125e-06
+        },
+        "hl": {
+          "delta_rms": 4.677554841236997e-07,
+          "delta_abs": 6.334668967156176e-08,
+          "base_rms": 0.17336152493953705,
+          "delta_over_base": 2.698150493796935e-06
+        },
+        "hh": {
+          "delta_rms": 0.014052054844796658,
+          "delta_abs": 0.011094078421592712,
+          "base_rms": 0.11154881864786148,
+          "delta_over_base": 0.12597224260196213
+        }
+      }
+    },
+    "target_hf_residual_contribution": {
+      "ll": {
+        "delta_rms": 0.0,
+        "delta_abs": 0.0,
+        "base_rms": 0.1755327582359314,
+        "delta_over_base": 0.0
+      },
+      "lh": {
+        "delta_rms": 0.07678348571062088,
+        "delta_abs": 0.06141213700175285,
+        "base_rms": 0.16134968400001526,
+        "delta_over_base": 0.47588246723890537
+      },
+      "hl": {
+        "delta_rms": 0.0720164030790329,
+        "delta_abs": 0.060021352022886276,
+        "base_rms": 0.18090492486953735,
+        "delta_over_base": 0.39808978738732875
+      },
+      "hh": {
+        "delta_rms": 0.13218006491661072,
+        "delta_abs": 0.10864599049091339,
+        "base_rms": 0.12234852463006973,
+        "delta_over_base": 1.0803568356478923
+      }
+    },
+    "cfg_unconditional_delta_from_full": {
+      "ll": {
+        "delta_rms": 0.0,
+        "delta_abs": 0.0,
+        "base_rms": 0.1755327582359314,
+        "delta_over_base": 0.0
+      },
+      "lh": {
+        "delta_rms": 0.07678348571062088,
+        "delta_abs": 0.06141213700175285,
+        "base_rms": 0.15542252361774445,
+        "delta_over_base": 0.4940306200340228
+      },
+      "hl": {
+        "delta_rms": 0.0720164030790329,
+        "delta_abs": 0.060021352022886276,
+        "base_rms": 0.173670694231987,
+        "delta_over_base": 0.41467216675266855
+      },
+      "hh": {
+        "delta_rms": 0.13218006491661072,
+        "delta_abs": 0.10864599049091339,
+        "base_rms": 0.11340738832950592,
+        "delta_over_base": 1.165533100289684
+      }
+    },
+    "notes": {
+      "content_condition": "style_latent reconstructed from content DWT bands; style_id is unchanged.",
+      "single_band": "only the named style_latent DWT band is taken from target_style; other condition bands come from content.",
+      "target_hf_residual_contribution": "forward hooks zero only target_latent_hf_subband_delta_lh/hl/hh.",
+      "cfg_unconditional": "model cfg_unconditional=True; in this code path target-HF branches are disabled."
+    }
+  },
+  "input_band_gradients": {
+    "full_shared": {
+      "loss": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 3.328148522996344e-05,
+            "grad_abs": 2.4919416318880394e-05,
+            "grad_over_tensor": 2.7513723905352775e-05,
+            "grad_power_share": 0.02318024749435647
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.853241888573393e-05,
+            "grad_abs": 6.878394924569875e-05,
+            "grad_over_tensor": 0.00016455251470489022,
+            "grad_power_share": 0.1640277396791742
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 0.0001005101585178636,
+            "grad_abs": 7.761042797937989e-05,
+            "grad_over_tensor": 0.00016695978509590682,
+            "grad_power_share": 0.21141341837998578
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 0.00016951576981227845,
+            "grad_abs": 0.00013149992446415126,
+            "grad_over_tensor": 0.00033475155555643614,
+            "grad_power_share": 0.6013576671727584
+          }
+        },
+        "target_style_shared": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 3.0785643048147904e-06,
+            "grad_abs": 2.3948218768055085e-06,
+            "grad_over_tensor": 1.8828786773184546e-06,
+            "grad_power_share": 0.00019435030448778756
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 8.932824130170047e-05,
+            "grad_abs": 6.915973062859848e-05,
+            "grad_over_tensor": 0.00017719925742652515,
+            "grad_power_share": 0.16363128505854133
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 0.00010230061889160424,
+            "grad_abs": 7.805849600117654e-05,
+            "grad_over_tensor": 0.00017369994267503876,
+            "grad_power_share": 0.21460771393690173
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 0.00017409739666618407,
+            "grad_abs": 0.0001341314782621339,
+            "grad_over_tensor": 0.0003458324359246603,
+            "grad_power_share": 0.6215461443299551
+          }
+        }
+      },
+      "loss_fm_hf_total": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 3.320571340736933e-05,
+            "grad_abs": 2.486404264345765e-05,
+            "grad_over_tensor": 2.7451083521600228e-05,
+            "grad_power_share": 0.02311078196115637
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.83961038198322e-05,
+            "grad_abs": 6.864313036203384e-05,
+            "grad_over_tensor": 0.00016429915003725085,
+            "grad_power_share": 0.16377788196453197
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 0.00010042441863333806,
+            "grad_abs": 7.749681390123442e-05,
+            "grad_over_tensor": 0.00016681736055986366,
+            "grad_power_share": 0.21138183720561038
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 0.00016943323134910315,
+            "grad_abs": 0.00013140382361598313,
+            "grad_over_tensor": 0.00033458856258550626,
+            "grad_power_share": 0.6017085389788983
+          }
+        },
+        "target_style_shared": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 8.945690410655516e-07,
+            "grad_abs": 5.99404245349433e-07,
+            "grad_over_tensor": 5.471267792513683e-07,
+            "grad_power_share": 1.6398055096932907e-05
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 8.937904931372032e-05,
+            "grad_abs": 6.921515887370333e-05,
+            "grad_over_tensor": 0.0001773000446117427,
+            "grad_power_share": 0.16369524929584964
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 0.0001023308141157031,
+            "grad_abs": 7.810822717146948e-05,
+            "grad_over_tensor": 0.00017375121224458642,
+            "grad_power_share": 0.2145741842072594
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 0.00017418306379113346,
+            "grad_abs": 0.00013421784387901425,
+            "grad_over_tensor": 0.00034600260774266125,
+            "grad_power_share": 0.6216936773722669
+          }
+        }
+      },
+      "loss_fm_spectral_lh": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 1.4443933650909457e-05,
+            "grad_abs": 1.0836621186172124e-05,
+            "grad_over_tensor": 1.1940765258293538e-05,
+            "grad_power_share": 0.026554036871709256
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.702002378413454e-05,
+            "grad_abs": 6.76465206197463e-05,
+            "grad_over_tensor": 0.00016174147192160484,
+            "grad_power_share": 0.9638245472143737
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 6.0211532399989665e-06,
+            "grad_abs": 4.5318993215914816e-06,
+            "grad_over_tensor": 1.0001879071766472e-05,
+            "grad_power_share": 0.004614438957178724
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 6.19179627392441e-06,
+            "grad_abs": 4.671253009291831e-06,
+            "grad_over_tensor": 1.2227260252424076e-05,
+            "grad_power_share": 0.004879697131838444
+          }
+        },
+        "target_style_shared": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 2.2138029009965976e-07,
+            "grad_abs": 1.4932805925127468e-07,
+            "grad_over_tensor": 1.3539825273596167e-07,
+            "grad_power_share": 6.246245591719389e-06
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 8.815071487333626e-05,
+            "grad_abs": 6.809922342654318e-05,
+            "grad_over_tensor": 0.00017486341373738857,
+            "grad_power_share": 0.9903594444873626
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 6.0211532399989665e-06,
+            "grad_abs": 4.5318993215914816e-06,
+            "grad_over_tensor": 1.0223535145311606e-05,
+            "grad_power_share": 0.004620622619905497
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 6.19179627392441e-06,
+            "grad_abs": 4.6712525545444805e-06,
+            "grad_over_tensor": 1.2299575003216782e-05,
+            "grad_power_share": 0.0048862362585994894
+          }
+        }
+      },
+      "loss_fm_spectral_hl": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 1.8957882275572047e-05,
+            "grad_abs": 1.3366036000661552e-05,
+            "grad_over_tensor": 1.5672435744864844e-05,
+            "grad_power_share": 0.03469151777920432
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.444798368145712e-06,
+            "grad_abs": 6.179850515763974e-06,
+            "grad_over_tensor": 1.56960899198706e-05,
+            "grad_power_share": 0.006883704344299852
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 9.928347571985796e-05,
+            "grad_abs": 7.6596305007115e-05,
+            "grad_over_tensor": 0.0001649221134878229,
+            "grad_power_share": 0.9514755030202313
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 8.425789019383956e-06,
+            "grad_abs": 6.088740519771818e-06,
+            "grad_over_tensor": 1.6638841236733237e-05,
+            "grad_power_share": 0.006852748997617398
+          }
+        },
+        "target_style_shared": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 4.0008234236665885e-07,
+            "grad_abs": 3.040103990770149e-07,
+            "grad_over_tensor": 2.4469409667215753e-07,
+            "grad_power_share": 1.523576498803871e-05
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 8.444798368145712e-06,
+            "grad_abs": 6.179850515763974e-06,
+            "grad_over_tensor": 1.675183545703217e-05,
+            "grad_power_share": 0.006788033984025485
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 0.00010179617675021291,
+            "grad_abs": 7.760107109788805e-05,
+            "grad_over_tensor": 0.00017284343201076418,
+            "grad_power_share": 0.9863440370600421
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 8.425789019383956e-06,
+            "grad_abs": 6.088740519771818e-06,
+            "grad_over_tensor": 1.6737247063768382e-05,
+            "grad_power_share": 0.006757508857617087
+          }
+        }
+      },
+      "loss_fm_spectral_hh": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 1.901321593322791e-05,
+            "grad_abs": 1.3965497601020616e-05,
+            "grad_over_tensor": 1.5718179946750586e-05,
+            "grad_power_share": 0.012386107420967522
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 1.0999173355230596e-05,
+            "grad_abs": 8.325248927576467e-06,
+            "grad_over_tensor": 2.0443829029615187e-05,
+            "grad_power_share": 0.004145183688398548
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 1.037306628859369e-05,
+            "grad_abs": 7.88719262345694e-06,
+            "grad_over_tensor": 1.7230944054489696e-05,
+            "grad_power_share": 0.003686702110346002
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 0.00016910064732655883,
+            "grad_abs": 0.00013101883814670146,
+            "grad_over_tensor": 0.0003339317917197442,
+            "grad_power_share": 0.9797477439125049
+          }
+        },
+        "target_style_shared": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 3.9823106590120005e-07,
+            "grad_abs": 2.8354233450045285e-07,
+            "grad_over_tensor": 2.43561838698146e-07,
+            "grad_power_share": 5.208771671910087e-06
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 1.0999173355230596e-05,
+            "grad_abs": 8.325248927576467e-06,
+            "grad_over_tensor": 2.1818915523811846e-05,
+            "grad_power_share": 0.00397360876929113
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 1.037306628859369e-05,
+            "grad_abs": 7.88719262345694e-06,
+            "grad_over_tensor": 1.7612806640028783e-05,
+            "grad_power_share": 0.003534103925723082
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 0.00017382920486852527,
+            "grad_abs": 0.00013396450958680362,
+            "grad_over_tensor": 0.000345299691469801,
+            "grad_power_share": 0.9924542338532905
+          }
+        }
+      }
+    },
+    "target_only": {
+      "loss": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 3.328148522996344e-05,
+            "grad_abs": 2.4919425413827412e-05,
+            "grad_over_tensor": 2.7513723905352775e-05,
+            "grad_power_share": 0.023180249648630694
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.853241160977632e-05,
+            "grad_abs": 6.878395652165636e-05,
+            "grad_over_tensor": 0.00016455250118128906,
+            "grad_power_share": 0.16402773633606438
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 0.0001005101585178636,
+            "grad_abs": 7.761042070342228e-05,
+            "grad_over_tensor": 0.00016695978509590682,
+            "grad_power_share": 0.21141343802785528
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 0.00016951575526036322,
+            "grad_abs": 0.00013149992446415126,
+            "grad_over_tensor": 0.0003347515268200167,
+            "grad_power_share": 0.6013576487117795
+          }
+        },
+        "target_style_target_path": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 3.078564532188466e-06,
+            "grad_abs": 2.3948209673108067e-06,
+            "grad_over_tensor": 1.8828788163823179e-06,
+            "grad_power_share": 0.00019418145965696186
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 8.931854245020077e-05,
+            "grad_abs": 6.914812547620386e-05,
+            "grad_over_tensor": 0.00017718001794236434,
+            "grad_power_share": 0.16345359462543743
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 0.00010231324995402247,
+            "grad_abs": 7.805667701177299e-05,
+            "grad_over_tensor": 0.00017372138941545678,
+            "grad_power_share": 0.2144741856148729
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 0.00017421672237105668,
+            "grad_abs": 0.00013423303607851267,
+            "grad_over_tensor": 0.00034606946818346916,
+            "grad_power_share": 0.6218575497488948
+          }
+        }
+      },
+      "loss_fm_hf_total": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 3.3205720683326945e-05,
+            "grad_abs": 2.486405719537288e-05,
+            "grad_over_tensor": 2.7451089536616913e-05,
+            "grad_power_share": 0.02311078705993168
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.839611109578982e-05,
+            "grad_abs": 6.864313763799146e-05,
+            "grad_over_tensor": 0.000164299163560852,
+            "grad_power_share": 0.16377788724167647
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 0.00010042442590929568,
+            "grad_abs": 7.749681390123442e-05,
+            "grad_over_tensor": 0.00016681737264612775,
+            "grad_power_share": 0.2113818386056257
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 0.00016943323134910315,
+            "grad_abs": 0.00013140382361598313,
+            "grad_over_tensor": 0.00033458856258550626,
+            "grad_power_share": 0.6017085272046703
+          }
+        },
+        "target_style_target_path": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 8.945699505602533e-07,
+            "grad_abs": 5.994039042889199e-07,
+            "grad_over_tensor": 5.471273355068211e-07,
+            "grad_power_share": 1.638331481920993e-05
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 8.937170059652999e-05,
+            "grad_abs": 6.92005196469836e-05,
+            "grad_over_tensor": 0.0001772854670581025,
+            "grad_power_share": 0.16352086638937544
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 0.00010235085210297257,
+            "grad_abs": 7.811356772435829e-05,
+            "grad_over_tensor": 0.00017378523547218505,
+            "grad_power_share": 0.214464823022515
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 0.00017430134175810963,
+            "grad_abs": 0.00013431976549327374,
+            "grad_over_tensor": 0.00034623755874261224,
+            "grad_power_share": 0.6219774546662601
+          }
+        }
+      },
+      "loss_fm_spectral_lh": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 1.4443938198382966e-05,
+            "grad_abs": 1.083662391465623e-05,
+            "grad_over_tensor": 1.1940769017678966e-05,
+            "grad_power_share": 0.026554050592197804
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.702002378413454e-05,
+            "grad_abs": 6.76465206197463e-05,
+            "grad_over_tensor": 0.00016174147192160484,
+            "grad_power_share": 0.9638245323178188
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 6.021153694746317e-06,
+            "grad_abs": 4.531897502602078e-06,
+            "grad_over_tensor": 1.0001879827157977e-05,
+            "grad_power_share": 0.004614439769040662
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 6.19179627392441e-06,
+            "grad_abs": 4.671253918786533e-06,
+            "grad_over_tensor": 1.2227260252424076e-05,
+            "grad_power_share": 0.004879697498010045
+          }
+        },
+        "target_style_target_path": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 2.2138002009342017e-07,
+            "grad_abs": 1.4932791714272753e-07,
+            "grad_over_tensor": 1.3539808759762415e-07,
+            "grad_power_share": 6.24163482466995e-06
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 8.818347851047292e-05,
+            "grad_abs": 6.811119237681851e-05,
+            "grad_over_tensor": 0.0001749284065334697,
+            "grad_power_share": 0.9903665364228278
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 6.021153694746317e-06,
+            "grad_abs": 4.531897502602078e-06,
+            "grad_over_tensor": 1.0223535917443678e-05,
+            "grad_power_share": 0.0046172235692261724
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 6.191796728671761e-06,
+            "grad_abs": 4.671253918786533e-06,
+            "grad_over_tensor": 1.2299575906540939e-05,
+            "grad_power_share": 0.004882641764790565
+          }
+        }
+      },
+      "loss_fm_spectral_hl": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 1.895789864647668e-05,
+            "grad_abs": 1.336604509560857e-05,
+            "grad_over_tensor": 1.5672449278652383e-05,
+            "grad_power_share": 0.03469157938298771
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.444808372587431e-06,
+            "grad_abs": 6.1798555179848336e-06,
+            "grad_over_tensor": 1.569610851482219e-05,
+            "grad_power_share": 0.0068837205540379165
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 9.928347571985796e-05,
+            "grad_abs": 7.6596305007115e-05,
+            "grad_over_tensor": 0.0001649221134878229,
+            "grad_power_share": 0.9514754290955455
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 8.425787200394552e-06,
+            "grad_abs": 6.088735972298309e-06,
+            "grad_over_tensor": 1.663883764468081e-05,
+            "grad_power_share": 0.006852745116281329
+          }
+        },
+        "target_style_target_path": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 4.0008353607845493e-07,
+            "grad_abs": 3.0401122330658836e-07,
+            "grad_over_tensor": 2.4469482675743924e-07,
+            "grad_power_share": 1.5227510518565461e-05
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 8.444808372587431e-06,
+            "grad_abs": 6.1798555179848336e-06,
+            "grad_over_tensor": 1.675185530271163e-05,
+            "grad_power_share": 0.0067843332146195695
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 0.00010182445112150162,
+            "grad_abs": 7.761131564620882e-05,
+            "grad_over_tensor": 0.00017289144009444181,
+            "grad_power_share": 0.9863515020654535
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 8.425787200394552e-06,
+            "grad_abs": 6.088735972298309e-06,
+            "grad_over_tensor": 1.6737243450471753e-05,
+            "grad_power_share": 0.006753805001052543
+          }
+        }
+      },
+      "loss_fm_spectral_hh": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 1.9013208657270297e-05,
+            "grad_abs": 1.3965493053547107e-05,
+            "grad_over_tensor": 1.57181739317339e-05,
+            "grad_power_share": 0.012386098249588896
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 1.0999169717251789e-05,
+            "grad_abs": 8.325246199092362e-06,
+            "grad_over_tensor": 2.044382226781461e-05,
+            "grad_power_share": 0.004145181105950108
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 1.037306628859369e-05,
+            "grad_abs": 7.887190804467537e-06,
+            "grad_over_tensor": 1.7230944054489696e-05,
+            "grad_power_share": 0.00368670145254119
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 0.00016910066187847406,
+            "grad_abs": 0.00013101883814670146,
+            "grad_over_tensor": 0.0003339318204561636,
+            "grad_power_share": 0.9797477563258311
+          }
+        },
+        "target_style_target_path": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 3.982308101058152e-07,
+            "grad_abs": 2.835423913438717e-07,
+            "grad_over_tensor": 2.435616822512999e-07,
+            "grad_power_share": 5.201900631364616e-06
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 1.0999169717251789e-05,
+            "grad_abs": 8.325246199092362e-06,
+            "grad_over_tensor": 2.181890830720113e-05,
+            "grad_power_share": 0.0039683697624283195
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 1.0373065379098989e-05,
+            "grad_abs": 7.887190804467537e-06,
+            "grad_over_tensor": 1.761280509576464e-05,
+            "grad_power_share": 0.003529446585850067
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 0.00017394471797160804,
+            "grad_abs": 0.0001340639137197286,
+            "grad_over_tensor": 0.00034552915025887714,
+            "grad_power_share": 0.9924641803525791
+          }
+        }
+      }
+    },
+    "condition_only": {
+      "loss": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 3.328149614389986e-05,
+            "grad_abs": 2.491942905180622e-05,
+            "grad_over_tensor": 2.75137329278778e-05,
+            "grad_power_share": 0.023180263696710456
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.853241160977632e-05,
+            "grad_abs": 6.878394924569875e-05,
+            "grad_over_tensor": 0.00016455250118128906,
+            "grad_power_share": 0.1640277370982666
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 0.00010051015124190599,
+            "grad_abs": 7.761042797937989e-05,
+            "grad_over_tensor": 0.00016695977300964273,
+            "grad_power_share": 0.21141342042309413
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 0.00016951575526036322,
+            "grad_abs": 0.00013149992446415126,
+            "grad_over_tensor": 0.0003347515268200167,
+            "grad_power_share": 0.6013576515061615
+          }
+        },
+        "target_style_condition_path": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 4.0339252934101094e-14,
+            "grad_abs": 1.858696573389662e-14,
+            "grad_over_tensor": 2.467186379371222e-14,
+            "grad_power_share": 1.6343868234577635e-16
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 2.4525036224076757e-06,
+            "grad_abs": 1.8322665482628508e-06,
+            "grad_over_tensor": 4.8649991804801194e-06,
+            "grad_power_share": 0.6041133480756122
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 1.4749514321010793e-06,
+            "grad_abs": 1.2577613688335987e-06,
+            "grad_over_tensor": 2.504373697639965e-06,
+            "grad_power_share": 0.21850156261529619
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 8.752776352594083e-07,
+            "grad_abs": 6.694706371490611e-07,
+            "grad_over_tensor": 1.7386784783033609e-06,
+            "grad_power_share": 0.07694683953694793
+          }
+        }
+      },
+      "loss_fm_hf_total": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 3.3205720683326945e-05,
+            "grad_abs": 2.4864053557394072e-05,
+            "grad_over_tensor": 2.7451089536616913e-05,
+            "grad_power_share": 0.02311078705993168
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.839611837174743e-05,
+            "grad_abs": 6.864313036203384e-05,
+            "grad_over_tensor": 0.00016429917708445316,
+            "grad_power_share": 0.16377792447391704
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 0.00010042442590929568,
+            "grad_abs": 7.749682117719203e-05,
+            "grad_over_tensor": 0.00016681737264612775,
+            "grad_power_share": 0.2113818386056257
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 0.00016943323134910315,
+            "grad_abs": 0.00013140382361598313,
+            "grad_over_tensor": 0.00033458856258550626,
+            "grad_power_share": 0.6017084899724296
+          }
+        },
+        "target_style_condition_path": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 3.9775213694524456e-14,
+            "grad_abs": 1.8303121605139916e-14,
+            "grad_over_tensor": 2.432689212763112e-14,
+            "grad_power_share": 1.5890010793264308e-16
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 2.4525036224076757e-06,
+            "grad_abs": 1.8322665482628508e-06,
+            "grad_over_tensor": 4.8649991804801194e-06,
+            "grad_power_share": 0.6041133480756122
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 1.4749514321010793e-06,
+            "grad_abs": 1.2577613688335987e-06,
+            "grad_over_tensor": 2.504373697639965e-06,
+            "grad_power_share": 0.21850156261529619
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 8.752776352594083e-07,
+            "grad_abs": 6.694706371490611e-07,
+            "grad_over_tensor": 1.7386784783033609e-06,
+            "grad_power_share": 0.07694683953694793
+          }
+        }
+      },
+      "loss_fm_spectral_lh": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 1.4443934560404159e-05,
+            "grad_abs": 1.083661936718272e-05,
+            "grad_over_tensor": 1.1940766010170624e-05,
+            "grad_power_share": 0.026554040334077975
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.702002378413454e-05,
+            "grad_abs": 6.764651334378868e-05,
+            "grad_over_tensor": 0.00016174147192160484,
+            "grad_power_share": 0.9638245446606786
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 6.021152330504265e-06,
+            "grad_abs": 4.53189841209678e-06,
+            "grad_over_tensor": 1.000187756098346e-05,
+            "grad_power_share": 0.004614437620180768
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 6.19179627392441e-06,
+            "grad_abs": 4.671253464039182e-06,
+            "grad_over_tensor": 1.2227260252424076e-05,
+            "grad_power_share": 0.004879697560500073
+          }
+        },
+        "target_style_condition_path": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 0.0,
+            "grad_abs": 0.0,
+            "grad_over_tensor": 0.0,
+            "grad_power_share": 0.0
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 2.4525036224076757e-06,
+            "grad_abs": 1.8322665482628508e-06,
+            "grad_over_tensor": 4.8649991804801194e-06,
+            "grad_power_share": 0.8574437272174822
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 0.0,
+            "grad_abs": 0.0,
+            "grad_over_tensor": 0.0,
+            "grad_power_share": 0.0
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 0.0,
+            "grad_abs": 0.0,
+            "grad_over_tensor": 0.0,
+            "grad_power_share": 0.0
+          }
+        }
+      },
+      "loss_fm_spectral_hl": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 1.895788955152966e-05,
+            "grad_abs": 1.3366039638640359e-05,
+            "grad_over_tensor": 1.567244175988153e-05,
+            "grad_power_share": 0.03469154599490973
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 8.444805644103326e-06,
+            "grad_abs": 6.179854153742781e-06,
+            "grad_over_tensor": 1.569610344347176e-05,
+            "grad_power_share": 0.006883716151416238
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 9.928347571985796e-05,
+            "grad_abs": 7.6596305007115e-05,
+            "grad_over_tensor": 0.0001649221134878229,
+            "grad_power_share": 0.951475468607014
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 8.425785381405149e-06,
+            "grad_abs": 6.088736881793011e-06,
+            "grad_over_tensor": 1.6638834052628383e-05,
+            "grad_power_share": 0.006852743391504019
+          }
+        },
+        "target_style_condition_path": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 0.0,
+            "grad_abs": 0.0,
+            "grad_over_tensor": 0.0,
+            "grad_power_share": 0.0
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 0.0,
+            "grad_abs": 0.0,
+            "grad_over_tensor": 0.0,
+            "grad_power_share": 0.0
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 1.4749514321010793e-06,
+            "grad_abs": 1.2577614825204364e-06,
+            "grad_over_tensor": 2.504373697639965e-06,
+            "grad_power_share": 0.6850871359699249
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 0.0,
+            "grad_abs": 0.0,
+            "grad_over_tensor": 0.0,
+            "grad_power_share": 0.0
+          }
+        }
+      },
+      "loss_fm_spectral_hh": {
+        "content": {
+          "ll": {
+            "tensor_rms": 1.209632158279419,
+            "grad_rms": 1.9013212295249104e-05,
+            "grad_abs": 1.3965498510515317e-05,
+            "grad_over_tensor": 1.5718176939242244e-05,
+            "grad_power_share": 0.012386101976967651
+          },
+          "lh": {
+            "tensor_rms": 0.5380192399024963,
+            "grad_rms": 1.0999171536241192e-05,
+            "grad_abs": 8.325247108587064e-06,
+            "grad_over_tensor": 2.0443825648714898e-05,
+            "grad_power_share": 0.004145182031312624
+          },
+          "hl": {
+            "tensor_rms": 0.6020022034645081,
+            "grad_rms": 1.0373068107583094e-05,
+            "grad_abs": 7.887195351941045e-06,
+            "grad_over_tensor": 1.723094707605572e-05,
+            "grad_power_share": 0.003686702856230538
+          },
+          "hh": {
+            "tensor_rms": 0.506392776966095,
+            "grad_rms": 0.00016910066187847406,
+            "grad_abs": 0.00013101883814670146,
+            "grad_over_tensor": 0.0003339318204561636,
+            "grad_power_share": 0.9797477502696122
+          }
+        },
+        "target_style_condition_path": {
+          "ll": {
+            "tensor_rms": 1.6350306272506714,
+            "grad_rms": 0.0,
+            "grad_abs": 0.0,
+            "grad_over_tensor": 0.0,
+            "grad_power_share": 0.0
+          },
+          "lh": {
+            "tensor_rms": 0.5041118264198303,
+            "grad_rms": 0.0,
+            "grad_abs": 0.0,
+            "grad_over_tensor": 0.0,
+            "grad_power_share": 0.0
+          },
+          "hl": {
+            "tensor_rms": 0.5889502167701721,
+            "grad_rms": 0.0,
+            "grad_abs": 0.0,
+            "grad_over_tensor": 0.0,
+            "grad_power_share": 0.0
+          },
+          "hh": {
+            "tensor_rms": 0.5034154653549194,
+            "grad_rms": 8.752776352594083e-07,
+            "grad_abs": 6.694706371490611e-07,
+            "grad_over_tensor": 1.7386784783033609e-06,
+            "grad_power_share": 0.4337841463262393
+          }
+        }
+      }
+    }
+  }
+}

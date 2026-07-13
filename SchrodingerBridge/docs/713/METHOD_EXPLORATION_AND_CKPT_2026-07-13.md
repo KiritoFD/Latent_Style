@@ -149,6 +149,8 @@ Rejected:
 | `target_hf_subband_pairstats_ft6` | 0.483765 | 0.794304 | 0.718318 | 0.297092 | Current-vs-target HF statistic code was safe but weaker than target-only subband; code/config removed. |
 | `target_hf_subband_diraux_ft6` | 0.486150 | 0.793859 | 0.718929 | 0.297425 | Direct residual-direction auxiliary improved probe alignment but hurt image metrics; code/config removed. |
 | `target_hf_subband_timewindow_norm` | 0.48660-0.48664 | 0.79361-0.79365 | 0.71933-0.71938 | 0.297480 | Inference-only early/late residual windows underperformed full residual; temporary hook code removed. |
+| `target_hf_subband_mixer_ft6` | 0.486666 | 0.793705 | 0.719392 | 0.297500 | Cross-orientation pooled-code mixing was live but weaker; code/config removed. |
+| `target_hf_subband_current_delta_ft6` | 0.486683 | 0.793621 | 0.719366 | 0.297567 | Target-current pooled-code delta slightly strengthened condition flow but not direction or metrics; code/config removed. |
 
 ## 5. Correct Theory After Probing
 
@@ -167,6 +169,8 @@ a clean non-spatial route into HF velocity heads.
 ```
 
 This is more precise. The model has capacity: raw spatial HF proves that. The problem is to expose target style without exposing target coordinates. Therefore the next lever is route topology and coordinate-free target-HF capacity, not first-order hyperparameter tuning.
+
+The 2026-07-14 gradient/info-flow probe refines this further: the target-style image is already strong as the supervised HF target, but weak as a condition input. Under the actual FM-HF objective, condition-path gradients into target-style LH/HL/HH are only about `2.5%/1.3%/0.5%` of the target-construction gradients. The existing subband route is clean and diagonal, but target-specific modulation is small relative to the generic residual branch.
 
 ## 6. Current Recommended Next Experiments
 
@@ -195,6 +199,8 @@ Do not prioritize:
 | Time-window residual gating | Tested and removed; normalized early/late windows both underperform full-path residual. |
 | Low-rank content-derived residual basis | Tested and removed; target-HF coefficient selection over content bases was safer than spatial injection but weaker than subband-only. |
 | Current-target global HF statistic code | Tested and removed; dynamic discrepancy descriptors are too coarse and underperform target-only subband pooling. |
+| Cross-orientation pooled-code mixer | Tested and removed; did not improve residual direction or image metrics. |
+| Target-current pooled HF code delta | Tested and removed; slightly raised condition sensitivity but did not improve residual direction or image metrics. |
 | Generic decoder AdaLN/AdaIN | Already repeatedly negative. |
 
 ## 7. Method-writing Guidance

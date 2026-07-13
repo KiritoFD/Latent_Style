@@ -53,6 +53,8 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_subband_pairstats_ft6` | target-HF code plus current-vs-target HF discrepancy statistics | 0.483765 | 0.794304 | 0.024541 | 0.718318 | 0.297092 | 0.399385 | rejected: dynamic coordinate-free discrepancy signal is still weaker than target-only subband code |
 | `target_hf_subband_diraux_ft6` | residual branch trained with direct direction auxiliary | 0.486150 | 0.793859 | **0.024536** | 0.718929 | 0.297425 | 0.402097 | rejected: probe direction improves, image frontier worsens |
 | `target_hf_subband_timewindow_{early,late}_norm` | inference-only residual time-window causal probe | 0.48660-0.48664 | 0.79361-0.79365 | **0.024533-0.024534** | 0.71933-0.71938 | 0.297480 | 0.40254-0.40256 | rejected: temporal localization underperforms full-trajectory residual |
+| `target_hf_subband_mixer_ft6` | zero-init cross-orientation mixing among pooled LH/HL/HH target-HF codes | 0.486666 | 0.793705 | 0.024535 | 0.719392 | 0.297500 | 0.402582 | rejected: learned small off-diagonal mixing but did not improve residual direction or metrics; code/config removed |
+| `target_hf_subband_current_delta_ft6` | zero-init target-current pooled HF code difference | 0.486683 | 0.793621 | 0.024539 | 0.719366 | 0.297567 | 0.402626 | rejected: slightly stronger target-specific information flow but unchanged residual direction and worse image frontier; code/config removed |
 
 ## Diagnosis
 
@@ -78,6 +80,37 @@ By contrast, raw spatial reaches delta/base around `1.0` but destroys content. E
 A matched inference-time ablation on `target_hf_subband_ft6/epoch_0006.pt` gives the cleanest causal check so far. The checkpoint, solver, endpoint AdaIN, and evaluation pairs were kept fixed; forward hooks zeroed only `target_latent_hf_subband_delta_lh/hl/hh`. This drops all-pairs DINO-S from `0.488624` to `0.485770`, DINO-C from `0.798123` to `0.788810`, and LPIPS from `0.296553` to `0.300980`. Therefore the learned subband residual is not a dead branch and is not buying style by content collapse. It behaves more like a small stabilizing style transport correction: the measured style gain is modest, but removing it also harms content consistency.
 
 The same hook was then used as a residual-strength curve. Scaling the trained residual above its learned magnitude does not improve the balanced point: `1.25x` gives DINO-S `0.487311`, DINO-C `0.788688`, LPIPS `0.300671`; `1.5x` gives DINO-S `0.487485`, DINO-C `0.779830`, LPIPS `0.305438`. Off-diagonal DINO-S rises slightly (`0.404491` and `0.406744`), but this is paid for by content degradation. A band-specific follow-up, motivated by the direction probe below, scaled only the better-aligned HH residual to `1.5x`; it still underperformed the original balance (DINO-S `0.487815`, DINO-C `0.783560`, LPIPS `0.303415`). Thus the route is useful but not simply amplitude-limited. Future changes should improve the conditional direction of the residual, not multiply the same residual vector.
+
+The 2026-07-14 gradient/information-flow probe separates the target image's two roles:
+
+```text
+target_style as supervision target      -> constructs LL/HF training target
+target_style as condition/style_latent  -> enters the model through target-HF subband route
+```
+
+On `target_hf_subband_ft6/epoch_0006.pt`, under the actual training objective (`hf_stat_loss_enabled=false`), the target path is strong but the condition path is weak:
+
+| band | condition-path grad/tensor | target-path grad/tensor | condition / target |
+|---|---:|---:|---:|
+| LL | ~0 | 5.46e-7 | ~0 |
+| LH | 4.48e-6 | 1.77e-4 | 2.53% |
+| HL | 2.29e-6 | 1.74e-4 | 1.32% |
+| HH | 1.71e-6 | 3.46e-4 | 0.50% |
+
+The forward intervention agrees. Replacing condition `style_latent` with content bands and then restoring one target band at a time gives a clean diagonal route:
+
+| target condition band | output LL | output LH | output HL | output HH |
+|---|---:|---:|---:|---:|
+| LL | 0.000000 | 0.000002 | 0.000003 | 0.000006 |
+| LH | 0.000000 | 0.075624 | 0.000003 | 0.000004 |
+| HL | 0.000000 | 0.000002 | 0.097229 | 0.000007 |
+| HH | 0.000000 | 0.000002 | 0.000002 | 0.119432 |
+
+Values are output delta/base. The route is doing the intended thing: no LL leakage, almost no cross-band leakage, and per-band HF influence. The weakness is that this target-specific condition influence is small compared with the learned residual branch's generic contribution. Zeroing the target-HF residual modules changes the HF velocity by `0.474/0.396/1.081` delta/base on LH/HL/HH, but changing the condition from content bands to target bands changes it only `0.076/0.097/0.119`. The branch is live and large, but the image-specific part of it is small.
+
+CFG is easier to interpret after this probe. In this code path, `cfg_unconditional=True` disables target-HF branches and uses the unconditional style-token route. The observed CFG/content behavior is therefore plausibly a mixture with a less target-HF-injected velocity field, not proof that CFG alone is a content-preserving style mechanism.
+
+The stat-loss probe should not be read as the actual training objective. It was enabled only diagnostically. It shows why a naive HF-stat auxiliary is risky: stat gradients are much larger than FM-HF gradients, and the full-model gradient cosine can become negative. Group-wise decomposition is more precise: the target-HF branch itself is weakly positive (`cos≈0.29` for FM-HF vs stat), while `time_proj` is strongly conflicting (`cos≈-0.82`; HH-specific `cos≈-0.94`). This means adding a style-stat loss would mostly perturb the global transport/time conditioning rather than cleanly strengthen the target-HF route.
 
 The stationary texture-stat route tested the intended safer alternative to raw spatial injection: target HF maps are reduced to per-subband mean/std/RMS/absolute-energy statistics, so target coordinates cannot pass through. The route is safe, and combining it with subband pooling increases the measured target-latent condition strength, especially on `HL/HH`. However, the main-table all DINO-S remains slightly below subband-only (`0.488420` vs `0.488624`). A later stationary-stat multi-token variant also failed (`0.483562` DINO-S, `0.398793` off-DINO-S), so merely adding more coordinate-free statistic tokens is not the next lever. The useful lesson is narrower: the model benefits most from a simple per-orientation target-HF code, while additional stationary statistics mostly improve off-diagonal style/content balance only when paired with subband pooling.
 
@@ -325,3 +358,68 @@ Both early and late windows used `1 / window_width` normalization, so the approx
 | early normalized | [0.0, 0.5] | 0.486602 | 0.402543 | 0.793654 | 0.719377 | 0.297480 |
 
 **Verdict: FAIL as an improvement, PASS as a probe; temporary hook code removed, metrics kept.** The nearly identical early/late results and the drop from full residual indicate that the route is not merely an endpoint texture patch or an early structure term. It acts as a small continuous correction throughout the learned transport field. Future architecture should not time-gate this branch; it should change the residual basis/parameterization or improve target-HF conditioning while preserving full-path participation.
+
+## Cross-orientation mixer result (2026-07-14)
+
+`target_hf_subband_mixer_ft6` tested whether the bottleneck was missing coordinate-free communication among LH/HL/HH target-HF codes:
+
+```text
+z'_k = z_k + tanh(g) * sum_{j != k} A_{k,j} z_j
+```
+
+The off-diagonal matrix was initialized to zero, so the initial function exactly matched `target_hf_subband_ft6`. The path was live: the trained checkpoint had `target_latent_hf_subband_mixer_active=1`, `gate≈0.204`, and nonzero off-diagonal weights (`mean abs≈0.0036`). But the residual-direction probe was unchanged:
+
+| run | mean MSE improvement | mean cos(residual, desired) | orthogonal fraction |
+|---|---:|---:|---:|
+| `target_hf_subband_ft6` | 0.031853 | 0.157511 | 0.981761 |
+| `target_hf_subband_mixer_ft6` | 0.031868 | 0.157508 | 0.981754 |
+
+Full eval also moved backward:
+
+| metric | mixer | subband-only | delta |
+|---|---:|---:|---:|
+| all DINO-S | 0.486666 | **0.488624** | -0.0020 |
+| off DINO-S | 0.402582 | **0.403917** | -0.0013 |
+| DINO-C | 0.793705 | **0.798123** | -0.0044 |
+| CLIP-S | 0.719392 | **0.720880** | -0.0015 |
+| LPIPS | 0.297500 | **0.296553** | +0.0009 |
+
+**Verdict: FAIL; code/config removed, metrics kept.** Simple cross-orientation code sharing is not the missing bottleneck.
+
+## Target-current code delta result (2026-07-14)
+
+The gradient/info-flow probe showed that the subband residual is large, but the target-specific part of its condition response is small. `target_hf_subband_current_delta_ft6` therefore tested a zero-init dynamic code:
+
+```text
+z'_k = z_target,k + tanh(g) * (z_target,k - z_current,k)
+```
+
+`z_current` is pooled from the current ODE state `x_t` in the same HF subband encoder/projection, with the input tensor detached. This keeps target spatial maps disconnected and starts exactly equivalent to subband-only. The gate learned a small nonzero value (`tanh(g)≈0.044`) and did slightly increase target-specific information flow:
+
+| measure | subband-only | current-delta |
+|---|---:|---:|
+| LH target-latent delta/base | 0.075624 | 0.083375 |
+| HL target-latent delta/base | 0.097229 | 0.105496 |
+| HH target-latent delta/base | 0.119432 | 0.125972 |
+| LH condition/target grad ratio | 2.53% | 2.74% |
+| HL condition/target grad ratio | 1.32% | 1.44% |
+| HH condition/target grad ratio | 0.50% | 0.50% |
+
+But the residual direction stayed essentially unchanged:
+
+| run | mean MSE improvement | mean cos(residual, desired) | orthogonal fraction |
+|---|---:|---:|---:|
+| `target_hf_subband_ft6` | 0.031853 | 0.157511 | 0.981761 |
+| `target_hf_subband_current_delta_ft6` | 0.031936 | 0.157720 | 0.981724 |
+
+Full eval again moved backward:
+
+| metric | current-delta | subband-only | delta |
+|---|---:|---:|---:|
+| all DINO-S | 0.486683 | **0.488624** | -0.0019 |
+| off DINO-S | 0.402626 | **0.403917** | -0.0013 |
+| DINO-C | 0.793621 | **0.798123** | -0.0045 |
+| CLIP-S | 0.719366 | **0.720880** | -0.0015 |
+| LPIPS | 0.297567 | **0.296553** | +0.0010 |
+
+**Verdict: FAIL; code/config removed, metrics kept.** The bottleneck is not simply the absence of a coordinate-free target-current code difference. Mildly increasing target-specific condition sensitivity is insufficient unless the residual direction itself changes in a way that preserves the learned transport geometry.

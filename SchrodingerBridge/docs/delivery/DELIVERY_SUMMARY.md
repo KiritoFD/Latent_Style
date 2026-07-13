@@ -72,6 +72,15 @@ target image -> DWT HF -> pooled per-subband code -> HF residual velocity -> LH/
 
 The unsafe route is raw spatial target-HF injection. It proves the network has capacity, but leaks target geometry and destroys content.
 
+Latest gradient/info-flow diagnosis:
+
+| Probe fact | Reading |
+|---|---|
+| Condition-path gradients into target-style LH/HL/HH are only about `2.5%/1.3%/0.5%` of target-construction gradients. | The target image is strong as supervision but weak as a condition input. |
+| Single-band intervention is almost perfectly diagonal: `LH->LH`, `HL->HL`, `HH->HH`; LL leakage is near zero. | The route is clean/content-safe, but narrow. |
+| Zeroing target-HF residual changes HF velocity much more than swapping content-vs-target condition bands. | The residual branch is live and large, but its target-specific modulation is small. |
+| Naive HF-stat loss gives large gradients and can conflict through time/global transport paths. | Strengthening style via an auxiliary stat loss is risky unless it is routed locally. |
+
 ---
 
 ## 4. HF-Route Probe Results
@@ -91,6 +100,8 @@ All rows are diagnostic probes from the `brk_a_ll03_10ep` family. Do not promote
 | `target_hf_subband_timewindow_norm` | 0.48660-0.48664 | 0.79361-0.79365 | 0.71933-0.71938 | 0.297480 | 0.40254-0.40256 | Reject: early/late residual windows both underperform full residual. |
 | `target_hf_subband_basis_ft6` | 0.482840 | 0.793659 | 0.718310 | 0.297061 | 0.398561 | Reject: low-rank content-derived basis is safe but underpowered. |
 | `target_hf_subband_pairstats_ft6` | 0.483765 | 0.794304 | 0.718318 | 0.297092 | 0.399385 | Reject: current-target global HF stats are safe but too coarse. |
+| `target_hf_subband_mixer_ft6` | 0.486666 | 0.793705 | 0.719392 | 0.297500 | 0.402582 | Reject: cross-orientation mixing live but no direction/metric gain. |
+| `target_hf_subband_current_delta_ft6` | 0.486683 | 0.793621 | 0.719366 | 0.297567 | 0.402626 | Reject: target-current code delta slightly improves condition flow but no frontier gain. |
 
 Conclusion:
 
@@ -151,7 +162,7 @@ Architecture first, tuning second:
 | 3 | Keep LL disconnected from target-image shortcuts. | Avoid buying style by destroying content. |
 | 4 | Rerun D5-512, P2A-256, R5-WikiArt before promotion. | Required before changing the main table. |
 
-Avoid raw target HF maps, scalar/HH residual amplification, direct residual-direction auxiliary loss, time-window residual gating, low-rank content-derived basis replacement, current-target global HF statistic codes, global target-token fusion, and CFG claims without matched controls.
+Avoid raw target HF maps, scalar/HH residual amplification, direct residual-direction auxiliary loss, time-window residual gating, low-rank content-derived basis replacement, current-target global HF statistic codes, cross-orientation pooled-code mixing, target-current pooled-code deltas, global target-token fusion, and CFG claims without matched controls.
 
 ---
 
