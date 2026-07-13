@@ -408,6 +408,38 @@ class ModelConfig:
     style_adaln_nonzero_init: bool = False
     style_adaln_init_std: float = 0.1
     style_vhead_hf_init_std: float = 0.02
+    # 713 probe-guided: fuse target-style latent tokens into cross-attn style tokens.
+    # Default off preserves the delivered baseline exactly. When enabled, the
+    # flow loss can train an image-specific style condition path instead of only
+    # learning a discrete style_id memory.
+    target_latent_token_fusion_enabled: bool = False
+    target_latent_token_fusion_gate_init: float = 0.05
+    target_latent_token_fusion_pool_hw: int = 16
+    # 713 probe-guided v2: use target-style latent only as a high-frequency
+    # head condition. This avoids the global-token shortcut that over-controls
+    # LL while giving LH/HL/HH image-specific style capacity.
+    target_latent_hf_head_fusion_enabled: bool = False
+    target_latent_hf_head_fusion_gate_init: float = 0.05
+    target_latent_hf_head_fusion_init_std: float = 0.05
+    # 713 probe-guided v3: preserve target HF spatial layout per subband.
+    # This removes the pooled-vector bottleneck in v2 while still keeping LL
+    # disconnected from image-specific target latent shortcuts.
+    target_latent_hf_spatial_fusion_enabled: bool = False
+    # 713 probe-guided v4: orientation-specific HF latent route. Unlike the
+    # spatial route, this keeps target coordinates out of the output path; unlike
+    # the pooled route, LH/HL/HH do not share one bottleneck vector.
+    target_latent_hf_subband_fusion_enabled: bool = False
+    # 713 probe-guided v5: inject orientation-specific HF codes into the main
+    # LH/HL/HH velocity heads instead of using extra residual output heads.
+    target_latent_hf_subband_head_fusion_enabled: bool = False
+    # 713 probe-guided v7: encode target HF as stationary texture statistics
+    # (mean/std/RMS/absolute-energy) per subband. This keeps target coordinates
+    # disconnected while widening the pooled HF style bottleneck.
+    target_latent_hf_texture_fusion_enabled: bool = False
+    # 713 probe-guided v6: spatial HF route with content-preserving residual
+    # energy normalization. It keeps raw target spatial maps out of additive
+    # shifts and bounds the residual against each current HF head velocity.
+    target_latent_hf_spatial_energy_fusion_enabled: bool = False
     # Stage7 方向3: 独立风格增量分支 — style 直接生成 v_style, 不调制主干
     # v = v_content + tanh(gate) * v_style
     # style_delta_init_std: style_conv / style_mlp 最后一层非零初始化标准差

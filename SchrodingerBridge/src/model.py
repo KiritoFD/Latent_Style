@@ -325,6 +325,111 @@ class StyleDeltaVelocityHead(nn.Module):
         return v_content + gate * v_style
 
 
+class StyleOnlyVelocityDelta(nn.Module):
+    """Image-style-conditioned residual velocity for one high-frequency band."""
+
+    def __init__(self, dim: int, latent_channels: int, init_std: float = 0.05, gate_init: float = 0.05) -> None:
+        super().__init__()
+        self.style_mlp = nn.Sequential(
+            nn.Linear(dim, dim),
+            nn.SiLU(),
+            nn.Linear(dim, dim),
+        )
+        nn.init.normal_(self.style_mlp[-1].weight, std=init_std)
+        nn.init.normal_(self.style_mlp[-1].bias, std=init_std)
+        self.norm = nn.GroupNorm(1, dim)
+        self.act = nn.SiLU()
+        self.conv = nn.Conv2d(dim, latent_channels, kernel_size=3, padding=1)
+        nn.init.normal_(self.conv.weight, mean=0.0, std=init_std)
+        nn.init.zeros_(self.conv.bias)
+        self.gate = nn.Parameter(torch.tensor(float(gate_init)))
+
+    def forward(self, h: torch.Tensor, style_pooled: torch.Tensor) -> torch.Tensor:
+        style_feat = self.style_mlp(style_pooled.to(dtype=h.dtype))
+        h_styled = self.norm(h) * (1.0 + style_feat[:, :, None, None])
+        return torch.tanh(self.gate) * self.conv(self.act(h_styled))
+
+
+class StationaryTextureStatsEncoder(nn.Module):
+    """Encode target HF as stationary texture statistics, without coordinates."""
+
+    def __init__(self, latent_channels: int, dim: int) -> None:
+        super().__init__()
+        self.encoder = nn.Sequential(
+            nn.Conv2d(latent_channels, dim, kernel_size=3, padding=1),
+            nn.GroupNorm(1, dim),
+            nn.SiLU(),
+            nn.Conv2d(dim, dim, kernel_size=3, padding=1),
+        )
+        self.proj = nn.Sequential(
+            nn.LayerNorm(dim * 4),
+            nn.Linear(dim * 4, dim),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        feat = self.encoder(x)
+        feat_f = feat.float()
+        mean = feat_f.mean(dim=(2, 3))
+        std = feat_f.var(dim=(2, 3), unbiased=False).clamp_min(1e-12).sqrt()
+        rms = feat_f.square().mean(dim=(2, 3)).clamp_min(1e-12).sqrt()
+        abs_mean = feat_f.abs().mean(dim=(2, 3))
+        stats = torch.cat([mean, std, rms, abs_mean], dim=1)
+        return self.proj(stats).to(dtype=x.dtype)
+
+
+class SpatialStyleVelocityDelta(nn.Module):
+    """Spatial target-style residual velocity for one high-frequency band."""
+
+    def __init__(self, dim: int, latent_channels: int, init_std: float = 0.05, gate_init: float = 0.05) -> None:
+        super().__init__()
+        self.style_film = nn.Conv2d(dim, dim * 2, kernel_size=1)
+        nn.init.normal_(self.style_film.weight, mean=0.0, std=init_std)
+        nn.init.normal_(self.style_film.bias, mean=0.0, std=init_std)
+        self.norm = nn.GroupNorm(1, dim)
+        self.act = nn.SiLU()
+        self.conv = nn.Conv2d(dim, latent_channels, kernel_size=3, padding=1)
+        nn.init.normal_(self.conv.weight, mean=0.0, std=init_std)
+        nn.init.zeros_(self.conv.bias)
+        self.gate = nn.Parameter(torch.tensor(float(gate_init)))
+
+    def forward(self, h: torch.Tensor, style_map: torch.Tensor) -> torch.Tensor:
+        style_map = style_map.to(device=h.device, dtype=h.dtype)
+        if style_map.shape[-2:] != h.shape[-2:]:
+            style_map = F.interpolate(style_map, size=h.shape[-2:], mode="bilinear", align_corners=False)
+        scale, shift = self.style_film(style_map).chunk(2, dim=1)
+        h_styled = self.norm(h) * (1.0 + scale) + shift
+        return torch.tanh(self.gate) * self.conv(self.act(h_styled))
+
+
+class EnergyBoundedSpatialStyleVelocityDelta(nn.Module):
+    """Spatial HF style residual with content-scale energy normalization."""
+
+    def __init__(self, dim: int, latent_channels: int, init_std: float = 0.05, gate_init: float = 0.05) -> None:
+        super().__init__()
+        self.style_norm = nn.GroupNorm(1, dim)
+        self.style_scale = nn.Conv2d(dim, dim, kernel_size=1)
+        nn.init.normal_(self.style_scale.weight, mean=0.0, std=init_std)
+        nn.init.zeros_(self.style_scale.bias)
+        self.norm = nn.GroupNorm(1, dim)
+        self.act = nn.SiLU()
+        self.conv = nn.Conv2d(dim, latent_channels, kernel_size=3, padding=1)
+        nn.init.normal_(self.conv.weight, mean=0.0, std=init_std)
+        nn.init.zeros_(self.conv.bias)
+        self.gate = nn.Parameter(torch.tensor(float(gate_init)))
+
+    def forward(self, h: torch.Tensor, style_map: torch.Tensor, base_velocity: torch.Tensor) -> torch.Tensor:
+        style_map = style_map.to(device=h.device, dtype=h.dtype)
+        if style_map.shape[-2:] != h.shape[-2:]:
+            style_map = F.interpolate(style_map, size=h.shape[-2:], mode="bilinear", align_corners=False)
+        scale = torch.tanh(self.style_scale(self.style_norm(style_map)))
+        raw = self.conv(self.act(self.norm(h) * (1.0 + scale)))
+        raw = raw - raw.mean(dim=(2, 3), keepdim=True)
+        raw_rms = raw.detach().float().square().mean(dim=(1, 2, 3), keepdim=True).sqrt().clamp_min(1e-6)
+        base_rms = base_velocity.detach().float().square().mean(dim=(1, 2, 3), keepdim=True).sqrt()
+        bounded = raw * (base_rms.to(dtype=raw.dtype) / raw_rms.to(dtype=raw.dtype))
+        return torch.tanh(self.gate) * bounded
+
+
 class WEAVE(nn.Module):
     """Native Spectral ODE Bridge with shared backbone + 4 velocity heads."""
 
@@ -375,6 +480,195 @@ class WEAVE(nn.Module):
             self.intrinsic_style_cnn = None
             self.intrinsic_style_pool = None
             self.intrinsic_style_proj = None
+        self.target_latent_token_fusion_enabled = bool(
+            getattr(model_cfg, "target_latent_token_fusion_enabled", False)
+        )
+        self.target_latent_token_fusion_pool_hw = max(
+            1, int(getattr(model_cfg, "target_latent_token_fusion_pool_hw", 16))
+        )
+        if self.target_latent_token_fusion_enabled:
+            self.target_latent_tokenizer = nn.Sequential(
+                nn.Conv2d(self.latent_channels * 4, self.dim, kernel_size=3, padding=1),
+                nn.GroupNorm(1, self.dim),
+                nn.SiLU(),
+                nn.Conv2d(self.dim, self.dim, kernel_size=3, padding=1),
+            )
+            self.target_latent_token_pool = nn.AdaptiveAvgPool2d(
+                (self.target_latent_token_fusion_pool_hw, self.target_latent_token_fusion_pool_hw)
+            )
+            self.target_latent_token_proj = nn.Sequential(
+                nn.LayerNorm(self.dim),
+                nn.Linear(self.dim, self.dim),
+            )
+            self.target_latent_token_gate = nn.Parameter(
+                torch.tensor(float(getattr(model_cfg, "target_latent_token_fusion_gate_init", 0.05)))
+            )
+        else:
+            self.target_latent_tokenizer = None
+            self.target_latent_token_pool = None
+            self.target_latent_token_proj = None
+            self.target_latent_token_gate = None
+        self.target_latent_hf_head_fusion_enabled = bool(
+            getattr(model_cfg, "target_latent_hf_head_fusion_enabled", False)
+        )
+        self.target_latent_hf_spatial_fusion_enabled = bool(
+            getattr(model_cfg, "target_latent_hf_spatial_fusion_enabled", False)
+        )
+        self.target_latent_hf_spatial_energy_fusion_enabled = bool(
+            getattr(model_cfg, "target_latent_hf_spatial_energy_fusion_enabled", False)
+        )
+        self.target_latent_hf_subband_fusion_enabled = bool(
+            getattr(model_cfg, "target_latent_hf_subband_fusion_enabled", False)
+        )
+        self.target_latent_hf_subband_head_fusion_enabled = bool(
+            getattr(model_cfg, "target_latent_hf_subband_head_fusion_enabled", False)
+        )
+        self.target_latent_hf_texture_fusion_enabled = bool(
+            getattr(model_cfg, "target_latent_hf_texture_fusion_enabled", False)
+        )
+        _target_hf_init_std = float(getattr(model_cfg, "target_latent_hf_head_fusion_init_std", 0.05))
+        _target_hf_gate_init = float(getattr(model_cfg, "target_latent_hf_head_fusion_gate_init", 0.05))
+        if self.target_latent_hf_head_fusion_enabled:
+            self.target_latent_hf_encoder = nn.Sequential(
+                nn.Conv2d(self.latent_channels * 3, self.dim, kernel_size=3, padding=1),
+                nn.GroupNorm(1, self.dim),
+                nn.SiLU(),
+                nn.Conv2d(self.dim, self.dim, kernel_size=3, padding=1),
+                nn.AdaptiveAvgPool2d((1, 1)),
+            )
+            self.target_latent_hf_proj = nn.Sequential(
+                nn.LayerNorm(self.dim),
+                nn.Linear(self.dim, self.dim),
+            )
+            self.target_latent_hf_gate = nn.Parameter(
+                torch.tensor(float(getattr(model_cfg, "target_latent_hf_head_fusion_gate_init", 0.05)))
+            )
+            self.target_latent_hf_delta_lh = StyleOnlyVelocityDelta(
+                self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+            )
+            self.target_latent_hf_delta_hl = StyleOnlyVelocityDelta(
+                self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+            )
+            self.target_latent_hf_delta_hh = StyleOnlyVelocityDelta(
+                self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+            )
+        else:
+            self.target_latent_hf_encoder = None
+            self.target_latent_hf_proj = None
+            self.target_latent_hf_gate = None
+            self.target_latent_hf_delta_lh = None
+            self.target_latent_hf_delta_hl = None
+            self.target_latent_hf_delta_hh = None
+        if self.target_latent_hf_spatial_fusion_enabled or self.target_latent_hf_spatial_energy_fusion_enabled:
+            def _spatial_encoder() -> nn.Sequential:
+                return nn.Sequential(
+                    nn.Conv2d(self.latent_channels, self.dim, kernel_size=3, padding=1),
+                    nn.GroupNorm(1, self.dim),
+                    nn.SiLU(),
+                    nn.Conv2d(self.dim, self.dim, kernel_size=3, padding=1),
+                )
+
+            self.target_latent_hf_spatial_lh = _spatial_encoder()
+            self.target_latent_hf_spatial_hl = _spatial_encoder()
+            self.target_latent_hf_spatial_hh = _spatial_encoder()
+            _spatial_delta_cls = (
+                EnergyBoundedSpatialStyleVelocityDelta
+                if self.target_latent_hf_spatial_energy_fusion_enabled
+                else SpatialStyleVelocityDelta
+            )
+            self.target_latent_hf_spatial_delta_lh = _spatial_delta_cls(
+                self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+            )
+            self.target_latent_hf_spatial_delta_hl = _spatial_delta_cls(
+                self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+            )
+            self.target_latent_hf_spatial_delta_hh = _spatial_delta_cls(
+                self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+            )
+        else:
+            self.target_latent_hf_spatial_lh = None
+            self.target_latent_hf_spatial_hl = None
+            self.target_latent_hf_spatial_hh = None
+            self.target_latent_hf_spatial_delta_lh = None
+            self.target_latent_hf_spatial_delta_hl = None
+            self.target_latent_hf_spatial_delta_hh = None
+        if self.target_latent_hf_subband_fusion_enabled or self.target_latent_hf_subband_head_fusion_enabled:
+            def _subband_encoder() -> nn.Sequential:
+                return nn.Sequential(
+                    nn.Conv2d(self.latent_channels, self.dim, kernel_size=3, padding=1),
+                    nn.GroupNorm(1, self.dim),
+                    nn.SiLU(),
+                    nn.Conv2d(self.dim, self.dim, kernel_size=3, padding=1),
+                    nn.AdaptiveAvgPool2d((1, 1)),
+                )
+
+            def _subband_proj() -> nn.Sequential:
+                return nn.Sequential(
+                    nn.LayerNorm(self.dim),
+                    nn.Linear(self.dim, self.dim),
+                )
+
+            self.target_latent_hf_subband_encoder_lh = _subband_encoder()
+            self.target_latent_hf_subband_encoder_hl = _subband_encoder()
+            self.target_latent_hf_subband_encoder_hh = _subband_encoder()
+            self.target_latent_hf_subband_proj_lh = _subband_proj()
+            self.target_latent_hf_subband_proj_hl = _subband_proj()
+            self.target_latent_hf_subband_proj_hh = _subband_proj()
+            if self.target_latent_hf_subband_head_fusion_enabled:
+                self.target_latent_hf_subband_head_gate = nn.Parameter(torch.tensor(_target_hf_gate_init))
+            else:
+                self.target_latent_hf_subband_head_gate = None
+            if self.target_latent_hf_subband_fusion_enabled:
+                self.target_latent_hf_subband_delta_lh = StyleOnlyVelocityDelta(
+                    self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+                )
+                self.target_latent_hf_subband_delta_hl = StyleOnlyVelocityDelta(
+                    self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+                )
+                self.target_latent_hf_subband_delta_hh = StyleOnlyVelocityDelta(
+                    self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+                )
+            else:
+                self.target_latent_hf_subband_delta_lh = None
+                self.target_latent_hf_subband_delta_hl = None
+                self.target_latent_hf_subband_delta_hh = None
+        else:
+            self.target_latent_hf_subband_encoder_lh = None
+            self.target_latent_hf_subband_encoder_hl = None
+            self.target_latent_hf_subband_encoder_hh = None
+            self.target_latent_hf_subband_proj_lh = None
+            self.target_latent_hf_subband_proj_hl = None
+            self.target_latent_hf_subband_proj_hh = None
+            self.target_latent_hf_subband_head_gate = None
+            self.target_latent_hf_subband_delta_lh = None
+            self.target_latent_hf_subband_delta_hl = None
+            self.target_latent_hf_subband_delta_hh = None
+        if self.target_latent_hf_texture_fusion_enabled:
+            self.target_latent_hf_texture_encoder_lh = StationaryTextureStatsEncoder(
+                self.latent_channels, self.dim
+            )
+            self.target_latent_hf_texture_encoder_hl = StationaryTextureStatsEncoder(
+                self.latent_channels, self.dim
+            )
+            self.target_latent_hf_texture_encoder_hh = StationaryTextureStatsEncoder(
+                self.latent_channels, self.dim
+            )
+            self.target_latent_hf_texture_delta_lh = StyleOnlyVelocityDelta(
+                self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+            )
+            self.target_latent_hf_texture_delta_hl = StyleOnlyVelocityDelta(
+                self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+            )
+            self.target_latent_hf_texture_delta_hh = StyleOnlyVelocityDelta(
+                self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+            )
+        else:
+            self.target_latent_hf_texture_encoder_lh = None
+            self.target_latent_hf_texture_encoder_hl = None
+            self.target_latent_hf_texture_encoder_hh = None
+            self.target_latent_hf_texture_delta_lh = None
+            self.target_latent_hf_texture_delta_hl = None
+            self.target_latent_hf_texture_delta_hh = None
 
         # Input projection: 4 subbands stacked -> dim channels
         # Subbands are (B, C, H/2, W/2) each; stack along channel -> (B, 4C, H/2, W/2)
@@ -537,6 +831,106 @@ class WEAVE(nn.Module):
                 style_tokens = self.style_conditioner(
                     style_id=style_id, batch=x.shape[0], device=x.device, dtype=x.dtype,
                 )
+        target_latent_tokens_active = False
+        target_latent_hf_head_active = False
+        target_latent_hf_spatial_active = False
+        target_latent_hf_subband_active = False
+        target_latent_hf_texture_active = False
+        target_latent_hf_pooled: torch.Tensor | None = None
+        target_latent_hf_maps: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None
+        target_latent_hf_subband_pooled: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None
+        target_latent_hf_texture_pooled: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None
+        if (
+            self.target_latent_token_fusion_enabled
+            and torch.is_tensor(style_latent)
+            and self.target_latent_tokenizer is not None
+            and self.target_latent_token_pool is not None
+            and self.target_latent_token_proj is not None
+            and self.target_latent_token_gate is not None
+        ):
+            s_ll, s_lh, s_hl, s_hh = dwt2_haar(style_latent.to(device=x.device, dtype=x.dtype))
+            s_stacked = torch.cat([s_ll, s_lh, s_hl, s_hh], dim=1)
+            target_tokens = self.target_latent_tokenizer(s_stacked)
+            target_tokens = self.target_latent_token_pool(target_tokens)
+            tb, tc, th, tw = target_tokens.shape
+            target_tokens = target_tokens.reshape(tb, tc, th * tw).permute(0, 2, 1)
+            target_tokens = self.target_latent_token_proj(target_tokens.float()).to(dtype=x.dtype)
+            if target_tokens.shape[1] != style_tokens.shape[1]:
+                target_tokens = F.interpolate(
+                    target_tokens.transpose(1, 2),
+                    size=style_tokens.shape[1],
+                    mode="linear",
+                    align_corners=False,
+                ).transpose(1, 2)
+            style_tokens = style_tokens + torch.tanh(self.target_latent_token_gate).to(dtype=x.dtype) * target_tokens
+            target_latent_tokens_active = True
+        if (
+            self.target_latent_hf_head_fusion_enabled
+            and torch.is_tensor(style_latent)
+            and not cfg_unconditional
+            and self.target_latent_hf_encoder is not None
+            and self.target_latent_hf_proj is not None
+            and self.target_latent_hf_gate is not None
+        ):
+            _s_ll, s_lh_hf, s_hl_hf, s_hh_hf = dwt2_haar(style_latent.to(device=x.device, dtype=x.dtype))
+            s_hf_stacked = torch.cat([s_lh_hf, s_hl_hf, s_hh_hf], dim=1)
+            target_latent_hf_pooled = self.target_latent_hf_encoder(s_hf_stacked).flatten(1)
+            target_latent_hf_pooled = self.target_latent_hf_proj(target_latent_hf_pooled.float()).to(dtype=x.dtype)
+            target_latent_hf_head_active = True
+        if (
+            (self.target_latent_hf_spatial_fusion_enabled or self.target_latent_hf_spatial_energy_fusion_enabled)
+            and torch.is_tensor(style_latent)
+            and not cfg_unconditional
+            and self.target_latent_hf_spatial_lh is not None
+            and self.target_latent_hf_spatial_hl is not None
+            and self.target_latent_hf_spatial_hh is not None
+        ):
+            _s_ll, s_lh_sp, s_hl_sp, s_hh_sp = dwt2_haar(style_latent.to(device=x.device, dtype=x.dtype))
+            target_latent_hf_maps = (
+                self.target_latent_hf_spatial_lh(s_lh_sp).to(dtype=x.dtype),
+                self.target_latent_hf_spatial_hl(s_hl_sp).to(dtype=x.dtype),
+                self.target_latent_hf_spatial_hh(s_hh_sp).to(dtype=x.dtype),
+            )
+            target_latent_hf_spatial_active = True
+        if (
+            (self.target_latent_hf_subband_fusion_enabled or self.target_latent_hf_subband_head_fusion_enabled)
+            and torch.is_tensor(style_latent)
+            and not cfg_unconditional
+            and self.target_latent_hf_subband_encoder_lh is not None
+            and self.target_latent_hf_subband_encoder_hl is not None
+            and self.target_latent_hf_subband_encoder_hh is not None
+            and self.target_latent_hf_subband_proj_lh is not None
+            and self.target_latent_hf_subband_proj_hl is not None
+            and self.target_latent_hf_subband_proj_hh is not None
+        ):
+            _s_ll, s_lh_sb, s_hl_sb, s_hh_sb = dwt2_haar(style_latent.to(device=x.device, dtype=x.dtype))
+            target_latent_hf_subband_pooled = (
+                self.target_latent_hf_subband_proj_lh(
+                    self.target_latent_hf_subband_encoder_lh(s_lh_sb).flatten(1).float()
+                ).to(dtype=x.dtype),
+                self.target_latent_hf_subband_proj_hl(
+                    self.target_latent_hf_subband_encoder_hl(s_hl_sb).flatten(1).float()
+                ).to(dtype=x.dtype),
+                self.target_latent_hf_subband_proj_hh(
+                    self.target_latent_hf_subband_encoder_hh(s_hh_sb).flatten(1).float()
+                ).to(dtype=x.dtype),
+            )
+            target_latent_hf_subband_active = True
+        if (
+            self.target_latent_hf_texture_fusion_enabled
+            and torch.is_tensor(style_latent)
+            and not cfg_unconditional
+            and self.target_latent_hf_texture_encoder_lh is not None
+            and self.target_latent_hf_texture_encoder_hl is not None
+            and self.target_latent_hf_texture_encoder_hh is not None
+        ):
+            _s_ll, s_lh_tx, s_hl_tx, s_hh_tx = dwt2_haar(style_latent.to(device=x.device, dtype=x.dtype))
+            target_latent_hf_texture_pooled = (
+                self.target_latent_hf_texture_encoder_lh(s_lh_tx).to(dtype=x.dtype),
+                self.target_latent_hf_texture_encoder_hl(s_hl_tx).to(dtype=x.dtype),
+                self.target_latent_hf_texture_encoder_hh(s_hh_tx).to(dtype=x.dtype),
+            )
+            target_latent_hf_texture_active = True
         # Stage8: CFG — 训练时随机 drop style (替换为 null token), 推理时 cfg_unconditional 强制 null
         if self.null_style_tokens is not None:
             if self.training and self.cfg_dropout_prob > 0.0:
@@ -559,6 +953,20 @@ class WEAVE(nn.Module):
             style_pooled = style_tokens.mean(dim=1).to(dtype=x.dtype)
         else:
             style_pooled = None
+        if target_latent_hf_pooled is not None:
+            hf_gain = torch.tanh(self.target_latent_hf_gate).to(dtype=x.dtype)
+            style_pooled_hf = target_latent_hf_pooled if style_pooled is None else style_pooled + hf_gain * target_latent_hf_pooled
+        else:
+            style_pooled_hf = style_pooled
+        style_pooled_hf_lh = style_pooled_hf
+        style_pooled_hf_hl = style_pooled_hf
+        style_pooled_hf_hh = style_pooled_hf
+        if target_latent_hf_subband_pooled is not None and self.target_latent_hf_subband_head_gate is not None:
+            sub_lh, sub_hl, sub_hh = target_latent_hf_subband_pooled
+            sub_gain = torch.tanh(self.target_latent_hf_subband_head_gate).to(dtype=x.dtype)
+            style_pooled_hf_lh = sub_lh if style_pooled_hf is None else style_pooled_hf + sub_gain * sub_lh
+            style_pooled_hf_hl = sub_hl if style_pooled_hf is None else style_pooled_hf + sub_gain * sub_hl
+            style_pooled_hf_hh = sub_hh if style_pooled_hf is None else style_pooled_hf + sub_gain * sub_hh
         total_entropy = []
         total_pixel_entropy = []
         total_guidance = []
@@ -601,22 +1009,119 @@ class WEAVE(nn.Module):
         # Stage7 方向3: StyleDeltaVelocityHead 也需要 style_pooled
         if self.style_velocity_head_enabled or self.style_delta_head_enabled:
             v_ll = self.head_ll(h, style_pooled) if isinstance(self.head_ll, (StyleConditionedVelocityHead, StyleDeltaVelocityHead)) else self.head_ll(h)
-            v_lh = self.head_lh(h, style_pooled)
-            v_hl = self.head_hl(h, style_pooled)
-            v_hh = self.head_hh(h, style_pooled) if self.head_hh is not None else None
+            v_lh = self.head_lh(h, style_pooled_hf_lh)
+            v_hl = self.head_hl(h, style_pooled_hf_hl)
+            v_hh = self.head_hh(h, style_pooled_hf_hh) if self.head_hh is not None else None
         else:
             v_ll = self.head_ll(h)
             v_lh = self.head_lh(h)
             v_hl = self.head_hl(h)
             v_hh = self.head_hh(h) if self.head_hh is not None else None
+        if target_latent_hf_pooled is not None:
+            if self.target_latent_hf_delta_lh is not None:
+                v_lh = v_lh + self.target_latent_hf_delta_lh(h, target_latent_hf_pooled)
+            if self.target_latent_hf_delta_hl is not None:
+                v_hl = v_hl + self.target_latent_hf_delta_hl(h, target_latent_hf_pooled)
+            if v_hh is not None and self.target_latent_hf_delta_hh is not None:
+                v_hh = v_hh + self.target_latent_hf_delta_hh(h, target_latent_hf_pooled)
+        if target_latent_hf_maps is not None:
+            map_lh, map_hl, map_hh = target_latent_hf_maps
+            if self.target_latent_hf_spatial_delta_lh is not None:
+                if isinstance(self.target_latent_hf_spatial_delta_lh, EnergyBoundedSpatialStyleVelocityDelta):
+                    v_lh = v_lh + self.target_latent_hf_spatial_delta_lh(h, map_lh, v_lh)
+                else:
+                    v_lh = v_lh + self.target_latent_hf_spatial_delta_lh(h, map_lh)
+            if self.target_latent_hf_spatial_delta_hl is not None:
+                if isinstance(self.target_latent_hf_spatial_delta_hl, EnergyBoundedSpatialStyleVelocityDelta):
+                    v_hl = v_hl + self.target_latent_hf_spatial_delta_hl(h, map_hl, v_hl)
+                else:
+                    v_hl = v_hl + self.target_latent_hf_spatial_delta_hl(h, map_hl)
+            if v_hh is not None and self.target_latent_hf_spatial_delta_hh is not None:
+                if isinstance(self.target_latent_hf_spatial_delta_hh, EnergyBoundedSpatialStyleVelocityDelta):
+                    v_hh = v_hh + self.target_latent_hf_spatial_delta_hh(h, map_hh, v_hh)
+                else:
+                    v_hh = v_hh + self.target_latent_hf_spatial_delta_hh(h, map_hh)
+        if target_latent_hf_subband_pooled is not None:
+            sub_lh, sub_hl, sub_hh = target_latent_hf_subband_pooled
+            if self.target_latent_hf_subband_delta_lh is not None:
+                v_lh = v_lh + self.target_latent_hf_subband_delta_lh(h, sub_lh)
+            if self.target_latent_hf_subband_delta_hl is not None:
+                v_hl = v_hl + self.target_latent_hf_subband_delta_hl(h, sub_hl)
+            if v_hh is not None and self.target_latent_hf_subband_delta_hh is not None:
+                v_hh = v_hh + self.target_latent_hf_subband_delta_hh(h, sub_hh)
+        if target_latent_hf_texture_pooled is not None:
+            tex_lh, tex_hl, tex_hh = target_latent_hf_texture_pooled
+            if self.target_latent_hf_texture_delta_lh is not None:
+                v_lh = v_lh + self.target_latent_hf_texture_delta_lh(h, tex_lh)
+            if self.target_latent_hf_texture_delta_hl is not None:
+                v_hl = v_hl + self.target_latent_hf_texture_delta_hl(h, tex_hl)
+            if v_hh is not None and self.target_latent_hf_texture_delta_hh is not None:
+                v_hh = v_hh + self.target_latent_hf_texture_delta_hh(h, tex_hh)
         self.last_debug = {
             "v_ll_abs": v_ll.detach().float().abs().mean(),
             "v_lh_abs": v_lh.detach().float().abs().mean(),
             "v_hl_abs": v_hl.detach().float().abs().mean(),
             "style_latent_conditioning_active": x.new_tensor(
-                1.0 if self.use_intrinsic_style and torch.is_tensor(style_latent) else 0.0
+                1.0
+                if (
+                    (self.use_intrinsic_style and torch.is_tensor(style_latent))
+                    or target_latent_tokens_active
+                    or target_latent_hf_head_active
+                    or target_latent_hf_spatial_active
+                    or target_latent_hf_subband_active
+                    or target_latent_hf_texture_active
+                )
+                else 0.0
+            ),
+            "target_latent_token_fusion_active": x.new_tensor(1.0 if target_latent_tokens_active else 0.0),
+            "target_latent_hf_head_fusion_active": x.new_tensor(1.0 if target_latent_hf_head_active else 0.0),
+            "target_latent_hf_spatial_fusion_active": x.new_tensor(1.0 if target_latent_hf_spatial_active else 0.0),
+            "target_latent_hf_subband_fusion_active": x.new_tensor(1.0 if target_latent_hf_subband_active else 0.0),
+            "target_latent_hf_texture_fusion_active": x.new_tensor(1.0 if target_latent_hf_texture_active else 0.0),
+            "target_latent_hf_spatial_energy_fusion_active": x.new_tensor(
+                1.0 if (target_latent_hf_spatial_active and self.target_latent_hf_spatial_energy_fusion_enabled) else 0.0
             ),
         }
+        if self.target_latent_hf_gate is not None:
+            self.last_debug["target_latent_hf_head_gate"] = torch.tanh(
+                self.target_latent_hf_gate.detach().float()
+            )
+        if self.target_latent_hf_delta_lh is not None and self.target_latent_hf_delta_hl is not None:
+            _hf_delta_gates = [
+                torch.tanh(self.target_latent_hf_delta_lh.gate.detach().float()),
+                torch.tanh(self.target_latent_hf_delta_hl.gate.detach().float()),
+            ]
+            if self.target_latent_hf_delta_hh is not None:
+                _hf_delta_gates.append(torch.tanh(self.target_latent_hf_delta_hh.gate.detach().float()))
+            self.last_debug["target_latent_hf_delta_gate_mean"] = torch.stack(_hf_delta_gates).mean()
+        if self.target_latent_hf_spatial_delta_lh is not None and self.target_latent_hf_spatial_delta_hl is not None:
+            _hf_spatial_gates = [
+                torch.tanh(self.target_latent_hf_spatial_delta_lh.gate.detach().float()),
+                torch.tanh(self.target_latent_hf_spatial_delta_hl.gate.detach().float()),
+            ]
+            if self.target_latent_hf_spatial_delta_hh is not None:
+                _hf_spatial_gates.append(torch.tanh(self.target_latent_hf_spatial_delta_hh.gate.detach().float()))
+            self.last_debug["target_latent_hf_spatial_delta_gate_mean"] = torch.stack(_hf_spatial_gates).mean()
+        if self.target_latent_hf_subband_delta_lh is not None and self.target_latent_hf_subband_delta_hl is not None:
+            _hf_subband_gates = [
+                torch.tanh(self.target_latent_hf_subband_delta_lh.gate.detach().float()),
+                torch.tanh(self.target_latent_hf_subband_delta_hl.gate.detach().float()),
+            ]
+            if self.target_latent_hf_subband_delta_hh is not None:
+                _hf_subband_gates.append(torch.tanh(self.target_latent_hf_subband_delta_hh.gate.detach().float()))
+            self.last_debug["target_latent_hf_subband_delta_gate_mean"] = torch.stack(_hf_subband_gates).mean()
+        if self.target_latent_hf_subband_head_gate is not None:
+            self.last_debug["target_latent_hf_subband_head_gate"] = torch.tanh(
+                self.target_latent_hf_subband_head_gate.detach().float()
+            )
+        if self.target_latent_hf_texture_delta_lh is not None and self.target_latent_hf_texture_delta_hl is not None:
+            _hf_texture_gates = [
+                torch.tanh(self.target_latent_hf_texture_delta_lh.gate.detach().float()),
+                torch.tanh(self.target_latent_hf_texture_delta_hl.gate.detach().float()),
+            ]
+            if self.target_latent_hf_texture_delta_hh is not None:
+                _hf_texture_gates.append(torch.tanh(self.target_latent_hf_texture_delta_hh.gate.detach().float()))
+            self.last_debug["target_latent_hf_texture_delta_gate_mean"] = torch.stack(_hf_texture_gates).mean()
         out = {"ll": v_ll, "lh": v_lh, "hl": v_hl}
         if v_hh is not None:
             self.last_debug["v_hh_abs"] = v_hh.detach().float().abs().mean()

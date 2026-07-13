@@ -1,0 +1,110 @@
+[
+  {
+    "file": "target_hf_delta_ft15_epoch0006_dino_summary.json",
+    "dino_s": 0.482656,
+    "dino_c": 0.791748,
+    "dino_structure": 0.024586,
+    "clip_s": 0.717485,
+    "lpips": 0.295013,
+    "off_dino_s": 0.398592
+  },
+  {
+    "file": "target_hf_delta_ft15_epoch0015_dino_summary.json",
+    "dino_s": 0.48248,
+    "dino_c": 0.791313,
+    "dino_structure": 0.02465,
+    "clip_s": 0.71803,
+    "lpips": 0.299062,
+    "off_dino_s": 0.398681
+  },
+  {
+    "file": "target_hf_delta_ft15_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.484984,
+    "dino_c": 0.79657,
+    "dino_structure": 0.024582,
+    "clip_s": 0.717586,
+    "lpips": 0.292892,
+    "off_dino_s": 0.400533
+  },
+  {
+    "file": "target_hf_delta_ft15_epoch0006_adain20_dino_summary.json",
+    "dino_s": 0.484675,
+    "dino_c": 0.830479,
+    "dino_structure": 0.023864,
+    "clip_s": 0.70258,
+    "lpips": 0.26795,
+    "off_dino_s": 0.394223
+  },
+  {
+    "file": "target_hf_delta_strong_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.487036,
+    "dino_c": 0.799077,
+    "dino_structure": 0.024591,
+    "clip_s": 0.717586,
+    "lpips": 0.295459,
+    "off_dino_s": 0.401948
+  },
+  {
+    "file": "target_hf_spatial_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.490074,
+    "dino_c": 0.404308,
+    "dino_structure": 0.046968,
+    "clip_s": 0.748291,
+    "lpips": 0.53824,
+    "off_dino_s": null
+  },
+  {
+    "file": "target_hf_subband_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.488624,
+    "dino_c": 0.798123,
+    "dino_structure": 0.024536,
+    "clip_s": 0.720880,
+    "lpips": 0.296553,
+    "off_dino_s": 0.403917
+  },
+  {
+    "file": "target_hf_hybrid_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.485753,
+    "dino_c": 0.797810,
+    "dino_structure": 0.024605,
+    "clip_s": 0.719710,
+    "lpips": 0.295576,
+    "off_dino_s": 0.400962
+  },
+  {
+    "file": "target_hf_subband_head_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.487264,
+    "dino_c": 0.798699,
+    "dino_structure": 0.024614,
+    "clip_s": 0.719169,
+    "lpips": 0.296164,
+    "off_dino_s": 0.402149
+  },
+  {
+    "file": "target_hf_spatial_energy_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.486100,
+    "dino_c": 0.790866,
+    "dino_structure": 0.024809,
+    "clip_s": 0.720364,
+    "lpips": 0.297755,
+    "off_dino_s": 0.402737
+  },
+  {
+    "file": "target_hf_texture_ft6/dino_summary_adain15.json",
+    "dino_s": 0.486044,
+    "dino_c": 0.798035,
+    "dino_structure": 0.024473,
+    "clip_s": 0.718189,
+    "lpips": 0.296399,
+    "off_dino_s": 0.401347
+  },
+  {
+    "file": "target_hf_subband_texture_ft6/dino_summary_adain15.json",
+    "dino_s": 0.488420,
+    "dino_c": 0.798815,
+    "dino_structure": 0.024596,
+    "clip_s": 0.719357,
+    "lpips": 0.296046,
+    "off_dino_s": 0.404302
+  }
+]

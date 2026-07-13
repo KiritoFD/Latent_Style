@@ -1,0 +1,32 @@
+{
+  "_base": "exp_brk_a_ll03_10ep.json",
+  "model": {
+    "target_latent_token_fusion_enabled": false,
+    "target_latent_hf_head_fusion_enabled": true,
+    "target_latent_hf_head_fusion_gate_init": 0.18,
+    "target_latent_hf_head_fusion_init_std": 0.08,
+    "enable_hh_head": true
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 6,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false,
+    "save_interval": 3,
+    "resume_checkpoint": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_a_ll03_10ep/epoch_0010.pt",
+    "resume_prefer_local_checkpoint": false,
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/model_probe/target_hf_delta_strong_ft6"
+  },
+  "ablation": {
+    "name": "probe_target_hf_delta_strong_ft6",
+    "axis": "model_probe",
+    "stage": "probe_guided_hf_capacity",
+    "notes": "Stronger HF-only target latent residual heads. Tests whether the weak target-latent HF probe in target_hf_delta_ft15 is under-gated rather than conceptually wrong."
+  }
+}
