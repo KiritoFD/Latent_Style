@@ -46,6 +46,7 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 | `target_hf_subband_deep_energy_ft6` | deep residual + RMS bound | 0.482631 | 0.794932 | 0.717588 | 0.297529 | 0.397683 | Rejected; code removed. |
 | `target_hf_subband_film_head_ft6` | pure subband FiLM into HF heads | 0.482591 | 0.791672 | 0.717951 | 0.299591 | 0.398305 | Rejected; config removed. |
 | `target_hf_subband_diraux_ft6` | direct residual-direction auxiliary loss | 0.486150 | 0.793859 | 0.718929 | 0.297425 | 0.402097 | Rejected; improved direction probe but hurt the image frontier; code/config removed. |
+| `target_hf_subband_timewindow_norm` | inference-only early/late residual windows | 0.48660-0.48664 | 0.79361-0.79365 | 0.71933-0.71938 | 0.297480 | 0.40254-0.40256 | Rejected; temporal localization underperforms full-path residual; temporary hook code removed. |
 
 ## What This Proves
 
@@ -55,11 +56,12 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 4. **The trained subband residual has causal value.** Zeroing only the three subband residual delta modules at inference lowers DINO-S, DINO-C, and LPIPS, so the route is not a dead branch and does not merely trade content for style.
 5. **Simple residual amplification is not the answer.** Scaling the trained residual to 1.25x or 1.5x raises off-DINO-S slightly but lowers all-pairs DINO-S and content metrics, so the bottleneck is residual direction/conditioning rather than scalar magnitude.
 6. **The residual direction is a real bottleneck, but direct auxiliary supervision is too invasive.** Direction decomposition shows mean MSE improvement `0.0319`, mean cosine `0.1575`, and orthogonal fraction `0.9818`. A direct residual-direction auxiliary improves the probe (`cos=0.3222`, MSE improvement `0.1167`) but lowers DINO-S/DINO-C/LPIPS, so direction alignment must not compete with the main transport objective.
-7. **Extra stationary statistics are not automatically better.** Texture stats help off-diagonal style and content slightly, but do not beat simple subband pooling on all-pairs DINO-S.
-8. **More placement engineering is not the next lever.** Content-anchor placement is safe but weaker.
-9. **More stationary-stat tokens are not enough.** The 2026-07-14 multi-token route underperformed subband-only on all tracked metrics, so the next gain should come from better orientation-specific residual structure rather than wider statistic-token conditioning.
-10. **Style memory is not just a bad shortcut.** Removing it makes the target-HF probe cleaner but hurts DINO-S/DINO-C/CLIP-S/off-DINO-S, so the next design should decompose coarse memory prior and image-specific HF residual instead of deleting memory.
-11. **Explicitly subtracting memory is too blunt.** Memory-residualized target-HF partly recovers from no-memory but remains below subband-only and hurts DINO-C/LPIPS, so do not algebraically remove the class prior.
+7. **The residual is not only an endpoint texture patch.** Normalized early-only and late-only residual windows both score around DINO-S `0.4866`, below full residual `0.4886`, so timing alone is not the route bottleneck.
+8. **Extra stationary statistics are not automatically better.** Texture stats help off-diagonal style and content slightly, but do not beat simple subband pooling on all-pairs DINO-S.
+9. **More placement engineering is not the next lever.** Content-anchor placement is safe but weaker.
+10. **More stationary-stat tokens are not enough.** The 2026-07-14 multi-token route underperformed subband-only on all tracked metrics, so the next gain should come from better orientation-specific residual structure rather than wider statistic-token conditioning.
+11. **Style memory is not just a bad shortcut.** Removing it makes the target-HF probe cleaner but hurts DINO-S/DINO-C/CLIP-S/off-DINO-S, so the next design should decompose coarse memory prior and image-specific HF residual instead of deleting memory.
+12. **Explicitly subtracting memory is too blunt.** Memory-residualized target-HF partly recovers from no-memory but remains below subband-only and hurts DINO-C/LPIPS, so do not algebraically remove the class prior.
 
 ## Method Framing
 
@@ -97,8 +99,9 @@ Increase coordinate-free HF capacity without target spatial leakage:
 2. Energy normalization against existing HF head output.
 3. Better-conditioned compact subband residual head; do not just multiply the learned residual.
 4. Do not add a direct residual-direction auxiliary loss in the current form; it improves probe alignment but hurts the image frontier.
-5. Keep LL disconnected from target image features except the existing mild LL target blend.
-6. Keep style memory as a bounded coarse prior, then make target-HF carry residual orientation/style details.
+5. Do not time-gate the residual route as a standalone fix; normalized early/late windows both underperform the full residual.
+6. Keep LL disconnected from target image features except the existing mild LL target blend.
+7. Keep style memory as a bounded coarse prior, then make target-HF carry residual orientation/style details.
 
 ### C. Evaluation next step
 

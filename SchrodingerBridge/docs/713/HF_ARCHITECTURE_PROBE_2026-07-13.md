@@ -50,6 +50,7 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_subband_deep_energy_ft6` | deeper per-band pooled HF residual + RMS bound | 0.482631 | 0.794932 | **0.024497** | 0.717588 | 0.297529 | 0.397683 | rejected: extra residual capacity with RMS bound weakens style/content frontier |
 | `target_hf_subband_film_head_ft6` | pure per-band target-HF FiLM into main HF heads | 0.482591 | 0.791672 | 0.024594 | 0.717951 | 0.299591 | 0.398305 | rejected: live head-conditioning path, but weaker than residual subband route |
 | `target_hf_subband_diraux_ft6` | residual branch trained with direct direction auxiliary | 0.486150 | 0.793859 | **0.024536** | 0.718929 | 0.297425 | 0.402097 | rejected: probe direction improves, image frontier worsens |
+| `target_hf_subband_timewindow_{early,late}_norm` | inference-only residual time-window causal probe | 0.48660-0.48664 | 0.79361-0.79365 | **0.024533-0.024534** | 0.71933-0.71938 | 0.297480 | 0.40254-0.40256 | rejected: temporal localization underperforms full-trajectory residual |
 
 ## Diagnosis
 
@@ -264,3 +265,19 @@ But the image metrics moved backward:
 | LPIPS | 0.297425 | **0.296553** | +0.0009 |
 
 **Verdict: FAIL; code/config removed, metrics kept.** This is a useful falsification: a residual branch can become more aligned to the immediate velocity target while still hurting the final style/content frontier. The direct auxiliary appears to spend capacity matching an instantaneous correction rather than preserving the learned ODE transport geometry. Future direction work should be less invasive: probe/gate/orthogonalize the route, or change the residual parameterization, but do not add this auxiliary loss as-is.
+
+## Residual time-window causal probe (2026-07-14)
+
+After the direction-auxiliary failure, the next non-invasive hypothesis was temporal: maybe the subband residual is useful only as a late HF texture correction, and applying it across the whole ODE path creates off-direction content cost. A temporary evaluator hook tested this without changing weights:
+
+`v(t) = v_base(t) + w(t) * delta_hf(t)`
+
+Both early and late windows used `1 / window_width` normalization, so the approximate integrated residual energy stayed comparable to the full residual.
+
+| variant | active window | all DINO-S | off DINO-S | DINO-C | CLIP-S | LPIPS |
+|---|---:|---:|---:|---:|---:|---:|
+| subband-only baseline | full | **0.488624** | **0.403917** | **0.798123** | **0.720880** | **0.296553** |
+| late normalized | [0.5, 1.0] | 0.486637 | 0.402562 | 0.793614 | 0.719335 | 0.297480 |
+| early normalized | [0.0, 0.5] | 0.486602 | 0.402543 | 0.793654 | 0.719377 | 0.297480 |
+
+**Verdict: FAIL as an improvement, PASS as a probe; temporary hook code removed, metrics kept.** The nearly identical early/late results and the drop from full residual indicate that the route is not merely an endpoint texture patch or an early structure term. It acts as a small continuous correction throughout the learned transport field. Future architecture should not time-gate this branch; it should change the residual basis/parameterization or improve target-HF conditioning while preserving full-path participation.

@@ -146,6 +146,7 @@ Rejected:
 | `target_hf_subband_deep_energy_ft6` | 0.482631 | 0.794932 | 0.717588 | 0.297529 | Deep additive residual with RMS bound underperformed; code removed. |
 | `target_hf_subband_film_head_ft6` | 0.482591 | 0.791672 | 0.717951 | 0.299591 | Pure HF-head FiLM conditioning underperformed; config removed. |
 | `target_hf_subband_diraux_ft6` | 0.486150 | 0.793859 | 0.718929 | 0.297425 | Direct residual-direction auxiliary improved probe alignment but hurt image metrics; code/config removed. |
+| `target_hf_subband_timewindow_norm` | 0.48660-0.48664 | 0.79361-0.79365 | 0.71933-0.71938 | 0.297480 | Inference-only early/late residual windows underperformed full residual; temporary hook code removed. |
 
 ## 5. Correct Theory After Probing
 
@@ -189,6 +190,7 @@ Do not prioritize:
 | Deep additive subband residual | Tested and removed; more residual capacity did not improve the style route. |
 | Pure target-HF FiLM head conditioning | Tested and removed; newly initialized HF-head FiLM weakens the learned velocity field. |
 | Direct residual-direction auxiliary | Tested and removed; higher residual/desired cosine did not translate into better DINO-S or content. |
+| Time-window residual gating | Tested and removed; normalized early/late windows both underperform full-path residual. |
 | Generic decoder AdaLN/AdaIN | Already repeatedly negative. |
 
 ## 7. Method-writing Guidance

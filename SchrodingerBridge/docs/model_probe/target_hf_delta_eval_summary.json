@@ -205,5 +205,23 @@
     "clip_s": 0.718929,
     "lpips": 0.297425,
     "off_dino_s": 0.402097
+  },
+  {
+    "file": "target_hf_subband_timewindow_late_norm_adain15_dino_summary.json",
+    "dino_s": 0.486637,
+    "dino_c": 0.793614,
+    "dino_structure": 0.024534,
+    "clip_s": 0.719335,
+    "lpips": 0.297480,
+    "off_dino_s": 0.402562
+  },
+  {
+    "file": "target_hf_subband_timewindow_early_norm_adain15_dino_summary.json",
+    "dino_s": 0.486602,
+    "dino_c": 0.793654,
+    "dino_structure": 0.024533,
+    "clip_s": 0.719377,
+    "lpips": 0.297480,
+    "off_dino_s": 0.402543
   }
 ]

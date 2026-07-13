@@ -88,10 +88,11 @@ All rows are diagnostic probes from the `brk_a_ll03_10ep` family. Do not promote
 | `target_hf_subband_texture_ft6` | 0.488420 | **0.798815** | 0.719357 | **0.296046** | **0.404302** | Conservative alternate. |
 | `target_hf_content_anchor_ft6` | 0.484393 | 0.795462 | 0.717251 | 0.298162 | 0.399538 | Safe but weaker. |
 | `target_hf_subband_diraux_ft6` | 0.486150 | 0.793859 | 0.718929 | 0.297425 | 0.402097 | Reject: direction probe improves, image frontier worsens. |
+| `target_hf_subband_timewindow_norm` | 0.48660-0.48664 | 0.79361-0.79365 | 0.71933-0.71938 | 0.297480 | 0.40254-0.40256 | Reject: early/late residual windows both underperform full residual. |
 
 Conclusion:
 
-> Style is weak because target-style HF information lacks a clean non-spatial route into the HF velocity heads. The fix is route topology/capacity, but not raw spatial injection, not simple residual amplification, and not a direct residual-direction auxiliary loss.
+> Style is weak because target-style HF information lacks a clean non-spatial route into the HF velocity heads. The fix is route topology/capacity, but not raw spatial injection, not simple residual amplification, not direct residual-direction auxiliary loss, and not temporal gating alone.
 
 ---
 
@@ -144,11 +145,11 @@ Architecture first, tuning second:
 | Step | Action | Reason |
 |---|---|---|
 | 1 | Keep `target_hf_subband_ft6` as the best current architecture probe. | It is still the strongest balanced point after the latest negative controls. |
-| 2 | Explore less invasive target-HF route decomposition. | Direct residual-direction loss improved probe alignment but hurt final metrics. |
+| 2 | Explore less invasive target-HF route decomposition. | Direct residual-direction loss and time-window gating both hurt final metrics. |
 | 3 | Keep LL disconnected from target-image shortcuts. | Avoid buying style by destroying content. |
 | 4 | Rerun D5-512, P2A-256, R5-WikiArt before promotion. | Required before changing the main table. |
 
-Avoid raw target HF maps, scalar/HH residual amplification, direct residual-direction auxiliary loss, global target-token fusion, and CFG claims without matched controls.
+Avoid raw target HF maps, scalar/HH residual amplification, direct residual-direction auxiliary loss, time-window residual gating, global target-token fusion, and CFG claims without matched controls.
 
 ---
 
