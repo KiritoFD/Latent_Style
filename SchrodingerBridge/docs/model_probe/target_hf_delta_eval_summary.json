@@ -63,6 +63,24 @@
     "off_dino_s": 0.403917
   },
   {
+    "file": "target_hf_subband_nomem_ft6_dino_summary_adain15.json",
+    "dino_s": 0.484903,
+    "dino_c": 0.794833,
+    "dino_structure": 0.024491,
+    "clip_s": 0.716728,
+    "lpips": 0.294348,
+    "off_dino_s": 0.401335
+  },
+  {
+    "file": "target_hf_subband_memres_ft6_dino_summary_adain15.json",
+    "dino_s": 0.486561,
+    "dino_c": 0.793519,
+    "dino_structure": 0.024531,
+    "clip_s": 0.719228,
+    "lpips": 0.297730,
+    "off_dino_s": 0.402490
+  },
+  {
     "file": "target_hf_hybrid_epoch0006_adain15_dino_summary.json",
     "dino_s": 0.485753,
     "dino_c": 0.797810,

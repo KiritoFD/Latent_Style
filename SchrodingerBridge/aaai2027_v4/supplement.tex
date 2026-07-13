@@ -82,7 +82,7 @@ packet. The formal source of record is:
   \item \texttt{exp/dino\_s\_break/brk\_a\_ll03\_10ep/logs/training\_20260712\_214129.csv}: training log.
   \item \texttt{exp/model\_probe/inf\_timing/generation\_only\_timing\_summary.json}: generation-only timing record.
   \item \texttt{docs/model\_probe/target\_hf\_delta\_eval\_summary.json}: aggregate target-HF route probe metrics.
-  \item \texttt{docs/713/REPO\_AUDIT\_2026-07-13.md}: internal audit used to sanitize public paths.
+  \item \texttt{docs/713/REPO\_REMOTE\_AUDIT\_2026-07-13.md}: internal audit used to sanitize public paths.
 \end{itemize}
 
 All paths above are relative to either \texttt{<REPO\_ROOT>/SchrodingerBridge} or
@@ -492,7 +492,7 @@ strongly enter the velocity predictor as an image-specific condition.
 \toprule
 Route & Signal path & Probe reading \\
 \midrule
-Baseline style memory & \texttt{style\_id} \(\rightarrow\) style memory \(\rightarrow\) cross-attention & Auxiliary. Gates stay near 0.056--0.061 and gradient mass on style memory is weak. \\
+Baseline style memory & \texttt{style\_id} \(\rightarrow\) style memory \(\rightarrow\) cross-attention & Coarse style prior. Gates stay near 0.056--0.061, but removing this route hurts full metrics, so it is useful but not sufficient. \\
 Global target-token fusion & target latent \(\rightarrow\) all style tokens \(\rightarrow\) backbone & Connected but too global; it over-controls LL and does not improve useful style transfer. \\
 Raw spatial target-HF & target DWT-HF maps \(\rightarrow\) HF residual maps & Proves capacity exists, but leaks target geometry and collapses content. \\
 Pooled subband target-HF & target DWT-HF \(\rightarrow\) per-subband pooled code \(\rightarrow\) HF residual velocity & Current usable path: stronger style signal without target-coordinate leakage. \\
@@ -533,6 +533,11 @@ Run & \dinos{} & \dinoc{} & LPIPS & \clips{} & Off-\dinos{} & Verdict \\
 \texttt{target\_hf\_texture\_ft6} & 0.4860 & 0.7980 & 0.2964 & 0.7182 & 0.4013 & Stationary stats are safe but weak alone. \\
 \texttt{target\_hf\_subband\_texture\_ft6} & 0.4884 & \textbf{0.7988} & \textbf{0.2960} & 0.7194 & \textbf{0.4043} & Conservative alternate with best off-style/content balance. \\
 \texttt{target\_hf\_content\_anchor\_ft6} & 0.4844 & 0.7955 & 0.2982 & 0.7173 & 0.3995 & Safe placement, not competitive. \\
+\texttt{target\_hf\_multitoken\_ft6} & 0.4836 & 0.7941 & 0.2980 & 0.7187 & 0.3988 & More stationary-stat tokens do not help. \\
+\texttt{target\_hf\_subband\_deep\_energy\_ft6} & 0.4826 & 0.7949 & 0.2975 & 0.7176 & 0.3977 & Deeper energy-normalized residual is worse. \\
+\texttt{target\_hf\_subband\_film\_head\_ft6} & 0.4826 & 0.7917 & 0.2996 & 0.7180 & 0.3983 & Direct FiLM into HF heads disturbs the pretrained field. \\
+\texttt{target\_hf\_subband\_nomem\_ft6} & 0.4849 & 0.7948 & \textbf{0.2943} & 0.7167 & 0.4013 & Removing style memory cleans the probe route but weakens style/content metrics. \\
+\texttt{target\_hf\_subband\_memres\_ft6} & 0.4866 & 0.7935 & 0.2977 & 0.7192 & 0.4025 & Explicit style-memory prior subtraction is below subband-only. \\
 \bottomrule
 \end{tabular}}
 \normalsize
@@ -544,6 +549,22 @@ the target contains information that no model head can directly predict. Second,
 training by itself is not the primary lever: the 15-epoch HF-delta curve remains below
 the 6-epoch subband route. The useful capacity is frequency-specific and route-specific,
 not merely total wall-clock exposure.
+
+The no-memory probe clarifies the role of the style-memory branch. Disabling generic
+style-memory cross-attention makes the target-HF path easier to read in gradients and
+aligns auxiliary HF-statistic gradients with the HF-MSE objective, but full evaluation
+drops \dinos{}, \dinoc{}, \clips{}, and off-\dinos{} relative to the subband route.
+The visual grid also shows over-smoothed transfers in the Minimalism target column.
+Thus the remaining design problem is not to delete style memory; it is to keep style
+memory as a bounded category-level prior while letting target-HF subband codes carry
+the image-specific residual style.
+
+A follow-up memory-residualized route tested explicit subtraction of a learned
+style-memory prior from the per-subband target-HF code. It recovered part of the
+no-memory loss but still trailed the plain subband route on \dinos{}, \dinoc{},
+\clips{}, LPIPS, and off-\dinos{}. This negative result argues against algebraically
+removing the memory prior; future routes should regularize or measure route usage
+without perturbing the useful category prior.
 
 \section{Inference Setup}
 
@@ -829,10 +850,10 @@ The current evidence supports a compact reading of the method:
 \]
 
 The component ablations and the target-HF probes point to the same causal picture:
-endpoint statistics and wavelet-domain transport are active, while a large learned
-cross-attention memory is not the main source of style transfer. This is why the paper
-frames \weave{} as a compact wavelet-flow model rather than as a transformer-style
-style-memory architecture.
+endpoint statistics and wavelet-domain transport are active, while learned
+cross-attention memory acts as a coarse prior rather than the main image-specific style
+injector. This is why the paper frames \weave{} as a compact wavelet-flow model with an
+auxiliary style memory, not as a transformer-style memory architecture.
 
 \begin{figure}[t]
 \centering
@@ -844,9 +865,11 @@ same style level.}
 \end{figure}
 
 The cross-attention branch is treated as auxiliary. Probe runs show near-closed gates
-around 0.056--0.061 and weak gradient mass on the style-memory branch. The effective
-style movement comes mainly from endpoint AdaIN/statistics and flow transport rather than
-from a large cross-attention style memory.
+around 0.056--0.061 and weak gradient mass on the style-memory branch, yet the no-memory
+subband run underperforms the standard subband route. The effective style movement comes
+mainly from endpoint AdaIN/statistics, flow transport, and coordinate-free target-HF
+codes; style memory supplies a useful coarse category prior but cannot replace the
+image-specific HF route.
 
 \subsection{Ablation Directory Summary}
 
@@ -891,6 +914,8 @@ Compact per-subband codes & Keep & Current best route; keeps target coordinates 
 Orientation-specific residual depth & Keep & LH, HL, and HH carry different stroke/texture directions. \\
 Energy normalization vs. existing HF heads & Keep & Prevents the new route from dominating content structure. \\
 Stationary-stat multi-token widening & Avoid & A matched probe was worse than subband-only on style and content metrics. \\
+Removing style-memory cross-attention & Avoid & It makes gradient probes cleaner but lowers style/content metrics, so memory should be bounded rather than deleted. \\
+Algebraic memory-prior subtraction & Avoid & It partly recovers from no-memory but remains below the simple subband residual and hurts content. \\
 Raw target HF maps & Avoid & They leak target layout and already failed the content metrics. \\
 LL target-image shortcuts & Avoid & They improve apparent style by spending the content budget. \\
 More gate/epoch tuning first & Avoid & Probe evidence shows route topology, not training length, is the current bottleneck. \\

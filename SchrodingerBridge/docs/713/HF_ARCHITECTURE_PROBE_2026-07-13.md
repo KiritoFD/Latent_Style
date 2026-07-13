@@ -34,6 +34,8 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_delta_strong_ft6` | shared pooled HF -> HF heads + residual delta | 0.487036 | 0.799077 | 0.024591 | 0.717586 | 0.295459 | 0.401948 | previous best usable route |
 | `target_hf_spatial_ft6` | per-band spatial HF maps -> residual delta | 0.490074 | 0.404308 | 0.046968 | 0.748291 | 0.538240 | n/a | high style, content collapse |
 | `target_hf_subband_ft6` | per-band pooled HF -> residual delta only | **0.488624** | 0.798123 | **0.024536** | **0.720880** | 0.296553 | **0.403917** | best current usable architecture |
+| `target_hf_subband_nomem_ft6` | subband route, generic style-memory cross-attn disabled | 0.484903 | 0.794833 | **0.024491** | 0.716728 | **0.294348** | 0.401335 | rejected: cleaner target-HF route but weaker style/content frontier |
+| `target_hf_subband_memres_ft6` | subband route, target-HF code residualized against style-memory mean | 0.486561 | 0.793519 | 0.024531 | 0.719228 | 0.297730 | 0.402490 | rejected: explicit prior subtraction is below subband-only |
 | `target_hf_hybrid_ft6` | shared pooled HF + per-band residual delta | 0.485753 | 0.797810 | 0.024605 | 0.719710 | **0.295576** | 0.400962 | extra residuals do not help |
 | `target_hf_subband_head_ft6` | shared pooled HF residual + nominal per-band head code | 0.487264 | 0.798699 | 0.024614 | 0.719169 | 0.296164 | 0.402149 | not a clean head-conditioning test; `style_velocity_head_enabled` was off |
 | `target_hf_spatial_energy_ft6` | shared pooled HF + energy-bounded spatial residual | 0.486100 | 0.790866 | 0.024809 | 0.720364 | 0.297755 | 0.402737 | stronger probe path, but content cost and no all DINO-S win |
@@ -69,6 +71,8 @@ The stationary texture-stat route tested the intended safer alternative to raw s
 
 Important protocol note: earlier low values around `0.44` came from recomputing DINO-S with `exclude_source_from_style_refs=true`. The delivered main-table numbers use `exclude_source_from_style_refs=false`. Off-diagonal DINO-S remains the cleaner style-only sanity check and is reported above.
 
+The no-style-memory run separates two effects that were previously tangled. Probes showed that disabling generic style-memory cross-attention makes the target-HF path the only live style route and aligns the HF-MSE and HF-stat gradients (`cos_fm_hf_vs_stat` becomes positive). However, the full eval is worse than subband-only on DINO-S, DINO-C, CLIP-S, and off-DINO-S. Therefore `style_id -> style_memory` is not merely a harmful shortcut; it carries a useful class-level style prior. The bottleneck is that this prior can dominate the image-specific target-HF route, not that it should be removed entirely.
+
 ## Recommended Next Architecture
 
 Do not tune gates/epochs first. The next structural change should be a constrained spatial-HF route:
@@ -85,6 +89,8 @@ Current checkpoint recommendation:
 - Do not use raw spatial HF despite its high all DINO-S; it is content collapse.
 
 Next structural direction: improve the subband route's learned delta/base without exposing raw target coordinates. Energy-bounded spatial gives the right probe magnitude but needs a stronger content anchor. Stationary texture stats are safe but not sufficient as the main injection path; the failed multi-token statistic route should not be kept in code. Prefer simpler orientation-specific HF residual capacity and energy normalization over more statistic-token width.
+
+After the no-memory result, avoid binary memory removal. A better structural target is a two-route style decomposition: keep style memory as a coarse category prior, but make the image-specific target-HF subband code responsible for the residual/orientation-specific component. Concretely, future probes should measure whether the target-HF branch changes the HF heads after conditioning on memory, instead of testing target-HF in isolation.
 
 ## Content-anchor experiment result (2026-07-13 late)
 
@@ -154,3 +160,31 @@ Next structural direction (if still needed): do not simply deepen the subband re
 | LPIPS | 0.299591 | 0.296553 | +0.0030 |
 
 **Verdict: FAIL; config/pipeline removed.** This falsifies the simple "put the target-HF code directly into the main head" hypothesis. A newly introduced FiLM path appears to disturb the pretrained HF velocity heads more than it helps style routing. The surviving method story stays simpler: use the pretrained spectral bridge, keep LL protected, and add a compact per-orientation target-HF residual only on HF bands.
+
+## No-style-memory subband result (2026-07-14)
+
+`target_hf_subband_nomem_ft6` tested the gradient-probe hypothesis that generic style-memory cross-attention was acting as a shortcut. The model kept the pooled per-subband target-HF residual route, but disabled `style_cross_attention_enabled`. A pretraining probe on the subband checkpoint showed the intended route change: style-id output influence fell to zero, target-latent influence stayed live, style-memory gradients vanished, and HF-MSE/HF-stat gradients became aligned. This made it a clean single-variable architecture test.
+
+| metric | no-memory subband | subband-only (best) | delta |
+|---|---:|---:|---:|
+| all DINO-S | 0.484903 | **0.488624** | -0.0037 |
+| off DINO-S | 0.401335 | **0.403917** | -0.0026 |
+| DINO-C | 0.794833 | 0.798123 | -0.0033 |
+| CLIP-S | 0.716728 | 0.720880 | -0.0042 |
+| LPIPS | **0.294348** | 0.296553 | -0.0022 |
+
+**Verdict: FAIL; config removed, metrics kept.** The result is important because it rejects the overly simple "remove the shortcut" theory. The style memory route is a useful coarse style prior. The remaining architectural problem is to prevent that prior from saturating the prediction while letting the target-HF route supply image-specific, orientation-aware residual style. Do not promote this checkpoint.
+
+## Memory-residualized subband result (2026-07-14)
+
+`target_hf_subband_memres_ft6` tested the follow-up hypothesis from the no-memory result: keep style memory as a category prior, but subtract a learned projection of the style-memory mean from each per-subband target-HF code before the HF residual heads. Local smoke confirmed nonzero gradients through the memory projection, target-HF encoder, target-HF residual head, and style memory.
+
+| metric | memory-residualized | subband-only (best) | delta |
+|---|---:|---:|---:|
+| all DINO-S | 0.486561 | **0.488624** | -0.0021 |
+| off DINO-S | 0.402490 | **0.403917** | -0.0014 |
+| DINO-C | 0.793519 | 0.798123 | -0.0046 |
+| CLIP-S | 0.719228 | 0.720880 | -0.0017 |
+| LPIPS | 0.297730 | 0.296553 | +0.0012 |
+
+**Verdict: FAIL; code/config removed, metrics kept.** The result partially recovers from the no-memory run but remains below the simple subband residual on all key style/content metrics. Explicitly subtracting a learned memory prior is therefore too blunt: it reduces useful class-prior signal or destabilizes content without enough image-specific gain. The next viable direction should not algebraically remove memory; it should regularize route usage or improve target-HF residual learning without perturbing the memory prior itself.

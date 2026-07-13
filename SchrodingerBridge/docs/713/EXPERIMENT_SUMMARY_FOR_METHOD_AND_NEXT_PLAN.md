@@ -34,6 +34,8 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 | `target_hf_delta_strong_ft6` | stronger pooled HF delta | 0.487036 | 0.799077 | 0.717586 | 0.295459 | 0.401948 | First usable architecture improvement. |
 | `target_hf_spatial_ft6` | raw spatial HF maps | **0.490074** | 0.404308 | **0.748291** | 0.538240 | n/a | Reject: content collapse. |
 | `target_hf_subband_ft6` | per-subband pooled HF residual | **0.488624** | 0.798123 | **0.720880** | 0.296553 | 0.403917 | Primary current architecture. |
+| `target_hf_subband_nomem_ft6` | subband route, style memory disabled | 0.484903 | 0.794833 | 0.716728 | **0.294348** | 0.401335 | Rejected; style memory is useful coarse prior. |
+| `target_hf_subband_memres_ft6` | subband route, target-HF residualized against style memory | 0.486561 | 0.793519 | 0.719228 | 0.297730 | 0.402490 | Rejected; explicit prior subtraction below subband-only. |
 | `target_hf_subband_texture_ft6` | subband pooled + stationary texture stats | 0.488420 | **0.798815** | 0.719357 | **0.296046** | **0.404302** | Conservative alternate. |
 | `target_hf_content_anchor_ft6` | content-energy placement residual | 0.484393 | 0.795462 | 0.717251 | 0.298162 | 0.399538 | Safe but not competitive. |
 | `target_hf_multitoken_ft6` | stationary-stat multi-token residual | 0.483562 | 0.794129 | 0.718699 | 0.297979 | 0.398793 | Rejected; code removed. |
@@ -48,6 +50,8 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 4. **Extra stationary statistics are not automatically better.** Texture stats help off-diagonal style and content slightly, but do not beat simple subband pooling on all-pairs DINO-S.
 5. **More placement engineering is not the next lever.** Content-anchor placement is safe but weaker.
 6. **More stationary-stat tokens are not enough.** The 2026-07-14 multi-token route underperformed subband-only on all tracked metrics, so the next gain should come from better orientation-specific residual structure rather than wider statistic-token conditioning.
+7. **Style memory is not just a bad shortcut.** Removing it makes the target-HF probe cleaner but hurts DINO-S/DINO-C/CLIP-S/off-DINO-S, so the next design should decompose coarse memory prior and image-specific HF residual instead of deleting memory.
+8. **Explicitly subtracting memory is too blunt.** Memory-residualized target-HF partly recovers from no-memory but remains below subband-only and hurts DINO-C/LPIPS, so do not algebraically remove the class prior.
 
 ## Method Framing
 
@@ -85,6 +89,7 @@ Increase coordinate-free HF capacity without target spatial leakage:
 2. Energy normalization against existing HF head output.
 3. Stronger but compact subband residual head.
 4. Keep LL disconnected from target image features except the existing mild LL target blend.
+5. Keep style memory as a bounded coarse prior, then make target-HF carry residual orientation/style details.
 
 ### C. Evaluation next step
 
