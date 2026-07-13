@@ -63,6 +63,15 @@
     "off_dino_s": 0.403917
   },
   {
+    "file": "target_hf_subband_ablate_residual_adain15_dino_summary.json",
+    "dino_s": 0.485770,
+    "dino_c": 0.788810,
+    "dino_structure": 0.024649,
+    "clip_s": 0.720464,
+    "lpips": 0.300980,
+    "off_dino_s": 0.403276
+  },
+  {
     "file": "target_hf_subband_nomem_ft6_dino_summary_adain15.json",
     "dino_s": 0.484903,
     "dino_c": 0.794833,

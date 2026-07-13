@@ -34,6 +34,7 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_delta_strong_ft6` | shared pooled HF -> HF heads + residual delta | 0.487036 | 0.799077 | 0.024591 | 0.717586 | 0.295459 | 0.401948 | previous best usable route |
 | `target_hf_spatial_ft6` | per-band spatial HF maps -> residual delta | 0.490074 | 0.404308 | 0.046968 | 0.748291 | 0.538240 | n/a | high style, content collapse |
 | `target_hf_subband_ft6` | per-band pooled HF -> residual delta only | **0.488624** | 0.798123 | **0.024536** | **0.720880** | 0.296553 | **0.403917** | best current usable architecture |
+| `target_hf_subband_ablate_residual` | same checkpoint, inference hooks zero subband residual deltas | 0.485770 | 0.788810 | 0.024649 | 0.720464 | 0.300980 | 0.403276 | causal ablation: residual path is contributing |
 | `target_hf_subband_nomem_ft6` | subband route, generic style-memory cross-attn disabled | 0.484903 | 0.794833 | **0.024491** | 0.716728 | **0.294348** | 0.401335 | rejected: cleaner target-HF route but weaker style/content frontier |
 | `target_hf_subband_memres_ft6` | subband route, target-HF code residualized against style-memory mean | 0.486561 | 0.793519 | 0.024531 | 0.719228 | 0.297730 | 0.402490 | rejected: explicit prior subtraction is below subband-only |
 | `target_hf_hybrid_ft6` | shared pooled HF + per-band residual delta | 0.485753 | 0.797810 | 0.024605 | 0.719710 | **0.295576** | 0.400962 | extra residuals do not help |
@@ -66,6 +67,8 @@ The subband route is useful under the main table protocol, but the probe shows w
 - subband + texture trained delta/base: `LH 0.039`, `HL 0.211`, `HH 0.136`
 
 By contrast, raw spatial reaches delta/base around `1.0` but destroys content. Energy-bounded spatial moves in the right probe direction, but its extra HF strength currently spends content budget without increasing all DINO-S over subband-only.
+
+A matched inference-time ablation on `target_hf_subband_ft6/epoch_0006.pt` gives the cleanest causal check so far. The checkpoint, solver, endpoint AdaIN, and evaluation pairs were kept fixed; forward hooks zeroed only `target_latent_hf_subband_delta_lh/hl/hh`. This drops all-pairs DINO-S from `0.488624` to `0.485770`, DINO-C from `0.798123` to `0.788810`, and LPIPS from `0.296553` to `0.300980`. Therefore the learned subband residual is not a dead branch and is not buying style by content collapse. It behaves more like a small stabilizing style transport correction: the measured style gain is modest, but removing it also harms content consistency.
 
 The stationary texture-stat route tested the intended safer alternative to raw spatial injection: target HF maps are reduced to per-subband mean/std/RMS/absolute-energy statistics, so target coordinates cannot pass through. The route is safe, and combining it with subband pooling increases the measured target-latent condition strength, especially on `HL/HH`. However, the main-table all DINO-S remains slightly below subband-only (`0.488420` vs `0.488624`). A later stationary-stat multi-token variant also failed (`0.483562` DINO-S, `0.398793` off-DINO-S), so merely adding more coordinate-free statistic tokens is not the next lever. The useful lesson is narrower: the model benefits most from a simple per-orientation target-HF code, while additional stationary statistics mostly improve off-diagonal style/content balance only when paired with subband pooling.
 
@@ -188,3 +191,17 @@ Next structural direction (if still needed): do not simply deepen the subband re
 | LPIPS | 0.297730 | 0.296553 | +0.0012 |
 
 **Verdict: FAIL; code/config removed, metrics kept.** The result partially recovers from the no-memory run but remains below the simple subband residual on all key style/content metrics. Explicitly subtracting a learned memory prior is therefore too blunt: it reduces useful class-prior signal or destabilizes content without enough image-specific gain. The next viable direction should not algebraically remove memory; it should regularize route usage or improve target-HF residual learning without perturbing the memory prior itself.
+
+## Inference-time target-HF residual ablation (2026-07-14)
+
+This probe tests the trained route without adding new training variables. It wraps the normal evaluator and installs three forward hooks that return zeros from `target_latent_hf_subband_delta_lh`, `target_latent_hf_subband_delta_hl`, and `target_latent_hf_subband_delta_hh`. Everything else is unchanged: same `target_hf_subband_ft6/epoch_0006.pt`, same AdaIN 1.5 eval setting, same 750 pairs, same DINOv2-small protocol.
+
+| metric | subband-only | residual ablated | delta |
+|---|---:|---:|---:|
+| all DINO-S | **0.488624** | 0.485770 | -0.0029 |
+| off DINO-S | **0.403917** | 0.403276 | -0.0006 |
+| DINO-C | **0.798123** | 0.788810 | -0.0093 |
+| CLIP-S | **0.720880** | 0.720464 | -0.0004 |
+| LPIPS | **0.296553** | 0.300980 | +0.0044 |
+
+**Verdict: PASS as a diagnostic.** The residual path has measurable causal value. The large DINO-C/LPIPS drop is especially useful: the branch is not merely injecting style texture, it also helps keep the HF transport compatible with the content latent. This supports keeping the simple subband residual in the method and suggests that future architecture work should increase its effective route strength carefully, not replace it with raw spatial maps or newly initialized invasive head conditioning.

@@ -527,6 +527,7 @@ Run & \dinos{} & \dinoc{} & LPIPS & \clips{} & Off-\dinos{} & Verdict \\
 \texttt{target\_hf\_delta\_strong\_ft6} & 0.4870 & 0.7991 & 0.2955 & 0.7176 & 0.4019 & First usable HF route. \\
 \texttt{target\_hf\_spatial\_ft6} & 0.4901 & 0.4043 & 0.5382 & 0.7483 & -- & Reject: target geometry leak. \\
 \texttt{target\_hf\_subband\_ft6} & \textbf{0.4886} & 0.7981 & 0.2966 & \textbf{0.7209} & 0.4039 & Primary current architecture probe. \\
+\texttt{subband residual ablated} & 0.4858 & 0.7888 & 0.3010 & 0.7205 & 0.4033 & Same checkpoint, target-HF residuals zeroed at inference. \\
 \texttt{target\_hf\_hybrid\_ft6} & 0.4858 & 0.7978 & 0.2956 & 0.7197 & 0.4010 & Extra shared/residual mixing does not help. \\
 \texttt{target\_hf\_subband\_head\_ft6} & 0.4873 & 0.7987 & 0.2962 & 0.7192 & 0.4021 & Safe, but below subband residual. \\
 \texttt{target\_hf\_spatial\_energy\_ft6} & 0.4861 & 0.7909 & 0.2978 & 0.7204 & 0.4027 & Content cost without headline gain. \\
@@ -549,6 +550,13 @@ the target contains information that no model head can directly predict. Second,
 training by itself is not the primary lever: the 15-epoch HF-delta curve remains below
 the 6-epoch subband route. The useful capacity is frequency-specific and route-specific,
 not merely total wall-clock exposure.
+
+A matched inference-time ablation further checks that the subband route is causal rather
+than incidental. Using the trained subband checkpoint, we zero only the three target-HF
+subband residual modules during evaluation. This lowers \dinos{} from 0.4886 to 0.4858,
+\dinoc{} from 0.7981 to 0.7888, and worsens LPIPS from 0.2966 to 0.3010. Thus the
+learned residual path contributes to both style transfer and content-compatible HF
+transport; it is not a dead branch and not merely a style-over-content shortcut.
 
 The no-memory probe clarifies the role of the style-memory branch. Disabling generic
 style-memory cross-attention makes the target-HF path easier to read in gradients and
@@ -911,6 +919,7 @@ target spatial coordinates disconnected from the output. The intended route is:
 Design choice & Keep / avoid & Reason \\
 \midrule
 Compact per-subband codes & Keep & Current best route; keeps target coordinates disconnected. \\
+Simple target-HF residual ablation evidence & Keep & Zeroing the residual at inference lowers both style and content metrics, confirming causal value. \\
 Orientation-specific residual depth & Keep & LH, HL, and HH carry different stroke/texture directions. \\
 Energy normalization vs. existing HF heads & Keep & Prevents the new route from dominating content structure. \\
 Stationary-stat multi-token widening & Avoid & A matched probe was worse than subband-only on style and content metrics. \\
