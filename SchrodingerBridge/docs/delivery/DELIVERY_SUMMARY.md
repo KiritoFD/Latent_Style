@@ -80,6 +80,8 @@ Latest gradient/info-flow diagnosis:
 | Single-band intervention is almost perfectly diagonal: `LH->LH`, `HL->HL`, `HH->HH`; LL leakage is near zero. | The route is clean/content-safe, but narrow. |
 | Zeroing target-HF residual changes HF velocity much more than swapping content-vs-target condition bands. | The residual branch is live and large, but its target-specific modulation is small. |
 | Naive HF-stat loss gives large gradients and can conflict through time/global transport paths. | Strengthening style via an auxiliary stat loss is risky unless it is routed locally. |
+| Condition-direction probe shows target-condition deltas have only `0.054/0.045/0.032` cosine with the desired HF correction. | The route is not just weak; it is mostly off-direction. |
+| WCT-direction improves local condition-direction cosine to `0.110/0.125/0.093` but still worsens final metrics. | Local velocity alignment alone does not guarantee a better full transport/image frontier. |
 
 ---
 
@@ -102,6 +104,8 @@ All rows are diagnostic probes from the `brk_a_ll03_10ep` family. Do not promote
 | `target_hf_subband_pairstats_ft6` | 0.483765 | 0.794304 | 0.718318 | 0.297092 | 0.399385 | Reject: current-target global HF stats are safe but too coarse. |
 | `target_hf_subband_mixer_ft6` | 0.486666 | 0.793705 | 0.719392 | 0.297500 | 0.402582 | Reject: cross-orientation mixing live but no direction/metric gain. |
 | `target_hf_subband_current_delta_ft6` | 0.486683 | 0.793621 | 0.719366 | 0.297567 | 0.402626 | Reject: target-current code delta slightly improves condition flow but no frontier gain. |
+| `target_hf_subband_affine_delta_ft6` | 0.482449 | 0.790343 | 0.717787 | 0.298913 | 0.398861 | Reject: stronger condition route, worse direction/frontier. |
+| `target_hf_subband_wct_direction_ft6` | 0.486511 | 0.793320 | 0.719448 | 0.297849 | 0.402438 | Reject: better local direction probe, worse final metrics. |
 
 Conclusion:
 
@@ -163,6 +167,7 @@ Architecture first, tuning second:
 | 4 | Rerun D5-512, P2A-256, R5-WikiArt before promotion. | Required before changing the main table. |
 
 Avoid raw target HF maps, scalar/HH residual amplification, direct residual-direction auxiliary loss, time-window residual gating, low-rank content-derived basis replacement, current-target global HF statistic codes, cross-orientation pooled-code mixing, target-current pooled-code deltas, global target-token fusion, and CFG claims without matched controls.
+Also avoid affine scale+shift subband residuals and analytic WCT/AdaIN direction residuals inside the velocity field as currently tested: both improve some probe numbers but lower the final style/content frontier.
 
 ---
 

@@ -72,6 +72,33 @@ def _cosine(left: torch.Tensor, right: torch.Tensor) -> float:
     return float(torch.dot(left, right).item() / denom)
 
 
+def _safe_cos_mean(left: torch.Tensor, right: torch.Tensor, eps: float = 1e-12) -> float:
+    left_flat = left.detach().float().flatten(1)
+    right_flat = right.detach().float().flatten(1)
+    numerator = (left_flat * right_flat).sum(dim=1)
+    denominator = left_flat.pow(2).sum(dim=1).sqrt() * right_flat.pow(2).sum(dim=1).sqrt()
+    return float((numerator / denominator.clamp_min(eps)).mean().cpu().item())
+
+
+def _projection_coeff_mean(left: torch.Tensor, right: torch.Tensor, eps: float = 1e-12) -> float:
+    left_flat = left.detach().float().flatten(1)
+    right_flat = right.detach().float().flatten(1)
+    coeff = (left_flat * right_flat).sum(dim=1) / right_flat.pow(2).sum(dim=1).clamp_min(eps)
+    return float(coeff.mean().cpu().item())
+
+
+def _orthogonal_fraction_mean(left: torch.Tensor, right: torch.Tensor, eps: float = 1e-12) -> float:
+    left_flat = left.detach().float().flatten(1)
+    right_flat = right.detach().float().flatten(1)
+    coeff = (left_flat * right_flat).sum(dim=1, keepdim=True) / right_flat.pow(2).sum(
+        dim=1, keepdim=True
+    ).clamp_min(eps)
+    parallel = coeff * right_flat
+    orthogonal = left_flat - parallel
+    fraction = orthogonal.pow(2).sum(dim=1).sqrt() / left_flat.pow(2).sum(dim=1).sqrt().clamp_min(eps)
+    return float(fraction.mean().cpu().item())
+
+
 def _flatten_param_grads(params: list[torch.nn.Parameter]) -> torch.Tensor:
     chunks: list[torch.Tensor] = []
     device: torch.device | None = None
@@ -332,6 +359,41 @@ def _compare_outputs(base: dict[str, torch.Tensor], changed: dict[str, torch.Ten
     return out
 
 
+def _direction_alignment(
+    base: dict[str, torch.Tensor],
+    changed: dict[str, torch.Tensor],
+    target_velocity_bands: dict[str, torch.Tensor],
+) -> dict[str, Any]:
+    """Compare a condition-induced output delta with the target velocity correction."""
+
+    out: dict[str, Any] = {}
+    for band in ("lh", "hl", "hh"):
+        if band not in base or band not in changed or band not in target_velocity_bands:
+            continue
+        base_band = base[band].detach()
+        changed_band = changed[band].detach()
+        target_band = target_velocity_bands[band].to(device=base_band.device, dtype=base_band.dtype).detach()
+        delta = changed_band - base_band
+        desired = target_band - base_band
+        base_mse = float((base_band.float() - target_band.float()).pow(2).mean().cpu().item())
+        changed_mse = float((changed_band.float() - target_band.float()).pow(2).mean().cpu().item())
+        delta_rms = _rms(delta)
+        desired_rms = _rms(desired)
+        out[band] = {
+            "delta_rms": delta_rms,
+            "desired_rms": desired_rms,
+            "delta_over_desired": float(delta_rms / (desired_rms + 1e-12)),
+            "cos_delta_desired": _safe_cos_mean(delta, desired),
+            "delta_projection_on_desired": _projection_coeff_mean(delta, desired),
+            "delta_orthogonal_fraction_to_desired": _orthogonal_fraction_mean(delta, desired),
+            "base_mse": base_mse,
+            "changed_mse": changed_mse,
+            "mse_improvement": base_mse - changed_mse,
+            "mse_improvement_frac": float((base_mse - changed_mse) / (base_mse + 1e-12)),
+        }
+    return out
+
+
 def reconstruct_with_target_band(
     content: torch.Tensor,
     target_style: torch.Tensor,
@@ -374,6 +436,8 @@ def collect_condition_interventions(
     target_style = batch["target_style"].detach()
     target_style_id = batch["target_style_id"]
     t = torch.full((content.shape[0],), 0.5, device=content.device, dtype=content.dtype)
+    training_target = construct_training_target(loss_fn, content, target_style, style_latent=target_style)
+    target_velocity_bands = _band_dict(training_target - content)
     x_t = make_xt(loss_fn, {"content": content, "target_style": target_style}, t)
     with torch.no_grad():
         neutral_latent = reconstruct_with_target_band(content, target_style, None)
@@ -396,8 +460,13 @@ def collect_condition_interventions(
     model.train()
     return {
         "target_latent_full_vs_content_condition": _compare_outputs(neutral, full),
+        "target_latent_full_direction_alignment": _direction_alignment(neutral, full, target_velocity_bands),
         "single_target_band_vs_content_condition": {
             band: _compare_outputs(neutral, band_outputs[band])
+            for band in BANDS
+        },
+        "single_target_band_direction_alignment": {
+            band: _direction_alignment(neutral, band_outputs[band], target_velocity_bands)
             for band in BANDS
         },
         "target_hf_residual_contribution": _compare_outputs(no_target_hf, full),
@@ -405,6 +474,7 @@ def collect_condition_interventions(
         "notes": {
             "content_condition": "style_latent reconstructed from content DWT bands; style_id is unchanged.",
             "single_band": "only the named style_latent DWT band is taken from target_style; other condition bands come from content.",
+            "direction_alignment": "condition delta is compared with training target velocity minus content-condition velocity.",
             "target_hf_residual_contribution": "forward hooks zero only target_latent_hf_subband_delta_lh/hl/hh.",
             "cfg_unconditional": "model cfg_unconditional=True; in this code path target-HF branches are disabled.",
         },
@@ -456,11 +526,52 @@ def summarize_markdown(results: dict[str, Any]) -> str:
     for band, row in full_rows.items():
         lines.append(f"| {band} | {row['delta_over_base']:.6e} | {row['delta_rms']:.6e} |")
     lines.append("")
+    full_direction = results["condition_interventions"].get("target_latent_full_direction_alignment", {})
+    lines.extend(
+        [
+            "### full target condition direction alignment",
+            "",
+            "| output band | delta/desired | cos(delta, desired) | projection | orthogonal fraction | MSE improvement |",
+            "|---|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for band in ("lh", "hl", "hh"):
+        row = full_direction.get(band)
+        if not row:
+            continue
+        lines.append(
+            f"| {band} | {row['delta_over_desired']:.6e} | {row['cos_delta_desired']:.6e} | "
+            f"{row['delta_projection_on_desired']:.6e} | "
+            f"{row['delta_orthogonal_fraction_to_desired']:.6e} | "
+            f"{row['mse_improvement_frac']:.6e} |"
+        )
+    lines.append("")
     lines.extend(["### single target condition band", "", "| input band | output band | delta/base |", "|---|---|---:|"])
     single = results["condition_interventions"]["single_target_band_vs_content_condition"]
     for input_band in BANDS:
         for output_band, row in single[input_band].items():
             lines.append(f"| {input_band} | {output_band} | {row['delta_over_base']:.6e} |")
+    lines.append("")
+    single_direction = results["condition_interventions"].get("single_target_band_direction_alignment", {})
+    lines.extend(
+        [
+            "### single target condition band direction alignment",
+            "",
+            "| input band | output band | delta/desired | cos(delta, desired) | projection | MSE improvement |",
+            "|---|---|---:|---:|---:|---:|",
+        ]
+    )
+    for input_band in BANDS:
+        rows = single_direction.get(input_band, {})
+        for output_band in ("lh", "hl", "hh"):
+            row = rows.get(output_band)
+            if not row:
+                continue
+            lines.append(
+                f"| {input_band} | {output_band} | {row['delta_over_desired']:.6e} | "
+                f"{row['cos_delta_desired']:.6e} | {row['delta_projection_on_desired']:.6e} | "
+                f"{row['mse_improvement_frac']:.6e} |"
+            )
     lines.append("")
     lines.extend(["### route interventions", "", "| intervention | output band | delta/base |", "|---|---|---:|"])
     for name in ("target_hf_residual_contribution", "cfg_unconditional_delta_from_full"):

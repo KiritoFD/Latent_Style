@@ -109,6 +109,14 @@ Load info: `{'missing': 0, 'unexpected': 0}`
 | hl | 9.722850e-02 | 1.684589e-02 |
 | hh | 1.194318e-01 | 1.332076e-02 |
 
+### full target condition direction alignment
+
+| output band | delta/desired | cos(delta, desired) | projection | orthogonal fraction | MSE improvement |
+|---|---:|---:|---:|---:|---:|
+| lh | 1.656277e-02 | 5.378619e-02 | 9.247426e-04 | 9.983401e-01 | 1.630882e-03 |
+| hl | 2.064347e-02 | 4.478419e-02 | 9.692420e-04 | 9.987984e-01 | 1.611934e-03 |
+| hh | 1.911406e-02 | 3.159146e-02 | 6.351958e-04 | 9.993771e-01 | 8.682688e-04 |
+
 ### single target condition band
 
 | input band | output band | delta/base |
@@ -129,6 +137,23 @@ Load info: `{'missing': 0, 'unexpected': 0}`
 | hh | lh | 1.771336e-06 |
 | hh | hl | 2.205374e-06 |
 | hh | hh | 1.194318e-01 |
+
+### single target condition band direction alignment
+
+| input band | output band | delta/desired | cos(delta, desired) | projection | MSE improvement |
+|---|---|---:|---:|---:|---:|
+| ll | lh | 3.297525e-07 | -1.233979e-03 | 1.735832e-09 | 0.000000e+00 |
+| ll | hl | 6.563677e-07 | -2.875139e-03 | -4.261147e-09 | 8.950713e-08 |
+| ll | hh | 1.039736e-06 | 5.975739e-03 | -4.481679e-09 | 0.000000e+00 |
+| lh | lh | 1.656279e-02 | 5.378646e-02 | 9.247478e-04 | 1.630882e-03 |
+| lh | hl | 6.771281e-07 | -1.177254e-03 | 4.698180e-10 | 0.000000e+00 |
+| lh | hh | 5.698392e-07 | 3.460600e-03 | 1.773999e-09 | 0.000000e+00 |
+| hl | lh | 3.654303e-07 | 1.701762e-03 | 1.563926e-09 | 0.000000e+00 |
+| hl | hl | 2.064347e-02 | 4.478396e-02 | 9.692370e-04 | 1.611934e-03 |
+| hl | hh | 1.165844e-06 | -3.063414e-03 | -2.959971e-09 | 6.136175e-08 |
+| hh | lh | 3.879474e-07 | 7.670434e-03 | 3.781762e-09 | 0.000000e+00 |
+| hh | hl | 4.682431e-07 | 3.538665e-03 | 7.977594e-10 | 0.000000e+00 |
+| hh | hh | 1.911406e-02 | 3.159128e-02 | 6.351930e-04 | 8.682688e-04 |
 
 ### route interventions
 
@@ -181,7 +206,7 @@ Load info: `{'missing': 0, 'unexpected': 0}`
 | content | lh | 1.617922e-04 | 9.638321e-01 |
 | content | hl | 1.000355e-05 | 4.613124e-03 |
 | content | hh | 1.222762e-05 | 4.876962e-03 |
-| target_style_shared | ll | 1.354055e-07 | 6.250181e-06 |
+| target_style_shared | ll | 1.354055e-07 | 6.250180e-06 |
 | target_style_shared | lh | 1.748171e-04 | 9.903526e-01 |
 | target_style_shared | hl | 1.022524e-05 | 4.624581e-03 |
 | target_style_shared | hh | 1.229993e-05 | 4.889074e-03 |
@@ -193,24 +218,24 @@ Load info: `{'missing': 0, 'unexpected': 0}`
 | content | ll | 1.567538e-05 | 3.468399e-02 |
 | content | lh | 1.569804e-05 | 6.881342e-03 |
 | content | hl | 1.649718e-04 | 9.514851e-01 |
-| content | hh | 1.664417e-05 | 6.853076e-03 |
-| target_style_shared | ll | 2.445844e-07 | 1.522832e-05 |
+| content | hh | 1.664417e-05 | 6.853078e-03 |
+| target_style_shared | ll | 2.445845e-07 | 1.522833e-05 |
 | target_style_shared | lh | 1.675392e-05 | 6.792496e-03 |
 | target_style_shared | hl | 1.728072e-04 | 9.863325e-01 |
-| target_style_shared | hh | 1.674260e-05 | 6.764595e-03 |
+| target_style_shared | hh | 1.674261e-05 | 6.764597e-03 |
 
 #### loss_fm_spectral_hh
 
 | tensor | band | grad/tensor | power share |
 |---|---|---:|---:|
 | content | ll | 1.571182e-05 | 1.236851e-02 |
-| content | lh | 2.042885e-05 | 4.136575e-03 |
-| content | hl | 1.721852e-05 | 3.679131e-03 |
+| content | lh | 2.042885e-05 | 4.136576e-03 |
+| content | hl | 1.721852e-05 | 3.679133e-03 |
 | content | hh | 3.340399e-04 | 9.797815e-01 |
 | target_style_shared | ll | 2.427986e-07 | 5.179290e-06 |
-| target_style_shared | lh | 2.180293e-05 | 3.970173e-03 |
-| target_style_shared | hl | 1.760011e-05 | 3.531131e-03 |
-| target_style_shared | hh | 3.451970e-04 | 9.924607e-01 |
+| target_style_shared | lh | 2.180293e-05 | 3.970175e-03 |
+| target_style_shared | hl | 1.760011e-05 | 3.531133e-03 |
+| target_style_shared | hh | 3.451970e-04 | 9.924606e-01 |
 
 ### target_only
 
@@ -246,25 +271,25 @@ Load info: `{'missing': 0, 'unexpected': 0}`
 |---|---|---:|---:|
 | content | ll | 1.194368e-05 | 2.655058e-02 |
 | content | lh | 1.617922e-04 | 9.638321e-01 |
-| content | hl | 1.000355e-05 | 4.613124e-03 |
-| content | hh | 1.222762e-05 | 4.876962e-03 |
-| target_style_target_path | ll | 1.354055e-07 | 6.245525e-06 |
+| content | hl | 1.000355e-05 | 4.613123e-03 |
+| content | hh | 1.222762e-05 | 4.876963e-03 |
+| target_style_target_path | ll | 1.354055e-07 | 6.245527e-06 |
 | target_style_target_path | lh | 1.748829e-04 | 9.903598e-01 |
 | target_style_target_path | hl | 1.022524e-05 | 4.621137e-03 |
-| target_style_target_path | hh | 1.229993e-05 | 4.885433e-03 |
+| target_style_target_path | hh | 1.229993e-05 | 4.885434e-03 |
 
 #### loss_fm_spectral_hl
 
 | tensor | band | grad/tensor | power share |
 |---|---|---:|---:|
-| content | ll | 1.567538e-05 | 3.468399e-02 |
-| content | lh | 1.569804e-05 | 6.881342e-03 |
+| content | ll | 1.567538e-05 | 3.468398e-02 |
+| content | lh | 1.569804e-05 | 6.881343e-03 |
 | content | hl | 1.649718e-04 | 9.514851e-01 |
-| content | hh | 1.664417e-05 | 6.853078e-03 |
-| target_style_target_path | ll | 2.445845e-07 | 1.522062e-05 |
+| content | hh | 1.664416e-05 | 6.853072e-03 |
+| target_style_target_path | ll | 2.445844e-07 | 1.522061e-05 |
 | target_style_target_path | lh | 1.675392e-05 | 6.789060e-03 |
 | target_style_target_path | hl | 1.728515e-04 | 9.863394e-01 |
-| target_style_target_path | hh | 1.674261e-05 | 6.761175e-03 |
+| target_style_target_path | hh | 1.674260e-05 | 6.761168e-03 |
 
 #### loss_fm_spectral_hh
 
@@ -289,10 +314,10 @@ Load info: `{'missing': 0, 'unexpected': 0}`
 | content | lh | 1.646031e-04 | 1.640284e-01 |
 | content | hl | 1.670093e-04 | 2.114096e-01 |
 | content | hh | 3.348601e-04 | 6.013805e-01 |
-| target_style_condition_path | ll | 2.204976e-14 | 1.501224e-16 |
+| target_style_condition_path | ll | 2.207242e-14 | 1.504311e-16 |
 | target_style_condition_path | lh | 4.476792e-06 | 5.882659e-01 |
 | target_style_condition_path | hl | 2.291315e-06 | 2.103356e-01 |
-| target_style_condition_path | hh | 1.713052e-06 | 8.589741e-02 |
+| target_style_condition_path | hh | 1.713052e-06 | 8.589742e-02 |
 
 #### loss_fm_hf_total
 
@@ -302,7 +327,7 @@ Load info: `{'missing': 0, 'unexpected': 0}`
 | content | lh | 1.643476e-04 | 1.637758e-01 |
 | content | hl | 1.668665e-04 | 2.113790e-01 |
 | content | hh | 3.346960e-04 | 6.017322e-01 |
-| target_style_condition_path | ll | 2.204822e-14 | 1.501015e-16 |
+| target_style_condition_path | ll | 2.195325e-14 | 1.488112e-16 |
 | target_style_condition_path | lh | 4.476792e-06 | 5.882659e-01 |
 | target_style_condition_path | hl | 2.291315e-06 | 2.103356e-01 |
 | target_style_condition_path | hh | 1.713052e-06 | 8.589742e-02 |
@@ -314,7 +339,7 @@ Load info: `{'missing': 0, 'unexpected': 0}`
 | content | ll | 1.194368e-05 | 2.655058e-02 |
 | content | lh | 1.617922e-04 | 9.638321e-01 |
 | content | hl | 1.000355e-05 | 4.613124e-03 |
-| content | hh | 1.222762e-05 | 4.876962e-03 |
+| content | hh | 1.222762e-05 | 4.876963e-03 |
 | target_style_condition_path | ll | 0.000000e+00 | 0.000000e+00 |
 | target_style_condition_path | lh | 4.476792e-06 | 8.358816e-01 |
 | target_style_condition_path | hl | 0.000000e+00 | 0.000000e+00 |
@@ -324,10 +349,10 @@ Load info: `{'missing': 0, 'unexpected': 0}`
 
 | tensor | band | grad/tensor | power share |
 |---|---|---:|---:|
-| content | ll | 1.567538e-05 | 3.468400e-02 |
-| content | lh | 1.569804e-05 | 6.881342e-03 |
+| content | ll | 1.567538e-05 | 3.468399e-02 |
+| content | lh | 1.569804e-05 | 6.881340e-03 |
 | content | hl | 1.649718e-04 | 9.514851e-01 |
-| content | hh | 1.664417e-05 | 6.853081e-03 |
+| content | hh | 1.664417e-05 | 6.853078e-03 |
 | target_style_condition_path | ll | 0.000000e+00 | 0.000000e+00 |
 | target_style_condition_path | lh | 0.000000e+00 | 0.000000e+00 |
 | target_style_condition_path | hl | 2.291315e-06 | 6.455246e-01 |
@@ -337,9 +362,9 @@ Load info: `{'missing': 0, 'unexpected': 0}`
 
 | tensor | band | grad/tensor | power share |
 |---|---|---:|---:|
-| content | ll | 1.571182e-05 | 1.236851e-02 |
-| content | lh | 2.042885e-05 | 4.136576e-03 |
-| content | hl | 1.721852e-05 | 3.679133e-03 |
+| content | ll | 1.571182e-05 | 1.236850e-02 |
+| content | lh | 2.042885e-05 | 4.136575e-03 |
+| content | hl | 1.721852e-05 | 3.679132e-03 |
 | content | hh | 3.340399e-04 | 9.797815e-01 |
 | target_style_condition_path | ll | 0.000000e+00 | 0.000000e+00 |
 | target_style_condition_path | lh | 0.000000e+00 | 0.000000e+00 |

@@ -223,5 +223,59 @@
     "clip_s": 0.719377,
     "lpips": 0.297480,
     "off_dino_s": 0.402543
+  },
+  {
+    "file": "target_hf_subband_basis_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.482840,
+    "dino_c": 0.793659,
+    "dino_structure": 0.024564,
+    "clip_s": 0.718310,
+    "lpips": 0.297061,
+    "off_dino_s": 0.398561
+  },
+  {
+    "file": "target_hf_subband_pairstats_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.483765,
+    "dino_c": 0.794304,
+    "dino_structure": 0.024541,
+    "clip_s": 0.718318,
+    "lpips": 0.297092,
+    "off_dino_s": 0.399385
+  },
+  {
+    "file": "target_hf_subband_mixer_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.486666,
+    "dino_c": 0.793705,
+    "dino_structure": 0.024535,
+    "clip_s": 0.719392,
+    "lpips": 0.297500,
+    "off_dino_s": 0.402582
+  },
+  {
+    "file": "target_hf_subband_current_delta_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.486683,
+    "dino_c": 0.793621,
+    "dino_structure": 0.024539,
+    "clip_s": 0.719366,
+    "lpips": 0.297567,
+    "off_dino_s": 0.402626
+  },
+  {
+    "file": "target_hf_subband_affine_delta_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.482449,
+    "dino_c": 0.790343,
+    "dino_structure": 0.024682,
+    "clip_s": 0.717787,
+    "lpips": 0.298913,
+    "off_dino_s": 0.398861
+  },
+  {
+    "file": "target_hf_subband_wct_direction_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.486511,
+    "dino_c": 0.793320,
+    "dino_structure": 0.024538,
+    "clip_s": 0.719448,
+    "lpips": 0.297849,
+    "off_dino_s": 0.402438
   }
 ]

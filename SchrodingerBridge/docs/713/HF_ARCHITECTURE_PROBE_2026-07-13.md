@@ -55,6 +55,8 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_subband_timewindow_{early,late}_norm` | inference-only residual time-window causal probe | 0.48660-0.48664 | 0.79361-0.79365 | **0.024533-0.024534** | 0.71933-0.71938 | 0.297480 | 0.40254-0.40256 | rejected: temporal localization underperforms full-trajectory residual |
 | `target_hf_subband_mixer_ft6` | zero-init cross-orientation mixing among pooled LH/HL/HH target-HF codes | 0.486666 | 0.793705 | 0.024535 | 0.719392 | 0.297500 | 0.402582 | rejected: learned small off-diagonal mixing but did not improve residual direction or metrics; code/config removed |
 | `target_hf_subband_current_delta_ft6` | zero-init target-current pooled HF code difference | 0.486683 | 0.793621 | 0.024539 | 0.719366 | 0.297567 | 0.402626 | rejected: slightly stronger target-specific information flow but unchanged residual direction and worse image frontier; code/config removed |
+| `target_hf_subband_affine_delta_ft6` | subband residual changed from scale-only to affine scale+shift | 0.482449 | 0.790343 | 0.024682 | 0.717787 | 0.298913 | 0.398861 | rejected: condition route became stronger but remained mostly off-direction; code/config removed |
+| `target_hf_subband_wct_direction_ft6` | gated analytic WCT-stat direction residual | 0.486511 | 0.793320 | 0.024538 | 0.719448 | 0.297849 | 0.402438 | rejected: condition-direction probe improved, but final DINO-S/CLIP-S/content frontier worsened; code/config removed |
 
 ## Diagnosis
 
@@ -423,3 +425,37 @@ Full eval again moved backward:
 | LPIPS | 0.297567 | **0.296553** | +0.0010 |
 
 **Verdict: FAIL; code/config removed, metrics kept.** The bottleneck is not simply the absence of a coordinate-free target-current code difference. Mildly increasing target-specific condition sensitivity is insufficient unless the residual direction itself changes in a way that preserves the learned transport geometry.
+
+## Condition-direction debug and follow-up failures (2026-07-14)
+
+`tools/probe_gradient_information_flow.py` was extended to measure not only condition strength, but also whether the target-condition perturbation points toward the training velocity target:
+
+```text
+condition_delta = v(style_latent=target) - v(style_latent=content)
+desired_delta   = target_velocity - v(style_latent=content)
+```
+
+For the current best `target_hf_subband_ft6`, the target-condition route is clean but weak and mostly off-direction:
+
+| band | condition delta/base | delta/desired | cos(delta, desired) | orthogonal fraction | MSE improvement |
+|---|---:|---:|---:|---:|---:|
+| LH | 0.075624 | 0.016563 | 0.053786 | 0.998340 | 0.001631 |
+| HL | 0.097229 | 0.020643 | 0.044784 | 0.998798 | 0.001612 |
+| HH | 0.119432 | 0.019114 | 0.031591 | 0.999377 | 0.000868 |
+
+This explains why amplitude-only fixes have failed: the image-specific condition component is too small, but much of it is also orthogonal to the desired local correction.
+
+Two follow-up architecture tests were run from this diagnosis:
+
+| run | mechanism probe | full-eval result | verdict |
+|---|---|---|---|
+| `target_hf_subband_affine_delta_ft6` | condition/target grad ratios rose from `2.5/1.3/0.5%` to `4.1/3.0/1.2%`, and condition delta/base rose strongly on LH/HL | DINO-S `0.482449`, DINO-C `0.790343`, CLIP-S `0.717787`, LPIPS `0.298913` | failed: stronger but still mostly off-direction |
+| `target_hf_subband_wct_direction_ft6` | condition-direction cosine improved from `0.054/0.045/0.032` to `0.110/0.125/0.093`; gate learned `~0.0345` | DINO-S `0.486511`, DINO-C `0.793320`, CLIP-S `0.719448`, LPIPS `0.297849` | failed: local direction improved, final transport frontier worsened |
+
+**Updated diagnosis.** A successful architecture must satisfy three constraints simultaneously:
+
+1. make the target-HF condition route stronger;
+2. make the target-specific perturbation more target-aligned;
+3. preserve the learned ODE transport geometry over the full trajectory.
+
+The current compact subband residual remains best because it is compatible with the learned HF heads, not because its target-condition path is already strong. Do not retry affine scale+shift or analytic WCT/AdaIN direction residual as-is.

@@ -151,6 +151,8 @@ Rejected:
 | `target_hf_subband_timewindow_norm` | 0.48660-0.48664 | 0.79361-0.79365 | 0.71933-0.71938 | 0.297480 | Inference-only early/late residual windows underperformed full residual; temporary hook code removed. |
 | `target_hf_subband_mixer_ft6` | 0.486666 | 0.793705 | 0.719392 | 0.297500 | Cross-orientation pooled-code mixing was live but weaker; code/config removed. |
 | `target_hf_subband_current_delta_ft6` | 0.486683 | 0.793621 | 0.719366 | 0.297567 | Target-current pooled-code delta slightly strengthened condition flow but not direction or metrics; code/config removed. |
+| `target_hf_subband_affine_delta_ft6` | 0.482449 | 0.790343 | 0.717787 | 0.298913 | Affine scale+shift strengthened condition flow but widened an off-direction perturbation; code/config removed. |
+| `target_hf_subband_wct_direction_ft6` | 0.486511 | 0.793320 | 0.719448 | 0.297849 | WCT-stat direction improved local alignment but worsened final image metrics; code/config removed. |
 
 ## 5. Correct Theory After Probing
 
@@ -171,6 +173,8 @@ a clean non-spatial route into HF velocity heads.
 This is more precise. The model has capacity: raw spatial HF proves that. The problem is to expose target style without exposing target coordinates. Therefore the next lever is route topology and coordinate-free target-HF capacity, not first-order hyperparameter tuning.
 
 The 2026-07-14 gradient/info-flow probe refines this further: the target-style image is already strong as the supervised HF target, but weak as a condition input. Under the actual FM-HF objective, condition-path gradients into target-style LH/HL/HH are only about `2.5%/1.3%/0.5%` of the target-construction gradients. The existing subband route is clean and diagonal, but target-specific modulation is small relative to the generic residual branch.
+
+The upgraded condition-direction probe adds one more constraint: the target-condition delta is also mostly orthogonal to the immediate desired correction (`cos≈0.054/0.045/0.032` on LH/HL/HH). Affine scale+shift improved condition strength but failed image metrics; WCT-stat direction improved local alignment (`cos≈0.110/0.125/0.093`) but still failed image metrics. Therefore the next gain must preserve the learned transport geometry, not just increase local condition strength or local velocity alignment.
 
 ## 6. Current Recommended Next Experiments
 
@@ -201,6 +205,8 @@ Do not prioritize:
 | Current-target global HF statistic code | Tested and removed; dynamic discrepancy descriptors are too coarse and underperform target-only subband pooling. |
 | Cross-orientation pooled-code mixer | Tested and removed; did not improve residual direction or image metrics. |
 | Target-current pooled HF code delta | Tested and removed; slightly raised condition sensitivity but did not improve residual direction or image metrics. |
+| Affine scale+shift subband residual | Tested and removed; stronger condition flow, worse final DINO-S/CLIP-S/content. |
+| Analytic WCT/AdaIN direction residual inside velocity | Tested and removed; better local direction probe, worse final image frontier. |
 | Generic decoder AdaLN/AdaIN | Already repeatedly negative. |
 
 ## 7. Method-writing Guidance

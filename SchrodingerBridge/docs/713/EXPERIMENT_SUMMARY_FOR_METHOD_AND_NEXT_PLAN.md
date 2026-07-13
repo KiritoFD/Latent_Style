@@ -51,6 +51,8 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 | `target_hf_subband_timewindow_norm` | inference-only early/late residual windows | 0.48660-0.48664 | 0.79361-0.79365 | 0.71933-0.71938 | 0.297480 | 0.40254-0.40256 | Rejected; temporal localization underperforms full-path residual; temporary hook code removed. |
 | `target_hf_subband_mixer_ft6` | cross-orientation pooled-code mixer | 0.486666 | 0.793705 | 0.719392 | 0.297500 | 0.402582 | Rejected; live but did not improve residual direction or metrics; code/config removed. |
 | `target_hf_subband_current_delta_ft6` | target-current pooled HF code difference | 0.486683 | 0.793621 | 0.719366 | 0.297567 | 0.402626 | Rejected; slightly stronger target-specific info flow but no residual-direction or metric gain; code/config removed. |
+| `target_hf_subband_affine_delta_ft6` | subband residual affine scale+shift | 0.482449 | 0.790343 | 0.717787 | 0.298913 | 0.398861 | Rejected; stronger condition flow but mostly off-direction; code/config removed. |
+| `target_hf_subband_wct_direction_ft6` | analytic WCT-stat direction residual | 0.486511 | 0.793320 | 0.719448 | 0.297849 | 0.402438 | Rejected; better local direction probe but worse final image frontier; code/config removed. |
 
 ## What This Proves
 
@@ -71,6 +73,8 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 15. **The target image is much stronger as supervision than as condition.** The gradient/info-flow probe separates those roles: condition-path gradients on LH/HL/HH are only about `2.5%/1.3%/0.5%` of the target-construction gradients under the actual FM-HF objective.
 16. **The current subband route is clean but narrow.** Single-band interventions are almost perfectly diagonal (`LH->LH`, `HL->HL`, `HH->HH`) and LL leakage is near zero. This protects content, but it also means target-specific style response is small.
 17. **Simple route widening is not sufficient.** Cross-orientation mixing and target-current code deltas are both live and safe, but neither changes the residual direction or improves DINO-S/CLIP-S/content together.
+18. **Condition-direction alignment is a separate bottleneck from condition strength.** Baseline target-condition deltas have only `0.054/0.045/0.032` cosine with the desired LH/HL/HH correction and `>0.998` orthogonal fraction. Affine-delta widens this path but still fails.
+19. **A better local probe is still not sufficient.** The WCT-direction branch improves condition-direction cosine to `0.110/0.125/0.093`, but full eval drops below subband-only. The route must preserve full ODE transport geometry, not only local velocity alignment.
 
 ## Method Framing
 
@@ -114,6 +118,7 @@ Increase coordinate-free HF capacity without target spatial leakage:
 8. Do not replace the residual with a low-rank content-derived basis unless a new probe shows the target-HF coefficient path is not underpowered.
 9. Do not add current-target global discrepancy statistics unless a direction probe shows they improve residual alignment without weakening image metrics.
 10. Do not add simple cross-orientation code mixing or target-current pooled-code deltas as-is; both were tested and removed after worse full eval.
+11. Do not add affine scale+shift to the subband residual or an analytic WCT/AdaIN direction residual as-is; both improved some mechanism numbers but worsened the final style/content frontier.
 
 ### C. Evaluation next step
 

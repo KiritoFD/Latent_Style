@@ -1,0 +1,84 @@
+{
+  "config": "configs\\exp_probe_target_hf_subband_wct_direction_ft6.json",
+  "checkpoint": "exp\\model_probe\\target_hf_subband_wct_direction_ft6\\epoch_0006.pt",
+  "model_mode": "eval",
+  "num_batches": 4,
+  "batch_size": 8,
+  "t_values": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "load_info": {
+    "missing": 0,
+    "unexpected": 0
+  },
+  "summary": {
+    "mean_mse_improvement_frac": 0.031883264896051575,
+    "mean_cos_residual_desired": 0.1576897566103273,
+    "mean_residual_orthogonal_fraction_to_desired": 0.981768881281217
+  },
+  "bands": {
+    "lh": {
+      "base_rms": 0.2934250955780347,
+      "cos_base_target": 0.3657776328424613,
+      "cos_residual_base": -0.11032312033542742,
+      "cos_residual_desired": 0.11133105494081974,
+      "cos_residual_target": 0.07474567787721753,
+      "cos_total_target": 0.38106360907355946,
+      "desired_rms": 0.7194395909706751,
+      "mse_base": 0.5185316676894823,
+      "mse_improvement": 0.006377572814623515,
+      "mse_improvement_frac": 0.012413372834939295,
+      "mse_total": 0.5121540948748589,
+      "residual_orthogonal_fraction_to_desired": 0.9932233095169067,
+      "residual_over_base_rms": 0.2849225158097007,
+      "residual_over_target_rms": 0.09868455017657458,
+      "residual_projection_on_desired": 0.012630659543598691,
+      "residual_rms": 0.07706320658326149,
+      "target_rms": 0.7811225205659866,
+      "total_rms": 0.2969222279886405
+    },
+    "hl": {
+      "base_rms": 0.3118058815598488,
+      "cos_base_target": 0.3764634244143963,
+      "cos_residual_base": -0.10635494405869395,
+      "cos_residual_desired": 0.09588990733027458,
+      "cos_residual_target": 0.06117547753577431,
+      "cos_total_target": 0.3873974457383156,
+      "desired_rms": 0.7460858871539434,
+      "mse_base": 0.557616891960303,
+      "mse_improvement": 0.004794302086035411,
+      "mse_improvement_frac": 0.008695418796425094,
+      "mse_total": 0.5528225898742676,
+      "residual_orthogonal_fraction_to_desired": 0.9949051638444265,
+      "residual_over_base_rms": 0.24760293758221932,
+      "residual_over_target_rms": 0.08894779381265322,
+      "residual_projection_on_desired": 0.00988479369940857,
+      "residual_rms": 0.07219999035199483,
+      "target_rms": 0.8119953870773315,
+      "total_rms": 0.3141608461737633
+    },
+    "hh": {
+      "base_rms": 0.16981841747959456,
+      "cos_base_target": 0.22297757770866156,
+      "cos_residual_base": -0.11595030066867669,
+      "cos_residual_desired": 0.2658483075598876,
+      "cos_residual_target": 0.24155942567934593,
+      "cos_total_target": 0.32414401322603226,
+      "desired_rms": 0.7196148186922073,
+      "mse_base": 0.5182195206483206,
+      "mse_improvement": 0.037871902187665306,
+      "mse_improvement_frac": 0.07454100305679033,
+      "mse_total": 0.4803476184606552,
+      "residual_orthogonal_fraction_to_desired": 0.9571781704823176,
+      "residual_over_base_rms": 1.1904564333646213,
+      "residual_over_target_rms": 0.2747690676918292,
+      "residual_projection_on_desired": 0.08464038077120979,
+      "residual_rms": 0.20393434911966324,
+      "target_rms": 0.7421745806932449,
+      "total_rms": 0.2603946166733901
+    }
+  },
+  "reading": "The residual is directionally useful under the training velocity target, but the orthogonal fraction indicates how much of it is not target-aligned."
+}

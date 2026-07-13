@@ -9,6 +9,7 @@ Detailed 713 notes are intentionally kept in this directory:
 
 - `REPO_REMOTE_AUDIT_2026-07-13.md`
 - `HF_ARCHITECTURE_PROBE_2026-07-13.md`
+- `GRADIENT_INFORMATION_FLOW_DEBUG_2026-07-14.md`
 - `EXPERIMENT_SUMMARY_FOR_METHOD_AND_NEXT_PLAN.md`
 
 Older non-713 docs that conflicted with the current HF-route diagnosis were mined into `METHOD_EXPLORATION_AND_CKPT_2026-07-13.md` and moved to `docs/archive/713_external_legacy/`.
