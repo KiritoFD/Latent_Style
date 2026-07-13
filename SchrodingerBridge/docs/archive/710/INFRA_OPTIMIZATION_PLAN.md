@@ -220,7 +220,7 @@ Phase I3.1（缓存不变量）已完成实施和 benchmark 验证：
 - WCT 协方差 eigh 分解预计算一次（`_precompute_style_wct_stats`）
 - 通过 `style_dwt_decomp` 和 `style_wct_stats` 参数在 `integrate_transport` 和 `_apply_endpoint_adain` 之间传递
 
-代码位置：`src/spectral_bridge620.py` — `_precompute_style_wct_stats()` + `integrate_transport()` 缓存传递
+代码位置：`src/model.py` — `_precompute_style_wct_stats()` + `integrate_transport()` 缓存传递
 
 ### 10.2 Benchmark 结果
 
@@ -231,7 +231,7 @@ Phase I3.1（缓存不变量）已完成实施和 benchmark 验证：
 | 750 图总节省 | 8.9s |
 | 输出数值一致性 | max_diff=0.00（完全一致）|
 
-Benchmark 脚本：`scripts/_bench_cache.py`
+历史 benchmark 脚本已随旧分支删除；表中数值仅保留为实验记录。
 
 ### 10.3 训练时间（train）
 
@@ -256,7 +256,14 @@ Benchmark 脚本：`scripts/_bench_cache.py`
 - VAE decode 已使用批量解码（从 53.75s 降至 34.31s）
 - `torch.compile` warm decoder 可到 23.9s，但首次编译成本较高（未启用）
 
-### 10.5 后续优化优先级
+### 10.5 2026-07-12 远端一致性与高 batch 验证
+
+- 3060 远端仓库根目录曾残留 `config_schema.py`、`blocks620.py`、`model620.py`、`spectral*.py` 等影子模块。交互式 `python -` 从根目录启动时会优先导入它们，而非 `src/`，可导致配置契约与实际训练不一致。
+- 已删除这些根级影子文件；根目录 + `PYTHONPATH=src` 与 `python src/run.py` 均解析到同一份 `src/config_schema.py`。
+- `batch=144` smoke 和训练均稳定：模型清理后为 `873,680` 参数，反传 reserved memory 约 `10.16GB`；稳态训练达到 `97–100%` GPU 利用率、`136–139W`、约 `273–285 samples/s`。
+- 旧 baseline checkpoint 的已退役 global-style projection 现在在推理前显式过滤，25 图兼容性评估成功，避免非严格加载掩盖真正的不匹配。
+
+### 10.6 后续优化优先级
 
 | Phase | 目标 | 预期收益 | 状态 |
 |-------|------|---------|------|

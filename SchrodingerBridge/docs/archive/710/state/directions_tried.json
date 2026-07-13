@@ -171,8 +171,34 @@
       "delta_vs_ll05": 0.0229,
       "verdict": "breakthrough",
       "note": "FIRST training-side direction. DINO-S=0.4843 is the HIGHEST EVER, breaking the 0.4617 inference-time ceiling by +0.0229. ASG makes style gate content-dependent (spatial gate map [B,1,H,W]). Flat areas get less style (protect content), textured areas get more style (enhance style). DINO-C=0.7692 (+0.0741 vs S0), LPIPS=0.3354 (-0.1277, much better content). CLIP-S=0.7261 (-0.0037, neutral). Zero-init MLP ensures safe training start. Gap to 0.5 target: 0.0157. Train: 23s/epoch, VRAM: 2.91GB."
+    },
+    {
+      "id": "t2_fasg_5ep",
+      "category": "train_side_architecture",
+      "description": "Frequency-aware ASG: per-subband gates for LH/HL/HH before iDWT, zero-init MLPs, 5 epochs, batch=24",
+      "dino_s": 0.4833,
+      "dino_c": 0.7654,
+      "clip_s": 0.7256,
+      "lpips": 0.3401,
+      "delta_vs_s0": 0.0412,
+      "delta_vs_t1_asg": -0.0010,
+      "verdict": "no_improvement",
+      "note": "Phase T2: Per-subband gate differentiation. DINO-S=0.4833, micro-drop -0.001 vs T1 ASG. Per-subband gate is NOT the bottleneck — unified scalar gate + spatial self-adaptation already captures the main gain. Train: 22.6s/epoch, 904,300 params (+1K vs T1). VRAM: 2.96GB."
+    },
+    {
+      "id": "t4_asg_adaptive_wct",
+      "category": "inference_postprocess",
+      "description": "Adaptive WCT scales on T1 ASG checkpoint: per_subband_wct with content/style energy ratio adjusting per-subband WCT scales (inference-only)",
+      "dino_s": 0.4801,
+      "dino_c": 0.6123,
+      "clip_s": 0.7264,
+      "lpips": 0.5341,
+      "delta_vs_s0": 0.0380,
+      "delta_vs_t1_asg": -0.0042,
+      "verdict": "harmful",
+      "note": "Phase T4: Adaptive WCT scales (inference-only, no retraining). DINO-S=0.4801 (-0.004 vs T1 ASG). DINO-C=0.6123 (-0.157 SEVERE content destruction). LPIPS=0.5341 (+0.199 SEVERE content loss). Root cause: full-covariance WCT on ALL subbands including LL destroys content structure. Adaptive ratio (0.5-2.0) insufficient to mitigate WCT aggressiveness. Conclusion: full-covariance WCT on content-carrying subbands fundamentally harmful."
     }
   ],
   "structural_pivot_needed": false,
-  "pivot_reason": "BREAKTHROUGH achieved with ASG (DINO-S=0.4843). Training-side architectural change broke the inference-time ceiling (0.4617). stale_count reset to 0. Next: tune ASG (more epochs, MLP capacity) and explore D1-Plus Gram loss as complementary direction."
+  "pivot_reason": "Both adaptive directions (T2 FASG, T4 Adaptive WCT) failed. T1 ASG (DINO-S=0.4843) confirmed as local optimum. stale_count=2. Next: train ASG 10ep, tune MLP capacity, explore D1-Plus Gram loss."
 }
