@@ -46,6 +46,7 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 | `target_hf_subband_deep_energy_ft6` | deep residual + RMS bound | 0.482631 | 0.794932 | 0.717588 | 0.297529 | 0.397683 | Rejected; code removed. |
 | `target_hf_subband_film_head_ft6` | pure subband FiLM into HF heads | 0.482591 | 0.791672 | 0.717951 | 0.299591 | 0.398305 | Rejected; config removed. |
 | `target_hf_subband_basis_ft6` | target-HF selects low-rank content-derived residual basis | 0.482840 | 0.793659 | 0.718310 | 0.297061 | 0.398561 | Rejected; safe but too weak; code/config removed. |
+| `target_hf_subband_pairstats_ft6` | target-HF plus current-vs-target HF discrepancy statistics | 0.483765 | 0.794304 | 0.718318 | 0.297092 | 0.399385 | Rejected; dynamic global statistics are too coarse; code/config removed. |
 | `target_hf_subband_diraux_ft6` | direct residual-direction auxiliary loss | 0.486150 | 0.793859 | 0.718929 | 0.297425 | 0.402097 | Rejected; improved direction probe but hurt the image frontier; code/config removed. |
 | `target_hf_subband_timewindow_norm` | inference-only early/late residual windows | 0.48660-0.48664 | 0.79361-0.79365 | 0.71933-0.71938 | 0.297480 | 0.40254-0.40256 | Rejected; temporal localization underperforms full-path residual; temporary hook code removed. |
 
@@ -64,6 +65,7 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 11. **Style memory is not just a bad shortcut.** Removing it makes the target-HF probe cleaner but hurts DINO-S/DINO-C/CLIP-S/off-DINO-S, so the next design should decompose coarse memory prior and image-specific HF residual instead of deleting memory.
 12. **Explicitly subtracting memory is too blunt.** Memory-residualized target-HF partly recovers from no-memory but remains below subband-only and hurts DINO-C/LPIPS, so do not algebraically remove the class prior.
 13. **Low-rank content-basis residuals are too restrictive.** Letting target-HF choose coefficients over content-derived residual bases prevents coordinate leakage, but drops DINO-S/off-DINO-S/DINO-C; the branch loses useful image-specific HF style rather than improving direction.
+14. **Current-target global HF discrepancy statistics are too coarse.** Pair statistics are available at train and inference time and avoid spatial leakage, but they still underperform target-only subband pooling, so the next gain is not in adding more global statistic descriptors.
 
 ## Method Framing
 
@@ -105,6 +107,7 @@ Increase coordinate-free HF capacity without target spatial leakage:
 6. Keep LL disconnected from target image features except the existing mild LL target blend.
 7. Keep style memory as a bounded coarse prior, then make target-HF carry residual orientation/style details.
 8. Do not replace the residual with a low-rank content-derived basis unless a new probe shows the target-HF coefficient path is not underpowered.
+9. Do not add current-target global discrepancy statistics unless a direction probe shows they improve residual alignment without weakening image metrics.
 
 ### C. Evaluation next step
 

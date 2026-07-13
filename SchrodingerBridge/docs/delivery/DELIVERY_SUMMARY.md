@@ -90,6 +90,7 @@ All rows are diagnostic probes from the `brk_a_ll03_10ep` family. Do not promote
 | `target_hf_subband_diraux_ft6` | 0.486150 | 0.793859 | 0.718929 | 0.297425 | 0.402097 | Reject: direction probe improves, image frontier worsens. |
 | `target_hf_subband_timewindow_norm` | 0.48660-0.48664 | 0.79361-0.79365 | 0.71933-0.71938 | 0.297480 | 0.40254-0.40256 | Reject: early/late residual windows both underperform full residual. |
 | `target_hf_subband_basis_ft6` | 0.482840 | 0.793659 | 0.718310 | 0.297061 | 0.398561 | Reject: low-rank content-derived basis is safe but underpowered. |
+| `target_hf_subband_pairstats_ft6` | 0.483765 | 0.794304 | 0.718318 | 0.297092 | 0.399385 | Reject: current-target global HF stats are safe but too coarse. |
 
 Conclusion:
 
@@ -150,7 +151,7 @@ Architecture first, tuning second:
 | 3 | Keep LL disconnected from target-image shortcuts. | Avoid buying style by destroying content. |
 | 4 | Rerun D5-512, P2A-256, R5-WikiArt before promotion. | Required before changing the main table. |
 
-Avoid raw target HF maps, scalar/HH residual amplification, direct residual-direction auxiliary loss, time-window residual gating, low-rank content-derived basis replacement, global target-token fusion, and CFG claims without matched controls.
+Avoid raw target HF maps, scalar/HH residual amplification, direct residual-direction auxiliary loss, time-window residual gating, low-rank content-derived basis replacement, current-target global HF statistic codes, global target-token fusion, and CFG claims without matched controls.
 
 ---
 

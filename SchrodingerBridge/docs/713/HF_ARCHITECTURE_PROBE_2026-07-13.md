@@ -50,6 +50,7 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_subband_deep_energy_ft6` | deeper per-band pooled HF residual + RMS bound | 0.482631 | 0.794932 | **0.024497** | 0.717588 | 0.297529 | 0.397683 | rejected: extra residual capacity with RMS bound weakens style/content frontier |
 | `target_hf_subband_film_head_ft6` | pure per-band target-HF FiLM into main HF heads | 0.482591 | 0.791672 | 0.024594 | 0.717951 | 0.299591 | 0.398305 | rejected: live head-conditioning path, but weaker than residual subband route |
 | `target_hf_subband_basis_ft6` | target-HF code selects low-rank content-derived residual basis | 0.482840 | 0.793659 | 0.024564 | 0.718310 | 0.297061 | 0.398561 | rejected: safer parameterization, but too weak and below subband-only |
+| `target_hf_subband_pairstats_ft6` | target-HF code plus current-vs-target HF discrepancy statistics | 0.483765 | 0.794304 | 0.024541 | 0.718318 | 0.297092 | 0.399385 | rejected: dynamic coordinate-free discrepancy signal is still weaker than target-only subband code |
 | `target_hf_subband_diraux_ft6` | residual branch trained with direct direction auxiliary | 0.486150 | 0.793859 | **0.024536** | 0.718929 | 0.297425 | 0.402097 | rejected: probe direction improves, image frontier worsens |
 | `target_hf_subband_timewindow_{early,late}_norm` | inference-only residual time-window causal probe | 0.48660-0.48664 | 0.79361-0.79365 | **0.024533-0.024534** | 0.71933-0.71938 | 0.297480 | 0.40254-0.40256 | rejected: temporal localization underperforms full-trajectory residual |
 
@@ -192,6 +193,27 @@ Here the target-HF code only selects low-rank coefficients, while the spatial ba
 | LPIPS | 0.297061 | 0.296553 | +0.0005 |
 
 **Verdict: FAIL; code/config removed, metrics kept.** The result is useful because it rejects a tempting "target selects a content basis" story. The parameterization is safe, but it underuses target-HF style: compressing the branch into rank-4 coefficients over content-derived bases loses too much image-specific orientation/texture information. The next structural attempt should not merely constrain the residual more; it needs a better-conditioned target-HF route that preserves the simple subband residual's live corrective role.
+
+## Pairwise current-target HF statistics result (2026-07-14)
+
+`target_hf_subband_pairstats_ft6` tested a dynamic, coordinate-free correction signal:
+
+```text
+z'_band = z_target_band + gate * E_stats(current_HF_band, target_HF_band, target-current)
+delta_band = residual(h, z'_band)
+```
+
+The motivation was the residual-direction probe: a target-only code may not know how far the current ODE state already is from target HF statistics, so adding current-vs-target discrepancy statistics could improve the residual direction without exposing target spatial maps.
+
+| metric | pair-stats | subband-only (best) | delta |
+|---|---:|---:|---:|
+| all DINO-S | 0.483765 | **0.488624** | -0.0049 |
+| off DINO-S | 0.399385 | **0.403917** | -0.0045 |
+| DINO-C | 0.794304 | 0.798123 | -0.0038 |
+| CLIP-S | 0.718318 | 0.720880 | -0.0026 |
+| LPIPS | 0.297092 | 0.296553 | +0.0005 |
+
+**Verdict: FAIL; code/config removed, metrics kept.** The result rejects the simple "current-target statistics will fix residual direction" hypothesis. The signal is safe but appears too coarse/noisy over the ODE trajectory: global discrepancy statistics do not provide a useful enough style route, and they weaken the compact target-only subband code. Future attempts should not add more global statistics to the subband code; if dynamic conditioning is revisited, it needs a stronger probe showing that the dynamic signal improves residual direction without lowering the image frontier.
 
 ## No-style-memory subband result (2026-07-14)
 
