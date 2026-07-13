@@ -10,14 +10,17 @@ This directory contains both current evidence and historical archives. Treat the
 | Path | Role |
 |---|---|
 | `delivery/DELIVERY_SUMMARY.md` | Current delivery-level conclusion, best checkpoints, and status caveats. |
-| `713/REPO_REMOTE_AUDIT_2026-07-13.md` | Current local/remote audit. Use this first before trusting old cleanup statements. |
-| `713/HF_ARCHITECTURE_PROBE_2026-07-13.md` | Main HF-route probe diagnosis and architecture recommendation. |
-| `713/EXPERIMENT_SUMMARY_FOR_METHOD_AND_NEXT_PLAN.md` | Short technical summary for method writing and next experiments. |
+| `713/HANDOFF_2026-07-13.md` | Current complete handoff: repo/remote audit, remote run workflow, probe results, conclusions, and next plan. |
+| `713/README.md` | Short entry point for the 713 handoff. |
+| `713/METHOD_EXPLORATION_AND_CKPT_2026-07-13.md` | Current checkpoint and method exploration history extracted from older non-713 docs. |
+| `713/REPO_REMOTE_AUDIT_2026-07-13.md` | Detailed local/remote audit. |
+| `713/HF_ARCHITECTURE_PROBE_2026-07-13.md` | Detailed HF-route probe diagnosis. |
+| `713/EXPERIMENT_SUMMARY_FOR_METHOD_AND_NEXT_PLAN.md` | Method-facing experiment summary and next plan. |
 | `model_probe/target_hf_delta_eval_summary.json` | Aggregate numeric evidence for HF route probes. |
 | `model_probe/HF_DELTA_DIAGNOSIS_2026-07-13.md` | Earlier diagnosis of the missing target-HF condition path. |
 | `model_probe/generation_only_timing_summary.json` | Generation-only timing on RTX 3060. |
 | `latent_migration/final_metrics_table.md` | Resolution/baseline metric table from the latent migration work. |
-| `method.md` | Longer method notes; some statements may lag behind the latest HF-route probe. |
+| `archive/713_external_legacy/` | Archived non-713 legacy docs mined into the current 713 method exploration note. |
 | `archive/` | Historical documents. Use for traceability only, not as current claims without re-checking. |
 
 ## Paper Bundle
@@ -82,7 +85,7 @@ The best current architecture probe is `target_hf_subband_ft6`, with DINO-S `0.4
 
 ## Maintenance Rules
 
-1. Update `713/REPO_REMOTE_AUDIT_2026-07-13.md` or a new dated audit before making broad cleanup claims.
+1. Update `713/HANDOFF_2026-07-13.md` or a new dated handoff before making broad cleanup claims.
 2. Keep paper-facing files in `aaai2027_v4/` separate from scratch build products.
 3. Use `model_probe/target_hf_delta_eval_summary.json` as the numeric source for HF-route claims.
 4. Move obsolete narrative docs to `archive/` instead of leaving them beside current claims.

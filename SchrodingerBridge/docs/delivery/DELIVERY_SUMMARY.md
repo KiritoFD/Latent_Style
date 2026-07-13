@@ -121,8 +121,9 @@ Updated files:
 |---|---|
 | `aaai2027_v4/supplement.tex` | Formal comprehensive supplement: protocol, source-of-record, probe diagnosis, timing, artifact ledger, next plan. |
 | `aaai2027_v4/SUPPLEMENTARY_MATERIAL.md` | Compact supplement map aligned to the formal TeX source. |
-| `docs/713/REPO_REMOTE_AUDIT_2026-07-13.md` | Local/remote audit. |
-| `docs/713/EXPERIMENT_SUMMARY_FOR_METHOD_AND_NEXT_PLAN.md` | Method-facing experiment summary. |
+| `docs/713/HANDOFF_2026-07-13.md` | Complete local/remote audit, experiment summary, remote workflow, conclusions, and next plan. |
+| `docs/713/README.md` | Entry point for current 713 handoff and detailed notes. |
+| `docs/713/METHOD_EXPLORATION_AND_CKPT_2026-07-13.md` | Current checkpoint and method exploration history extracted from old non-713 docs. |
 | `docs/README.md` | Source map and maintenance rules. |
 
 The supplement now explicitly states:

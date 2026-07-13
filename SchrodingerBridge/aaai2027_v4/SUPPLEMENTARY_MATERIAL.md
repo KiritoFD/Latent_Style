@@ -20,9 +20,10 @@ Use this priority order when resolving conflicts:
 | Radar generation | `aaai2027_v4/make_radar_metric_blocks.py` |
 | DINO sidecar | `aaai2027_v4/fig_data/dino_main.json` |
 | HF-route probe metrics | `docs/model_probe/target_hf_delta_eval_summary.json` |
-| HF-route diagnosis | `docs/713/HF_ARCHITECTURE_PROBE_2026-07-13.md` |
+| HF-route diagnosis and handoff | `docs/713/HANDOFF_2026-07-13.md` |
+| Method exploration history | `docs/713/METHOD_EXPLORATION_AND_CKPT_2026-07-13.md` |
 | Timing | `docs/model_probe/generation_only_timing_summary.json` |
-| Repo/remote audit | `docs/713/REPO_REMOTE_AUDIT_2026-07-13.md` |
+| Archived legacy docs | `docs/archive/713_external_legacy/` |
 
 The local repository is currently an active research worktree, not a clean release tree. The remote `I:` tree is a synchronized experiment filesystem, not a git repository. The paper-facing supplement therefore cites committed paper files, frozen run snapshots, and explicit JSON/Markdown sidecars rather than ambient filesystem state.
 
