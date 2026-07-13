@@ -87,10 +87,11 @@ All rows are diagnostic probes from the `brk_a_ll03_10ep` family. Do not promote
 | `target_hf_subband_ft6` | **0.488624** | 0.798123 | **0.720880** | 0.296553 | 0.403917 | Primary current architecture probe. |
 | `target_hf_subband_texture_ft6` | 0.488420 | **0.798815** | 0.719357 | **0.296046** | **0.404302** | Conservative alternate. |
 | `target_hf_content_anchor_ft6` | 0.484393 | 0.795462 | 0.717251 | 0.298162 | 0.399538 | Safe but weaker. |
+| `target_hf_subband_diraux_ft6` | 0.486150 | 0.793859 | 0.718929 | 0.297425 | 0.402097 | Reject: direction probe improves, image frontier worsens. |
 
 Conclusion:
 
-> Style is weak because target-style HF information lacks a clean non-spatial route into the HF velocity heads. The fix is route capacity, not raw spatial injection and not first-order hyperparameter tuning.
+> Style is weak because target-style HF information lacks a clean non-spatial route into the HF velocity heads. The fix is route topology/capacity, but not raw spatial injection, not simple residual amplification, and not a direct residual-direction auxiliary loss.
 
 ---
 
@@ -142,13 +143,12 @@ Architecture first, tuning second:
 
 | Step | Action | Reason |
 |---|---|---|
-| 1 | Build multi-token per-subband HF style codes. | Increase coordinate-free target-style capacity. |
-| 2 | Add orientation-specific LH/HL/HH residual depth. | Stroke statistics are band-specific. |
-| 3 | Normalize new residual energy against existing HF heads. | Prevent content collapse. |
-| 4 | Keep LL disconnected from target-image shortcuts. | Avoid buying style by destroying content. |
-| 5 | Rerun D5-512, P2A-256, R5-WikiArt. | Required before changing the main table. |
+| 1 | Keep `target_hf_subband_ft6` as the best current architecture probe. | It is still the strongest balanced point after the latest negative controls. |
+| 2 | Explore less invasive target-HF route decomposition. | Direct residual-direction loss improved probe alignment but hurt final metrics. |
+| 3 | Keep LL disconnected from target-image shortcuts. | Avoid buying style by destroying content. |
+| 4 | Rerun D5-512, P2A-256, R5-WikiArt before promotion. | Required before changing the main table. |
 
-Avoid raw target HF maps, global target-token fusion, and CFG claims without matched controls.
+Avoid raw target HF maps, scalar/HH residual amplification, direct residual-direction auxiliary loss, global target-token fusion, and CFG claims without matched controls.
 
 ---
 

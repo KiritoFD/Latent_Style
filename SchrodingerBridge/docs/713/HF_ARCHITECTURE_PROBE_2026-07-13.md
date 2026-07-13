@@ -49,6 +49,7 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_multitoken_ft6` | per-band stationary-stat tokens -> attention residual delta | 0.483562 | 0.794129 | 0.024531 | 0.718699 | 0.297979 | 0.398793 | rejected: more statistic tokens did not improve style or content |
 | `target_hf_subband_deep_energy_ft6` | deeper per-band pooled HF residual + RMS bound | 0.482631 | 0.794932 | **0.024497** | 0.717588 | 0.297529 | 0.397683 | rejected: extra residual capacity with RMS bound weakens style/content frontier |
 | `target_hf_subband_film_head_ft6` | pure per-band target-HF FiLM into main HF heads | 0.482591 | 0.791672 | 0.024594 | 0.717951 | 0.299591 | 0.398305 | rejected: live head-conditioning path, but weaker than residual subband route |
+| `target_hf_subband_diraux_ft6` | residual branch trained with direct direction auxiliary | 0.486150 | 0.793859 | **0.024536** | 0.718929 | 0.297425 | 0.402097 | rejected: probe direction improves, image frontier worsens |
 
 ## Diagnosis
 
@@ -239,4 +240,27 @@ and compares the residual against the immediate desired correction `target_veloc
 | HL | 0.248043 | 0.089052 | 0.095598 | 0.009870 | 0.994926 | 0.008637 |
 | HH | 1.194715 | 0.275021 | 0.265744 | 0.084656 | 0.957125 | 0.074540 |
 
-**Diagnosis.** The residual branch is useful because it lowers the training-target MSE, especially on HH. But most residual energy is orthogonal to the ideal correction direction, especially on LH/HL. This explains both previous observations: removing the branch hurts, while amplifying it hurts content. The next architecture should not be a larger residual or a gain; it should make the residual direction more target-aligned. A plausible training-side change is an auxiliary residual-direction objective with the base head treated as a stop-gradient teacher, while preserving the simple inference graph.
+**Diagnosis.** The residual branch is useful because it lowers the training-target MSE, especially on HH. But most residual energy is orthogonal to the ideal correction direction, especially on LH/HL. This explains both previous observations: removing the branch hurts, while amplifying it hurts content. The next architecture should not be a larger residual or a gain; it should make the residual direction more target-aligned without letting a new loss compete with the main transport objective.
+
+## Residual-direction auxiliary result (2026-07-14)
+
+`target_hf_subband_diraux_ft6` tested the direct follow-up to the direction probe: keep the exact same compact subband-residual inference graph, but add a training-side auxiliary loss that aligns each residual delta with `stopgrad(target_velocity - base_velocity)`.
+
+The probe objective succeeded mechanically:
+
+| run | mean MSE improvement | mean cos(residual, desired) | orthogonal fraction |
+|---|---:|---:|---:|
+| `target_hf_subband_ft6` | 0.031853 | 0.157511 | 0.981761 |
+| `target_hf_subband_diraux_ft6` | **0.116677** | **0.322185** | **0.935725** |
+
+But the image metrics moved backward:
+
+| metric | diraux | subband-only | delta |
+|---|---:|---:|---:|
+| all DINO-S | 0.486150 | **0.488624** | -0.0025 |
+| off DINO-S | 0.402097 | **0.403917** | -0.0018 |
+| DINO-C | 0.793859 | **0.798123** | -0.0043 |
+| CLIP-S | 0.718929 | **0.720880** | -0.0020 |
+| LPIPS | 0.297425 | **0.296553** | +0.0009 |
+
+**Verdict: FAIL; code/config removed, metrics kept.** This is a useful falsification: a residual branch can become more aligned to the immediate velocity target while still hurting the final style/content frontier. The direct auxiliary appears to spend capacity matching an instantaneous correction rather than preserving the learned ODE transport geometry. Future direction work should be less invasive: probe/gate/orthogonalize the route, or change the residual parameterization, but do not add this auxiliary loss as-is.

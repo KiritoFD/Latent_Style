@@ -540,6 +540,7 @@ Run & \dinos{} & \dinoc{} & LPIPS & \clips{} & Off-\dinos{} & Verdict \\
 \texttt{target\_hf\_multitoken\_ft6} & 0.4836 & 0.7941 & 0.2980 & 0.7187 & 0.3988 & More stationary-stat tokens do not help. \\
 \texttt{target\_hf\_subband\_deep\_energy\_ft6} & 0.4826 & 0.7949 & 0.2975 & 0.7176 & 0.3977 & Deeper energy-normalized residual is worse. \\
 \texttt{target\_hf\_subband\_film\_head\_ft6} & 0.4826 & 0.7917 & 0.2996 & 0.7180 & 0.3983 & Direct FiLM into HF heads disturbs the pretrained field. \\
+\texttt{target\_hf\_subband\_diraux\_ft6} & 0.4862 & 0.7939 & 0.2974 & 0.7189 & 0.4021 & Direction auxiliary improves the probe but hurts image metrics. \\
 \texttt{target\_hf\_subband\_nomem\_ft6} & 0.4849 & 0.7948 & \textbf{0.2943} & 0.7167 & 0.4013 & Removing style memory cleans the probe route but weakens style/content metrics. \\
 \texttt{target\_hf\_subband\_memres\_ft6} & 0.4866 & 0.7935 & 0.2977 & 0.7192 & 0.4025 & Explicit style-memory prior subtraction is below subband-only. \\
 \bottomrule
@@ -568,6 +569,12 @@ This is supported by a direct residual-direction probe: the residual lowers the
 training-target HF MSE, but its average cosine to the ideal correction direction is only
 0.158 and about 98.2\% of its energy is orthogonal to that direction. HH is the most
 aligned band, yet HH-only amplification still follows the same content-cost trend.
+A direct training auxiliary that aligns the residual to
+\(\mathrm{stopgrad}(v^\star_{\mathrm{HF}}-v_{\mathrm{base}})\) increases the
+probe cosine to 0.322 and the MSE-improvement fraction to 0.117, but lowers
+\dinos{} to 0.4862 and also worsens \dinoc{}, \clips{}, and LPIPS. Therefore the
+direction gap is real, but a separate residual-direction loss is too intrusive in the
+current transport field.
 
 The no-memory probe clarifies the role of the style-memory branch. Disabling generic
 style-memory cross-attention makes the target-HF path easier to read in gradients and
@@ -935,6 +942,7 @@ Orientation-specific residual depth & Keep & LH, HL, and HH carry different stro
 Energy normalization vs. existing HF heads & Keep & Prevents the new route from dominating content structure. \\
 Scalar residual amplification & Avoid & It raises off-style metrics only by spending content budget. \\
 HH-only residual amplification & Avoid & Even the most aligned band does not improve the balanced point when simply scaled. \\
+Direct residual-direction auxiliary & Avoid & It improves the decomposition probe but lowers DINO-S and content metrics, so it competes with the learned transport field. \\
 Stationary-stat multi-token widening & Avoid & A matched probe was worse than subband-only on style and content metrics. \\
 Removing style-memory cross-attention & Avoid & It makes gradient probes cleaner but lowers style/content metrics, so memory should be bounded rather than deleted. \\
 Algebraic memory-prior subtraction & Avoid & It partly recovers from no-memory but remains below the simple subband residual and hurts content. \\

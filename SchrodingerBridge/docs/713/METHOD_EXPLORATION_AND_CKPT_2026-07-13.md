@@ -145,6 +145,7 @@ Rejected:
 | `target_hf_multitoken_ft6` | 0.483562 | 0.794129 | 0.718699 | 0.297979 | Worse than subband-only; code removed. |
 | `target_hf_subband_deep_energy_ft6` | 0.482631 | 0.794932 | 0.717588 | 0.297529 | Deep additive residual with RMS bound underperformed; code removed. |
 | `target_hf_subband_film_head_ft6` | 0.482591 | 0.791672 | 0.717951 | 0.299591 | Pure HF-head FiLM conditioning underperformed; config removed. |
+| `target_hf_subband_diraux_ft6` | 0.486150 | 0.793859 | 0.718929 | 0.297425 | Direct residual-direction auxiliary improved probe alignment but hurt image metrics; code/config removed. |
 
 ## 5. Correct Theory After Probing
 
@@ -187,6 +188,7 @@ Do not prioritize:
 | Stationary-stat multi-token code | Tested and removed; it underperformed subband-only on all tracked metrics. |
 | Deep additive subband residual | Tested and removed; more residual capacity did not improve the style route. |
 | Pure target-HF FiLM head conditioning | Tested and removed; newly initialized HF-head FiLM weakens the learned velocity field. |
+| Direct residual-direction auxiliary | Tested and removed; higher residual/desired cosine did not translate into better DINO-S or content. |
 | Generic decoder AdaLN/AdaIN | Already repeatedly negative. |
 
 ## 7. Method-writing Guidance
