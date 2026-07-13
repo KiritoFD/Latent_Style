@@ -1,107 +1,95 @@
 # SchrodingerBridge Documentation
 
-**最后更新**: 2026-07-03 (M27, Deli_AutoResearch rewrite task)
-**文档结构**: 现代文档树 + 历史归档分离
+**最后更新**: 2026-07-13 (代码清理 + 文档归档)
+**状态**: 所有失败实验代码已删除，文档已归档到 archive/
 
 ---
 
-## 1. 主线文档结构
+## 1. 当前文档结构
 
 | 目录 | 用途 | 内容简述 |
 |------|------|---------|
-| [baseline/](baseline/) | 相关工作 | 12 baseline 完整收敛证据（每个 baseline 独立 .md） |
-| [exp/](exp/) | 我们模型的分阶段实验 | 远程+本地实验清单、实验脉络审计、ckpt 删除日志、数据集分类索引 |
-| [math/](math/) | FC-SB 完整理论框架 | 12 节：问题定义、Schrödinger Bridge、Haar DWT、频域解耦、Style Conditioning、DWT Route、Stochastic DWT、EOTA、ODE 求解器等 |
-| [tools/](tools/) | 工程参考手册 | 数据库分类、评估协议、基础设施、调用命令、实验经验（15 条） |
-| [72/](72/) | 论文草稿 | 01-07 章节（codebase/theory/experiments/design/conclusions/cleanup/related_works）+ Pareto 散点图 |
-| [archive/](archive/) | 历史文档归档 | 26 个历史目录 + 26 个根级历史文件，仅作历史追溯 |
+| [method.md](method.md) | **核心方法文档** | WEAVE 架构完整数学描述、组件消融、DINO-S 天花板验证 |
+| [delivery/](delivery/) | **交付文档** | 当前结论、最佳 checkpoint、运行命令、代码状态 |
+| [710/](710/) | **710 阶段结论** | DWT routing、AdaLN 消融、ASG 突破、DINO 协议、infra 优化 |
+| [dino_s_break/](dino_s_break/) | **DINO-S 突破跟踪** | 所有 Round 实验进度、findings、Pareto 前沿 |
+| [latent_migration/](latent_migration/) | **全分辨率评估** | 256/512 最终指标表、所有 baseline 对比 |
+| [79/](79/) | **数据注册表** | 主表数据源、baseline 结果溯源、统一评估 CSV |
+| [baseline/](baseline/) | **Baseline 方法** | 12 baseline 完整收敛证据 |
+| [math/](math/) | **理论框架** | FC-SB 完整理论、Haar DWT、频域解耦、ODE 求解器 |
+| [tools/](tools/) | **工程参考** | 数据库、评估协议、infra、调用命令、实验经验 |
+| [archive/](archive/) | **历史归档** | 所有历史文档（不再维护，仅追溯） |
 
 ---
 
 ## 2. 关键文档速查
 
-### 2.1 SOTA 与 Baseline 速查
+### 2.1 论文核心
 
-- **主线**: [exp/README.md](exp/README.md) §3 — SOTA 与 Baseline 速查表（v5 SaMam 数据对齐）
-- **Baseline 完整核查**: [baseline/README.md](baseline/README.md) — 12 baseline 完整收敛证据
-- **SaMam 数据完整性**: [exp/samam_data_integrity_audit.md](exp/samam_data_integrity_audit.md) — 81 checkpoint 完整曲线
+- **方法描述**: [method.md](method.md) — 架构数学公式、有效组件、DINO-S 天花板分析
+- **交付文档**: [delivery/DELIVERY_SUMMARY.md](delivery/DELIVERY_SUMMARY.md) — 最佳 checkpoint、结论、运行命令
+- **710 结论**: [710/710_CONCLUSIONS.md](710/710_CONCLUSIONS.md) — DWT routing、ASG 突破、AdaLN 失败、infra 优化
 
-### 2.2 实验脉络
+### 2.2 实验数据
 
-- **总入口**: [exp/README.md](exp/README.md) — 整理项目总入口 + 导航
-- **实验审计**: [exp/experiment_audit.md](exp/experiment_audit.md) — 5 个必须保留 ckpt + 删除建议（M23 产出）
-- **远程实验**: [exp/remote_experiments.md](exp/remote_experiments.md) — 远程 I 盘所有实验清单
-- **本地实验**: [exp/local_experiments.md](exp/local_experiments.md) — 本地 G 盘所有实验清单
-- **Ckpt 删除日志**: [exp/ckpt_deletion_log_m26.md](exp/ckpt_deletion_log_m26.md) — 41 个无意义 ckpt 删除记录
+- **最终指标表**: [latent_migration/final_metrics_table.md](latent_migration/final_metrics_table.md) — 256/512 所有方法对比
+- **DINO-S 进度**: [dino_s_break/state/progress.json](dino_s_break/state/progress.json) — 各 Round 实验状态
+- **Baseline 溯源**: [79/](79/) — 主表数据来源、统一评估 CSV
 
-### 2.3 数据集分类
+### 2.3 实验清单
 
-每个实验分清数据集（256 / 5×3600 / wikiarts_5 / distinct5），分别存放：
-
-| 数据集 | 索引文档 | 用途 |
-|--------|---------|------|
-| distinct5 | [../../exp/distinct5/README.md](../../exp/distinct5/README.md) | 主线论文用（5 风格 × 750 pairs） |
-| wikiarts5 | [../../exp/wikiarts5/README.md](../../exp/wikiarts5/README.md) | 历史实验（非主线） |
-| fewshot6 | [../../exp/fewshot6/README.md](../../exp/fewshot6/README.md) | Few-shot Pop_Art 注入实验 |
-| 256 | [../../exp/256/README.md](../../exp/256/README.md) | 256 分辨率历史实验 |
-
-### 2.4 理论与工程
-
-- **理论**: [math/README.md](math/README.md) — FC-SB 完整理论框架
-- **工程**: [tools/README.md](tools/README.md) — 数据库/评估协议/infra/调用命令/经验
-
-### 2.5 论文草稿
-
-| 章节 | 文档 |
-|------|------|
-| 总入口 | [72/README.md](72/README.md) |
-| 代码库 | [72/01_codebase.md](72/01_codebase.md) |
-| 理论 | [72/02_theory.md](72/02_theory.md) |
-| 实验 | [72/03_experiments.md](72/03_experiments.md) |
-| 设计思路 | [72/04_design_ideas.md](72/04_design_ideas.md) |
-| 结论 | [72/05_conclusions.md](72/05_conclusions.md) |
-| 清理笔记 | [72/06_cleanup_notes.md](72/06_cleanup_notes.md) |
-| 相关工作 | [72/07_related_works.md](72/07_related_works.md) |
+- **远程实验**: [archive/exp/remote_experiments.md](archive/exp/remote_experiments.md) — I 盘所有实验
+- **本地实验**: [archive/exp/local_experiments.md](archive/exp/local_experiments.md) — G 盘所有实验
+- **方法审计**: [archive/exp/method_audit_2026-07-11.md](archive/exp/method_audit_2026-07-11.md) — 有效组件独立审计
 
 ---
 
-## 3. 数据真相源（Truth Source）
+## 3. 核心结论摘要
 
-所有文档中的数值必须与以下真相源对齐：
+### DINO-S 天花板
 
-| 数据源 | 路径 | 说明 |
-|--------|------|------|
-| 12 baseline 统一评估结果 | `exp/baseline/v2/eval/unified_results.json` | SaMam 真实值 0.5816/0.2434@step20000（v4 的 0.7175/0.2423 是编造值，已修正） |
-| 远程实验清单 | `docs/exp/remote_experiments.md` | M3 产出 |
-| 本地实验清单 | `docs/exp/local_experiments.md` | M7 产出 |
-| 实验脉络审计 | `docs/exp/experiment_audit.md` | M23 产出 |
-| Baseline 完整核查 | `docs/baseline/README.md` | M22 产出 |
+经过 **30+ 轮实验**（Round 1-12）验证：
+- DINO-S ≈ 0.48 ± 0.003 是当前 SAT 范式 fundamental limit
+- 所有上游风格通路（11 方向）和下游 Decoder AdaLN（10 方向）均无法突破
+- 唯一突破方式：推理时 Endpoint AdaIN 缩放（α=1.5 → 0.4843, α=2.0 → 0.4859）
+
+### 有效组件
+
+WEAVE 实际有效组件仅 3 个：
+1. **Rectified Flow Matching** — 核心传输引擎
+2. **Haar Wavelet Decomposition** — 正交频域分离
+3. **Endpoint AdaIN** — 推理时风格注入
+
+### 最佳 Checkpoint
+
+| 配置 | 文件 | DINO-S | CLIP-S | 说明 |
+|------|------|--------|--------|------|
+| WEAVE-m (α=1.5) | `I:/checkpoints/brk_a_ll03_10ep/epoch_0010.ckpt` | 0.4843 | 0.7180 | 主表主点 |
+| WEAVE-q (α=2.0) | same | 0.4859 | 0.7075 | DINO-S 天花板 |
 
 ---
 
 ## 4. 历史归档
 
 所有历史文档已归档到 [archive/](archive/)，包括：
+- 19 个日期型目录 (612-630)
+- 15 个主题型目录 (theory, timing, model, reviews, plans, cleanup, exp, 710, 72, SWD, 630, refactor_task, model_probe, baseline_256, root)
+- 26 个根级历史文件
 
-- **12 个日期型历史目录**: 612-lookback, 612-phase2, 616, 618, 619, 620, 622, 625, 625_fc_sb, 627, 628, 630
-- **14 个主题型历史目录**: Related, cleanup, experiments, logs, maths, model, plan, plans, presentations, references, repro_report_zh, reviews, theory, timing
-- **26 个根级历史文件**: aaai2027_working_index, ablation_log, architecture, attn, bridge, cleanup_report, CLEAN_BASE*, dump*, exp_*, inmortal, known_issues, plan-612, quickstart, remote_server, review, tokenizer, writing 等
-
-详见 [archive/README.md](archive/README.md)。
-
-**归档文档不再维护**，仅作历史追溯用途。所有当前结论以主线文档为准。
+归档文档不再维护，仅作历史追溯。详见 [archive/](archive/)。
 
 ---
 
 ## 5. 文档维护原则
 
-1. **新增实验**: 放入对应 `exp/FCSB/{early|phase4|local_t}/`，更新 `docs/exp/local_experiments.md` 或 `remote_experiments.md`
-2. **新增 baseline**: 更新 `unified_results.json` + `docs/baseline/README.md` + `docs/72/07_related_works.md`
-3. **数值变更**: 任何数值变更需在所有主线文档同步更新
-4. **旧文档归档**: 不再维护的文档移到 `docs/archive/`，git commit 保留历史
-5. **无效代码删除**: 确认无效后直接删除（不 ablate），git commit + 详细文档
+1. **新增实验**: 记录到对应 exp 目录，更新 `delivery/DELIVERY_SUMMARY.md`
+2. **新增结论**: 更新 `method.md` + `delivery/DELIVERY_SUMMARY.md`
+3. **过时文档**: 移动到 `archive/`，git commit 保留历史
+4. **无效代码**: 确认无效后直接删除，git commit + 文档记录
+5. **数值变更**: 所有数值需在 `method.md`、`delivery/`、`710/` 同步更新
 
 ---
 
-**文档结构维护**: Deli_AutoResearch rewrite task (M22-M27)
-**数据对齐状态**: ✅ 所有主线文档已与 `unified_results.json` 真实实验数据对齐 (v5 SaMam)
+**文档维护**: 2026-07-13 代码清理 + 文档归档
+**代码状态**: ✅ 所有失败实验代码已删除，src/ 仅含有效文件
+**数据状态**: ✅ 所有数值与 deliver/DELIVERY_SUMMARY.md 对齐
