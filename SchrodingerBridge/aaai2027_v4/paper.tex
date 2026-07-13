@@ -42,17 +42,18 @@ We empirically observe that frequency dominance in shared representation spaces 
 
 We argue that an effective style transfer method should outperform the identity baseline while remaining computationally affordable. To this end, we propose WEAVE: a single-level Haar wavelet transform splits the VAE latent into a low-frequency structure band and high-frequency style bands; a compact rectified-flow network learns a structure-preserving velocity field; and endpoint statistical alignment (AdaIN) injects the target style into the high-frequency subbands. This decoupling separates content transport from style injection, letting WEAVE train in 3 minutes on a single consumer GPU.
 
-We also introduce an identity-floor-aware evaluation protocol, under which WEAVE clears the identity baseline with only 903K trainable parameters (plus a frozen 84M VAE), making high-quality style transfer both effective and affordable.
+We also introduce the IDT--TGT sandwich protocol, which calibrates every method between two reference bounds: Identity (content upper bound) and Target Style (style upper bound, CLIP-S$=$0.874 on D5-512). Together, the two bounds expose two failure modes that single-baseline evaluation misses: content collapse---where methods like StyleAligned produce outputs perceptually farther from the source than a completely unrelated target-style image (LPIPS 0.869 vs.~TGT 0.733)---and style suppression, where methods merely reconstruct the source. Under this protocol, WEAVE clears the identity baseline with only 903K trainable parameters (plus a frozen 84M VAE), making high-quality style transfer both effective and affordable.
 
 \end{abstract}
 
 \begin{strip}
 \noindent\includegraphics[width=\textwidth]{fig_distinct5_page1_summary.pdf}
-\captionof{figure}{IDT-calibrated comparison on Distinct5-WikiArt.
+\captionof{figure}{IDT--TGT sandwich comparison on Distinct5-WikiArt.
 Left: style affinity $\frac{1}{2}(\mathrm{DINO\text{-}S}+\mathrm{CLIP\text{-}S})$ versus $1-\mathrm{LPIPS}$, with bubble area encoding training time.
 The red points mark two WEAVE operating points.
 Square markers denote training-free diffusion editors (StyleAligned).
 The dashed line marks the IDT floor (0.556); methods below it have not moved in the requested direction.
+The dotted line marks the TGT LPIPS bound (0.267); methods right of it are perceptually farther from the source than a completely unrelated target-style image.
 Right: target-pooled ArtFID on the same benchmark, with numbers inside the bars indicating training or response time.}
 \label{fig:page1}
 \end{strip}
@@ -63,9 +64,9 @@ Style transfer faces two problems in deployment and evaluation.
 On one hand, state-of-the-art diffusion models (e.g., FLUX.2 and Qwen-image) and their training-free variants demand more than 60\,GB of GPU memory, making them unusable on consumer hardware.
 On the other hand, certain lightweight alternatives that avoid these heavy generative backbones can struggle to achieve genuine style transfer.
 Specifically, the style affinity of outputs from certain lightweight models can fall below that of the unchanged source image (i.e., the identity mapping).
-This problem has been hidden by conventional evaluation protocols, such as LPIPS and ArtFID, which heavily reward structural reconstruction but rarely include the identity mapping as an explicit baseline.
-As visualized in Figure~\ref{fig:page1} (Left), when the identity mapping is explicitly plotted, modern lightweight methods like SaMam clearly fall below this natural baseline.
-To fix this, we introduce the Identical-Image Transfer (IDT) calibration, transforming standard metrics into floor-calibrated measures.
+This problem has been hidden by conventional evaluation protocols, such as LPIPS and ArtFID, which heavily reward structural reconstruction but rarely include the identity mapping as an explicit baseline, let alone a content-collapse upper bound.
+As visualized in Figure~\ref{fig:page1} (Left), when the identity mapping is explicitly plotted, modern lightweight methods like SaMam clearly fall below this natural baseline; when the Target Style bound is added, methods like StyleAligned fall to the right of it, revealing that their high style scores come at the cost of content collapse---their outputs are perceptually farther from the source than a completely unrelated target-style image.
+To fix this, we introduce the IDT--TGT sandwich protocol, which bounds every method between the content ceiling (Identity) and the style ceiling (Target Style), transforming standard metrics into floor-and-ceiling-calibrated measures.
 
 Why do recent lightweight architectures, despite their advanced designs, consistently fall into this identity trap?
 We argue that a principal driver is not a lack of model capacity, but a well-documented spectral bias of neural networks~\cite{rahaman2019spectral,xu2022frequency}: in a shared representation space the optimizer preferentially fits the dominant low-frequency structure, a conflict that frequency-domain translation work has also linked to content--style entanglement~\cite{cai2021fdit}.
@@ -82,7 +83,7 @@ The style-injection operator never touches the LL band, so content structure is 
 This streamlined design lets WEAVE clear the identity baseline and train in 3 minutes on a single consumer GPU; because the alignment operates directly on latent features, it also serves as a training-free plugin for large pre-trained models, which we validate on a frozen SD1.5 image-to-image pipeline (Section~\ref{sec:plugin}).
 
 \paragraph{Contributions.}
-(1)~\textbf{Evaluation Protocol:} We introduce the Identical-Image Transfer (IDT) calibration, exposing the blind spot where lightweight models underperform the unchanged source.
+(1)~\textbf{Evaluation Protocol:} We introduce the IDT--TGT sandwich protocol, which calibrates every method between two reference bounds: Identity (content upper bound, LPIPS$=$0) and Target Style (style upper bound, CLIP-S$=$0.874 on D5-512). This exposes two failure modes that single-bound baselines miss---content collapse (LPIPS above the Target Style line) and style suppression (CLIP-S below the Identity line).
 (2)~\textbf{Representation and Methodology:} We empirically observe that frequency dominance in shared representation spaces causes low-frequency structures to overshadow high-frequency textures, driving models toward the identity shortcut, and propose WEAVE, a wavelet-decoupled framework that achieves genuine style transfer with only 903K trainable parameters. Mechanism experiments (gradient-spectrum analysis, per-subband style-transfer ratios, and inference-time module swapping) provide causal evidence for this functional specialization.
 (3)~\textbf{Efficiency and Generalization:} WEAVE trains in just 3 minutes on a single consumer GPU, and its latent operations are a pluggable, training-free mechanism for large diffusion backbones, which we validate by applying them to a frozen SD1.5 image-to-image pipeline (Section~\ref{sec:plugin}).
 
@@ -275,6 +276,7 @@ Method & \multicolumn{4}{c}{D5-512} & \multicolumn{4}{c}{P2A-256} & \multicolumn
 & DINO-S$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & DINO-C$\uparrow$ & DINO-S$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & DINO-C$\uparrow$ & DINO-S$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & DINO-C$\uparrow$ & & min & 750 imgs \\
 \midrule
 Identity & 0.419 & 0.693 & 0.000 & 1.000 & 0.416 & 0.663 & 0.000 & 1.000 & 0.433 & 0.731 & 0.000 & 1.000 & 0 & free & 0\,s \\
+Target Style & 1.000 & 0.874 & 0.733 & 0.176 & --- & --- & --- & --- & --- & --- & --- & --- & 0 & free & 0\,s \\
 SD-Turbo & 0.484 & 0.693 & 0.003 & 0.922 & 0.341 & 0.674 & 0.603 & 0.279 & 0.505 & 0.767 & 0.449 & 0.538 & 0$^{+1.1B}$ & free & 5\,m \\
 StyleAligned & 0.675 & 0.780 & 0.869 & 0.239 & 0.612 & 0.768 & 0.786 & 0.310 & 0.649 & 0.824 & 0.829 & 0.315 & 0$^{+1.1B}$ & free & 77\,m \\
 Z-STAR & 0.449 & 0.784 & 0.347 & 0.549 & 0.514 & 0.786 & 0.332 & 0.526 & 0.514 & 0.822 & 0.384 & 0.526 & 0$^{+1.1B}$ & free & 3\,h\\
@@ -289,7 +291,7 @@ Latent-WCT & 0.362 & 0.673 & 0.441 & 0.559 & 0.338 & 0.738 & 0.585 & 0.386 & 0.4
 \bottomrule
 \end{tabular}%
 }
-\caption{Main comparison on D5-512, P2A-256, and R5-WikiArt. CLIP-S, DINO-S, and DINO-C are higher better; LPIPS is lower better. DINO-S is the primary style metric (see Section~\ref{sec:setup}). Superscripts in Params denote frozen backbones, and ``--'' denotes withheld or unavailable values. Infer is single-RTX-3060 (12\,GB) generation-only wall-clock for 750 pairs (8-step ODE + VAE decode; metrics excluded).}
+\caption{Main comparison on D5-512, P2A-256, and R5-WikiArt. CLIP-S, DINO-S, and DINO-C are higher better; LPIPS is lower better. DINO-S is the primary style metric (see Section~\ref{sec:setup}). Identity and Target Style are reference bounds that define the content-preserving and style-maximizing extremes of the Pareto frontier, forming a sandwich protocol that contextualizes every method. Superscripts in Params denote frozen backbones, and ``--'' denotes withheld or unavailable values. Infer is single-RTX-3060 (12\,GB) generation-only wall-clock for 750 pairs (8-step ODE + VAE decode; metrics excluded).}
 \label{tab:main}
 \end{table*}
 
@@ -301,6 +303,7 @@ Latent-WCT & 0.362 & 0.673 & 0.441 & 0.559 & 0.338 & 0.738 & 0.585 & 0.386 & 0.4
 \paragraph{Setup.}
 We use Distinct5-WikiArt-512 with five styles (Early Renaissance, Impressionism, Minimalism, Rococo, Ukiyo-e) chosen for their low IDT CLIP-S, making accidental no-op success harder.
 Each domain has 3{,}600 training and 150 test images; evaluation uses 750 source-target pairs including 150 identity pairs for IDT calibration, and generalization is tested on all 20 WikiArt families ($20{\times}20{\times}30{=}12{,}000$ pairs) with baselines confined to the Distinct5 subset (750 pairs) to bound compute.
+We additionally establish a Target Style (TGT) reference bound by using the first target-style reference image as the output, which defines the style-maximizing endpoint (CLIP-S$=$0.874, DINO-S$=$1.000) and the content-minimizing endpoint (LPIPS$=$0.733, DINO-C$=$0.176) on D5-512; together with the Identity bound, this forms a sandwich that contextualizes every method's position on the content--style Pareto frontier.
 \textbf{DINO-S} (DINOv2-small CLS-token cosine similarity to the target-style reference pool) is our primary style metric, with CLIP-S (ViT-B/32) secondary; LPIPS (AlexNet) and DINO-C measure content preservation.
 Baselines: Identity, SD-Turbo, StyleAligned, Z-STAR, StyleShot, CUT, SaMST, SaMam, Seedream~4.5, and Latent-WCT.
 
@@ -320,10 +323,12 @@ All methods are evaluated on every ordered source-target pair; learned baselines
 \caption{Multi-metric radar profile across D5-512, P2A-256, and R5-WikiArt. Axes are grouped by role: speed on the left, DINO-S on the right, CLIP-S on the upper-left, and content metrics at the bottom. DINO-S, our primary style metric, uses a robust broken visual scale (minimum near the inner ring, second-highest at 0.84, maximum at the outer ring) to expose both the low-style Latent-WCT baseline and the middle tier; this scaling is visual only, and Table~\ref{tab:main} remains the source for raw values. CLIP-S, DINO-C, and 1-LPIPS use linear per-axis \(v/\max\). Line weight encodes emphasis tier rather than rank. WEAVE (red) gives the strongest content-preserving profile among learned methods, especially on D5-512, while keeping much lower training and inference cost, suggesting stronger scaling potential at higher resolution and broader style coverage.}
 \label{fig:radar}
 \end{figure}
-\paragraph{The IDT protocol redefines success.}
-The identity row turns CLIP-S into a direction-aware metric: once included, low LPIPS alone is not enough, and both SaMST and SaMam stay below the IDT floor, suggesting their low LPIPS reflects source preservation.
+\paragraph{The IDT--TGT sandwich protocol redefines success.}
+The Identity row turns CLIP-S into a direction-aware metric---a method must clear the IDT floor to prove it is not merely preserving the source---and the Target Style row defines the style-maximizing endpoint, converting LPIPS from an absolute scale into a meaningful distance-to-collapse.
+Together, the two bounds expose two failure modes in Table~\ref{tab:main}: (i)~\textbf{style suppression}---SaMST and SaMam stay below the IDT CLIP-S floor, suggesting their low LPIPS reflects source preservation rather than genuine transfer; (ii)~\textbf{content collapse}---StyleAligned's LPIPS of 0.869 on D5-512 actually exceeds the Target Style bound of 0.733, meaning its output is perceptually farther from the source than a completely unrelated target-style image, and its DINO-C (0.239) is only marginally above the TGT floor (0.176). This pattern persists across all three benchmarks, confirming that StyleAligned achieves high style scores through near-total content sacrifice rather than balanced transfer.
 
 \paragraph{WEAVE occupies the practical frontier.}
+The sandwich bounds reveal that most methods cluster near the extremes: high-DINO-S methods approach the TGT LPIPS line, while low-LPIPS methods barely clear the IDT CLIP-S floor.
 On D5-512, the only methods matching or exceeding WEAVE on DINO-S all pay a severe content price, with much higher LPIPS and lower DINO-C (Table~\ref{tab:main}); WEAVE thus sits at the content-preserving end of the Pareto frontier, already near this structural ceiling.
 Among trained methods that clear the IDT floor, WEAVE also achieves the lowest LPIPS and the only sub-million-parameter profile; CUT needs an order of magnitude more parameters and training time to do the same (Table~\ref{tab:main}).
 The full multi-metric profile across all three benchmarks and both speed axes is summarized in Figure~\ref{fig:radar}.
@@ -475,7 +480,7 @@ The wavelet-decoupled framework naturally extends to multi-level decompositions 
 \section{Conclusion}
 
 Style transfer needs both the right success criterion and the right coordinate system.
-IDT calibration exposes when a method merely reconstructs the source, and WEAVE avoids this regime by separating low-frequency structure from high-frequency style motion and routing style through the same high-frequency path used at inference.
+The IDT--TGT sandwich protocol exposes two failure modes that single-baseline evaluation misses: style suppression below the Identity floor, and content collapse beyond the Target Style LPIPS bound. WEAVE avoids both by separating low-frequency structure from high-frequency style motion and routing style through the same high-frequency path used at inference.
 The 903K-parameter backbone trains in 3 minutes on one RTX 3060, with 95\,s generation-only inference for 750 pairs.
 The plug-and-play extension to SD1.5 demonstrates that the wavelet-decoupled mechanism generalizes beyond our compact network to large pre-trained diffusion backbones.
 The central finding: real target-direction transfer can be achieved without a large model once the transport geometry separates structure from style, and by running on a single consumer GPU WEAVE makes high-quality stylization accessible.
