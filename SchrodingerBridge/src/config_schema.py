@@ -840,6 +840,20 @@ class BridgeConfig:
     fft_loss_enabled: bool = False
     fft_loss_weight: float = 0.1
     fft_loss_eps: float = 1e-6
+    # === Round10 brk_ad: AdaIN Deepening (A+B+C combo) ===
+    # A: Latent-space AdaIN — DWT 前对整个 VAE latent 做全局 AdaIN blending
+    #   content' = (1-γ)*content + γ*AdaIN(content → style)
+    #   Theory: 给模型 style "head start", 在 wavelet 分解前注入全局色彩/对比度统计
+    latent_adain_enabled: bool = False
+    latent_adain_gamma: float = 0.3
+    # B: HF subband AdaIN blending — 替代硬替换, 用 AdaIN 混合 content 和 style HF 统计
+    #   hf_k = (1-α_k)*hf_c + α_k*AdaIN(hf_c → hf_s), k∈{LH,HL,HH}
+    #   Theory: AdaIN (对角协方差) 是硬替换(无保内容)和 WCT(全协方差)之间的中间地带
+    #   mean+std 匹配保留 content 空间结构, 同时迁移 style 色彩/纹理统计
+    hf_adain_enabled: bool = False
+    hf_adain_alpha_lh: float = 0.5
+    hf_adain_alpha_hl: float = 0.5
+    hf_adain_alpha_hh: float = 0.7
     # === Round6 brk_y: Multi-level DWT (mid-frequency independent migration) ===
     # Math: LL1 -> DWT2 -> {LL2, LH2, HL2, HH2}. LL2 locked (lowest-freq content core),
     #   LH2/HL2/HH2 partially stylized (mid-freq tones). Reconstruct LL1 from DWT2.

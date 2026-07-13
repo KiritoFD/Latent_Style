@@ -48,6 +48,13 @@ class FlowMatchingObjective:
         self.fft_loss_enabled = bool(getattr(self.bridge_cfg, "fft_loss_enabled", False))
         self.fft_loss_weight = float(getattr(self.bridge_cfg, "fft_loss_weight", 0.1))
         self.fft_loss_eps = float(getattr(self.bridge_cfg, "fft_loss_eps", 1e-6))
+        # Round10 brk_ad: AdaIN Deepening (A+B+C combo)
+        self.latent_adain_enabled = bool(getattr(self.bridge_cfg, "latent_adain_enabled", False))
+        self.latent_adain_gamma = float(getattr(self.bridge_cfg, "latent_adain_gamma", 0.3))
+        self.hf_adain_enabled = bool(getattr(self.bridge_cfg, "hf_adain_enabled", False))
+        self.hf_adain_alpha_lh = float(getattr(self.bridge_cfg, "hf_adain_alpha_lh", 0.5))
+        self.hf_adain_alpha_hl = float(getattr(self.bridge_cfg, "hf_adain_alpha_hl", 0.5))
+        self.hf_adain_alpha_hh = float(getattr(self.bridge_cfg, "hf_adain_alpha_hh", 0.7))
         # Round6 brk_y: Multi-level DWT — mid-frequency independent migration
         self.multi_level_dwt_enabled = bool(getattr(self.bridge_cfg, "multi_level_dwt_enabled", False))
         self.multi_level_dwt_alpha2 = float(getattr(self.bridge_cfg, "multi_level_dwt_alpha2", 0.5))
@@ -285,6 +292,29 @@ class FlowMatchingObjective:
         log_PT = torch.log(P_T + self.fft_loss_eps)
         return (log_PV - log_PT).abs().mean()
 
+    def _adain_blend(self, content: torch.Tensor, style: torch.Tensor, alpha: float) -> torch.Tensor:
+        """通用 AdaIN blending: (1-α)*content + α*AdaIN(content → style).
+
+        数学: AdaIN(content, style) = (c - μ_c)/σ_c · σ_s + μ_s
+              blended = (1-α)·c + α·AdaIN(c, s)
+
+        可用于任意形状 [B, C, H, W] 的张量 (latent, subband, feature map).
+        当 style batch=1 且 content batch>1 时广播统计.
+        """
+        c_f = content.float()
+        s_f = style.float().to(device=c_f.device)
+        B_c = c_f.shape[0]
+        if s_f.shape[0] == 1 and B_c > 1:
+            s_mean = s_f.mean(dim=[2, 3], keepdim=True).expand(B_c, -1, 1, 1)
+            s_std = s_f.std(dim=[2, 3], keepdim=True).clamp_min(1e-6).expand(B_c, -1, 1, 1)
+        else:
+            s_mean = s_f.mean(dim=[2, 3], keepdim=True)
+            s_std = s_f.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        c_mean = c_f.mean(dim=[2, 3], keepdim=True)
+        c_std = c_f.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        matched = (c_f - c_mean) / c_std * s_std + s_mean
+        return ((1.0 - alpha) * c_f + alpha * matched).to(dtype=content.dtype)
+
     def compute(
         self, model, *, content, target_style, target_style_id,
         source_style_id=None, aux_target_style=None, aux_target_valid=None,
@@ -300,6 +330,13 @@ class FlowMatchingObjective:
             style_latent = target_style
 
         target = target_style
+
+        # Round10 brk_ad-A: Latent-space AdaIN — DWT 前对整个 VAE latent 做全局 AdaIN blending
+        # Math: content' = (1-γ)*content + γ*AdaIN(content → style)
+        # Theory: 在 wavelet 分解前注入全局色彩/对比度统计, 给模型 style "head start"
+        if self.latent_adain_enabled:
+            content = self._adain_blend(content, target, self.latent_adain_gamma)
+
         if self.structure_aligned_target:
             ll_c, lh_c, hl_c, hh_c = dwt2_haar(content)
             ll_t, lh_t, hl_t, hh_t = dwt2_haar(target)
@@ -335,6 +372,15 @@ class FlowMatchingObjective:
                 lh_t = self._wct_match_hf(lh_c, lh_t, self.hf_wct_beta)
                 hl_t = self._wct_match_hf(hl_c, hl_t, self.hf_wct_beta)
                 hh_t = self._wct_match_hf(hh_c, hh_t, self.hf_wct_beta)
+            # Round10 brk_ad-B: HF subband AdaIN blending — 替代硬替换
+            # Math: hf_k = (1-α_k)*hf_c + α_k*AdaIN(hf_c → hf_s), k∈{LH,HL,HH}
+            # Theory: AdaIN (对角协方差) 是硬替换和 WCT (全协方差) 之间的中间地带.
+            #   mean+std 匹配保留 content 空间结构, 同时迁移 style 色彩/纹理统计.
+            #   DINOv2 CLS 对 mid-freq 色彩统计敏感, AdaIN 直接匹配这些统计.
+            if self.hf_adain_enabled:
+                lh_t = self._adain_blend(lh_c, lh_t, self.hf_adain_alpha_lh)
+                hl_t = self._adain_blend(hl_c, hl_t, self.hf_adain_alpha_hl)
+                hh_t = self._adain_blend(hh_c, hh_t, self.hf_adain_alpha_hh)
             # Round8 brk_ab: HF over-stylization — beta>1.0 放大 HF 风格差异
             # target_hf = (1-beta)*hf_c + beta*hf_t = hf_c + beta*(hf_t - hf_c)
             # beta=1.0: 标准替换; beta>1.0: 放大风格差异, 增强纹理注入

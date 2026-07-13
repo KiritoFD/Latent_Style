@@ -1,0 +1,31 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "structure_aligned_target": true,
+    "ll_partial_style_enabled": true,
+    "ll_partial_alpha": 0.3,
+    "ll_partial_mode": "adain",
+    "latent_adain_enabled": true,
+    "latent_adain_gamma": 0.3,
+    "hf_adain_enabled": true,
+    "hf_adain_alpha_lh": 0.5,
+    "hf_adain_alpha_hl": 0.5,
+    "hf_adain_alpha_hh": 0.7
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 10,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_ad_adain_base"
+  },
+  "ablation": {
+    "name": "brk_ad_adain_base",
+    "axis": "dino_s_break",
+    "stage": "brk_round10",
+    "notes": "Round10 A+B+C combo: latent_adain γ=0.3 + hf_adain α=(0.5,0.5,0.7). AdaIN (diag cov) on HF subbands replaces hard replacement. Latent AdaIN gives style head start. Theory: AdaIN preserves content spatial structure while transferring style mean+std, targeting DINOv2 CLS sensitivity to mid-freq color stats."
+  }
+}
