@@ -39,6 +39,7 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_spatial_energy_ft6` | shared pooled HF + energy-bounded spatial residual | 0.486100 | 0.790866 | 0.024809 | 0.720364 | 0.297755 | 0.402737 | stronger probe path, but content cost and no all DINO-S win |
 | `target_hf_texture_ft6` | per-band stationary HF texture stats -> residual delta | 0.486044 | 0.798035 | 0.024473 | 0.718189 | 0.296399 | 0.401347 | safe but weaker than subband pooled |
 | `target_hf_subband_texture_ft6` | per-band pooled HF + stationary texture stats -> residual delta | 0.488420 | **0.798815** | 0.024596 | 0.719357 | **0.296046** | **0.404302** | near-best, better off-style and content, but no all DINO-S win |
+| `target_hf_content_anchor_ft6` | coordinate-free target HF code + content-energy placement residual | 0.484393 | 0.795462 | 0.024555 | 0.717251 | 0.298162 | 0.399538 | content-safe placement does not beat subband-only; slightly below strong/subband |
 
 ## Diagnosis
 
@@ -81,3 +82,30 @@ Current checkpoint recommendation:
 - Do not use raw spatial HF despite its high all DINO-S; it is content collapse.
 
 Next structural direction: improve the subband route's learned delta/base without exposing raw target coordinates. Energy-bounded spatial gives the right probe magnitude but needs a stronger content anchor. Stationary texture stats are safe but not sufficient as the main injection path; they can be kept as a diagnostic branch, not the current primary architecture.
+
+## Content-anchor experiment result (2026-07-13 late)
+
+`target_hf_content_anchor_ft6` finished on remote RTX 3060 (I:):
+
+- **Idea**: keep coordinate-free target HF codes (per-subband pooled), place residual with a **content HF energy mask** + energy bound vs current HF head velocity.
+- **Train**: 6ep from `brk_a_ll03_10ep`, batch 96, final loss ≈ 1.95, ckpt `epoch_0006.pt`.
+- **Eval protocol**: AdaIN 1.5, 750 pairs, canonical DINOv2-small, `exclude_source_from_style_refs=false`.
+
+| metric | content_anchor | subband-only (best) | delta |
+|---|---:|---:|---:|
+| all DINO-S | 0.484393 | **0.488624** | −0.0042 |
+| off DINO-S | 0.399538 | **0.403917** | −0.0044 |
+| DINO-C | 0.795462 | 0.798123 | −0.0027 |
+| CLIP-S | 0.717251 | 0.720880 | −0.0036 |
+| LPIPS | 0.298162 | 0.296553 | +0.0016 |
+
+**Verdict: FAIL as primary architecture.** Content-anchored placement is safe (no content collapse) but does not improve the main-table all DINO-S over subband-only. It is also slightly worse than `target_hf_delta_strong_ft6` (0.487036).
+
+Current recommendation unchanged:
+
+1. **Primary**: `target_hf_subband_ft6` (all DINO-S 0.488624)
+2. **Conservative alternate**: `target_hf_subband_texture_ft6` (best off DINO-S / DINO-C balance)
+3. **Fallback**: `target_hf_delta_strong_ft6`
+4. Do **not** promote content-anchor or raw spatial as main path
+
+Next structural direction (if still needed): increase subband route capacity without spatial target leak — e.g. multi-token subband codes / orientation-specific residual depth — not more placement engineering.

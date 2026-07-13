@@ -1,0 +1,37 @@
+﻿{
+  "note": "generation_only timing, RTX 3060 12GB, 750 pairs, 8-step, AdaIN=1.5, bs=2, profile_timing=true, 2026-07-13",
+  "runs": [
+    {
+      "name": "brk_a_ll03_10ep",
+      "exit": 0,
+      "wall_ps": 109.654,
+      "summary": "I:/Github/Latent_Style/SchrodingerBridge/exp/model_probe/inf_timing/brk_a_ll03_10ep/summary.json",
+      "wall_total": 94.63,
+      "lancet_generation": 53.569,
+      "vae_decode": 39.359,
+      "uint8_cpu_copy": 0.085,
+      "load_vae": 0.195,
+      "load_lancet": 0.269,
+      "source_latent_cache": 0.17,
+      "ms_per_img_wall": 126.17,
+      "ms_per_img_gen": 71.42,
+      "generation_batch_size": 2
+    },
+    {
+      "name": "target_hf_subband_ft6",
+      "exit": 0,
+      "wall_ps": 120.604,
+      "summary": "I:/Github/Latent_Style/SchrodingerBridge/exp/model_probe/inf_timing/target_hf_subband_ft6/summary.json",
+      "wall_total": 106.25,
+      "lancet_generation": 65.252,
+      "vae_decode": 39.341,
+      "uint8_cpu_copy": 0.078,
+      "load_vae": 0.189,
+      "load_lancet": 0.283,
+      "source_latent_cache": 0.167,
+      "ms_per_img_wall": 141.67,
+      "ms_per_img_gen": 87.0,
+      "generation_batch_size": 2
+    }
+  ]
+}

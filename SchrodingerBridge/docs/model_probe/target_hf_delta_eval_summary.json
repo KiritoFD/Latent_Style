@@ -106,5 +106,14 @@
     "clip_s": 0.719357,
     "lpips": 0.296046,
     "off_dino_s": 0.404302
+  },
+  {
+    "file": "target_hf_content_anchor_ft6/dino_summary_adain15.json",
+    "dino_s": 0.484393,
+    "dino_c": 0.795462,
+    "dino_structure": 0.024555,
+    "clip_s": 0.717251,
+    "lpips": 0.298162,
+    "off_dino_s": 0.399538
   }
 ]
