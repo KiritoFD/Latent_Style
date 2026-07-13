@@ -133,5 +133,14 @@
     "clip_s": 0.717588,
     "lpips": 0.297529,
     "off_dino_s": 0.397683
+  },
+  {
+    "file": "target_hf_subband_film_head_ft6/dino_summary_adain15.json",
+    "dino_s": 0.482591,
+    "dino_c": 0.791672,
+    "dino_structure": 0.024594,
+    "clip_s": 0.717951,
+    "lpips": 0.299591,
+    "off_dino_s": 0.398305
   }
 ]

@@ -38,6 +38,7 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 | `target_hf_content_anchor_ft6` | content-energy placement residual | 0.484393 | 0.795462 | 0.717251 | 0.298162 | 0.399538 | Safe but not competitive. |
 | `target_hf_multitoken_ft6` | stationary-stat multi-token residual | 0.483562 | 0.794129 | 0.718699 | 0.297979 | 0.398793 | Rejected; code removed. |
 | `target_hf_subband_deep_energy_ft6` | deep residual + RMS bound | 0.482631 | 0.794932 | 0.717588 | 0.297529 | 0.397683 | Rejected; code removed. |
+| `target_hf_subband_film_head_ft6` | pure subband FiLM into HF heads | 0.482591 | 0.791672 | 0.717951 | 0.299591 | 0.398305 | Rejected; config removed. |
 
 ## What This Proves
 

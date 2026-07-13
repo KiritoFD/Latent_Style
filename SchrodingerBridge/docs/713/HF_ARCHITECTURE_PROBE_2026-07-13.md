@@ -35,13 +35,14 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_spatial_ft6` | per-band spatial HF maps -> residual delta | 0.490074 | 0.404308 | 0.046968 | 0.748291 | 0.538240 | n/a | high style, content collapse |
 | `target_hf_subband_ft6` | per-band pooled HF -> residual delta only | **0.488624** | 0.798123 | **0.024536** | **0.720880** | 0.296553 | **0.403917** | best current usable architecture |
 | `target_hf_hybrid_ft6` | shared pooled HF + per-band residual delta | 0.485753 | 0.797810 | 0.024605 | 0.719710 | **0.295576** | 0.400962 | extra residuals do not help |
-| `target_hf_subband_head_ft6` | shared pooled HF + per-band code into main HF heads | 0.487264 | 0.798699 | 0.024614 | 0.719169 | 0.296164 | 0.402149 | slight style gain over strong, not over subband-only |
+| `target_hf_subband_head_ft6` | shared pooled HF residual + nominal per-band head code | 0.487264 | 0.798699 | 0.024614 | 0.719169 | 0.296164 | 0.402149 | not a clean head-conditioning test; `style_velocity_head_enabled` was off |
 | `target_hf_spatial_energy_ft6` | shared pooled HF + energy-bounded spatial residual | 0.486100 | 0.790866 | 0.024809 | 0.720364 | 0.297755 | 0.402737 | stronger probe path, but content cost and no all DINO-S win |
 | `target_hf_texture_ft6` | per-band stationary HF texture stats -> residual delta | 0.486044 | 0.798035 | 0.024473 | 0.718189 | 0.296399 | 0.401347 | safe but weaker than subband pooled |
 | `target_hf_subband_texture_ft6` | per-band pooled HF + stationary texture stats -> residual delta | 0.488420 | **0.798815** | 0.024596 | 0.719357 | **0.296046** | **0.404302** | near-best, better off-style and content, but no all DINO-S win |
 | `target_hf_content_anchor_ft6` | coordinate-free target HF code + content-energy placement residual | 0.484393 | 0.795462 | 0.024555 | 0.717251 | 0.298162 | 0.399538 | content-safe placement does not beat subband-only; slightly below strong/subband |
 | `target_hf_multitoken_ft6` | per-band stationary-stat tokens -> attention residual delta | 0.483562 | 0.794129 | 0.024531 | 0.718699 | 0.297979 | 0.398793 | rejected: more statistic tokens did not improve style or content |
 | `target_hf_subband_deep_energy_ft6` | deeper per-band pooled HF residual + RMS bound | 0.482631 | 0.794932 | **0.024497** | 0.717588 | 0.297529 | 0.397683 | rejected: extra residual capacity with RMS bound weakens style/content frontier |
+| `target_hf_subband_film_head_ft6` | pure per-band target-HF FiLM into main HF heads | 0.482591 | 0.791672 | 0.024594 | 0.717951 | 0.299591 | 0.398305 | rejected: live head-conditioning path, but weaker than residual subband route |
 
 ## Diagnosis
 
@@ -110,7 +111,7 @@ Current recommendation unchanged:
 3. **Fallback**: `target_hf_delta_strong_ft6`
 4. Do **not** promote content-anchor or raw spatial as main path
 
-Next structural direction (if still needed): do not simply deepen the subband residual or add more stationary tokens. Both tested variants underperform. The remaining open direction is a cleaner target-HF conditioner that changes how the main HF heads read the style code, not an additive residual with more capacity.
+Next structural direction (if still needed): do not simply deepen the subband residual, add more stationary tokens, or route the pooled code through a newly initialized HF-head FiLM. All three variants underperform. The current best explanation is that the shallow additive subband residual is useful because it preserves the pretrained HF heads and adds a small direction-specific correction; larger or more invasive conditioning perturbs that learned velocity field.
 
 ## Stationary-stat multi-token result (2026-07-14)
 
@@ -139,3 +140,17 @@ Next structural direction (if still needed): do not simply deepen the subband re
 | LPIPS | 0.297529 | 0.296553 | +0.0010 |
 
 **Verdict: FAIL; code/config/pipeline removed.** This falsifies the simple "more residual capacity under an RMS guardrail" story. The likely issue is that additive residual capacity still competes with the already learned HF heads instead of improving their conditioning. Future attempts should modify the HF head conditioning path itself or the training target decomposition, not bolt on a larger residual branch.
+
+## Pure subband FiLM head-conditioning result (2026-07-14)
+
+`target_hf_subband_film_head_ft6` was run after re-checking `target_hf_subband_head_ft6`. The older run did not isolate head conditioning: `style_velocity_head_enabled` was off, so the per-band code was not consumed by plain `VelocityHead`; the measured gain mostly came from the shared HF residual. The new run enabled style-conditioned HF heads and injected per-band target-HF codes into LH/HL/HH FiLM, with no additive target-HF residual and no raw target coordinates. Local smoke verified that the subband path was active, shared residual was inactive, target-style latent changed HF outputs, and both FiLM/head-code gradients were nonzero.
+
+| metric | pure FiLM head | subband-only (best) | delta |
+|---|---:|---:|---:|
+| all DINO-S | 0.482591 | **0.488624** | -0.0060 |
+| off DINO-S | 0.398305 | **0.403917** | -0.0056 |
+| DINO-C | 0.791672 | 0.798123 | -0.0065 |
+| CLIP-S | 0.717951 | 0.720880 | -0.0029 |
+| LPIPS | 0.299591 | 0.296553 | +0.0030 |
+
+**Verdict: FAIL; config/pipeline removed.** This falsifies the simple "put the target-HF code directly into the main head" hypothesis. A newly introduced FiLM path appears to disturb the pretrained HF velocity heads more than it helps style routing. The surviving method story stays simpler: use the pretrained spectral bridge, keep LL protected, and add a compact per-orientation target-HF residual only on HF bands.
