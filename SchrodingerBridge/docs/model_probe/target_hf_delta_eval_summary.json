@@ -115,5 +115,14 @@
     "clip_s": 0.717251,
     "lpips": 0.298162,
     "off_dino_s": 0.399538
+  },
+  {
+    "file": "target_hf_multitoken_ft6/dino_summary_adain15.json",
+    "dino_s": 0.483562,
+    "dino_c": 0.794129,
+    "dino_structure": 0.024531,
+    "clip_s": 0.718699,
+    "lpips": 0.297979,
+    "off_dino_s": 0.398793
   }
 ]

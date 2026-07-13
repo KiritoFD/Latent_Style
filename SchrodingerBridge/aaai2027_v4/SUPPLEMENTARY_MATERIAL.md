@@ -3,7 +3,7 @@
 **Status:** submission-facing supplement map aligned with the current AAAI v4 paper.
 **Last updated:** 2026-07-13.
 **Formal long source:** `aaai2027_v4/supplement.tex`.
-**Scope:** evaluation protocol, metric semantics, radar conventions, repo/remote audit, mechanism probes, training/inference accounting, and next architecture plan.
+**Scope:** evaluation protocol, metric semantics, radar conventions, artifact audit, mechanism probes, training/inference accounting, and next architecture plan.
 
 This document is the compact reader-facing map. The full reproducibility ledger, commands, and figures are in `supplement.tex`.
 
@@ -25,7 +25,7 @@ Use this priority order when resolving conflicts:
 | Timing | `docs/model_probe/generation_only_timing_summary.json` |
 | Archived legacy docs | `docs/archive/713_external_legacy/` |
 
-The local repository is currently an active research worktree, not a clean release tree. The remote `I:` tree is a synchronized experiment filesystem, not a git repository. The paper-facing supplement therefore cites committed paper files, frozen run snapshots, and explicit JSON/Markdown sidecars rather than ambient filesystem state.
+The project repository is an active research worktree, not a clean release tree. The paper-facing supplement therefore cites committed paper files, frozen run snapshots, and explicit JSON/Markdown sidecars rather than ambient filesystem state.
 
 ---
 
@@ -186,7 +186,7 @@ The next useful change is not more gate tuning or raw epoch extension. It is a s
 ```text
 target image
   -> DWT HF
-  -> multi-token per-subband style code
+  -> compact per-subband style code
   -> orientation-specific HF residual depth
   -> energy-normalized LH/HL/HH velocity
 ```
@@ -195,7 +195,7 @@ Keep:
 
 | Choice | Reason |
 |---|---|
-| Multi-token per-subband style codes | More capacity without target-coordinate leakage. |
+| Compact per-subband style codes | Current best route; keeps target coordinates disconnected. |
 | Orientation-specific LH/HL/HH residuals | Stroke direction and texture statistics are band-specific. |
 | Energy normalization vs current HF heads | Prevents style route from overwhelming content structure. |
 | LL protection | Avoids buying DINO-S by spending the content budget. |
@@ -206,6 +206,7 @@ Avoid:
 |---|---|
 | Raw target HF maps | Already causes content collapse. |
 | Global target-token fusion | Over-controls LL. |
+| Stationary-stat multi-token widening | Tested after the main probe; worse than subband-only on DINO-S, DINO-C, CLIP-S, LPIPS, and off-DINO-S. |
 | Treating CFG as proven content fix | Earlier CFG runs were confounded with style delta heads, DWT route, HH head, and larger gates. |
 
 Any promoted architecture must be rerun on D5-512, P2A-256, and R5-WikiArt with DINO-S primary, CLIP-S secondary, and DINO-C/LPIPS used to reject content-collapse wins.

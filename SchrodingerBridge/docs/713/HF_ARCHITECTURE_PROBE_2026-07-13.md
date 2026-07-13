@@ -40,6 +40,7 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_texture_ft6` | per-band stationary HF texture stats -> residual delta | 0.486044 | 0.798035 | 0.024473 | 0.718189 | 0.296399 | 0.401347 | safe but weaker than subband pooled |
 | `target_hf_subband_texture_ft6` | per-band pooled HF + stationary texture stats -> residual delta | 0.488420 | **0.798815** | 0.024596 | 0.719357 | **0.296046** | **0.404302** | near-best, better off-style and content, but no all DINO-S win |
 | `target_hf_content_anchor_ft6` | coordinate-free target HF code + content-energy placement residual | 0.484393 | 0.795462 | 0.024555 | 0.717251 | 0.298162 | 0.399538 | content-safe placement does not beat subband-only; slightly below strong/subband |
+| `target_hf_multitoken_ft6` | per-band stationary-stat tokens -> attention residual delta | 0.483562 | 0.794129 | 0.024531 | 0.718699 | 0.297979 | 0.398793 | rejected: more statistic tokens did not improve style or content |
 
 ## Diagnosis
 
@@ -62,7 +63,7 @@ The subband route is useful under the main table protocol, but the probe shows w
 
 By contrast, raw spatial reaches delta/base around `1.0` but destroys content. Energy-bounded spatial moves in the right probe direction, but its extra HF strength currently spends content budget without increasing all DINO-S over subband-only.
 
-The stationary texture-stat route tested the intended safer alternative to raw spatial injection: target HF maps are reduced to per-subband mean/std/RMS/absolute-energy statistics, so target coordinates cannot pass through. The route is safe, and combining it with subband pooling increases the measured target-latent condition strength, especially on `HL/HH`. However, the main-table all DINO-S remains slightly below subband-only (`0.488420` vs `0.488624`). The useful lesson is that widening the pooled bottleneck is not enough by itself; the model benefits most from a simple per-orientation target-HF code, while additional stationary statistics mostly improve off-diagonal style and content preservation.
+The stationary texture-stat route tested the intended safer alternative to raw spatial injection: target HF maps are reduced to per-subband mean/std/RMS/absolute-energy statistics, so target coordinates cannot pass through. The route is safe, and combining it with subband pooling increases the measured target-latent condition strength, especially on `HL/HH`. However, the main-table all DINO-S remains slightly below subband-only (`0.488420` vs `0.488624`). A later stationary-stat multi-token variant also failed (`0.483562` DINO-S, `0.398793` off-DINO-S), so merely adding more coordinate-free statistic tokens is not the next lever. The useful lesson is narrower: the model benefits most from a simple per-orientation target-HF code, while additional stationary statistics mostly improve off-diagonal style/content balance only when paired with subband pooling.
 
 Important protocol note: earlier low values around `0.44` came from recomputing DINO-S with `exclude_source_from_style_refs=true`. The delivered main-table numbers use `exclude_source_from_style_refs=false`. Off-diagonal DINO-S remains the cleaner style-only sanity check and is reported above.
 
@@ -81,7 +82,7 @@ Current checkpoint recommendation:
 - Keep `target_hf_delta_strong_ft6/epoch_0006.pt` as the older fallback because its behavior is simpler and already better than the baseline.
 - Do not use raw spatial HF despite its high all DINO-S; it is content collapse.
 
-Next structural direction: improve the subband route's learned delta/base without exposing raw target coordinates. Energy-bounded spatial gives the right probe magnitude but needs a stronger content anchor. Stationary texture stats are safe but not sufficient as the main injection path; they can be kept as a diagnostic branch, not the current primary architecture.
+Next structural direction: improve the subband route's learned delta/base without exposing raw target coordinates. Energy-bounded spatial gives the right probe magnitude but needs a stronger content anchor. Stationary texture stats are safe but not sufficient as the main injection path; the failed multi-token statistic route should not be kept in code. Prefer simpler orientation-specific HF residual capacity and energy normalization over more statistic-token width.
 
 ## Content-anchor experiment result (2026-07-13 late)
 
@@ -108,4 +109,18 @@ Current recommendation unchanged:
 3. **Fallback**: `target_hf_delta_strong_ft6`
 4. Do **not** promote content-anchor or raw spatial as main path
 
-Next structural direction (if still needed): increase subband route capacity without spatial target leak — e.g. multi-token subband codes / orientation-specific residual depth — not more placement engineering.
+Next structural direction (if still needed): increase subband route capacity without spatial target leak via orientation-specific residual depth and energy normalization, not more placement engineering or stationary-stat token width.
+
+## Stationary-stat multi-token result (2026-07-14)
+
+`target_hf_multitoken_ft6` tested a wider coordinate-free code: each target HF band was encoded as four stationary statistic tokens (mean, std, RMS, absolute energy), and decoder features queried those tokens with attention to produce per-band residual velocity. The implementation was removed after the run because it did not improve the frontier.
+
+| metric | multitoken | subband-only (best) | delta |
+|---|---:|---:|---:|
+| all DINO-S | 0.483562 | **0.488624** | -0.0051 |
+| off DINO-S | 0.398793 | **0.403917** | -0.0051 |
+| DINO-C | 0.794129 | 0.798123 | -0.0040 |
+| CLIP-S | 0.718699 | 0.720880 | -0.0022 |
+| LPIPS | 0.297979 | 0.296553 | +0.0014 |
+
+**Verdict: FAIL; code removed.** This negative result is useful because it separates "more coordinate-free statistics" from the actual missing route. The bottleneck is not just token count; the useful path still appears to be a compact orientation-specific target-HF code with the residual energy controlled against the existing HF heads.

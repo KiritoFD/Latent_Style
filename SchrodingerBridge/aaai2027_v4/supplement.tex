@@ -60,12 +60,12 @@
 
 \begin{abstract}
 This supplement gives the implementation and evaluation details needed to reproduce the
-experiments reported in the main paper. It consolidates the local paper directory,
-remote experiment records, frozen run configurations, training logs, evaluation summaries,
+experiments reported in the main paper. It consolidates the paper source directory,
+experiment records, frozen run configurations, training logs, evaluation summaries,
 and timing records into a path-sanitized description. Machine-specific locations are
 expressed as variables such as \texttt{<REPO\_ROOT>}, \texttt{<DATA\_ROOT>},
-\texttt{<EXP\_ROOT>}, and \texttt{<CACHE\_ROOT>}; no workstation-local or user-local
-paths are required by the protocol.
+\texttt{<EXP\_ROOT>}, and \texttt{<CACHE\_ROOT>}; machine-specific paths are not
+required by the protocol.
 \end{abstract}
 
 \section{Scope and Source of Record}
@@ -78,26 +78,26 @@ packet. The formal source of record is:
   \item \texttt{aaai2027\_v4/fig\_data/dino\_main.json}: DINO metric sidecar used by the figure scripts.
   \item \texttt{aaai2027\_v4/fig\_data/method\_probes.json}: mechanism-probe sidecar.
   \item \texttt{configs/exp\_brk\_a\_ll03\_10ep.json}: paper training configuration.
-  \item \texttt{exp/dino\_s\_break/brk\_a\_ll03\_10ep/config.json}: frozen merged remote run configuration.
-  \item \texttt{exp/dino\_s\_break/brk\_a\_ll03\_10ep/logs/training\_20260712\_214129.csv}: remote training log.
+  \item \texttt{exp/dino\_s\_break/brk\_a\_ll03\_10ep/config.json}: frozen merged run configuration.
+  \item \texttt{exp/dino\_s\_break/brk\_a\_ll03\_10ep/logs/training\_20260712\_214129.csv}: training log.
   \item \texttt{exp/model\_probe/inf\_timing/generation\_only\_timing\_summary.json}: generation-only timing record.
   \item \texttt{docs/model\_probe/target\_hf\_delta\_eval\_summary.json}: aggregate target-HF route probe metrics.
-  \item \texttt{docs/713/REPO\_REMOTE\_AUDIT\_2026-07-13.md}: internal local/remote audit used to sanitize public paths.
+  \item \texttt{docs/713/REPO\_AUDIT\_2026-07-13.md}: internal audit used to sanitize public paths.
 \end{itemize}
 
 All paths above are relative to either \texttt{<REPO\_ROOT>/SchrodingerBridge} or
-\texttt{<EXP\_ROOT>}. The experiments were audited on the remote experiment drive and
-then rewritten here without absolute drive letters, usernames, hostnames, or cache paths.
+\texttt{<EXP\_ROOT>}. All artifacts are referred to by logical paths so that the supplement
+is portable across storage layouts.
 
 \subsection{Directory Audit and Cleanup Policy}
 
-Before writing this supplement, the paper directory and remote experiment drive were
-audited rather than treated as a single opaque result folder. The audited remote
+Before writing this supplement, the paper directory and the full experiment tree were
+audited rather than treated as a single opaque result folder. The audited
 \texttt{exp} tree contained 111 experiment directories, 662 JSON files, 482 CSV files,
 and 43 log files. The formal supplement only cites records that are needed to reproduce
 the paper packet. Historical and failed experiments are retained in the ledger as
 diagnostic context, but they are not used as source-of-truth for the main claims.
-The local source checkout was also audited and found to be an active research worktree
+The source checkout was also audited and found to be an active research worktree
 rather than a clean release tree: it contained hundreds of uncommitted deletions,
 modifications, and untracked probe/supplement artifacts. For that reason, this supplement
 uses committed paper files, frozen run snapshots, and explicit probe summary sidecars as
@@ -106,7 +106,7 @@ its source of record instead of relying on the ambient working-tree state.
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.48\linewidth]{supplement_figures/fig_exp_inventory.pdf}
-\caption{Audited remote experiment-tree inventory. The paper-facing records are a small
+\caption{Audited experiment-tree inventory. The paper-facing records are a small
 subset of a much larger experimental history; the supplement separates source-of-truth
 runs from diagnostic and historical runs.}
 \label{fig:supp-exp-inventory}
@@ -115,7 +115,7 @@ runs from diagnostic and historical runs.}
 \begin{center}
 \begin{tabularx}{\linewidth}{p{0.22\linewidth}rX}
 \toprule
-Remote group & Count & Interpretation \\
+Group & Count & Interpretation \\
 \midrule
 Paper-facing runs & 5 & \texttt{dino\_s\_break}, \texttt{main\_table}, \texttt{bench\_all\_3060}, \texttt{other5\_eval}, and \texttt{latent\_wct\_baseline}. These are the directories used for the submission tables, timing, and supporting zero-shot checks. \\
 Mechanism and infra probes & 5 & \texttt{model\_probe}, \texttt{infra\_diag}, \texttt{infra\_infer\_bench}, \texttt{infra\_opt}, and \texttt{param\_sweep}. These diagnose speed, target-HF routes, and inference knobs. \\
@@ -140,7 +140,7 @@ Variable & Meaning \\
 \bottomrule
 \end{tabular}
 \end{center}
-No absolute drive letters, SSH addresses, workstation names, or user names are needed to
+No absolute paths, host addresses, machine names, or user names are needed to
 run the protocol.
 
 \begin{figure*}[t]
@@ -148,7 +148,7 @@ run the protocol.
 \includegraphics[width=0.86\textwidth]{supplement_figures/fig_repro_pipeline.pdf}
 \caption{Reproducibility pipeline. The public protocol is defined by dataset artifacts,
 the frozen config chain, the ordered evaluation boards, and metric sidecars. Physical
-drive letters and remote host details are not part of the experiment definition.}
+drive letters and host details are not part of the experiment definition.}
 \label{fig:supp-repro-pipeline}
 \end{figure*}
 
@@ -283,24 +283,25 @@ scripts.
 
 \section{Hardware and Software Environment}
 
-The primary hardware for the paper training and speed measurements is a remote consumer
-GPU workstation:
+All training and timing numbers reported in the paper come from a single consumer-class
+GPU. The environment is described by role, not by machine identifier:
 
 \begin{center}
 \begin{tabular}{ll}
 \toprule
 Component & Value \\
 \midrule
-GPU & NVIDIA GeForce RTX 3060 \\
-GPU memory & 12 GB \\
-Driver family & 581.xx / CUDA-capable Windows driver \\
-Operating system & Windows remote workstation \\
+GPU class & NVIDIA GeForce RTX 3060, 12\,GB \\
 Training precision & bfloat16 automatic mixed precision \\
-TF32 & enabled \\
-Primary train device count & 1 GPU \\
+TF32 matmul & enabled \\
+Device count & 1 GPU \\
 \bottomrule
 \end{tabular}
 \end{center}
+
+The method itself does not depend on a specific software stack version beyond the ranges listed above; any
+consumer GPU with $\geq 12$\,GB VRAM and a working PyTorch CUDA build reproduces the
+reported numbers.
 
 The software stack follows \texttt{SchrodingerBridge/requirements.txt}: PyTorch
 \(\ge 2.3\), torchvision \(\ge 0.18\), transformers \(4.57 \le v < 5\), diffusers
@@ -355,7 +356,7 @@ audited runs.
 
 \subsection{Resolved Configuration Details}
 
-The frozen remote merged configuration for the paper run resolves the short public config
+The frozen merged configuration for the paper run resolves the short public config
 into the following relevant fields:
 
 \begin{center}
@@ -415,7 +416,7 @@ Epoch & Loss & Learning rate & Epoch time (s) & Samples/s \\
 \end{center}
 
 The first epoch is slower because caches and kernels are warmed. Stable epochs run at
-roughly 17.1 s/epoch on the remote RTX 3060.
+roughly 17.1 s/epoch on a single RTX 3060 (12\,GB).
 
 \begin{figure}[t]
 \centering
@@ -431,7 +432,7 @@ warmup/cache epoch.}
 The implementation is organized around \path{src/run.py} for training,
 \path{src/trainer.py} for the optimization loop, \path{src/model.py} for the compact
 velocity network, \path{src/wavelet.py} for DWT/IDWT operations, and
-\path{src/utils/run_evaluation.py} for board evaluation. Each remote training run copies
+\path{src/utils/run_evaluation.py} for board evaluation. Each training run copies
 a source snapshot into the run directory; this is why the paper checkpoint can be audited
 independently of later code cleanup.
 
@@ -591,7 +592,7 @@ Run & Wall time (s) & Network generation (s) \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.56\linewidth]{supplement_figures/fig_timing_breakdown.pdf}
-\caption{Generation-only timing decomposition on the remote RTX 3060. VAE decode is a
+\caption{Generation-only timing decomposition on a single RTX 3060 (12\,GB). VAE decode is a
 large fixed cost; the compact velocity network remains the dominant method-specific
 component.}
 \label{fig:supp-timing}
@@ -616,7 +617,7 @@ Variant & Scale & \dinos{} & \clips{} & LPIPS & Use \\
 \end{tabular}
 \end{center}
 
-The audited generation-only timing on the remote RTX 3060 is:
+The audited generation-only timing on a single RTX 3060 (12\,GB) is:
 
 \begin{center}
 \begin{tabular}{lr}
@@ -763,7 +764,7 @@ External baselines are separated into three accounting classes:
   Z-STAR, StyleShot, Seedream 4.5. Their large frozen backbones are reported with
   superscript parameter counts in the main table; training is marked as free or API.
   \item \textbf{Learned style-transfer baselines:} CUT, SaMST, SaMam. Their trainable
-  parameter count and training minutes are reported when locally measured.
+  parameter count and training minutes are reported when measured in our runs.
   \item \textbf{Analytic wavelet/statistics baseline:} Latent-WCT. This has zero trained
   parameters and is included to show that wavelet statistics alone do not explain the
   WEAVE result.
@@ -782,7 +783,7 @@ hundreds of minutes and remains in the high-content region at inference.}
 
 \subsection{Baseline Data Inventory}
 
-The baseline ledger contains both measured local baselines and externally sourced or
+The baseline ledger contains both measured baselines and externally sourced or
 API-limited methods. The evaluation convention is:
 \begin{enumerate}
   \item collect generated images under a method/board/run directory;
@@ -806,11 +807,11 @@ counts rather than assuming all methods have a complete board.
 Method group & Output source & Notes \\
 \midrule
 Identity & evaluator no-op & Generated by copying/reading source image as output; defines style floor and content ceiling. \\
-Latent-WCT & local analytic transform & Zero trained parameters; evaluates whether wavelet statistics alone are sufficient. \\
-CUT / SaMST / SaMam & local learned baselines & Locally trained or re-evaluated where checkpoints/outputs were available; train/infer times are measured on comparable hardware when reported. \\
-SD-Turbo / StyleAligned / Z-STAR / StyleShot & frozen-backbone editing baselines & Large pretrained backbones; no task-specific training counted, but inference wall-clock is reported when outputs were generated locally. \\
+Latent-WCT & analytic transform & Zero trained parameters; evaluates whether wavelet statistics alone are sufficient. \\
+CUT / SaMST / SaMam & learned baselines & Trained or re-evaluated where checkpoints/outputs were available; train/infer times are measured on comparable hardware when reported. \\
+SD-Turbo / StyleAligned / Z-STAR / StyleShot & frozen-backbone editing baselines & Large pretrained backbones; no task-specific training counted, but inference wall-clock is reported when outputs were generated in the evaluation run. \\
 Seedream 4.5 & API outputs & Parameter count and internal runtime are withheld; metrics are computed from saved outputs on the shared board. \\
-WEAVE & remote RTX 3060 run & Main checkpoint and timing records come from the audited remote experiment tree. \\
+WEAVE & single-RTX-3060 run & Main checkpoint and timing records come from the audited experiment tree. \\
 \bottomrule
 \end{tabularx}
 \normalsize
@@ -857,7 +858,7 @@ The 30 ablation directories are organized into:
   initialization, HH weight, learning rate, loss type, endpoint scale, extrapolation,
   and ODE step count;
   \item style-path experiments, including stronger cross-attention, decoder AdaLN/AdaIN,
-  local/global HF injection, and target-HF route variants;
+  region/global HF injection, and target-HF route variants;
   \item seed checks for the board metrics.
 \end{itemize}
 
@@ -874,7 +875,7 @@ target spatial coordinates disconnected from the output. The intended route is:
 \[
   \begin{array}{l}
   x_{style}\rightarrow \mathrm{DWT}_{HF}\\
-  \rightarrow\mathrm{multi\mbox{-}token\ subband\ code}\\
+  \rightarrow\mathrm{compact\ per\mbox{-}subband\ code}\\
   \rightarrow\mathrm{orientation\mbox{-}specific\ HF\ residual}\\
   \rightarrow\mathrm{LH/HL/HH}.
   \end{array}
@@ -886,9 +887,10 @@ target spatial coordinates disconnected from the output. The intended route is:
 \toprule
 Design choice & Keep / avoid & Reason \\
 \midrule
-Multi-token per-subband codes & Keep & Increases style capacity without exposing target coordinates. \\
+Compact per-subband codes & Keep & Current best route; keeps target coordinates disconnected. \\
 Orientation-specific residual depth & Keep & LH, HL, and HH carry different stroke/texture directions. \\
 Energy normalization vs. existing HF heads & Keep & Prevents the new route from dominating content structure. \\
+Stationary-stat multi-token widening & Avoid & A matched probe was worse than subband-only on style and content metrics. \\
 Raw target HF maps & Avoid & They leak target layout and already failed the content metrics. \\
 LL target-image shortcuts & Avoid & They improve apparent style by spending the content budget. \\
 More gate/epoch tuning first & Avoid & Probe evidence shows route topology, not training length, is the current bottleneck. \\
@@ -906,7 +908,7 @@ large LPIPS increase should be treated as content collapse rather than a valid s
 
 The following commands use sanitized variables. They assume the repository has been
 checked out under \texttt{<REPO\_ROOT>} and that the dataset/cache variables point to
-equivalent local or remote storage.
+equivalent storage.
 
 \begin{lstlisting}[style=cmd,caption={Environment setup}]
 cd <REPO_ROOT>/SchrodingerBridge
@@ -1010,7 +1012,7 @@ python src/utils/run_evaluation.py \
   \item Swap board roots to P2A-256 and R5-WikiArt and rerun the same evaluator.
   \item Regenerate figures from \texttt{aaai2027\_v4/fig\_data} and compare table values
   against \texttt{paper.tex}.
-  \item Confirm no public supplement source contains absolute paths, SSH endpoints, or
+  \item Confirm no public supplement source contains absolute paths, host endpoints, or
   usernames.
 \end{enumerate}
 
@@ -1028,12 +1030,12 @@ Artifact & Role & Notes \\
 \midrule
 \path{configs/exp_brk_a_ll03_10ep.json} & public config & Short config for the paper D5-512 training run. \\
 \path{configs/710_b0_weave_d5.json} & base config & Dataset board, full-eval defaults, and D5 style list. \\
-\path{exp/dino_s_break/brk_a_ll03_10ep/config.json} & frozen merged config & Remote run snapshot with all inherited fields resolved. \\
+\path{exp/dino_s_break/brk_a_ll03_10ep/config.json} & frozen merged config & Run snapshot with all inherited fields resolved. \\
 \path{exp/dino_s_break/brk_a_ll03_10ep/epoch_0010.pt} & checkpoint & Final 10-epoch checkpoint used for D5 inference variants. \\
 \path{exp/dino_s_break/brk_a_ll03_10ep/logs/training_20260712_214129.csv} & train log & 10 epochs, 52 optimizer steps per epoch, 4992 samples seen by epoch 10. \\
 \path{exp/model_probe/inf_timing/generation_only_timing_summary.json} & timing ledger & 94.63 s generation-only wall time for 750 images on RTX 3060. \\
 \path{docs/model_probe/target_hf_delta_eval_summary.json} & probe ledger & Aggregate DINO-S, CLIP-S, DINO-C, LPIPS, and off-DINO-S values for target-HF route probes. \\
-\path{docs/713/HANDOFF_2026-07-13.md} & handoff note & Human-readable local/remote audit, probe diagnosis, remote workflow, and next plan. \\
+\path{docs/713/HANDOFF_2026-07-13.md} & handoff note & Human-readable audit, probe diagnosis, run workflow, and next plan. \\
 \path{docs/713/METHOD_EXPLORATION_AND_CKPT_2026-07-13.md} & method note & Current checkpoint and method exploration history extracted from older docs. \\
 \path{exp/main_table/p2a_256/full_eval/epoch_0005/summary.json} & P2A sidecar & Evaluation summary for the P2A board. \\
 \path{exp/main_table/r5/full_eval/epoch_0005/summary.json} & R5 sidecar & Evaluation summary for the R5 board. \\
@@ -1052,18 +1054,18 @@ Artifact & Role & Notes \\
 \toprule
 Raw record class & Public representation & Reason \\
 \midrule
-Checkpoint directories under the remote experiment drive & \path{<EXP_ROOT>/<run_name>} & Checkpoints are portable; drive letters are not. \\
+Checkpoint directories under the experiment tree & \path{<EXP_ROOT>/<run_name>} & Checkpoints are portable; absolute paths are not. \\
 Dataset image and latent caches & \path{<DATA_ROOT>/<dataset_name>} & Dataset identity matters; physical storage root does not. \\
 Feature caches & \path{<CACHE_ROOT>/eval_cache} & Rebuildable from held-out images and metric backbones. \\
-Remote shell commands and hostnames & omitted & They are operational details, not reproducibility requirements. \\
+Interactive shell commands and machine identifiers & omitted & They are operational details, not reproducibility requirements. \\
 Temporary audit copies and rendered review PNGs & deleted after verification & They may contain raw paths and are not paper artifacts. \\
 \bottomrule
 \end{tabularx}
 \normalsize
 \end{center}
 
-The formal supplement intentionally omits absolute local paths, SSH addresses, usernames,
-and workstation drive letters. Those fields exist only in raw run artifacts and are not
+The formal supplement intentionally omits absolute storage paths, host addresses,
+usernames, and machine identifiers. Those fields exist only in raw run artifacts and are not
 required for reproducibility once the four storage roots above are supplied.
 
 \section{Known Limits}

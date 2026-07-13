@@ -36,6 +36,7 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 | `target_hf_subband_ft6` | per-subband pooled HF residual | **0.488624** | 0.798123 | **0.720880** | 0.296553 | 0.403917 | Primary current architecture. |
 | `target_hf_subband_texture_ft6` | subband pooled + stationary texture stats | 0.488420 | **0.798815** | 0.719357 | **0.296046** | **0.404302** | Conservative alternate. |
 | `target_hf_content_anchor_ft6` | content-energy placement residual | 0.484393 | 0.795462 | 0.717251 | 0.298162 | 0.399538 | Safe but not competitive. |
+| `target_hf_multitoken_ft6` | stationary-stat multi-token residual | 0.483562 | 0.794129 | 0.718699 | 0.297979 | 0.398793 | Rejected; code removed. |
 
 ## What This Proves
 
@@ -43,7 +44,8 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 2. **Raw target spatial information is unsafe.** The same route destroys DINO-C and LPIPS, so it leaks target layout rather than only style.
 3. **Coordinate-free HF codes are the usable middle ground.** Pooled subband codes improve style while retaining content.
 4. **Extra stationary statistics are not automatically better.** Texture stats help off-diagonal style and content slightly, but do not beat simple subband pooling on all-pairs DINO-S.
-5. **More placement engineering is not the next lever.** Content-anchor placement is safe but weaker, suggesting the next gain should come from richer coordinate-free style tokens, not spatial target maps.
+5. **More placement engineering is not the next lever.** Content-anchor placement is safe but weaker.
+6. **More stationary-stat tokens are not enough.** The 2026-07-14 multi-token route underperformed subband-only on all tracked metrics, so the next gain should come from better orientation-specific residual structure rather than wider statistic-token conditioning.
 
 ## Method Framing
 
@@ -77,9 +79,9 @@ Do not promote the raw spatial route. If incorporating the HF route into the pap
 
 Increase coordinate-free HF capacity without target spatial leakage:
 
-1. Multi-token per-subband style code.
-2. Orientation-specific residual depth for LH/HL/HH.
-3. Energy normalization against existing HF head output.
+1. Orientation-specific residual depth for LH/HL/HH.
+2. Energy normalization against existing HF head output.
+3. Stronger but compact subband residual head.
 4. Keep LL disconnected from target image features except the existing mild LL target blend.
 
 ### C. Evaluation next step

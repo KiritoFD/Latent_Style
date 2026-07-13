@@ -123,6 +123,7 @@ The 713 probe series opened the missing image-specific target-style path.
 | Pooled per-subband HF code | Best usable route | Coordinate-free style signal, content preserved. |
 | Stationary texture stats | Safe but weak alone | Useful diagnostic, not enough by itself. |
 | Content-anchor placement | Safe but weaker | Placement engineering is not the next main lever. |
+| Stationary-stat multi-token code | Weaker than subband-only | More coordinate-free statistics did not improve the route. |
 
 Current best probe:
 
@@ -141,6 +142,7 @@ Rejected:
 | Run | DINO-S | DINO-C | CLIP-S | LPIPS | Reason |
 |---|---:|---:|---:|---:|---|
 | `target_hf_spatial_ft6` | **0.490074** | 0.404308 | **0.748291** | 0.538240 | Content collapse from target layout leak. |
+| `target_hf_multitoken_ft6` | 0.483562 | 0.794129 | 0.718699 | 0.297979 | Worse than subband-only; code removed. |
 
 ## 5. Correct Theory After Probing
 
@@ -166,9 +168,9 @@ Architecture-first plan:
 
 | Step | Experiment | Success condition |
 |---|---|---|
-| 1 | Multi-token per-subband HF style code | DINO-S improves over `target_hf_subband_ft6` without DINO-C/LPIPS collapse. |
-| 2 | Orientation-specific residual depth for LH/HL/HH | Better stroke direction handling, no raw target map leak. |
-| 3 | Energy-normalized HF residual | Residual energy stays bounded against existing HF heads. |
+| 1 | Orientation-specific residual depth for LH/HL/HH | Better stroke direction handling, no raw target map leak. |
+| 2 | Energy-normalized HF residual | Residual energy stays bounded against existing HF heads. |
+| 3 | Stronger but compact subband residual head | DINO-S improves over `target_hf_subband_ft6` without DINO-C/LPIPS collapse. |
 | 4 | Full D5/P2A/R5 rerun | Required before promoting any probe to main table. |
 | 5 | Matched CFG ablation only if needed | Separate CFG from DWT route, HH head, delta heads, and gate changes. |
 
@@ -180,6 +182,7 @@ Do not prioritize:
 | Raw spatial target-HF maps | Already failed content metrics. |
 | LL target-image shortcuts | Likely buys style by spending content. |
 | More placement engineering after content-anchor | Latest placement attempt is safe but weaker. |
+| Stationary-stat multi-token code | Tested and removed; it underperformed subband-only on all tracked metrics. |
 | Generic decoder AdaLN/AdaIN | Already repeatedly negative. |
 
 ## 7. Method-writing Guidance
