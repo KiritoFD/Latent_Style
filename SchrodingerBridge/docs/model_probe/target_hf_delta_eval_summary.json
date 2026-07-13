@@ -124,5 +124,14 @@
     "clip_s": 0.718699,
     "lpips": 0.297979,
     "off_dino_s": 0.398793
+  },
+  {
+    "file": "target_hf_subband_deep_energy_ft6/dino_summary_adain15.json",
+    "dino_s": 0.482631,
+    "dino_c": 0.794932,
+    "dino_structure": 0.024497,
+    "clip_s": 0.717588,
+    "lpips": 0.297529,
+    "off_dino_s": 0.397683
   }
 ]

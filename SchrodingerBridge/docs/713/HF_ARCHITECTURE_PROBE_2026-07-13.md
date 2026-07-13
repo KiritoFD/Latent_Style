@@ -41,6 +41,7 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_subband_texture_ft6` | per-band pooled HF + stationary texture stats -> residual delta | 0.488420 | **0.798815** | 0.024596 | 0.719357 | **0.296046** | **0.404302** | near-best, better off-style and content, but no all DINO-S win |
 | `target_hf_content_anchor_ft6` | coordinate-free target HF code + content-energy placement residual | 0.484393 | 0.795462 | 0.024555 | 0.717251 | 0.298162 | 0.399538 | content-safe placement does not beat subband-only; slightly below strong/subband |
 | `target_hf_multitoken_ft6` | per-band stationary-stat tokens -> attention residual delta | 0.483562 | 0.794129 | 0.024531 | 0.718699 | 0.297979 | 0.398793 | rejected: more statistic tokens did not improve style or content |
+| `target_hf_subband_deep_energy_ft6` | deeper per-band pooled HF residual + RMS bound | 0.482631 | 0.794932 | **0.024497** | 0.717588 | 0.297529 | 0.397683 | rejected: extra residual capacity with RMS bound weakens style/content frontier |
 
 ## Diagnosis
 
@@ -109,7 +110,7 @@ Current recommendation unchanged:
 3. **Fallback**: `target_hf_delta_strong_ft6`
 4. Do **not** promote content-anchor or raw spatial as main path
 
-Next structural direction (if still needed): increase subband route capacity without spatial target leak via orientation-specific residual depth and energy normalization, not more placement engineering or stationary-stat token width.
+Next structural direction (if still needed): do not simply deepen the subband residual or add more stationary tokens. Both tested variants underperform. The remaining open direction is a cleaner target-HF conditioner that changes how the main HF heads read the style code, not an additive residual with more capacity.
 
 ## Stationary-stat multi-token result (2026-07-14)
 
@@ -124,3 +125,17 @@ Next structural direction (if still needed): increase subband route capacity wit
 | LPIPS | 0.297979 | 0.296553 | +0.0014 |
 
 **Verdict: FAIL; code removed.** This negative result is useful because it separates "more coordinate-free statistics" from the actual missing route. The bottleneck is not just token count; the useful path still appears to be a compact orientation-specific target-HF code with the residual energy controlled against the existing HF heads.
+
+## Deep energy-normalized subband residual result (2026-07-14)
+
+`target_hf_subband_deep_energy_ft6` tested the next obvious capacity hypothesis: keep the target-HF code coordinate-free and per-orientation, but replace the shallow additive residual with a two-block residual head whose output RMS is normalized against the current HF velocity. Local smoke confirmed the intended initial residual/base ratio (`~tanh(0.18)=0.178`) and nonzero gradients, so the path was live.
+
+| metric | deep-energy | subband-only (best) | delta |
+|---|---:|---:|---:|
+| all DINO-S | 0.482631 | **0.488624** | -0.0060 |
+| off DINO-S | 0.397683 | **0.403917** | -0.0062 |
+| DINO-C | 0.794932 | 0.798123 | -0.0032 |
+| CLIP-S | 0.717588 | 0.720880 | -0.0033 |
+| LPIPS | 0.297529 | 0.296553 | +0.0010 |
+
+**Verdict: FAIL; code/config/pipeline removed.** This falsifies the simple "more residual capacity under an RMS guardrail" story. The likely issue is that additive residual capacity still competes with the already learned HF heads instead of improving their conditioning. Future attempts should modify the HF head conditioning path itself or the training target decomposition, not bolt on a larger residual branch.

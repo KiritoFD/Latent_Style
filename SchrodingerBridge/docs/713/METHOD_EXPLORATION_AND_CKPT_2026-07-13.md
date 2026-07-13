@@ -143,6 +143,7 @@ Rejected:
 |---|---:|---:|---:|---:|---|
 | `target_hf_spatial_ft6` | **0.490074** | 0.404308 | **0.748291** | 0.538240 | Content collapse from target layout leak. |
 | `target_hf_multitoken_ft6` | 0.483562 | 0.794129 | 0.718699 | 0.297979 | Worse than subband-only; code removed. |
+| `target_hf_subband_deep_energy_ft6` | 0.482631 | 0.794932 | 0.717588 | 0.297529 | Deep additive residual with RMS bound underperformed; code removed. |
 
 ## 5. Correct Theory After Probing
 
@@ -183,6 +184,7 @@ Do not prioritize:
 | LL target-image shortcuts | Likely buys style by spending content. |
 | More placement engineering after content-anchor | Latest placement attempt is safe but weaker. |
 | Stationary-stat multi-token code | Tested and removed; it underperformed subband-only on all tracked metrics. |
+| Deep additive subband residual | Tested and removed; more residual capacity did not improve the style route. |
 | Generic decoder AdaLN/AdaIN | Already repeatedly negative. |
 
 ## 7. Method-writing Guidance
