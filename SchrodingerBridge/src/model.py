@@ -399,6 +399,9 @@ class WEAVE(nn.Module):
         self.style_adaln_enabled = bool(getattr(model_cfg, "style_adaln_enabled", False))
         self.style_adaln_nonzero_init = bool(getattr(model_cfg, "style_adaln_nonzero_init", False))
         self.style_adaln_init_std = float(getattr(model_cfg, "style_adaln_init_std", 0.1))
+        # Round 11: StyleAdaIN — per-instance IN with style-conditioned affine (after FFN)
+        self.decoder_adain_enabled = bool(getattr(model_cfg, "decoder_adain_enabled", False))
+        self.decoder_adain_init_std = float(getattr(model_cfg, "decoder_adain_init_std", 0.02))
         self.blocks = nn.ModuleList([
             ResidualBlock(
                 dim=self.dim, num_heads=heads, style_gate_init=gate_init,
@@ -411,6 +414,8 @@ class WEAVE(nn.Module):
                 style_adaln_enabled=self.style_adaln_enabled,
                 style_adaln_nonzero_init=self.style_adaln_nonzero_init,
                 style_adaln_init_std=self.style_adaln_init_std,
+                style_adain_enabled=self.decoder_adain_enabled,
+                style_adain_init_std=self.decoder_adain_init_std,
             )
             for idx in range(depth)
         ])
@@ -555,7 +560,7 @@ class WEAVE(nn.Module):
         # 712 Phase StyleInject: style_pooled 用于 AdaLN 和 VelocityHead FiLM
         # shape: (B, dim) — 从 style_tokens (B, N, dim) 沿 token 维取均值
         # Stage7 方向3: StyleDeltaVelocityHead 也需要 style_pooled 生成 v_style
-        if self.style_adaln_enabled or self.style_velocity_head_enabled or self.style_delta_head_enabled:
+        if self.style_adaln_enabled or self.style_velocity_head_enabled or self.style_delta_head_enabled or self.decoder_adain_enabled:
             style_pooled = style_tokens.mean(dim=1).to(dtype=x.dtype)
         else:
             style_pooled = None

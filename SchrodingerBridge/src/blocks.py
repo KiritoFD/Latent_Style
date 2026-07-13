@@ -16,6 +16,43 @@ def _make_norm(dim: int) -> nn.Module:
     return nn.GroupNorm(1, dim, affine=False)
 
 
+class StyleAdaIN(nn.Module):
+    """Per-instance AdaIN with style-conditioned affine parameters.
+
+    Math:  x_norm = (x - μ(x)) / σ(x)          (remove instance stats)
+           styled = x_norm * (1 + γ(s)) + β(s)  (apply style stats)
+    where γ, β are generated from style_pooled via linear projection.
+
+    Key difference from AdaLN (time_style_adaln):
+        - AdaLN uses LayerNorm (per-layer statistics, preserves content scale)
+        - AdaIN uses InstanceNorm (per-instance statistics, removes content mean/std)
+        - AdaIN is more aggressive: explicitly strips per-sample content statistics
+          and replaces them with style-conditioned affine parameters.
+
+    DINOv2 CLS captures global image statistics (mean color, contrast, texture scale).
+    AdaIN directly modulates these statistics at the feature-map level, making it
+    a natural mechanism for DINO-S improvement.
+    """
+
+    def __init__(self, dim: int, style_dim: int, init_std: float = 0.02):
+        super().__init__()
+        self.gamma_proj = nn.Linear(style_dim, dim)
+        self.beta_proj = nn.Linear(style_dim, dim)
+        # Small random init: initially weak style modulation, grows with training
+        nn.init.normal_(self.gamma_proj.weight, std=init_std)
+        nn.init.zeros_(self.gamma_proj.bias)
+        nn.init.normal_(self.beta_proj.weight, std=init_std)
+        nn.init.zeros_(self.beta_proj.bias)
+
+    def forward(self, x: torch.Tensor, style_pooled: torch.Tensor) -> torch.Tensor:
+        mean = x.mean(dim=[2, 3], keepdim=True)
+        std = x.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+        x_norm = (x - mean) / std
+        gamma = self.gamma_proj(style_pooled.to(dtype=x.dtype))[:, :, None, None]
+        beta = self.beta_proj(style_pooled.to(dtype=x.dtype))[:, :, None, None]
+        return x_norm * (1.0 + gamma) + beta
+
+
 class ResidualBlock(nn.Module):
     """AdaLN(time) → Self-Attention → Cross-Attention(style) → FFN.
 
@@ -41,6 +78,9 @@ class ResidualBlock(nn.Module):
         style_adaln_enabled: bool = False,
         style_adaln_nonzero_init: bool = False,
         style_adaln_init_std: float = 0.1,
+        # Round 11: StyleAdaIN — per-instance normalization with style-conditioned affine
+        style_adain_enabled: bool = False,
+        style_adain_init_std: float = 0.02,
     ) -> None:
         super().__init__()
 
@@ -83,6 +123,12 @@ class ResidualBlock(nn.Module):
                 nn.init.zeros_(self.time_style_adaln[-1].bias)
         else:
             self.time_adaln = nn.Sequential(nn.SiLU(), nn.Linear(self.dim, self.dim * 3))
+        # Round 11: StyleAdaIN — per-instance normalization with style-conditioned affine
+        self.style_adain_enabled = bool(style_adain_enabled)
+        if self.style_adain_enabled:
+            self.style_adain = StyleAdaIN(self.dim, self.dim, init_std=float(style_adain_init_std))
+        else:
+            self.style_adain = None
         # Self-attention: content Q/K/V
         self.sa_qkv = nn.Linear(self.dim, self.dim * 3)
         self.sa_out = nn.Linear(self.dim, self.dim)
@@ -266,6 +312,11 @@ class ResidualBlock(nn.Module):
 
         # --- FFN ---
         x = x + self.ffn(self.norm2(x))
+
+        # Round 11: StyleAdaIN — per-instance normalization with style-conditioned affine
+        # 剥除 per-sample 内容统计 (mean/std), 替换为 style 调制
+        if self.style_adain is not None and style_pooled is not None:
+            x = self.style_adain(x, style_pooled)
 
         # --- Debug ---
         self.last_debug = {

@@ -408,6 +408,12 @@ class ModelConfig:
     style_adaln_nonzero_init: bool = False
     style_adaln_init_std: float = 0.1
     style_vhead_hf_init_std: float = 0.02
+    # Round 11: StyleAdaIN — per-instance IN with style-conditioned affine (after FFN)
+    #   Math: x_norm = (x - μ(x))/σ(x); out = x_norm * (1 + γ(style)) + β(style)
+    #   Key: removes per-sample content statistics, replaces with style modulation
+    #   decoder_adain_init_std: 初始化标准差 (0.02=弱, 0.05=中, 0.1=强)
+    decoder_adain_enabled: bool = False
+    decoder_adain_init_std: float = 0.02
     # Stage7 方向3: 独立风格增量分支 — style 直接生成 v_style, 不调制主干
     # v = v_content + tanh(gate) * v_style
     # style_delta_init_std: style_conv / style_mlp 最后一层非零初始化标准差
