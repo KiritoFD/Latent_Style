@@ -72,6 +72,24 @@
     "off_dino_s": 0.403276
   },
   {
+    "file": "target_hf_subband_scale_1p25_adain15_dino_summary.json",
+    "dino_s": 0.487311,
+    "dino_c": 0.788688,
+    "dino_structure": 0.024654,
+    "clip_s": 0.720082,
+    "lpips": 0.300671,
+    "off_dino_s": 0.404491
+  },
+  {
+    "file": "target_hf_subband_scale_1p5_adain15_dino_summary.json",
+    "dino_s": 0.487485,
+    "dino_c": 0.779830,
+    "dino_structure": 0.024840,
+    "clip_s": 0.721106,
+    "lpips": 0.305438,
+    "off_dino_s": 0.406744
+  },
+  {
     "file": "target_hf_subband_nomem_ft6_dino_summary_adain15.json",
     "dino_s": 0.484903,
     "dino_c": 0.794833,

@@ -1,0 +1,46 @@
+[
+  {
+    "residual_scale": 0.0,
+    "file": "target_hf_subband_ablate_residual_adain15_dino_summary.json",
+    "dino_s": 0.485770,
+    "dino_c": 0.788810,
+    "dino_structure": 0.024649,
+    "clip_s": 0.720464,
+    "lpips": 0.300980,
+    "off_dino_s": 0.403276,
+    "conclusion": "Residual path removed; all DINO-S, DINO-C, and LPIPS worsen."
+  },
+  {
+    "residual_scale": 1.0,
+    "file": "target_hf_subband_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.488624,
+    "dino_c": 0.798123,
+    "dino_structure": 0.024536,
+    "clip_s": 0.720880,
+    "lpips": 0.296553,
+    "off_dino_s": 0.403917,
+    "conclusion": "Original trained residual scale; best balanced point in this probe."
+  },
+  {
+    "residual_scale": 1.25,
+    "file": "target_hf_subband_scale_1p25_adain15_dino_summary.json",
+    "dino_s": 0.487311,
+    "dino_c": 0.788688,
+    "dino_structure": 0.024654,
+    "clip_s": 0.720082,
+    "lpips": 0.300671,
+    "off_dino_s": 0.404491,
+    "conclusion": "Slightly higher off DINO-S, but all DINO-S and content metrics worsen."
+  },
+  {
+    "residual_scale": 1.5,
+    "file": "target_hf_subband_scale_1p5_adain15_dino_summary.json",
+    "dino_s": 0.487485,
+    "dino_c": 0.779830,
+    "dino_structure": 0.024840,
+    "clip_s": 0.721106,
+    "lpips": 0.305438,
+    "off_dino_s": 0.406744,
+    "conclusion": "Style-biased scaling raises off DINO-S/CLIP-S but spends too much content budget."
+  }
+]
