@@ -16,10 +16,10 @@ aaai2027_v4/
 ├── build.ps1            # compile paper.tex -> paper.pdf (pdflatex + bibtex)
 ├── gen_figures.ps1      # regenerate every figure from the scripts below
 ├── *.png / *.pdf        # committed figures referenced by paper.tex
-├── gen_framework_figure.py   # framework_sfm_main.png  (architecture diagram)
-├── gen_teaser_figure.py      # fig_teaser_comparison.png
-├── plot_page1_summary.py     # fig_distinct5_page1_summary.pdf
-├── make_radar.py             # radar_baselines_14.png
+├── aaai_arch_diagram_v16_staggered_bundle.drawio.png  # architecture diagram
+├── fig_teaser_comparison.png                          # teaser figure
+├── plot_page1_summary.py                              # fig_distinct5_page1_summary.pdf
+├── make_radar_metric_blocks.py                        # radar_metric_blocks_A_clip_dinos_robustbreak.png
 └── fig_data/            # bundled inputs for the scripts (no external paths)
     ├── dino_main.json
     ├── curve_metrics_hf.csv
@@ -40,10 +40,11 @@ Requires a TeX Live / MiKTeX install with `pdflatex` and `bibtex` on PATH.
 .\gen_figures.ps1
 ```
 
-Each script reads its inputs from `./fig_data` and writes the figure next to
-`paper.tex`, so editing a script and re-running reproduces the exact file the
-paper includes. The radar chart (`make_radar.py`) is the source of truth for
-Table 1 in `paper.tex`; update the table there first, then re-run.
+The page-1 summary and radar scripts read their inputs from `./fig_data` and
+write the figure next to `paper.tex`, so editing a script and re-running
+reproduces the exact file the paper includes. The metric-block radar chart
+(`make_radar_metric_blocks.py`) reads the same values reported in Table 1 of
+`paper.tex`; update the table there first, then re-run.
 
 ## Notes
 

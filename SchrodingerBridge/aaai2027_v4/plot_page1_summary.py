@@ -63,7 +63,6 @@ BASELINES = [
     point("Identity", 0.4185, 0.6933, 0.0000, "control", label=True),
     point("AdaIN", 0.3362, 0.6679, 0.7425, "classical"),
     point("WCT", 0.1358, 0.7063, 0.6348, "classical", label=True),
-    point("SD-Turbo", 0.4838, 0.6933, 0.0033, "diffusion"),
     point("StyleAligned", 0.6751, 0.8739, 0.8690, "training_free", label=True),
     point("CUT", 0.4709, 0.7137, 0.3743, "trained", label=True, train_min=322.6),
     point("SaMST", 0.2710, 0.6183, 0.7490, "trained", label=True, train_min=39.5),
@@ -94,7 +93,7 @@ GROUP_STYLE = {
 }
 
 LABEL_POS = {
-    "Identity": {"xytext": (0, 8), "ha": "center", "va": "bottom", "arrow": False},
+    "Identity": {"xytext": (0, -8), "ha": "center", "va": "top", "arrow": False},
     "WCT": {"xytext": (14, 0), "ha": "left", "va": "center", "arrow": False},
     "StyleAligned": {"xytext": (12, 0), "ha": "left", "va": "center", "arrow": False},
     "CUT": {"xytext": (-6, 10), "ha": "right", "va": "bottom", "arrow": False},
@@ -102,8 +101,8 @@ LABEL_POS = {
     "SaMam": {"xytext": (-8, 10), "ha": "right", "va": "bottom", "arrow": False},
     "StyleShot": {"xytext": (12, 0), "ha": "left", "va": "center", "arrow": False},
     "Seedream 4.5": {"xytext": (-6, 10), "ha": "right", "va": "bottom", "arrow": False},
-    "WEAVE-q": {"xytext": (14, -10), "ha": "left", "va": "top", "arrow": False},
-    "WEAVE-m": {"xytext": (0, 10), "ha": "center", "va": "bottom", "arrow": False},
+    "WEAVE-q": {"xytext": (11, -8), "ha": "left", "va": "top", "arrow": False},
+    "WEAVE-m": {"xytext": (0, 7), "ha": "center", "va": "bottom", "arrow": False},
 }
 
 ARTFID_BARS = [
@@ -246,28 +245,8 @@ def build_scatter(ax: plt.Axes) -> None:
         zorder=7,
     )
 
-    sd_turbo = next(p for p in ALL_POINTS if p["name"] == "SD-Turbo")
-    ax.annotate(
-        "SD-Turbo",
-        xy=(sd_turbo["x"], sd_turbo["avg"]),
-        xytext=(0, -8),
-        textcoords="offset points",
-        ha="center",
-        va="top",
-        fontsize=8.9,
-        color="#8C5A09",
-        bbox={
-            "boxstyle": "round,pad=0.18",
-            "facecolor": "white",
-            "edgecolor": "#E2C899",
-            "linewidth": 0.7,
-            "alpha": 0.96,
-        },
-        zorder=7,
-    )
-
     ax.set_xlim(0.20, 1.02)
-    ax.set_ylim(0.40, 0.78)
+    ax.set_ylim(0.40, 0.70)
     ax.set_xlabel("Content fidelity (1 - LPIPS)")
     ax.set_ylabel(r"Style affinity $\frac{1}{2}$(DINO-S + CLIP-S)")
     ax.grid(axis="both", color="#D6D9DF", alpha=0.55, linewidth=0.6)
