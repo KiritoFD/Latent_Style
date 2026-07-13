@@ -90,6 +90,15 @@
     "off_dino_s": 0.406744
   },
   {
+    "file": "target_hf_subband_scale_hh1p5_adain15_dino_summary.json",
+    "dino_s": 0.487815,
+    "dino_c": 0.783560,
+    "dino_structure": 0.024765,
+    "clip_s": 0.720560,
+    "lpips": 0.303415,
+    "off_dino_s": 0.406092
+  },
+  {
     "file": "target_hf_subband_nomem_ft6_dino_summary_adain15.json",
     "dino_s": 0.484903,
     "dino_c": 0.794833,

@@ -37,6 +37,7 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_subband_ablate_residual` | same checkpoint, inference hooks zero subband residual deltas | 0.485770 | 0.788810 | 0.024649 | 0.720464 | 0.300980 | 0.403276 | causal ablation: residual path is contributing |
 | `target_hf_subband_scale_1p25` | same checkpoint, residual deltas scaled to 1.25x at inference | 0.487311 | 0.788688 | 0.024654 | 0.720082 | 0.300671 | 0.404491 | no balanced gain; spends content budget |
 | `target_hf_subband_scale_1p5` | same checkpoint, residual deltas scaled to 1.5x at inference | 0.487485 | 0.779830 | 0.024840 | 0.721106 | 0.305438 | 0.406744 | style-biased, content cost too high |
+| `target_hf_subband_scale_hh1p5` | same checkpoint, only HH residual scaled to 1.5x | 0.487815 | 0.783560 | 0.024765 | 0.720560 | 0.303415 | 0.406092 | HH-only boost still follows style/content tradeoff |
 | `target_hf_subband_nomem_ft6` | subband route, generic style-memory cross-attn disabled | 0.484903 | 0.794833 | **0.024491** | 0.716728 | **0.294348** | 0.401335 | rejected: cleaner target-HF route but weaker style/content frontier |
 | `target_hf_subband_memres_ft6` | subband route, target-HF code residualized against style-memory mean | 0.486561 | 0.793519 | 0.024531 | 0.719228 | 0.297730 | 0.402490 | rejected: explicit prior subtraction is below subband-only |
 | `target_hf_hybrid_ft6` | shared pooled HF + per-band residual delta | 0.485753 | 0.797810 | 0.024605 | 0.719710 | **0.295576** | 0.400962 | extra residuals do not help |
@@ -72,7 +73,7 @@ By contrast, raw spatial reaches delta/base around `1.0` but destroys content. E
 
 A matched inference-time ablation on `target_hf_subband_ft6/epoch_0006.pt` gives the cleanest causal check so far. The checkpoint, solver, endpoint AdaIN, and evaluation pairs were kept fixed; forward hooks zeroed only `target_latent_hf_subband_delta_lh/hl/hh`. This drops all-pairs DINO-S from `0.488624` to `0.485770`, DINO-C from `0.798123` to `0.788810`, and LPIPS from `0.296553` to `0.300980`. Therefore the learned subband residual is not a dead branch and is not buying style by content collapse. It behaves more like a small stabilizing style transport correction: the measured style gain is modest, but removing it also harms content consistency.
 
-The same hook was then used as a residual-strength curve. Scaling the trained residual above its learned magnitude does not improve the balanced point: `1.25x` gives DINO-S `0.487311`, DINO-C `0.788688`, LPIPS `0.300671`; `1.5x` gives DINO-S `0.487485`, DINO-C `0.779830`, LPIPS `0.305438`. Off-diagonal DINO-S rises slightly (`0.404491` and `0.406744`), but this is paid for by content degradation. Thus the route is useful but not simply amplitude-limited. Future changes should improve the conditional direction of the residual, not multiply the same residual vector.
+The same hook was then used as a residual-strength curve. Scaling the trained residual above its learned magnitude does not improve the balanced point: `1.25x` gives DINO-S `0.487311`, DINO-C `0.788688`, LPIPS `0.300671`; `1.5x` gives DINO-S `0.487485`, DINO-C `0.779830`, LPIPS `0.305438`. Off-diagonal DINO-S rises slightly (`0.404491` and `0.406744`), but this is paid for by content degradation. A band-specific follow-up, motivated by the direction probe below, scaled only the better-aligned HH residual to `1.5x`; it still underperformed the original balance (DINO-S `0.487815`, DINO-C `0.783560`, LPIPS `0.303415`). Thus the route is useful but not simply amplitude-limited. Future changes should improve the conditional direction of the residual, not multiply the same residual vector.
 
 The stationary texture-stat route tested the intended safer alternative to raw spatial injection: target HF maps are reduced to per-subband mean/std/RMS/absolute-energy statistics, so target coordinates cannot pass through. The route is safe, and combining it with subband pooling increases the measured target-latent condition strength, especially on `HL/HH`. However, the main-table all DINO-S remains slightly below subband-only (`0.488420` vs `0.488624`). A later stationary-stat multi-token variant also failed (`0.483562` DINO-S, `0.398793` off-DINO-S), so merely adding more coordinate-free statistic tokens is not the next lever. The useful lesson is narrower: the model benefits most from a simple per-orientation target-HF code, while additional stationary statistics mostly improve off-diagonal style/content balance only when paired with subband pooling.
 
@@ -220,5 +221,22 @@ After the ablation result, the next hypothesis was that the branch might be corr
 | 1.00 | **0.488624** | 0.403917 | **0.798123** | 0.720880 | **0.296553** | original trained magnitude, best balance |
 | 1.25 | 0.487311 | 0.404491 | 0.788688 | 0.720082 | 0.300671 | slight off-style gain, content cost |
 | 1.50 | 0.487485 | **0.406744** | 0.779830 | **0.721106** | 0.305438 | style-biased, content cost too high |
+| HH 1.50 only | 0.487815 | 0.406092 | 0.783560 | 0.720560 | 0.303415 | band-aware boost still trades content for off-style |
 
 **Verdict: FAIL as an improvement, PASS as a probe.** Simple residual amplification is not the performance breakthrough. The method should keep the compact subband residual, but a better architecture must change what the residual predicts or how it is conditioned. A scalar gain only moves along the style/content tradeoff and does not improve the Pareto point.
+
+## Target-HF residual direction decomposition (2026-07-14)
+
+The direction probe decomposes the trained checkpoint as:
+
+`total HF velocity = base HF head velocity + target-HF subband residual`
+
+and compares the residual against the immediate desired correction `target_velocity - base_velocity` under the training target. It uses `t = 0.25, 0.5, 0.75`, eval mode, 4 batches of 8 latents, and no image metrics.
+
+| band | residual/base | residual/target | cos(residual, desired) | projection onto desired | orthogonal fraction | MSE improvement |
+|---|---:|---:|---:|---:|---:|---:|
+| LH | 0.285418 | 0.098730 | 0.111191 | 0.012611 | 0.993232 | 0.012381 |
+| HL | 0.248043 | 0.089052 | 0.095598 | 0.009870 | 0.994926 | 0.008637 |
+| HH | 1.194715 | 0.275021 | 0.265744 | 0.084656 | 0.957125 | 0.074540 |
+
+**Diagnosis.** The residual branch is useful because it lowers the training-target MSE, especially on HH. But most residual energy is orthogonal to the ideal correction direction, especially on LH/HL. This explains both previous observations: removing the branch hurts, while amplifying it hurts content. The next architecture should not be a larger residual or a gain; it should make the residual direction more target-aligned. A plausible training-side change is an auxiliary residual-direction objective with the base head treated as a stop-gradient teacher, while preserving the simple inference graph.

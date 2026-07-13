@@ -530,6 +530,7 @@ Run & \dinos{} & \dinoc{} & LPIPS & \clips{} & Off-\dinos{} & Verdict \\
 \texttt{subband residual ablated} & 0.4858 & 0.7888 & 0.3010 & 0.7205 & 0.4033 & Same checkpoint, target-HF residuals zeroed at inference. \\
 \texttt{subband residual 1.25x} & 0.4873 & 0.7887 & 0.3007 & 0.7201 & 0.4045 & Slight off-style gain but lower balanced metrics. \\
 \texttt{subband residual 1.5x} & 0.4875 & 0.7798 & 0.3054 & 0.7211 & 0.4067 & Style-biased; content cost too high. \\
+\texttt{subband residual HH 1.5x} & 0.4878 & 0.7836 & 0.3034 & 0.7206 & 0.4061 & HH-only boost still trades content for off-style. \\
 \texttt{target\_hf\_hybrid\_ft6} & 0.4858 & 0.7978 & 0.2956 & 0.7197 & 0.4010 & Extra shared/residual mixing does not help. \\
 \texttt{target\_hf\_subband\_head\_ft6} & 0.4873 & 0.7987 & 0.2962 & 0.7192 & 0.4021 & Safe, but below subband residual. \\
 \texttt{target\_hf\_spatial\_energy\_ft6} & 0.4861 & 0.7909 & 0.2978 & 0.7204 & 0.4027 & Content cost without headline gain. \\
@@ -563,6 +564,10 @@ Scaling the same residual to 1.25x or 1.5x does not improve the balanced point:
 off-\dinos{} and \clips{} can increase, but \dinos{}, \dinoc{}, and LPIPS worsen.
 The useful target-HF route is therefore not simply amplitude-limited; the next
 architecture needs better residual direction or conditioning rather than a scalar gain.
+This is supported by a direct residual-direction probe: the residual lowers the
+training-target HF MSE, but its average cosine to the ideal correction direction is only
+0.158 and about 98.2\% of its energy is orthogonal to that direction. HH is the most
+aligned band, yet HH-only amplification still follows the same content-cost trend.
 
 The no-memory probe clarifies the role of the style-memory branch. Disabling generic
 style-memory cross-attention makes the target-HF path easier to read in gradients and
@@ -929,6 +934,7 @@ Simple target-HF residual ablation evidence & Keep & Zeroing the residual at inf
 Orientation-specific residual depth & Keep & LH, HL, and HH carry different stroke/texture directions. \\
 Energy normalization vs. existing HF heads & Keep & Prevents the new route from dominating content structure. \\
 Scalar residual amplification & Avoid & It raises off-style metrics only by spending content budget. \\
+HH-only residual amplification & Avoid & Even the most aligned band does not improve the balanced point when simply scaled. \\
 Stationary-stat multi-token widening & Avoid & A matched probe was worse than subband-only on style and content metrics. \\
 Removing style-memory cross-attention & Avoid & It makes gradient probes cleaner but lowers style/content metrics, so memory should be bounded rather than deleted. \\
 Algebraic memory-prior subtraction & Avoid & It partly recovers from no-memory but remains below the simple subband residual and hurts content. \\
