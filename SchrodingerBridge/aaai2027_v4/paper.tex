@@ -42,7 +42,7 @@ We empirically observe that frequency dominance in shared representation spaces 
 
 We argue that an effective style transfer method should outperform the identity baseline while remaining computationally affordable. To this end, we propose WEAVE: a single-level Haar wavelet transform splits the VAE latent into a low-frequency structure band and high-frequency style bands; a compact rectified-flow network learns a structure-preserving velocity field; and endpoint statistical alignment (AdaIN) injects the target style into the high-frequency subbands. This decoupling separates content transport from style injection, letting WEAVE train in 3 minutes on a single consumer GPU.
 
-We also introduce the IDT--TGT sandwich protocol, which calibrates every method between two reference bounds: Identity (content upper bound) and Target Style (style upper bound, CLIP-S$=$0.874 on D5-512). Together, the two bounds expose two failure modes that single-baseline evaluation misses: content collapse---where methods like StyleAligned produce outputs perceptually farther from the source than a completely unrelated target-style image (LPIPS 0.869 vs.~TGT 0.733)---and style suppression, where methods merely reconstruct the source. Under this protocol, WEAVE clears the identity baseline with only 903K trainable parameters (plus a frozen 84M VAE), making high-quality style transfer both effective and affordable.
+We also introduce the IDT--TGT sandwich protocol, which brackets each result between two intuitive references: IDT returns the source unchanged, while TGT returns an unrelated image from the target style. IDT reveals style suppression; TGT reveals content collapse, as when StyleAligned moves farther from the source than TGT itself (LPIPS 0.869 vs.~0.733). Under this protocol, WEAVE clears the identity reference with only 903K trainable parameters (plus a frozen 84M VAE), making high-quality style transfer both effective and affordable.
 
 \end{abstract}
 
@@ -52,40 +52,26 @@ We also introduce the IDT--TGT sandwich protocol, which calibrates every method 
 Left: style affinity $\frac{1}{2}(\mathrm{DINO\text{-}S}+\mathrm{CLIP\text{-}S})$ versus $1-\mathrm{LPIPS}$, with bubble area encoding training time.
 The red points mark two WEAVE operating points.
 Square markers denote training-free diffusion editors (StyleAligned).
-The dashed line marks the IDT floor (0.556); methods below it have not moved in the requested direction.
-The dotted line marks the TGT LPIPS bound (0.267); methods right of it are perceptually farther from the source than a completely unrelated target-style image.
+The dashed line marks the IDT style reference (0.556); methods below it have not moved in the requested direction.
+The dotted line marks the TGT content reference (0.267); methods right of it are perceptually farther from the source than an unrelated target-style image.
 Right: target-pooled ArtFID on the same benchmark, with numbers inside the bars indicating training or response time.}
 \label{fig:page1}
 \end{strip}
 
 \section{Introduction}
 
-Style transfer faces two problems in deployment and evaluation.
-On one hand, state-of-the-art diffusion models (e.g., FLUX.2 and Qwen-image) and their training-free variants demand more than 60\,GB of GPU memory, making them unusable on consumer hardware.
-On the other hand, certain lightweight alternatives that avoid these heavy generative backbones can struggle to achieve genuine style transfer.
-Specifically, the style affinity of outputs from certain lightweight models can fall below that of the unchanged source image (i.e., the identity mapping).
-This problem has been hidden by conventional evaluation protocols, such as LPIPS and ArtFID, which heavily reward structural reconstruction but rarely include the identity mapping as an explicit baseline, let alone a content-collapse upper bound.
-As visualized in Figure~\ref{fig:page1} (Left), when the identity mapping is explicitly plotted, modern lightweight methods like SaMam clearly fall below this natural baseline; when the Target Style bound is added, methods like StyleAligned fall to the right of it, revealing that their high style scores come at the cost of content collapse---their outputs are perceptually farther from the source than a completely unrelated target-style image.
-To fix this, we introduce the IDT--TGT sandwich protocol, which bounds every method between the content ceiling (Identity) and the style ceiling (Target Style), transforming standard metrics into floor-and-ceiling-calibrated measures.
+Style transfer faces a practical tension. Large diffusion editors can require more than 60\,GB of GPU memory, while lightweight models may preserve the source so strongly that their style score falls below the unchanged input. Metrics such as LPIPS and ArtFID can hide this no-op behavior because they reward source reconstruction and rarely report identity as a baseline.
+Figure~\ref{fig:page1} adds two simple references. Identity (IDT) returns the source image, and Target Style (TGT) returns an unrelated reference from the requested style. A useful method should move beyond IDT in style without moving as far from the source as TGT. This bracket exposes both style suppression (e.g., SaMam) and content collapse (e.g., StyleAligned) in the original metric units.
 
-Why do recent lightweight architectures, despite their advanced designs, consistently fall into this identity trap?
-We argue that a principal driver is not a lack of model capacity, but a well-documented spectral bias of neural networks~\cite{rahaman2019spectral,xu2022frequency}: in a shared representation space the optimizer preferentially fits the dominant low-frequency structure, a conflict that frequency-domain translation work has also linked to content--style entanglement~\cite{cai2021fdit}.
-In typical flow-matching frameworks, the model predicts a velocity field that transports the source latent toward the target.
-However, natural images follow a $1/f$ spectral distribution, meaning the low-frequency structural energy (e.g., global layouts and object shapes) is orders of magnitude stronger than the high-frequency stylistic textures (e.g., brushstrokes and material patterns).
-When minimizing reconstruction loss in shared representation spaces, the optimizer naturally prioritizes fitting the massive low-frequency errors.
-Consequently, the subtle style-conditioned gradients are overwhelmed, pushing the model toward a style-agnostic identity mapping.
-This is why simply scaling up parameters can fail: structure and style compete in the same coordinate basis.
+We trace the identity shortcut to frequency dominance rather than model size. Neural networks fit low-frequency signals first~\cite{rahaman2019spectral,xu2022frequency}, and natural images place much more energy in global structure than in fine texture. When flow matching learns both in one coordinate system, structural errors dominate the update and weaken the style-conditioned signal, a conflict also observed in frequency-domain translation~\cite{cai2021fdit}.
 
 To solve the conflict between structure and style, we propose WEAVE.
-We operate in the latent space of a pre-trained diffusion VAE, which compresses images into a clean, low-dimensional space, but discard the heavy diffusion network and train only a tiny (903K-parameter) velocity network.
-A single-level Haar wavelet transform separates the latent into structure (LL) and texture (LH/HL/HH); style is injected only through the high-frequency subband statistics (endpoint AdaIN), which stay anchored to their original spatial layout by construction.
-The style-injection operator never touches the LL band, so content structure is preserved throughout the 8-step integration.
-This streamlined design lets WEAVE clear the identity baseline and train in 3 minutes on a single consumer GPU; because the alignment operates directly on latent features, it also serves as a training-free plugin for large pre-trained models, which we validate on a frozen SD1.5 image-to-image pipeline (Section~\ref{sec:plugin}).
+WEAVE keeps the pre-trained VAE but replaces the diffusion network with a 903K-parameter velocity model. A one-level Haar transform separates low-frequency structure (LL) from high-frequency texture (LH/HL/HH). The flow learns content-preserving transport, and one endpoint AdaIN update injects style into the high-frequency bands. WEAVE trains in 3 minutes on one consumer GPU, and the same latent operation can be added to a frozen SD1.5 pipeline without training (Section~\ref{sec:plugin}).
 
 \paragraph{Contributions.}
-(1)~\textbf{Evaluation Protocol:} We introduce the IDT--TGT sandwich protocol, which calibrates every method between two reference bounds: Identity (content upper bound, LPIPS$=$0) and Target Style (style upper bound, CLIP-S$=$0.874 on D5-512). This exposes two failure modes that single-bound baselines miss---content collapse (LPIPS above the Target Style line) and style suppression (CLIP-S below the Identity line).
-(2)~\textbf{Representation and Methodology:} We empirically observe that frequency dominance in shared representation spaces causes low-frequency structures to overshadow high-frequency textures, driving models toward the identity shortcut, and propose WEAVE, a wavelet-decoupled framework that achieves genuine style transfer with only 903K trainable parameters. Mechanism experiments (gradient-spectrum analysis, per-subband style-transfer ratios, and inference-time module swapping) provide causal evidence for this functional specialization.
-(3)~\textbf{Efficiency and Generalization:} WEAVE trains in just 3 minutes on a single consumer GPU, and its latent operations are a pluggable, training-free mechanism for large diffusion backbones, which we validate by applying them to a frozen SD1.5 image-to-image pipeline (Section~\ref{sec:plugin}).
+(1)~\textbf{Evaluation:} The IDT--TGT sandwich reports each method between a no-op reference and a target-style reference, revealing style suppression and content collapse.
+(2)~\textbf{Method:} WEAVE separates structure and texture with Haar wavelets, then combines compact flow matching with endpoint high-frequency AdaIN.
+(3)~\textbf{Efficiency:} WEAVE uses 903K trainable parameters, trains in 3 minutes on one RTX~3060, and transfers its latent operator to frozen SD1.5 without training.
 
 \section{Related Work}
 \label{sec:related}
@@ -133,40 +119,29 @@ Combining wavelet decomposition with latent-space statistical alignment inside a
 \section{Method}
 \label{sec:method}
 
-We describe WEAVE following the logic of the Introduction: first, where to learn the transfer (VAE latent space); second, how to separate conflicting signals (wavelet decomposition); third, how to route style information while protecting content (frequency-aware architecture and endpoint AdaIN); and fourth, how the learned transport and the statistical aligner cooperate at inference.
+WEAVE learns a compact transport in VAE latent space, separates structure from texture with a Haar transform, and injects target statistics once at the endpoint.
 
 
 
 \subsection{Framework Setup}
 \label{sec:framework}
 
-Let $x_c \in \mathbb{R}^{H \times W \times 3}$ be a content image and $s \in \{1,\ldots,K\}$ a target style domain.
-We operate in the latent space of the Stable Diffusion v1.5 EMA VAE~\cite{rombach2022high}, writing $z_0 = \mathcal{E}(x_c) \in \mathbb{R}^{4 \times 32 \times 32}$; during training $z_1 \sim p_s$ is sampled from the target domain.
-Rectified flow parameterizes the straight transport segment
+Let $z_0=\mathcal E(x_c)\in\mathbb R^{4\times32\times32}$ be the SD1.5 VAE latent of a content image and let $z_1\sim p_s$ be a training image from target style $s$~\cite{rombach2022high}. Rectified flow uses
 \begin{equation}
 z_t = (1-t)z_0 + tz_1,\quad u_t = z_1 - z_0,\quad t \sim \mathcal U([0,1]),
 \end{equation}
-whose straight trajectory needs only 8 Euler steps (vs.\ thousands of diffusion denoising steps), keeping training and inference on a single consumer GPU (inference details in Section~\ref{sec:inference}).
+and learns $u_t$ with eight Euler steps at inference.
 
 \subsection{Wavelet Decomposition and Frequency Routing}
 \label{sec:wavelet}
 
-As discussed in Section~2.3, natural images follow a $1/f$ spectral distribution: low-frequency structural energy dominates over high-frequency textures~\cite{rahaman2019spectral,xu2022frequency}.
-Learning style transfer in shared representation spaces biases the optimizer toward structure over style (a known failure mode in frequency-domain translation~\cite{cai2021fdit}).
-WEAVE addresses this by changing coordinates.
+Low-frequency structure carries much more energy than fine texture, so a shared loss favors source reconstruction~\cite{rahaman2019spectral,xu2022frequency,cai2021fdit}. WEAVE separates these signals before predicting the flow.
 
 \paragraph{Haar wavelet decomposition.}
-A single-level Haar wavelet transform decomposes the $4{\times}32{\times}32$ latent into four orthogonal subbands: a low-frequency LL band and three high-frequency bands (LH, HL, HH), each of size $4{\times}16{\times}16$.
-We write $\mathcal W(z_t) = (\ell_t,h_{1,t},h_{2,t},h_{3,t})$ and $\mathcal W(u_t) = (u_\ell,u_1,u_2,u_3)$.
-The transform is orthogonal, so the Frobenius norm splits additively:
-\begin{equation}
-\|z\|_F^2 = \|\ell\|_F^2 + \|h_1\|_F^2 + \|h_2\|_F^2 + \|h_3\|_F^2.
-\end{equation}
-Due to the orthogonality of the Haar transform~\cite{daubechies1992ten}, modifying only the high-frequency subbands leaves the LL coordinate unchanged---structure is preserved by construction.
-Haar is selected for its exact orthogonality, compact spatial support, and very low cost; a single decomposition level suffices for the compact latent resolution.
+A one-level Haar transform gives $\mathcal W(z_t)=(\ell_t,h_{1,t},h_{2,t},h_{3,t})$: one LL structure band and three high-frequency bands, each $4{\times}16{\times}16$. Haar is orthogonal and local, so high-frequency updates do not directly alter the LL coordinate~\cite{daubechies1992ten}.
 
 \paragraph{Empirical frequency probes.}
-Across 5,000 random cross-style latent pairs, transport energy concentrates in LL while style separation is strongest in HH (Figure~\ref{fig:frequency-probes}), motivating weak LL supervision and stronger high-frequency emphasis.
+Across 5,000 cross-style latent pairs, transport energy concentrates in LL while style separation is strongest in HH (Figure~\ref{fig:frequency-probes}). This motivates a weak LL loss and stronger high-frequency routing.
 
 \begin{figure}[t]
 \centering
@@ -184,79 +159,44 @@ WEAVE preserves source topology via low-frequency anchoring and injects the targ
 \end{figure*}
 
 \paragraph{Architecture.}
-The velocity network consists of four residual blocks (width~64, $\sim$903K trainable parameters) with three separate prediction heads---one $1{\times}1$ convolution per supervised subband ($\ell$, $h_1$, $h_2$).
-The $h_3$ (HH) band receives no velocity head, so the Euler integrator never modifies it; it is stylized only at the final (endpoint) step via the per-subband AdaIN operator (Section~\ref{sec:eota}).
-The LL subband enters the backbone as a separate channel and interacts with style only through the shared residual blocks---never through the attention path---preserving the intended frequency separation.
-We use RMSNorm throughout, as GroupNorm erases the channel-wise mean carrying tonal information.
-The overall architecture is shown in Figure~\ref{fig:framework}.
+The 903K-parameter velocity network has four width-64 residual blocks and separate $1{\times}1$ heads for LL, LH, and HL. HH has no velocity head and changes only through endpoint AdaIN. LL bypasses style attention, and RMSNorm retains the channel means used for tone. Figure~\ref{fig:framework} shows the full path.
 
 \paragraph{Spectral flow-matching objective.}
 The spectral flow-matching term is
 \begin{equation}
-\mathcal L_{\mathrm{impl}}
-:=
-\mathbb E_t\!\left[
+\begin{aligned}
+\mathcal L_{\mathrm{impl}}:=\mathbb E_t\big[&
 \lambda_{LL}\|v_\ell-u_\ell\|_2^2
-\!+\! \|v_{h_1}-u_{h_1}\|_2^2
-\!+\! \|v_{h_2}-u_{h_2}\|_2^2
-\right],
++\|v_{h_1}-u_{h_1}\|_2^2\\
+&+\|v_{h_2}-u_{h_2}\|_2^2\big],
+\end{aligned}
 \label{eq:weave-loss}
 \end{equation}
-with $\lambda_{LL} = 0.3$.
-WEAVE de-weights LL rather than eliminating it, keeping a weak anchor because some styles also shift coarse color tone; ablation confirms this choice is pivotal (Table~\ref{tab:ablation}).
-The predicted one-step target is $\hat z_1=z_0+\mathcal W^{-1}(v_\ell,v_{h_1},v_{h_2},0)$.
+with $\lambda_{LL}=0.3$. The lower LL weight limits structural dominance while still allowing coarse tone to move. The predicted endpoint is $\hat z_1=z_0+\mathcal W^{-1}(v_\ell,v_{h_1},v_{h_2},0)$.
 
 \paragraph{Mild LL partial stylization.}
-While LL is structurally locked to preserve content, a mild partial stylization of the LL \emph{target} lets coarse color statistics migrate toward the style domain without sacrificing structure:
-\begin{equation}
-\ell_1^{\mathrm{target}} = (1-\alpha)\,\ell_0 + \alpha\,\mathrm{AdaIN}(\ell_0,\ell_1^\star),\qquad \alpha=0.3,
-\end{equation}
-where $\ell_0$ is the source and $\ell_1^\star$ a style-reference LL subband. We set $\alpha{=}0.3$ because aggressive blends ($\alpha{\ge}0.5$) damage content without raising DINO-S (Table~\ref{tab:ablation}).
+The LL training target blends the source LL with 30\% AdaIN-aligned target LL. This small shift carries coarse color; stronger blends damage content without improving DINO-S (Table~\ref{tab:ablation}).
 
 \subsection{Endpoint AdaIN: Primary Style Injection Channel}
 \label{sec:eota}
 
-The flow-matching velocity field transports the content latent toward the target domain, but the velocity signal alone is a weak style channel---the LL-dominated reconstruction loss leaves little room for style-conditioned gradients.
-WEAVE therefore injects the target style through a per-subband statistics operator applied once at the final (endpoint) integration step.
-We restrict alignment to the endpoint because applying it at intermediate Euler steps would re-inject target statistics into the high-frequency subbands at every step and, via the shared backbone, leak target structure into the LL band---causing the low-frequency content to drift; confining it to the final step keeps the 8-step transport purely content-preserving and adds style only as a final recolor.
-We call this \emph{AdaIN}, and our ablation confirms it is the single most critical component: removing it reverts the output to content preservation (Table~\ref{tab:ablation}).
+Flow matching alone carries a weak style signal. WEAVE therefore applies AdaIN once, after the last Euler step, to align high-frequency statistics without repeatedly disturbing the transport path. Removing this endpoint update largely returns the model to source preservation (Table~\ref{tab:ablation}).
 
 \paragraph{Alignment operator.}
-Let $\mathcal W(\hat z_1) = (\hat \ell,\hat h_1,\hat h_2,\hat h_3)$ and $\mathcal W(z_1^\star) = (\ell^\star,h_1^\star,h_2^\star,h_3^\star)$ be the subbands of the current prediction and a style reference sampled from the target domain.
-For $i\in\{1,2,3\}$, the per-subband AdaIN map~\cite{huang2017arbitrary} matches channel-wise statistics:
+Let $\hat h_i$ and $h_i^\star$ be high-frequency subbands of the predicted latent and a target-style reference. For $i\in\{1,2,3\}$, AdaIN~\cite{huang2017arbitrary} gives
 \begin{equation}
 T_i(a) = \frac{a-\hat\mu_i}{\hat\sigma_i}\,\sigma_i^\star+\mu_i^\star,
 \end{equation}
-where $(\hat\mu_i,\hat\sigma_i)$ and $(\mu_i^\star,\sigma_i^\star)$ are the per-channel mean and standard deviation of $\hat h_i$ and $h_i^\star$. Because each Haar subband has only four channels, the full-covariance whitening--coloring transform collapses to this diagonal (mean+std) form~\cite{li2017universal}.
-With high-frequency scales $(s_1,s_2,s_3)=(0.3,0.3,0.5)$, the aligned subbands are
+where $\mu$ and $\sigma$ are channel-wise spatial statistics. We blend this update with scales $(s_1,s_2,s_3)=(0.3,0.3,0.5)$:
 \begin{equation}
 \hat h_i^+ = (1-s_i)\hat h_i + s_i\,T_i(\hat h_i),\qquad i\in\{1,2,3\},
 \end{equation}
-and we set $\mathcal W(\hat z_1^+)=(\hat\ell,\hat h_1^+,\hat h_2^+,\hat h_3^+)$ with $\hat\ell$ unchanged. The alignment is applied once at the final (endpoint) Euler step.
-The LL structure is preserved by construction; the VAE's KL regularization makes the latent approximately Gaussian, justifying second-order moment matching.
+LL is left unchanged in this endpoint operation.
 
 
-\subsection{Training Objective}
-\label{sec:objective}
+\subsection{Training and Inference}
 
-The training loss is
-\begin{equation}
-\mathcal L=\mathcal L_{\mathrm{impl}}
-+\underbrace{0.1\mathcal L_{\mathrm{edge}}+\mathcal L_{\mathrm{low}}}_{\text{auxiliary }(\textless5\%\text{ gradient})},
-\label{eq:active-loss}
-\end{equation}
-where $\mathcal L_{\mathrm{edge}}$ is an $\ell_1$ match between high-pass residuals and $\mathcal L_{\mathrm{low}}$ is an MSE anchor on the low-pass component.
-The spectral flow-matching term $\mathcal L_{\mathrm{impl}}$ alone drives learning ($\sim$92\% of the gradient); the auxiliary terms contribute $<5\%$ combined, and their individual removal does not measurably change the output.
-Ablation confirms $\mathcal L_{\mathrm{impl}}$ is the engine of content-to-style transport---removing it improves content metrics but drops style (Table~\ref{tab:ablation}).
-WEAVE trains on a single consumer GPU; full training hyperparameters are in the supplementary material.
-The learning rate is the only sensitive training hyperparameter; all other knobs are robust.
-
-\subsection{Inference Configuration}
-\label{sec:inference}
-
-At inference we integrate from $z_0$ to $\hat z_1$ with an 8-step Euler solver.
-The step count is the most consequential inference knob: a single step collapses, while 32 steps matches 8---eight is the efficiency--accuracy Pareto point.
-A style-extrapolation coefficient $\alpha_{\mathrm{extrap}}{=}0.1$ pushes the aligned statistics slightly beyond the target reference; $\alpha{=}1.0$ causes catastrophic collapse as the matched covariance becomes singular.
+Training adds an edge $\ell_1$ loss (weight 0.1) and a low-pass MSE anchor to Eq.~\ref{eq:weave-loss}; together they contribute less than 5\% of the gradient. Full hyperparameters are in the supplement. At inference, we use eight Euler steps and apply high-frequency AdaIN only after the final step.
 
 
 
@@ -276,7 +216,7 @@ Method & \multicolumn{4}{c}{D5-512} & \multicolumn{4}{c}{P2A-256} & \multicolumn
 & DINO-S$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & DINO-C$\uparrow$ & DINO-S$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & DINO-C$\uparrow$ & DINO-S$\uparrow$ & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & DINO-C$\uparrow$ & & min & 750 imgs \\
 \midrule
 Identity & 0.419 & 0.693 & 0.000 & 1.000 & 0.416 & 0.663 & 0.000 & 1.000 & 0.433 & 0.731 & 0.000 & 1.000 & 0 & free & 0\,s \\
-Target Style & 1.000 & 0.874 & 0.733 & 0.176 & --- & --- & --- & --- & --- & --- & --- & --- & 0 & free & 0\,s \\
+Target Style & 1.000 & 0.874 & 0.733 & 0.176 & 1.000 & 0.835 & 0.800 & 0.169 & 1.000 & 0.796 & 0.747 & 0.230 & 0 & free & 0\,s \\
 SD-Turbo & 0.484 & 0.693 & 0.003 & 0.922 & 0.341 & 0.674 & 0.603 & 0.279 & 0.505 & 0.767 & 0.449 & 0.538 & 0$^{+1.1B}$ & free & 5\,m \\
 StyleAligned & 0.675 & 0.780 & 0.869 & 0.239 & 0.612 & 0.768 & 0.786 & 0.310 & 0.649 & 0.824 & 0.829 & 0.315 & 0$^{+1.1B}$ & free & 77\,m \\
 Z-STAR & 0.449 & 0.784 & 0.347 & 0.549 & 0.514 & 0.786 & 0.332 & 0.526 & 0.514 & 0.822 & 0.384 & 0.526 & 0$^{+1.1B}$ & free & 3\,h\\
@@ -291,7 +231,7 @@ Latent-WCT & 0.362 & 0.673 & 0.441 & 0.559 & 0.338 & 0.738 & 0.585 & 0.386 & 0.4
 \bottomrule
 \end{tabular}%
 }
-\caption{Main comparison on D5-512, P2A-256, and R5-WikiArt. CLIP-S, DINO-S, and DINO-C are higher better; LPIPS is lower better. DINO-S is the primary style metric (see Section~\ref{sec:setup}). Identity and Target Style are reference bounds that define the content-preserving and style-maximizing extremes of the Pareto frontier, forming a sandwich protocol that contextualizes every method. Superscripts in Params denote frozen backbones, and ``--'' denotes withheld or unavailable values. Infer is single-RTX-3060 (12\,GB) generation-only wall-clock for 750 pairs (8-step ODE + VAE decode; metrics excluded).}
+\caption{Main comparison. DINO-S, CLIP-S, and DINO-C are higher better; LPIPS is lower better. IDT and TGT are reference outputs, not theoretical bounds. Superscripts denote frozen parameters. Infer is generation-only time for 750 images on one RTX~3060.}
 \label{tab:main}
 \end{table*}
 
@@ -300,16 +240,9 @@ Latent-WCT & 0.362 & 0.673 & 0.441 & 0.559 & 0.338 & 0.738 & 0.585 & 0.386 & 0.4
 \subsection{Setup and Protocol}
 \label{sec:setup}
 
-\paragraph{Setup.}
-We use Distinct5-WikiArt-512 with five styles (Early Renaissance, Impressionism, Minimalism, Rococo, Ukiyo-e) chosen for their low IDT CLIP-S, making accidental no-op success harder.
-Each domain has 3{,}600 training and 150 test images; evaluation uses 750 source-target pairs including 150 identity pairs for IDT calibration, and generalization is tested on all 20 WikiArt families ($20{\times}20{\times}30{=}12{,}000$ pairs) with baselines confined to the Distinct5 subset (750 pairs) to bound compute.
-We additionally establish a Target Style (TGT) reference bound by using the first target-style reference image as the output, which defines the style-maximizing endpoint (CLIP-S$=$0.874, DINO-S$=$1.000) and the content-minimizing endpoint (LPIPS$=$0.733, DINO-C$=$0.176) on D5-512; together with the Identity bound, this forms a sandwich that contextualizes every method's position on the content--style Pareto frontier.
-\textbf{DINO-S} (DINOv2-small CLS-token cosine similarity to the target-style reference pool) is our primary style metric, with CLIP-S (ViT-B/32) secondary; LPIPS (AlexNet) and DINO-C measure content preservation.
-Baselines: Identity, SD-Turbo, StyleAligned, Z-STAR, StyleShot, CUT, SaMST, SaMam, Seedream~4.5, and Latent-WCT.
+Distinct5-WikiArt-512 (D5) contains five deliberately dissimilar styles, with 3{,}600 training and 150 test images per style. We evaluate 750 ordered pairs and also test P2A-256 and all 20 WikiArt families (R5; 12{,}000 pairs). DINO-S is the primary style metric and CLIP-S is secondary; LPIPS and DINO-C measure source preservation.
 
-\paragraph{Training and evaluation.}
-WEAVE is a compact network trained on a single consumer GPU; architecture and training hyperparameters are in the supplementary material.
-All methods are evaluated on every ordered source-target pair; learned baselines are selected by best validation CLIP-S on a 50-pair held-out split, and all metrics use deterministic seeds.
+For each D5 request, IDT copies the source and TGT returns a fixed, unrelated image from the target style. The desired region is above IDT on style and better than TGT on content. These are empirical reference endpoints, not hard bounds; full construction and metric definitions are in the supplement. Table~\ref{tab:main} compares ten baselines. Learned models use a held-out 50-pair validation split, and evaluation uses fixed seeds.
 
 
 
@@ -320,44 +253,21 @@ All methods are evaluated on every ordered source-target pair; learned baselines
 \begin{figure}[t!]
 \centering
 \includegraphics[width=0.9\linewidth]{radar_metric_blocks_A_clip_dinos_robustbreak.png}
-\caption{Multi-metric radar profile across D5-512, P2A-256, and R5-WikiArt. Axes are grouped by role: speed on the left, DINO-S on the right, CLIP-S on the upper-left, and content metrics at the bottom. DINO-S, our primary style metric, uses a robust broken visual scale (minimum near the inner ring, second-highest at 0.84, maximum at the outer ring) to expose both the low-style Latent-WCT baseline and the middle tier; this scaling is visual only, and Table~\ref{tab:main} remains the source for raw values. CLIP-S, DINO-C, and 1-LPIPS use linear per-axis \(v/\max\). Line weight encodes emphasis tier rather than rank. WEAVE (red) gives the strongest content-preserving profile among learned methods, especially on D5-512, while keeping much lower training and inference cost, suggesting stronger scaling potential at higher resolution and broader style coverage.}
+\caption{Style, content, and cost across three benchmarks. DINO-S uses a broken visual scale to separate the middle tier; other axes are linearly normalized. Table~\ref{tab:main} gives raw values.}
 \label{fig:radar}
 \end{figure}
-\paragraph{The IDT--TGT sandwich protocol redefines success.}
-The Identity row turns CLIP-S into a direction-aware metric---a method must clear the IDT floor to prove it is not merely preserving the source---and the Target Style row defines the style-maximizing endpoint, converting LPIPS from an absolute scale into a meaningful distance-to-collapse.
-Together, the two bounds expose two failure modes in Table~\ref{tab:main}: (i)~\textbf{style suppression}---SaMST and SaMam stay below the IDT CLIP-S floor, suggesting their low LPIPS reflects source preservation rather than genuine transfer; (ii)~\textbf{content collapse}---StyleAligned's LPIPS of 0.869 on D5-512 actually exceeds the Target Style bound of 0.733, meaning its output is perceptually farther from the source than a completely unrelated target-style image, and its DINO-C (0.239) is only marginally above the TGT floor (0.176). This pattern persists across all three benchmarks, confirming that StyleAligned achieves high style scores through near-total content sacrifice rather than balanced transfer.
+\paragraph{Reading the sandwich.}
+On D5, SaMST and SaMam score below IDT on CLIP-S, so their content scores alone do not establish transfer. At the other extreme, StyleAligned has higher LPIPS than TGT (0.869 vs.~0.733) and nearly reaches the TGT DINO-C value (0.239 vs.~0.176). The two references expose opposite failures without changing the underlying metrics.
 
-\paragraph{WEAVE occupies the practical frontier.}
-The sandwich bounds reveal that most methods cluster near the extremes: high-DINO-S methods approach the TGT LPIPS line, while low-LPIPS methods barely clear the IDT CLIP-S floor.
-On D5-512, the only methods matching or exceeding WEAVE on DINO-S all pay a severe content price, with much higher LPIPS and lower DINO-C (Table~\ref{tab:main}); WEAVE thus sits at the content-preserving end of the Pareto frontier, already near this structural ceiling.
-Among trained methods that clear the IDT floor, WEAVE also achieves the lowest LPIPS and the only sub-million-parameter profile; CUT needs an order of magnitude more parameters and training time to do the same (Table~\ref{tab:main}).
-The full multi-metric profile across all three benchmarks and both speed axes is summarized in Figure~\ref{fig:radar}.
+\paragraph{Main comparison.}
+WEAVE clears IDT on both style metrics while retaining substantially more content than methods with similar or higher style scores. Among trained methods above the IDT CLIP-S reference, it has the lowest D5 LPIPS and is the only sub-million-parameter model. It also clears IDT on P2A and R5, where the style space expands to 20 families. Figure~\ref{fig:radar} summarizes the same trade-off across all metrics.
 
-\paragraph{Generalization across 20 families.}
-Because Distinct5 uses only five hard, low-IDT styles, we also train and evaluate on all 20 WikiArt families (R5-WikiArt, $12{,}000$ pairs): WEAVE clears the IDT floor here too (Table~\ref{tab:main}), with CLIP-S rising and LPIPS essentially unchanged despite a $16{\times}$ larger style space.
-On P2A-256 it still clears the floor---expected, since lower resolution compresses the high-frequency subbands and the larger style space raises the floor---while avoiding negative transfer.
-Because the high-frequency path is decoupled from content transport, a new style can be added from a few references (30 suffice) by updating only the style-memory embedding, without retraining the backbone.
-
-\paragraph{Empirical Efficiency.}
-The Train column of Table~\ref{tab:main} shows that backbone-free methods are lightweight only at inference, underscoring that low inference cost does not imply low training cost.
-Our simplified wavelet architecture instead trains in 3 minutes on a single RTX~3060 and generates all 750 pairs in 95\,s (generation-only; VAE decode $\approx$42\% of that wall-clock): confining supervised transport to the high-frequency subbands shrinks the parameter space the optimizer must explore (the dominant-energy LL band never enters the style-conditioned loss), leaving VAE decode as the dominant cost.
-
-
-
-\paragraph{Mechanistic diagnosis and comparison.}
-As the frequency-dominance analysis predicts, SaMam shows the style-suppression pattern (sub-IDT CLIP-S despite low LPIPS), while iterative editors such as StyleID suffer per-step content decay; WEAVE's endpoint high-frequency AdaIN avoids this decay, reaching comparable target-direction transfer with far less content damage.
-Relative to Seedream~4.5, WEAVE reaches comparable style with far lower LPIPS, under one million parameters, on a single consumer GPU.
-The comparison with Latent-WCT confirms that wavelet decomposition alone, without learned transport, is insufficient (Table~\ref{tab:main}).
-
-\paragraph{Auxiliary metrics corroborate the main findings.}
-Figure~\ref{fig:page1} (right) shows WEAVE's target-pooled ArtFID is lower than Seedream~4.5's; on all-pairs evaluation WEAVE reaches competitive CLIP-S with the lowest LPIPS.
-The DINO-based metrics corroborate this: WEAVE's high DINO-C (near the identity ceiling) and DINO-S near the structural ceiling confirm genuine style acquisition rather than mere content preservation.
+WEAVE trains in 3 minutes on one RTX~3060 and generates 750 images in 95\,s. Latent-WCT is faster but falls below IDT, showing that the analytic wavelet transform alone does not replace learned transport.
 
 \subsection{Mechanistic Ablations}
 \label{sec:ablation}
 
-Table~\ref{tab:ablation} lists all ablations with a measurable effect on D5-512; many hyperparameter perturbations ($10{\times}$--$20{\times}$ on $\sigma$, $g_0$, $\lambda_{HH}$, MSE$\to$Huber) move CLIP-S by $<0.002$ and are omitted.
-AdaIN is the most critical component (removing it reverts output to content preservation), Flow Matching drives transport (removing it improves content but drops style), and step count / extrapolation show clear collapse points.
+Table~\ref{tab:ablation} reports D5 changes large enough to interpret. Removing AdaIN or flow matching lowers style while improving content, showing that both move the output away from the source. One Euler step and strong extrapolation damage both objectives.
 
 \begin{table}[ht]
 \centering
@@ -382,19 +292,11 @@ extrap $=1.0$ & 0.704 & 0.591 & 0.411 & 0.616 \\
 num\_steps $=1$ & 0.709 & 0.476 & 0.376 & 0.448 \\
 \bottomrule
 \end{tabular}
-\caption{Ablation on D5-512 (5-epoch baseline, 750 test pairs). The main-table configuration (10 epochs, $\alpha{=}0.3$ LL partial stylization) improves all four metrics; see Section~\ref{sec:ablation}. Configurations with $\Delta$CLIP-S$<0.002$ are omitted.}
+\caption{Ablation on D5 (5 epochs, 750 pairs). The main result uses 10 epochs and a 0.3 LL target blend. Changes below 0.002 CLIP-S are omitted.}
 \label{tab:ablation}
 \end{table}
 
-\paragraph{Latent-WCT baseline.}
-Replacing learned transport with a single-shot covariance match (zero parameters) collapses on all four metrics (Table~\ref{tab:main}), confirming the 8-step Rectified Flow---not the wavelet operations---is the key mechanism.
-
-\paragraph{Style ceiling.}
-Ten variants strengthening the style pathway all converge to DINO-S $\approx0.48$ under a 5-epoch budget, confirming this as the structural ceiling of the structure-aligned-target paradigm at 903K parameters.
-The main configuration ($\alpha{=}0.3$ LL blend, 10 epochs) breaks it as a Pareto improvement, since only a mild blend lets color/contrast statistics migrate into the LL target without overwhelming the content anchor; fully unlocking LL would leave the paradigm.
-
-\paragraph{Summary.}
-WEAVE's behavior is governed by three principal components (AdaIN, Flow Matching, ODE step count) and one sensitive hyperparameter (learning rate); the rest are robust. Causal evidence follows in Section~\ref{sec:mechanism}.
+The near-identity Latent-WCT result in Table~\ref{tab:main} further shows that wavelet statistics without learned flow are insufficient. Additional low-impact sweeps are reported in the supplement.
 
 
 
@@ -407,15 +309,7 @@ WEAVE's behavior is governed by three principal components (AdaIN, Flow Matching
 \subsection{Generalization and Robustness}
 \label{sec:gen}
 
-\textbf{Latent space vs.\ RGB.}
-A matched $256{\times}256$ control isolates the source of the gain: at equal training time and parameters, direct RGB flow reaches far lower CLIP-S with much worse LPIPS, confirming the gain comes from latent-space wavelet transport, not an extra loss.
-
-\textbf{Few-shot adaptation.}
-Freezing the backbone and updating only the 30-image style memory clears the IDT floor on all 8 held-out styles; fine-tuning adds only a small CLIP-S gain at higher cost.
-
-\textbf{Zero-shot transfer.}
-We take the \emph{D5-trained} checkpoint (5 styles) and evaluate it on Other5---five WikiArt families unseen during training (750 pairs).
-Table~\ref{tab:ooze} shows WEAVE still clears the identity floor and wins on content preservation: its LPIPS is far below SaMam and SaMST while its CLIP-S and DINO-C match the best; SaMam only edges WEAVE on DINO-S, trading brushstroke matching for content fidelity.
+A matched RGB control performs worse on both style and content, supporting latent-space transport. Updating only the 30-image style memory clears IDT on eight held-out styles. We also apply the D5 checkpoint directly to five unseen WikiArt families (Other5; 750 pairs). Table~\ref{tab:ooze} shows that WEAVE retains the best content scores while remaining competitive on style.
 \begin{table}[ht]
 \centering
 \small
@@ -430,60 +324,35 @@ SaMST & 0.7485 & 0.6213 & 0.3913 & 0.2680 \\
 \bottomrule
 \end{tabular}%
 }
-\caption{Zero-shot evaluation on Other5 (all 750 source$\rightarrow$target pairs). The D5-trained checkpoint transfers to 5 unseen WikiArt families, halving LPIPS versus SaMST and beating SaMam by $\sim$30\% while matching the best CLIP-S and DINO-C.}
+\caption{Zero-shot evaluation on Other5 (750 pairs) using the D5 checkpoint.}
 \label{tab:ooze}
 \end{table}
 
-\textbf{Wavelet basis and resolution.}
-Daubechies-2 slightly raises CLIP-S but worsens LPIPS, so we retain Haar for its exact orthogonality and local support; native-resolution training benefits the high-frequency bands, whereas upsampling a low-resolution model is far worse.
+Daubechies-2 slightly improves CLIP-S but worsens LPIPS; Haar gives the better trade-off. Native-resolution training also outperforms upsampling a low-resolution model.
 
 
 \subsection{Plug-and-Play Extension to Pre-trained Diffusion Models}
 \label{sec:plugin}
 
-To show WEAVE's latent operations are pluggable rather than tied to our 903K network, we apply the same wavelet decoupling and high-frequency statistical alignment (AdaIN) to a frozen SD1.5 image-to-image pipeline without training any parameters: after empty-prompt I2I (strength 0.5, 20-step DDIM), a single-level Haar DWT matches the high-frequency subbands (LH/HL/HH) to the target style (AdaIN, scale 0.8) while keeping LL unchanged.
-On the off-diagonal D5 pairs ($n{=}600$), this raises CLIP-S and DINO-S significantly (paired $t$-test $p{<}10^{-15}$) while barely touching content; the gains hold across all 750 pairs.
-At 4.9\,ms per image, this analytic DWT+AdaIN+IDWT confirms WEAVE plugs into pre-trained diffusion backbones with almost no content damage.
+We add the same Haar and endpoint AdaIN operation to frozen SD1.5 image-to-image output (20-step DDIM) without training. On 600 off-diagonal D5 pairs, it raises CLIP-S and DINO-S ($p{<}10^{-15}$, paired $t$-test) with little content change. The operation adds 4.9\,ms per image.
 
 
 \subsection{Mechanism Analysis}
 \label{sec:mechanism}
 
-\paragraph{Gradient-spectrum evidence for frequency dominance.}
-We provide evidence that the identity shortcut is strongly associated with---and plausibly driven by---frequency dominance, by measuring the gradient spectrum during training.
-After one forward pass at $t{=}0.5$, the unweighted low-frequency loss is $5{\times}$ larger than the high-frequency losses, and the LL head's gradient norm is $6{\times}$ larger than the other heads.
-Even with explicit down-weighting, the LL input-gradient energy share remains the largest single-subband share, confirming that low-frequency dominance is structural rather than a loss-weighting artifact.
-
-\paragraph{Per-subband functional specialization.}
-Decomposing the output latent and measuring each subband's statistical distance to the target style reveals distinct functional roles: mid-frequency subbands (LH/HL) are the primary style carriers, LL preserves content structure, and HH is architecturally frozen---the model has no $\text{head}_{HH}$, so the Euler integrator never modifies the finest diagonal detail.
-Wavelet decoupling is thus not merely a training convenience but an enforced structural partition.
+At $t{=}0.5$, the unweighted LL loss is $5{\times}$ larger than the high-frequency losses and its head gradient is $6{\times}$ larger. LL remains the largest input-gradient band after down-weighting. Output probes then show that LH/HL carry most style change, LL retains structure, and headless HH changes only through endpoint AdaIN. These measurements support frequency dominance and the intended division of labor.
 
 \section{Discussion}
 \label{sec:discussion}
 
-\paragraph{Why wavelet decoupling works.}
-The mechanism analysis confirms frequency dominance is structural---even down-weighted LL still holds the largest single-subband gradient share---and that wavelet decoupling enforces a hard partition (LL content, LH/HL style, HH frozen), turning a soft optimization conflict into a structural one; this is why endpoint AdaIN, the primary style-injection path that bypasses the LL-dominated reconstruction loss, is the most critical component.
-
-\paragraph{Flow Matching and AdaIN cooperate, and AdaIN is the right operator.}
-Flow Matching plans a content-preserving trajectory, while endpoint AdaIN performs exact high-frequency alignment; the two combine synergistically beyond either alone (Table~\ref{tab:ablation}).
-The 8-step integration lets each operator correct the other's drift.
-An inference-time module swap confirms AdaIN is the primary, not redundant, injection channel: disabling it collapses the LH style-transfer ratio, while full-covariance WCT helps only marginally at the cost of content drift, and per-subband decomposition is strictly worse because the model was trained with the global spatial-fiber mode.
+The evidence supports a simple interpretation: flow matching moves the latent while preserving source structure, and endpoint AdaIN supplies the high-frequency style signal that the flow loss underweights. Neither component is sufficient alone (Table~\ref{tab:ablation}).
 
 \paragraph{Limitations.}
-WEAVE is domain-conditional (a style family, not a reference painting).
-The Distinct5 benchmark is intentionally narrow (five hard, low-IDT styles as a no-op stress test), partially addressed by the Random5-WikiArt extension; the LL-protecting design makes palette-heavy targets like Minimalism harder than textured ones.
-The single-level Haar decomposition may be suboptimal for styles whose distinguishing features span multiple scales; multi-level extensions are left for future work.
-
-\paragraph{Future directions.}
-The wavelet-decoupled framework naturally extends to multi-level decompositions that separate palette, layout, and brushstroke into independent channels, and to reference-image conditioning that bridges domain-level and arbitrary-image style transfer while preserving the efficiency of frequency routing.
+WEAVE is domain-conditional rather than reference-image conditional. D5 contains only five styles, partly addressed by R5 and Other5. Protecting LL also makes palette-dominated styles harder, and one Haar level may miss style cues that span several scales.
 
 \section{Conclusion}
 
-Style transfer needs both the right success criterion and the right coordinate system.
-The IDT--TGT sandwich protocol exposes two failure modes that single-baseline evaluation misses: style suppression below the Identity floor, and content collapse beyond the Target Style LPIPS bound. WEAVE avoids both by separating low-frequency structure from high-frequency style motion and routing style through the same high-frequency path used at inference.
-The 903K-parameter backbone trains in 3 minutes on one RTX 3060, with 95\,s generation-only inference for 750 pairs.
-The plug-and-play extension to SD1.5 demonstrates that the wavelet-decoupled mechanism generalizes beyond our compact network to large pre-trained diffusion backbones.
-The central finding: real target-direction transfer can be achieved without a large model once the transport geometry separates structure from style, and by running on a single consumer GPU WEAVE makes high-quality stylization accessible.
+The IDT--TGT sandwich makes two failures visible: a model may stay too close to the source or discard more content than a target-style reference. WEAVE avoids both by separating low-frequency structure from high-frequency style. Its 903K-parameter network trains in 3 minutes on one RTX~3060, and the same endpoint operation improves frozen SD1.5 without training.
 
 \section*{Ethics Statement}
 Style transfer tools can be misused to produce deceptive images or to misattribute stylistic authorship.
