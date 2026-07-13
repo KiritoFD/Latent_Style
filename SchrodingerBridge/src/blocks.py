@@ -17,37 +17,45 @@ def _make_norm(dim: int) -> nn.Module:
 
 
 class StyleAdaIN(nn.Module):
-    """Per-instance AdaIN with style-conditioned affine parameters.
+    """Per-instance AdaIN or AdaLN with style-conditioned affine parameters.
 
-    Math:  x_norm = (x - μ(x)) / σ(x)          (remove instance stats)
-           styled = x_norm * (1 + γ(s)) + β(s)  (apply style stats)
-    where γ, β are generated from style_pooled via linear projection.
+    Two modes:
+        - "adain": InstanceNorm(x) * (1+γ(s)) + β(s) — removes per-sample stats
+        - "adaln": LayerNorm(x) * (1+γ(s)) + β(s) — preserves per-layer stats
 
-    Key difference from AdaLN (time_style_adaln):
-        - AdaLN uses LayerNorm (per-layer statistics, preserves content scale)
-        - AdaIN uses InstanceNorm (per-instance statistics, removes content mean/std)
-        - AdaIN is more aggressive: explicitly strips per-sample content statistics
-          and replaces them with style-conditioned affine parameters.
+    AdaLN is the default because it's less aggressive: gamma=0, beta=0 → identity
+    at initialization, whereas AdaIN would produce IN(x) at init (no identity).
 
     DINOv2 CLS captures global image statistics (mean color, contrast, texture scale).
-    AdaIN directly modulates these statistics at the feature-map level, making it
+    AdaLN directly modulates these statistics at the feature-map level, making it
     a natural mechanism for DINO-S improvement.
     """
 
-    def __init__(self, dim: int, style_dim: int, init_std: float = 0.02):
+    def __init__(self, dim: int, style_dim: int, init_std: float = 0.02, mode: str = "adaln"):
         super().__init__()
+        self.mode = mode
         self.gamma_proj = nn.Linear(style_dim, dim)
         self.beta_proj = nn.Linear(style_dim, dim)
-        # Small random init: initially weak style modulation, grows with training
         nn.init.normal_(self.gamma_proj.weight, std=init_std)
         nn.init.zeros_(self.gamma_proj.bias)
         nn.init.normal_(self.beta_proj.weight, std=init_std)
         nn.init.zeros_(self.beta_proj.bias)
+        # AdaLN uses LayerNorm (per-layer stats, identity at init)
+        # AdaIN uses InstanceNorm (per-sample stats, not identity at init)
+        if mode == "adaln":
+            self.norm = nn.LayerNorm(dim, elementwise_affine=False)
 
     def forward(self, x: torch.Tensor, style_pooled: torch.Tensor) -> torch.Tensor:
-        mean = x.mean(dim=[2, 3], keepdim=True)
-        std = x.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
-        x_norm = (x - mean) / std
+        if self.mode == "adaln":
+            # LayerNorm over channels: [B, C, H, W] → permute → LN(C) → permute back
+            x_norm = x.permute(0, 2, 3, 1).float()  # [B, H, W, C]
+            x_norm = self.norm(x_norm)               # LN over C
+            x_norm = x_norm.permute(0, 3, 1, 2).to(dtype=x.dtype)  # [B, C, H, W]
+        else:
+            # InstanceNorm: per-sample mean/std
+            mean = x.mean(dim=[2, 3], keepdim=True)
+            std = x.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
+            x_norm = (x - mean) / std
         gamma = self.gamma_proj(style_pooled.to(dtype=x.dtype))[:, :, None, None]
         beta = self.beta_proj(style_pooled.to(dtype=x.dtype))[:, :, None, None]
         return x_norm * (1.0 + gamma) + beta
