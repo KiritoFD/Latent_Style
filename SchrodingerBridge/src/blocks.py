@@ -1,4 +1,37 @@
-"""Residual attention block used by WEAVE."""
+"""Residual attention block used by WEAVE.
+
+ResidualBlock = AdaLN(time) → Self-Attention → Cross-Attention(style) → FFN.
+
+Mathematical formulation of the core style injection mechanism (Cross-Attention):
+
+  Given content features x ∈ R^{B×C×H×W} and style tokens S ∈ R^{B×T×C}:
+
+  1. Self-Attention: x' = x + σ(γ_t) ⊙ SA(AdaLN(x, t))
+
+  2. Cross-Attention (style injection):
+     Q = W_q(x')        — content queries
+     K = W_k(S)         — style keys
+     V = W_v(S)         — style values
+     A = ReLU²(Q·K^T/√d)  — sparse attention (relu2 mode)
+     Δ = tanh(g) · W_o(A·V)  — gated style delta
+     x'' = α·x' + Δ      — residual mix (α = shortcut_alpha)
+
+  3. DWT Route (optional): Instead of full-resolution Q, perform Haar DWT on x',
+     route only HF subbands (LH, HL, HH) through Cross-Attention, then iDWT
+     to reconstruct. LL bypass preserves content structure.
+
+  4. FFN: x''' = x'' + Conv2d(SiLU(Conv2d(GroupNorm(x''))))
+
+The gate g is a learned scalar parameter (tanh-bounded). The attention uses
+ReLU² activation (sparse, magnitude-preserving) rather than softmax.
+
+Key design decisions:
+  - No external pre-trained models in training (DINO/CLIP-free)
+  - Style injection via Cross-Attention only (no AdaIN/AdaLN in decoder)
+  - Flow Matching provides the primary training signal (~92% of total loss)
+  - SWD and edge losses provide weak auxiliary signals (~8% combined)
+"""
+
 from __future__ import annotations
 
 import math
@@ -12,60 +45,14 @@ from wavelet import dwt2_haar, idwt2_haar
 
 
 def _make_norm(dim: int) -> nn.Module:
-    """Normalization layer (RMSNorm removed — GroupNorm hardcoded)."""
+    """Normalization layer (GroupNorm)."""
     return nn.GroupNorm(1, dim, affine=False)
-
-
-class StyleAdaIN(nn.Module):
-    """Per-instance AdaIN or AdaLN with style-conditioned affine parameters.
-
-    Two modes:
-        - "adain": InstanceNorm(x) * (1+γ(s)) + β(s) — removes per-sample stats
-        - "adaln": LayerNorm(x) * (1+γ(s)) + β(s) — preserves per-layer stats
-
-    AdaLN is the default because it's less aggressive: gamma=0, beta=0 → identity
-    at initialization, whereas AdaIN would produce IN(x) at init (no identity).
-
-    DINOv2 CLS captures global image statistics (mean color, contrast, texture scale).
-    AdaLN directly modulates these statistics at the feature-map level, making it
-    a natural mechanism for DINO-S improvement.
-    """
-
-    def __init__(self, dim: int, style_dim: int, init_std: float = 0.02, mode: str = "adaln"):
-        super().__init__()
-        self.mode = mode
-        self.gamma_proj = nn.Linear(style_dim, dim)
-        self.beta_proj = nn.Linear(style_dim, dim)
-        nn.init.normal_(self.gamma_proj.weight, std=init_std)
-        nn.init.zeros_(self.gamma_proj.bias)
-        nn.init.normal_(self.beta_proj.weight, std=init_std)
-        nn.init.zeros_(self.beta_proj.bias)
-        # AdaLN uses LayerNorm (per-layer stats, identity at init)
-        # AdaIN uses InstanceNorm (per-sample stats, not identity at init)
-        if mode == "adaln":
-            self.norm = nn.LayerNorm(dim, elementwise_affine=False)
-
-    def forward(self, x: torch.Tensor, style_pooled: torch.Tensor) -> torch.Tensor:
-        if self.mode == "adaln":
-            # LayerNorm over channels: [B, C, H, W] → permute → LN(C) → permute back
-            x_norm = x.permute(0, 2, 3, 1).float()  # [B, H, W, C]
-            x_norm = self.norm(x_norm)               # LN over C
-            x_norm = x_norm.permute(0, 3, 1, 2).to(dtype=x.dtype)  # [B, C, H, W]
-        else:
-            # InstanceNorm: per-sample mean/std
-            mean = x.mean(dim=[2, 3], keepdim=True)
-            std = x.std(dim=[2, 3], keepdim=True).clamp_min(1e-6)
-            x_norm = (x - mean) / std
-        gamma = self.gamma_proj(style_pooled.to(dtype=x.dtype))[:, :, None, None]
-        beta = self.beta_proj(style_pooled.to(dtype=x.dtype))[:, :, None, None]
-        return x_norm * (1.0 + gamma) + beta
 
 
 class ResidualBlock(nn.Module):
     """AdaLN(time) → Self-Attention → Cross-Attention(style) → FFN.
 
-    Active path (clean_base_v2): relu2 attention, tanh_gate, single k/v proj,
-    no FiLM, no MoE, no skip_coarse.
+    Active path: relu2 attention, tanh_gate, single k/v proj.
     """
 
     def __init__(
@@ -86,9 +73,6 @@ class ResidualBlock(nn.Module):
         style_adaln_enabled: bool = False,
         style_adaln_nonzero_init: bool = False,
         style_adaln_init_std: float = 0.1,
-        # Round 11: StyleAdaIN — per-instance normalization with style-conditioned affine
-        style_adain_enabled: bool = False,
-        style_adain_init_std: float = 0.02,
     ) -> None:
         super().__init__()
 
@@ -131,12 +115,6 @@ class ResidualBlock(nn.Module):
                 nn.init.zeros_(self.time_style_adaln[-1].bias)
         else:
             self.time_adaln = nn.Sequential(nn.SiLU(), nn.Linear(self.dim, self.dim * 3))
-        # Round 11: StyleAdaIN — per-instance normalization with style-conditioned affine
-        self.style_adain_enabled = bool(style_adain_enabled)
-        if self.style_adain_enabled:
-            self.style_adain = StyleAdaIN(self.dim, self.dim, init_std=float(style_adain_init_std))
-        else:
-            self.style_adain = None
         # Self-attention: content Q/K/V
         self.sa_qkv = nn.Linear(self.dim, self.dim * 3)
         self.sa_out = nn.Linear(self.dim, self.dim)
@@ -320,11 +298,6 @@ class ResidualBlock(nn.Module):
 
         # --- FFN ---
         x = x + self.ffn(self.norm2(x))
-
-        # Round 11: StyleAdaIN — per-instance normalization with style-conditioned affine
-        # 剥除 per-sample 内容统计 (mean/std), 替换为 style 调制
-        if self.style_adain is not None and style_pooled is not None:
-            x = self.style_adain(x, style_pooled)
 
         # --- Debug ---
         self.last_debug = {
