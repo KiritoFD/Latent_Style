@@ -157,7 +157,9 @@ $\hat{\ell}$ 不变。对齐仅在最终（端点）Euler 步应用一次。
 
 ---
 
-## 8. DINO-S 0.48 天花板（Stage7-16 验证）
+## 8. DINO-S 0.48 天花板（Stage1-16 验证）
+
+### 8.1 上游风格通路（Stage1-9，10 个变体）
 
 10 个变体全部收敛到 DINO-S $= 0.480 \pm 0.003$，确认 0.48 是 SAT 范式（903K 参数，5 epochs，D5）的 fundamental limit。
 
@@ -175,16 +177,61 @@ $\hat{\ell}$ 不变。对齐仅在最终（端点）Euler 步应用一次。
 | HF WCT β=0.5 | 0.474 | 高频 WCT |
 
 **根因**：LL 子带携带 DINOv2 敏感的色彩/对比度统计，但被 SAT 结构性锁死。解锁 LL 是风格-内容零和博弈，不改善 Pareto 前沿。
-- LL 部分风格化：改善内容（LPIPS $-0.03$）但不影响 DINO-S
-- HF WCT：DINO-S $-0.006$，DINO-C $+0.019$（零和）
+
+### 8.2 下游 Decoder 风格注入（Round 10-12，10 个实验，全部失败）
+
+在确认上游风格通路天花板后，尝试在 Decoder（velocity predictor）中注入 AdaIN/AdaLN 风格调制，共 10 个实验全部失败。
+
+| 实验 | 位置 | 机制 | DINO-S | Δ vs Baseline | 结论 |
+|------|------|------|--------|---------------|------|
+| brk_ad_adain_base | SAT 级 | AdaIN HF blending | 0.479 | -0.004 | 退化 |
+| brk_ad_adain_hfonly | SAT 级 | AdaIN HF only | 0.478 | -0.005 | 退化 |
+| brk_ad_adain_hi | SAT 级 | AdaIN high α | 0.477 | -0.006 | 退化 |
+| brk_ad_adain_lo | SAT 级 | AdaIN low α | 0.480 | -0.003 | 退化 |
+| brk_ae_adaln_02 | FFN 后 | AdaLN(style) init_std=0.02 | 0.481 | -0.002 | 退化 |
+| brk_ae_adaln_05 | FFN 后 | AdaLN(style) init_std=0.05 | 0.481 | -0.002 | 退化 |
+| brk_ae_adaln_10 | FFN 后 | AdaLN(style) init_std=0.10 | 0.481 | -0.002 | 退化 |
+| brk_af_adaln_q10 | Q-proj 前 | AdaLN(style) on Q | 0.480 | -0.003 | 退化 |
+| brk_af_adaln_g10 | Gate 层 | Channel-wise style gate | 0.479 | -0.004 | 退化 |
+| brk_af_adaln_qg05 | Q+Gate | AdaLN on Q + per-channel gate | 0.480 | -0.003 | 退化 |
+
+**统一的数学解释**：
+
+Decoder 的核心任务是 velocity prediction $v_\theta(x_t, t, s)$，而非 style injection。ResidualBlock 的 forward 流程为：
+
+1. **Self-Attention**: $x' = x + \sigma(\gamma_t) \odot \text{SA}(\text{AdaLN}(x, t))$
+2. **Cross-Attention**: $\Delta = \tanh(g) \cdot W_o(\text{ReLU}^2(QK^T/\sqrt{d}) \cdot V)$，$x'' = \alpha x' + \Delta$
+3. **FFN**: $x''' = x'' + \text{Conv}(\text{SiLU}(\text{Conv}(\text{GN}(x''))))$
+
+在此结构中插入 AdaLN(style) 调制会产生两个问题：
+
+**问题 1：扰动与速度场无关**。AdaLN 引入的 $\gamma(s), \beta(s)$ 调制与 velocity prediction 任务正交——Flow Matching loss 监督的是 $v_\theta(x_t, t, s)$ 与 $u_t = z_1 - z_0$ 的 MSE，但 AdaLN 调制的是中间特征表示，而非速度预测本身。Flow loss（占梯度 92%）无法约束这些扰动。
+
+**问题 2：弱信号驱动导致退化**。SWD 损失仅占梯度 4%，且作用在终态 $z_1$ 而非中间特征。AdaLN 的 style 参数仅被 SWD 的弱信号驱动，无法形成有效的风格梯度。结果：AdaLN 引入的扰动被 flow loss 压制，但 style 信号不足以形成有意义的风格注入，最终导致系统性退化。
+
+**结论**：Decoder 中任何位置的 AdaLN/AdaIN 均无效。WEAVE 的风格注入通道必须在上游（Endpoint AdaIN、SAT 构造、Cross-Attention）而非下游（velocity predictor）设计。此结论已通过 10 个独立实验（Round 10-12）验证，相关代码已完全清理。
 
 ---
 
-## 9. 架构图绘制规范
+## 9. 为什么 DINO-S 无法突破 0.48？**结论总结**
+
+所有 20+ 个变体（上游 10 个 + 下游 10 个）全部收敛到 DINO-S = 0.480 ± 0.003，确认 **0.48 是当前 SAT 范式的 fundamental limit**：
+
+| 约束 | 来源 | 影响 |
+|------|------|------|
+| LL 锁死 | SAT 构造 | DINOv2 敏感的色彩/对比度统计无法迁移 |
+| Decoder 扰动 | 任务正交 | 任何位置的 AdaLN/AdaIN 均退化，无法提升 |
+| 解锁 LL | 内容-内容零和 | DINO-S 略微下降但 DINO-C 上升，不改善 Pareto 前沿 |
+
+**下一个突破方向**：LL 子带解锁是唯一能突破天花板的数学可行路径，但必须以一定程度的内容损失为代价。当前最优配置是 `brk_a_ll03`（α=0.3）：DINO-S=0.4832，这是我们观测到的最大值。
+
+---
+
+## 10. 架构图绘制规范
 
 本节给出架构图的绘制说明，可用于 draw.io / TikZ / 手绘。推荐使用 draw.io-ai 生成或基于 `docs/630/aaai_arch_diagram_v16_staggered_bundle.drawio` 迭代。
 
-### 9.1 整体布局（从左到右横向流）
+### 10.1 整体布局（从左到右横向流）
 
 ```
 [Content x_c] → [VAE Enc] → z_0 (4×32×32)
@@ -230,7 +277,7 @@ $\hat{\ell}$ 不变。对齐仅在最终（端点）Euler 步应用一次。
     [VAE Dec] → 风格化输出 x̂_s
 ```
 
-### 9.2 配色规范
+### 10.2 配色规范
 
 | 元素 | 颜色 | 说明 |
 |------|------|------|
@@ -240,7 +287,7 @@ $\hat{\ell}$ 不变。对齐仅在最终（端点）Euler 步应用一次。
 | 可训练（backbone, heads） | 实线边框 | 903K 参数 |
 | 辅助/无效（cross-attn） | 虚线边框 | 消融验证 Δ<0.001 |
 
-### 9.3 关键标注（必须在图中体现）
+### 10.3 关键标注（必须在图中体现）
 
 1. **LL 锁死标记**：LL 子带旁标注 "locked / no style gradient"，箭头不进 style 路径
 2. **HH 无头标记**：HH 子带旁标注 "no velocity head, endpoint AdaIN only"
@@ -249,13 +296,13 @@ $\hat{\ell}$ 不变。对齐仅在最终（端点）Euler 步应用一次。
 5. **SAT 公式**：在 DWT 后标注 target = IDWT(LL_c, LH_s, HL_s, HH_s)
 6. **子带尺寸**：每个子带标 "4×16×16"
 
-### 9.4 推荐的图分块（3 个水平带）
+### 10.4 推荐的图分块（3 个水平带）
 
 1. **编码与分解带**（顶部）：x_c → VAE Enc → z_0 → Haar DWT → 4 子带
 2. **速度网络带**（中部）：4 子带 → input_proj → backbone ×4 → 3 heads → iDWT → ẑ_1
 3. **推理与端点带**（底部）：8 步 Euler → Endpoint AdaIN ← style stats → VAE Dec → x̂_s
 
-### 9.5 与 `docs/630/` 现有图的关系
+### 10.5 与 `docs/630/` 现有图的关系
 
 `docs/630/aaai_arch_diagram_v16_staggered_bundle.drawio` 是当前最新版本。本规范与 v16 的差异：
 - **需补充**：HH 无头的明确标注（v16 未突出）
@@ -265,7 +312,7 @@ $\hat{\ell}$ 不变。对齐仅在最终（端点）Euler 步应用一次。
 
 建议在 v16 基础上迭代为 v17，或用 draw.io-ai 重新生成符合本规范的版本。
 
-### 9.6 备选：简化版架构图（论文用）
+### 10.6 备选：简化版架构图（论文用）
 
 论文正文受版面限制，推荐用简化版：
 - 只画 3 个子带通路（LL, LH/HL 合并, HH）
@@ -275,7 +322,7 @@ $\hat{\ell}$ 不变。对齐仅在最终（端点）Euler 步应用一次。
 
 ---
 
-## 10. 有效组件验证摘要
+## 11. 有效组件验证摘要
 
 | 组件 | 消融 | 结论 |
 |------|------|------|
@@ -290,7 +337,7 @@ $\hat{\ell}$ 不变。对齐仅在最终（端点）Euler 步应用一次。
 
 ---
 
-## 11. 相关代码位置
+## 12. 相关代码位置
 
 | 功能 | 文件 | 关键行 |
 |------|------|--------|
