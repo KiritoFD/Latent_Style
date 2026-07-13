@@ -145,6 +145,7 @@ Rejected:
 | `target_hf_multitoken_ft6` | 0.483562 | 0.794129 | 0.718699 | 0.297979 | Worse than subband-only; code removed. |
 | `target_hf_subband_deep_energy_ft6` | 0.482631 | 0.794932 | 0.717588 | 0.297529 | Deep additive residual with RMS bound underperformed; code removed. |
 | `target_hf_subband_film_head_ft6` | 0.482591 | 0.791672 | 0.717951 | 0.299591 | Pure HF-head FiLM conditioning underperformed; config removed. |
+| `target_hf_subband_basis_ft6` | 0.482840 | 0.793659 | 0.718310 | 0.297061 | Low-rank content-derived basis was safe but underpowered; code/config removed. |
 | `target_hf_subband_diraux_ft6` | 0.486150 | 0.793859 | 0.718929 | 0.297425 | Direct residual-direction auxiliary improved probe alignment but hurt image metrics; code/config removed. |
 | `target_hf_subband_timewindow_norm` | 0.48660-0.48664 | 0.79361-0.79365 | 0.71933-0.71938 | 0.297480 | Inference-only early/late residual windows underperformed full residual; temporary hook code removed. |
 
@@ -191,6 +192,7 @@ Do not prioritize:
 | Pure target-HF FiLM head conditioning | Tested and removed; newly initialized HF-head FiLM weakens the learned velocity field. |
 | Direct residual-direction auxiliary | Tested and removed; higher residual/desired cosine did not translate into better DINO-S or content. |
 | Time-window residual gating | Tested and removed; normalized early/late windows both underperform full-path residual. |
+| Low-rank content-derived residual basis | Tested and removed; target-HF coefficient selection over content bases was safer than spatial injection but weaker than subband-only. |
 | Generic decoder AdaLN/AdaIN | Already repeatedly negative. |
 
 ## 7. Method-writing Guidance

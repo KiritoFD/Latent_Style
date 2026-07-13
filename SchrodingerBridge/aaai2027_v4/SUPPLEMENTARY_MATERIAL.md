@@ -147,6 +147,7 @@ All listed runs fine-tune from the same `brk_a_ll03_10ep` checkpoint family and 
 | `target_hf_subband_ft6` | per-subband pooled HF residual | **0.488624** | 0.798123 | **0.720880** | 0.296553 | 0.403917 | Primary current architecture probe. |
 | `target_hf_subband_texture_ft6` | pooled HF + stationary texture stats | 0.488420 | **0.798815** | 0.719357 | **0.296046** | **0.404302** | Conservative alternate. |
 | `target_hf_content_anchor_ft6` | content-energy placement residual | 0.484393 | 0.795462 | 0.717251 | 0.298162 | 0.399538 | Safe but not competitive. |
+| `target_hf_subband_basis_ft6` | target-HF selects low-rank content-derived residual basis | 0.482840 | 0.793659 | 0.718310 | 0.297061 | 0.398561 | Reject: safe but underpowered. |
 
 Main lesson: the network can use target-HF information, but only if target spatial coordinates are removed. Any architecture promoted from this probe family should also give HH a supervised output path when HH appears in the target.
 
@@ -207,6 +208,7 @@ Avoid:
 | Raw target HF maps | Already causes content collapse. |
 | Global target-token fusion | Over-controls LL. |
 | Stationary-stat multi-token widening | Tested after the main probe; worse than subband-only on DINO-S, DINO-C, CLIP-S, LPIPS, and off-DINO-S. |
+| Low-rank content-derived basis | Safe, but weaker than subband-only; target-HF coefficient selection underuses image-specific HF style. |
 | Treating CFG as proven content fix | Earlier CFG runs were confounded with style delta heads, DWT route, HH head, and larger gates. |
 
 Any promoted architecture must be rerun on D5-512, P2A-256, and R5-WikiArt with DINO-S primary, CLIP-S secondary, and DINO-C/LPIPS used to reject content-collapse wins.
