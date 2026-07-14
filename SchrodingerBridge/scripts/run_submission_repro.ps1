@@ -3,7 +3,7 @@ param(
     [switch]$AllowNetwork
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Python = (Get-Command python).Source
 $Config = Join-Path $Root "src\default_config.json"
