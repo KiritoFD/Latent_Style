@@ -89,11 +89,19 @@ def resolve_source_path(test_dir: Path, row: dict[str, str]) -> Path:
     return style_dir / f"{row['src_style']}__{row['src_image']}"
 
 
-def run_clip_eval(checkpoint_path: Path, out_dir: Path, eval_script: Path, train_cfg, extra_args: list[str], config_override: str = "") -> bool:
-    """Run run_evaluation.py for one checkpoint. Returns True if success."""
+def run_clip_eval(
+    checkpoint_path: Path,
+    out_dir: Path,
+    eval_script: Path,
+    train_cfg,
+    extra_args: list[str],
+    config_override: str = "",
+    allow_network: bool = False,
+) -> None:
+    """Run run_evaluation.py for one checkpoint and fail on incomplete output."""
     if (out_dir / "summary.json").exists():
         print(f"  [skip] summary.json exists")
-        return True
+        return
     out_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
         sys.executable, str(eval_script),
@@ -107,15 +115,25 @@ def run_clip_eval(checkpoint_path: Path, out_dir: Path, eval_script: Path, train
     ] + extra_args
     if config_override:
         cmd += ["--config_override", config_override]
+    if allow_network:
+        cmd += ["--clip_allow_network"]
     print(f"  [eval] running run_evaluation.py...")
     t0 = time.time()
     ret = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     dt = time.time() - t0
     if ret.returncode != 0:
-        print(f"  [ERROR] {ret.stderr[:300]}")
-        return False
+        output = "\n".join(part.strip() for part in (ret.stdout, ret.stderr) if part.strip())
+        tail = output[-8000:] if output else "<no subprocess output>"
+        raise RuntimeError(
+            f"Evaluation failed for {checkpoint_path.name} with exit code "
+            f"{ret.returncode}:\n{tail}"
+        )
+    if not (out_dir / "summary.json").exists() or not (out_dir / "metrics.csv").exists():
+        raise RuntimeError(
+            f"Evaluation for {checkpoint_path.name} exited successfully but did not produce "
+            "both summary.json and metrics.csv"
+        )
     print(f"  [eval] done in {dt:.1f}s")
-    return True
 
 
 def run_dino_for_epoch(eval_dir: Path, test_dir: Path, model, device: str, batch_size: int,
@@ -207,8 +225,7 @@ def main():
     # Find all checkpoints
     checkpoints = sorted(ckpt_dir.glob("epoch_*.pt"))
     if not checkpoints:
-        print(f"No epoch_*.pt found in {ckpt_dir}")
-        return
+        raise FileNotFoundError(f"No epoch_*.pt found in {ckpt_dir}")
     print(f"Found {len(checkpoints)} checkpoints")
 
     # Extra eval args from config
@@ -228,7 +245,15 @@ def main():
         for i, ckpt in enumerate(checkpoints):
             print(f"[{i+1}/{len(checkpoints)}] {ckpt.name}")
             out_dir = ckpt.parent / eval_subdir / ckpt.stem
-            run_clip_eval(ckpt, out_dir, eval_script, train_cfg, extra_args, args.config_override)
+            run_clip_eval(
+                ckpt,
+                out_dir,
+                eval_script,
+                train_cfg,
+                extra_args,
+                args.config_override,
+                args.allow_network,
+            )
 
     # Phase 2: DINO eval (batch, reuse model + source/reference features)
     if not args.skip_dino:
@@ -246,8 +271,7 @@ def main():
                 sample_eval_dir = d
                 break
         if sample_eval_dir is None:
-            print("[dino] No metrics.csv found, cannot extract source paths")
-            return
+            raise FileNotFoundError("[dino] No metrics.csv found, cannot extract source paths")
 
         sample_rows = list(csv.DictReader((sample_eval_dir / "metrics.csv").open(encoding="utf-8-sig")))
         source_paths_all = [resolve_source_path(test_dir, row) for row in sample_rows]
@@ -286,6 +310,8 @@ def main():
             dt = time.time() - t0
             if summary:
                 print(f"  [dino] DINO-S={summary['all_dino_s']:.4f} DINO-C={summary['all_dino_c']:.4f} ({dt:.1f}s)")
+            else:
+                raise RuntimeError(f"DINO evaluation failed for {ckpt.name}")
 
     # Final summary
     print(f"\n=== Final Summary ===")
@@ -297,6 +323,14 @@ def main():
         eval_dir = ckpt.parent / eval_subdir / ckpt.stem
         summary_path = eval_dir / "summary.json"
         dino_path = eval_dir / "dino_summary.json"
+        required = [summary_path]
+        if not args.skip_dino:
+            required.append(dino_path)
+        missing = [str(path) for path in required if not path.exists()]
+        if missing:
+            raise FileNotFoundError(
+                f"Cannot aggregate incomplete epoch {ep}; missing: {', '.join(missing)}"
+            )
         clip_s = lpips = ds = dc = 0.0
         if summary_path.exists():
             with open(summary_path) as f:
