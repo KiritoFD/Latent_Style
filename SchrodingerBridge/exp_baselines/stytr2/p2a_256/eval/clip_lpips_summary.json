@@ -1,0 +1,15 @@
+{
+  "n_all": 750,
+  "n_off_diagonal": 600,
+  "clip_style_global": 0.7221337196826935,
+  "lpips_global": 0.4954688110326727,
+  "off_clip_style": 0.7027794266740481,
+  "off_lpips": 0.5188241798927387,
+  "clip_style_eval_identity_by_target_style": {
+    "cezanne": 0.7151068065563838,
+    "Hayao": 0.675117346048355,
+    "monet": 0.7584591126441955,
+    "photo": 0.7284905836979548,
+    "vangogh": 0.7334947494665781
+  }
+}

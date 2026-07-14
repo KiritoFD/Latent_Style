@@ -1,0 +1,9 @@
+{
+  "status": "ok",
+  "dataset": "p2a",
+  "n_images": 750,
+  "n_skipped": 0,
+  "dino_content": 0.5554564936583241,
+  "dino_style": 0.5148826541205247,
+  "dino_structure": 0.023968393503067394
+}

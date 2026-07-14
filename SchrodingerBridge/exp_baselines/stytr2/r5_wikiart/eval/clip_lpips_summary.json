@@ -1,0 +1,15 @@
+{
+  "n_all": 750,
+  "n_off_diagonal": 600,
+  "clip_style_global": 0.7588503909905752,
+  "lpips_global": 0.5526807300249735,
+  "off_clip_style": 0.7511068199078242,
+  "off_lpips": 0.5540539329250653,
+  "clip_style_eval_identity_by_target_style": {
+    "Cubism": 0.7772980892658233,
+    "Expressionism": 0.7565974084536234,
+    "Pop_Art": 0.78041366259257,
+    "Romanticism": 0.7241107288996379,
+    "Symbolism": 0.7558320657412211
+  }
+}

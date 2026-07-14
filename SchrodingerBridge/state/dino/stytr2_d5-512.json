@@ -1,0 +1,9 @@
+{
+  "status": "ok",
+  "dataset": "wikiart",
+  "n_images": 750,
+  "n_skipped": 0,
+  "dino_content": 0.7472737487753233,
+  "dino_style": 0.5012992562055588,
+  "dino_structure": 0.015223177136698117
+}
