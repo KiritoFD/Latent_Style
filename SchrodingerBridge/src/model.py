@@ -21,7 +21,6 @@ from config_schema import BridgeConfig, ModelConfig
 from wavelet import (
     dwt2_haar, dwt2_lowpass, idwt2_haar,
     dwt2_haar_multi_decompose, idwt2_haar_multi_reconstruct,
-    subband_gamma,
 )
 from style import StyleConditioner
 
@@ -620,13 +619,16 @@ class WEAVE(nn.Module):
                 self.target_latent_hf_subband_head_gate = None
             if self.target_latent_hf_subband_fusion_enabled:
                 self.target_latent_hf_subband_delta_lh = StyleOnlyVelocityDelta(
-                    self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+                    self.dim, self.latent_channels,
+                    init_std=_target_hf_init_std, gate_init=_target_hf_gate_init,
                 )
                 self.target_latent_hf_subband_delta_hl = StyleOnlyVelocityDelta(
-                    self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+                    self.dim, self.latent_channels,
+                    init_std=_target_hf_init_std, gate_init=_target_hf_gate_init,
                 )
                 self.target_latent_hf_subband_delta_hh = StyleOnlyVelocityDelta(
-                    self.dim, self.latent_channels, init_std=_target_hf_init_std, gate_init=_target_hf_gate_init
+                    self.dim, self.latent_channels,
+                    init_std=_target_hf_init_std, gate_init=_target_hf_gate_init,
                 )
             else:
                 self.target_latent_hf_subband_delta_lh = None
@@ -760,14 +762,6 @@ class WEAVE(nn.Module):
             self.null_style_tokens = None
 
         self.last_debug: dict = {}
-        # 712 Phase SF1: Subband-aware time schedule γ_k(t) for inference ODE integration
-        self.subband_time_schedule_enabled = bool(
-            getattr(bridge_cfg, "subband_time_schedule_enabled", False) if bridge_cfg else False
-        )
-        self.subband_gamma_ll = str(getattr(bridge_cfg, "subband_gamma_ll", "early_peak")) if bridge_cfg else "uniform"
-        self.subband_gamma_lh = str(getattr(bridge_cfg, "subband_gamma_lh", "uniform")) if bridge_cfg else "uniform"
-        self.subband_gamma_hl = str(getattr(bridge_cfg, "subband_gamma_hl", "uniform")) if bridge_cfg else "uniform"
-        self.subband_gamma_hh = str(getattr(bridge_cfg, "subband_gamma_hh", "late_burst")) if bridge_cfg else "uniform"
         self.last_cross_attn_entropy = torch.tensor(0.0)
         self.last_pixel_entropy: torch.Tensor | None = None
         self.last_cross_attn_guidance: torch.Tensor | None = None
@@ -1193,60 +1187,27 @@ class WEAVE(nn.Module):
             # 630 Phase 4I.2: Heun's method (二阶精度 O(h^3))
             v1 = _f(h, t_batch)
             ll1, lh1, hl1, hh1 = dwt2_haar(h)
-            # 712 Phase SF1: γ_k(t) applied to predictor step
-            if self.subband_time_schedule_enabled:
-                g_ll = subband_gamma(t_curr, self.subband_gamma_ll)
-                g_lh = subband_gamma(t_curr, self.subband_gamma_lh)
-                g_hl = subband_gamma(t_curr, self.subband_gamma_hl)
-                g_hh = subband_gamma(t_curr, self.subband_gamma_hh)
-                ll_pred = ll1 + (g_ll * v1["ll"] * dt if not lock_ll else 0.0)
-                lh_pred = lh1 + g_lh * v1["lh"] * dt
-                hl_pred = hl1 + g_hl * v1["hl"] * dt
-                hh_pred = hh1 + (g_hh * v1.get("hh", torch.zeros_like(hh1)) * dt if "hh" in v1 else 0.0)
-            else:
-                ll_pred = ll1 + (v1["ll"] * dt if not lock_ll else 0.0)
-                lh_pred = lh1 + v1["lh"] * dt
-                hl_pred = hl1 + v1["hl"] * dt
-                hh_pred = hh1
-            h_pred = idwt2_haar(ll_pred, lh_pred, hl_pred, hh_pred if self.subband_time_schedule_enabled and "hh" in v1 else hh1)
+            ll_pred = ll1 + (v1["ll"] * dt if not lock_ll else 0.0)
+            lh_pred = lh1 + v1["lh"] * dt
+            hl_pred = hl1 + v1["hl"] * dt
+            hh_pred = hh1
+            h_pred = idwt2_haar(ll_pred, lh_pred, hl_pred, hh1)
             t_batch2 = torch.full((h_pred.shape[0],), t_next, device=h.device, dtype=h.dtype)
             v2 = _f(h_pred, t_batch2)
-            if self.subband_time_schedule_enabled:
-                ll_new = ll1 + (g_ll * (v1["ll"] + v2["ll"]) / 2.0 * dt if not lock_ll else 0.0)
-                lh_new = lh1 + g_lh * (v1["lh"] + v2["lh"]) / 2.0 * dt
-                hl_new = hl1 + g_hl * (v1["hl"] + v2["hl"]) / 2.0 * dt
-                if "hh" in v1 and "hh" in v2:
-                    hh_new = hh1 + g_hh * (v1["hh"] + v2["hh"]) / 2.0 * dt
-                    return idwt2_haar(ll_new, lh_new, hl_new, hh_new)
-                return idwt2_haar(ll_new, lh_new, hl_new, hh1)
-            else:
-                ll_new = ll1 + ((v1["ll"] + v2["ll"]) / 2.0 * dt if not lock_ll else 0.0)
-                lh_new = lh1 + (v1["lh"] + v2["lh"]) / 2.0 * dt
-                hl_new = hl1 + (v1["hl"] + v2["hl"]) / 2.0 * dt
-                return idwt2_haar(ll_new, lh_new, hl_new, hh1)
+            ll_new = ll1 + ((v1["ll"] + v2["ll"]) / 2.0 * dt if not lock_ll else 0.0)
+            lh_new = lh1 + (v1["lh"] + v2["lh"]) / 2.0 * dt
+            hl_new = hl1 + (v1["hl"] + v2["hl"]) / 2.0 * dt
+            return idwt2_haar(ll_new, lh_new, hl_new, hh1)
         else:
             # Euler (一阶) — Spectral: integrate LL/LH/HL independently
             v_dict = _f(h, t_batch)
             ll, lh, hl, hh = dwt2_haar(h)
-            # 712 Phase SF1: γ_k(t) subband-aware time schedule
-            if self.subband_time_schedule_enabled:
-                g_ll = subband_gamma(t_curr, self.subband_gamma_ll)
-                g_lh = subband_gamma(t_curr, self.subband_gamma_lh)
-                g_hl = subband_gamma(t_curr, self.subband_gamma_hl)
-                g_hh = subband_gamma(t_curr, self.subband_gamma_hh)
-                if not lock_ll:
-                    ll = ll + g_ll * v_dict["ll"] * dt
-                lh = lh + g_lh * v_dict["lh"] * dt
-                hl = hl + g_hl * v_dict["hl"] * dt
-                if "hh" in v_dict:
-                    hh = hh + g_hh * v_dict["hh"] * dt
-            else:
-                if not lock_ll:
-                    ll = ll + v_dict["ll"] * dt
-                lh = lh + v_dict["lh"] * dt
-                hl = hl + v_dict["hl"] * dt
-                if "hh" in v_dict:
-                    hh = hh + v_dict["hh"] * dt
+            if not lock_ll:
+                ll = ll + v_dict["ll"] * dt
+            lh = lh + v_dict["lh"] * dt
+            hl = hl + v_dict["hl"] * dt
+            if "hh" in v_dict:
+                hh = hh + v_dict["hh"] * dt
             return idwt2_haar(ll, lh, hl, hh)
 
     @torch.no_grad()

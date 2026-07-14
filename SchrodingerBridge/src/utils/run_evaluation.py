@@ -929,7 +929,7 @@ def _apply_spectral_denoise(
         hf_soft_threshold: Soft-threshold τ for HF subbands (0=disabled)
         ll_color_align_strength: α for LL color alignment (0=disabled)
     """
-    from spectral620 import dwt2_haar, idwt2_haar
+    from wavelet import dwt2_haar, idwt2_haar
 
     if latents.numel() == 0:
         return latents, {"spectral_denoise_active": 0.0}
@@ -2866,45 +2866,6 @@ def main(argv: list[str] | None = None):
     if not style_subdirs:
         raise ValueError("Failed to infer style names. Provide --style_subdirs or valid --test_dir folders.")
 
-    contract_family = str((cfg.get("model", {}) or {}).get("contract_family", "")).strip().lower() if isinstance(cfg, dict) else ""
-
-    # Load per-style representative text tokens for 620 multimodal eval
-    target_text_bank: dict[int, torch.Tensor] = {}
-    if contract_family == "620_spatial_bridge" and not args.reuse_generated:
-        style_text_enabled = bool((cfg.get("model", {}) or {}).get("style_text_enabled", False))
-        if style_text_enabled:
-            text_cache_path = str((cfg.get("data", {}) or {}).get("style_caption_path", "")).strip()
-            if text_cache_path:
-                try:
-                    text_payload = torch.load(text_cache_path, map_location="cpu", weights_only=False)
-                    text_entries = text_payload.get("entries", {})
-                    if text_entries:
-                        from collections import defaultdict as _dd
-                        style_text_groups: dict[str, list[torch.Tensor]] = _dd(list)
-                        for rel_key, entry in text_entries.items():
-                            if not isinstance(entry, dict):
-                                continue
-                            feat = entry.get("text_features")
-                            if not torch.is_tensor(feat):
-                                continue
-                            style_name = str(rel_key).replace("\\", "/").split("/")[0]
-                            style_text_groups[style_name].append(feat.float())
-                        for style_id, style_name in enumerate(style_subdirs):
-                            group = style_text_groups.get(str(style_name), [])
-                            if group:
-                                # Use mean of all text features as representative (more stable than single)
-                                target_text_bank[int(style_id)] = torch.stack(group).mean(dim=0)
-                                print(
-                                    f"  Text bank: style={style_name} ({style_id}): "
-                                    f"{len(group)} captions -> mean shape={target_text_bank[int(style_id)].shape}"
-                                )
-                        print(
-                            f"620 target text eval conditioning: "
-                            f"cache={text_cache_path} styles={len(target_text_bank)}/{len(style_subdirs)}"
-                        )
-                except Exception as exc:
-                    print(f"  WARNING: Failed to load text cache for eval: {exc}")
-
     test_images = {}
     for style_id, style_name in enumerate(style_subdirs):
         s_dir = test_dir / style_name
@@ -3479,7 +3440,7 @@ def main(argv: list[str] | None = None):
                         tgt_ids = torch.tensor(pair_tgt_ids, device=device, dtype=torch.long)
                         target_style_latent = None
                         # FC-SB Phase 3 deepfix: 构造 style_latent_tensor (目标风格参考图 VAE latent)
-                        # 让 model620.integrate_transport 的 N1 endpoint AdaIN 块 (T/U/V 方向) 能执行
+                        # Provide the target latent required by endpoint alignment.
                         # 训练时 target_style_for_model 是 (B,4,H,W) tensor; 推理时需从参考图重新 encode
                         _style_latent_tensors: list[torch.Tensor] = []
                         if vae is None:
@@ -3509,18 +3470,6 @@ def main(argv: list[str] | None = None):
                             if len(_style_latent_tensors) != len(meta):
                                 print(f"  WARNING: style_latent_tensor incomplete ({len(_style_latent_tensors)}/{len(meta)}), N1 AdaIN may be skipped")
                                 _style_latent_tensors = []
-                        # Inject per-style text tokens for multimodal conditioning
-                        if target_text_bank:
-                            text_tokens_for_batch = []
-                            for _src_item, _tgt_name, tgt_id, _out_name in meta:
-                                text_tokens_for_batch.append(
-                                    target_text_bank.get(int(tgt_id), target_text_bank.get(0))
-                                )
-                            if text_tokens_for_batch:
-                                target_style_latent = {} if target_style_latent is None else target_style_latent
-                                target_style_latent["style_text_tokens"] = torch.stack(
-                                    text_tokens_for_batch, dim=0
-                                ).to(device=device, dtype=repeated_latents.dtype)
                         # FC-SB Phase 3 deepfix: 注入 style_latent_tensor 到 target_style_latent dict
                         if _style_latent_tensors:
                             _style_latent_tensor = torch.cat(_style_latent_tensors, dim=0).to(

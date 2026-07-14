@@ -257,38 +257,24 @@ class SBTrainer:
                 eta_min=float(train_cfg.get("min_learning_rate", 5e-5)),
             )
 
-        contract_family = str(getattr(config.model, "contract_family", "legacy") or "legacy").strip().lower()
-        if contract_family in ("620_spatial_bridge", "620_spectral_ode") and self.distill_enabled:
-            raise ValueError(f"{contract_family} does not support legacy distillation; disable training.distill.enabled.")
-        if contract_family == "620_spatial_bridge":
-            from losses620 import SpatialBridgeObjective620
-            self.loss_fn = SpatialBridgeObjective620(config)
-            _assert_active_source_modules([
-                "config_schema",
-                "model",
-                "trainer",
-                "model620",
-                "losses620",
-                "blocks620",
-                "style_encoder620",
-                "utils.training",
-            ])
-        elif contract_family == "620_spectral_ode":
-            from spectral_losses620 import SpectralODEObjective620
-            self.loss_fn = SpectralODEObjective620(config)
-            _assert_active_source_modules([
-                "config_schema",
-                "model",
-                "trainer",
-                "spectral_bridge620",
-                "spectral_losses620",
-                "blocks620",
-                "style_encoder620",
-                "utils.training",
-            ])
-        else:
-            from losses import OTFlowMatchingObjective
-            self.loss_fn = OTFlowMatchingObjective(config)
+        contract_family = str(getattr(config.model, "contract_family", "weave") or "weave").strip().lower()
+        if contract_family != "weave":
+            raise ValueError(f"Unsupported model.contract_family={contract_family!r}; only 'weave' is active.")
+        if self.distill_enabled:
+            raise ValueError("WEAVE does not support legacy distillation; disable training.distill.enabled.")
+        from flow import FlowMatchingObjective
+
+        self.loss_fn = FlowMatchingObjective(config)
+        _assert_active_source_modules([
+            "config_schema",
+            "model",
+            "flow",
+            "blocks",
+            "wavelet",
+            "style",
+            "trainer",
+            "utils.training",
+        ])
         self.grad_clip_norm = float(train_cfg.get("grad_clip_norm", 1.0))
         self.accumulation_steps = max(1, int(train_cfg.get("accumulation_steps", 1)))
         self.log_interval = max(0, int(train_cfg.get("log_interval", 20)))
@@ -705,7 +691,7 @@ class SBTrainer:
         return " ".join(parts)
 
     def _bridge_probe_stats(self) -> Dict[str, float]:
-        """Extract scalar probe statistics from the 620 spatial bridge last_debug."""
+        """Extract scalar probe statistics from the WEAVE model's last_debug state."""
         stats: Dict[str, float] = {}
         bridge = getattr(self.model, "last_debug", None)
         if not isinstance(bridge, dict):
@@ -898,6 +884,10 @@ class SBTrainer:
         prefixes: list[str] = []
         if getattr(module, "output_appearance_head", None) is not None:
             prefixes.append("output_appearance_head.")
+        if not hasattr(getattr(module, "style_conditioner", None), "cls_proj"):
+            prefixes.append("style_conditioner.cls_proj.")
+        if not hasattr(module, "intrinsic_style_global"):
+            prefixes.append("intrinsic_style_global.")
         return tuple(prefixes)
 
     def _load_state_dict_with_policy(
@@ -1295,15 +1285,10 @@ class SBTrainer:
         self.model.train()
         if hasattr(self.loss_fn, "update_weights_for_epoch") and callable(getattr(self.loss_fn, "update_weights_for_epoch")):
             weight_info = self.loss_fn.update_weights_for_epoch(epoch, self.num_epochs)
-            sigma_str = f" sigma={weight_info.get('bridge_sigma', 0.0):.4f}" if 'bridge_sigma' in weight_info else ""
             logger.info(
-                "Epoch %d weight schedule: stage=%s w_content=%.4f w_style=%.4f w_style_strength_reg=%.4f%s",
+                "Epoch %d spectral flow objective: bridge_sigma=%.4f",
                 epoch,
-                weight_info.get("stage", 0),
-                weight_info.get("w_endpoint_content", 0.0),
-                weight_info.get("w_endpoint_style", 0.0),
-                weight_info.get("w_style_strength_reg", 0.0),
-                sigma_str,
+                weight_info.get("bridge_sigma", 0.0),
             )
         if self.device.type == "cuda":
             torch.cuda.reset_peak_memory_stats(self.device)

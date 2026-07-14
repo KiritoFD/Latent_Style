@@ -430,7 +430,7 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train latent Schrodinger bridge model")
-    parser.add_argument("--config", type=str, default="config.json", help="Path to config json")
+    parser.add_argument("--config", type=str, default="default_config.json", help="Path to config json")
     parser.add_argument("--resume", type=str, default=None, help="Optional checkpoint path to resume")
     args = parser.parse_args()
 
@@ -450,7 +450,7 @@ def main() -> None:
     logger.info("Seed: %d", seed)
 
     contract_family = str(getattr(config.model, "contract_family", "legacy") or "legacy").strip().lower()
-    if contract_family not in ("620_spatial_bridge", "620_spectral_ode"):
+    if contract_family != "weave":
         validate_i2sb_contract(
             solver_family=str(getattr(config.model, "solver_family", "euler_legacy")),
             transport_prediction_mode=str(getattr(config.model, "transport_prediction_mode", "velocity")),

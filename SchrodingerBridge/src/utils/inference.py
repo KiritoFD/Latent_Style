@@ -32,6 +32,21 @@ from utils.training import strip_compile_prefix
 
 logger = logging.getLogger(__name__)
 
+_RETIRED_CHECKPOINT_PREFIXES = (
+    "style_conditioner.cls_proj.",
+    "intrinsic_style_global.",
+)
+
+
+def prune_retired_checkpoint_keys(state_dict: dict[str, torch.Tensor]) -> tuple[dict[str, torch.Tensor], list[str]]:
+    removed = [
+        key for key in state_dict
+        if any(key.startswith(prefix) for prefix in _RETIRED_CHECKPOINT_PREFIXES)
+    ]
+    if not removed:
+        return state_dict, []
+    return {key: value for key, value in state_dict.items() if key not in removed}, removed
+
 # Optional ModelScope support.
 try:
     from modelscope.hub import snapshot_download as ms_snapshot_download  # type: ignore
@@ -353,7 +368,7 @@ class LGTInference:
         self.objective_mode = str(bridge_cfg.objective_mode).strip().lower()
         if self.objective_mode in {"i2sb", "i2sb_endpoint", "bridge_endpoint"}:
             self.objective_mode = "i2sb_endpoint"
-        if contract_family not in ("620_spatial_bridge", "620_spectral_ode"):
+        if contract_family != "weave":
             validate_i2sb_contract(
                 solver_family=str(getattr(config.model, "solver_family", "euler_legacy")),
                 transport_prediction_mode=str(getattr(config.model, "transport_prediction_mode", "velocity")),
@@ -377,12 +392,15 @@ class LGTInference:
             style_delta_mode=str(getattr(config.model, "style_delta_mode", "none")),
             output_appearance_alignment_mode=str(getattr(config.model, "output_appearance_alignment_mode", "none")),
         )
+        state_dict, removed_retired_keys = prune_retired_checkpoint_keys(state_dict)
         if removed_contract_keys:
             logger.info(
                 "Pruned %d legacy contract keys while loading inference checkpoint for tokenizer_family=%s",
                 len(removed_contract_keys),
                 str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
             )
+        if removed_retired_keys:
+            logger.info("Pruned %d retired checkpoint keys before inference load", len(removed_retired_keys))
 
         self.model = build_model_from_config(config.model, bridge_cfg=config.bridge, use_checkpointing=False).to(device)
         # Eval-only override paths may need solver attributes that older
@@ -495,12 +513,15 @@ class LGTInference:
             style_delta_mode=str(getattr(config.model, "style_delta_mode", "none")),
             output_appearance_alignment_mode=str(getattr(config.model, "output_appearance_alignment_mode", "none")),
         )
+        state_dict, removed_retired_keys = prune_retired_checkpoint_keys(state_dict)
         if removed_contract_keys:
             logger.info(
                 "Pruned %d legacy contract keys while reloading inference checkpoint for tokenizer_family=%s",
                 len(removed_contract_keys),
                 str(getattr(config.model, "tokenizer_family", "legacy_factorized")),
             )
+        if removed_retired_keys:
+            logger.info("Pruned %d retired checkpoint keys before inference reload", len(removed_retired_keys))
         try:
             self.model.load_state_dict(state_dict, strict=True)
         except RuntimeError as exc:
