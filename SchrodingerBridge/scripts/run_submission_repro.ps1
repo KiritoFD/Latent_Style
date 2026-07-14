@@ -18,7 +18,7 @@ $env:PYTHONIOENCODING = "utf-8"
 
 if (-not $EvalOnly) {
     $TrainLog = Join-Path $LogDir "train.log"
-    & $Python -u "src\run.py" --config $Config 2>&1 | Tee-Object -FilePath $TrainLog
+    & $Python -u "run.py" --config $Config 2>&1 | Tee-Object -FilePath $TrainLog
     if ($LASTEXITCODE -ne 0) {
         throw "Training failed with exit code $LASTEXITCODE. See $TrainLog"
     }

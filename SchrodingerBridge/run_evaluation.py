@@ -42,10 +42,9 @@ def _summary_already_exists(out_dir: Path) -> bool:
 
 
 def _inject_defaults(root: Path, argv: list[str]) -> list[str]:
-    workspace = root.parent
-    local_clip_dir = workspace / "eval_cache" / "manual_clip" / "openai-clip-vit-base-patch32"
-    default_test_dir = workspace / "style_data" / "overfit50"
-    default_cache_dir = workspace / "eval_cache"
+    local_clip_dir = root / "runs" / "cache" / "manual_clip" / "openai-clip-vit-base-patch32"
+    default_test_dir = root / "data" / "test"
+    default_cache_dir = root / "runs" / "cache"
     default_clip_hf_cache_dir = default_cache_dir / "hf"
 
     has_clip_model_name = _has_flag(argv, "--clip_model_name")
@@ -69,9 +68,6 @@ def _inject_defaults(root: Path, argv: list[str]) -> list[str]:
 
 
 def _single_eval(root: Path, argv: list[str]) -> int:
-    src_dir = root / "src"
-    if str(src_dir) not in sys.path:
-        sys.path.insert(0, str(src_dir))
     from utils.run_evaluation import main as eval_main
 
     eval_main(argv)
