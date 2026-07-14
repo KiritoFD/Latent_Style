@@ -197,7 +197,7 @@ def main():
     parser = argparse.ArgumentParser(description="Batch eval all checkpoints")
     parser.add_argument("--checkpoint_dir", required=True, help="Directory with epoch_XXXX.pt files")
     parser.add_argument("--test_dir", default="", help="Test image directory; defaults to the resolved training config path")
-    parser.add_argument("--config", default="src/default_config.json", help="Config for eval params")
+    parser.add_argument("--config", default="config.json", help="Canonical training/model/data config")
     parser.add_argument("--dino_model_name", default="facebook/dinov2-small")
     parser.add_argument("--dino_cache_dir", default="", help="DINO cache; defaults to training.full_eval_clip_hf_cache_dir")
     parser.add_argument("--dino_batch_size", type=int, default=8)
@@ -206,7 +206,7 @@ def main():
     parser.add_argument("--allow_network", action="store_true")
     parser.add_argument("--skip_clip", action="store_true", help="Skip CLIP/LPIPS eval (only DINO)")
     parser.add_argument("--skip_dino", action="store_true", help="Skip DINO eval")
-    parser.add_argument("--config_override", default="", help="Config override json (e.g. eval_adain_20.json)")
+    parser.add_argument("--config_override", default="inference.json", help="Complete inference/evaluation config")
     parser.add_argument("--output_subdir", default="full_eval", help="Output subdir name")
     args = parser.parse_args()
 

@@ -431,7 +431,7 @@ def _run_full_eval_for_checkpoint(config: ExperimentConfig, checkpoint_path: Pat
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train latent Schrodinger bridge model")
-    parser.add_argument("--config", type=str, default="default_config.json", help="Path to config json")
+    parser.add_argument("--config", type=str, default="config.json", help="Path to config json")
     parser.add_argument("--resume", type=str, default=None, help="Optional checkpoint path to resume")
     args = parser.parse_args()
 

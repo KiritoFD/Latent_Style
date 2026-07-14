@@ -6,8 +6,8 @@ param(
 $ErrorActionPreference = "Continue"
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Python = (Get-Command python).Source
-$Config = Join-Path $Root "src\default_config.json"
-$InferenceConfig = Join-Path $Root "configs\eval_adain_20.json"
+$Config = Join-Path $Root "config.json"
+$InferenceConfig = Join-Path $Root "inference.json"
 $RunDir = Join-Path $Root "runs\submission\repro_brk_a_15ep"
 $LogDir = Join-Path $RunDir "logs"
 
