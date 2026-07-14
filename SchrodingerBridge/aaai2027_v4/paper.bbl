@@ -1,4 +1,4 @@
-\begin{thebibliography}{44}
+\begin{thebibliography}{41}
 \providecommand{\natexlab}[1]{#1}
 
 \bibitem[{{Alibaba Cloud}(2024)}]{alibaba2024qwen}
@@ -24,11 +24,6 @@ Chung, J.; Hyun, S.; and Heo, J.-P. 2024.
   Large-scale Diffusion Models for Style Transfer.
 \newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
   and Pattern Recognition (CVPR)}.
-
-\bibitem[{Cuturi(2013)}]{cuturi2013sinkhorn}
-Cuturi, M. 2013.
-\newblock Sinkhorn Distances: Lightspeed Computation of Optimal Transport.
-\newblock \emph{Advances in Neural Information Processing Systems}.
 
 \bibitem[{Daubechies(1992)}]{daubechies1992ten}
 Daubechies, I. 1992.
@@ -178,11 +173,6 @@ Park, T.; Efros, A.~A.; Zhang, R.; and Zhu, J.-Y. 2020.
 \newblock Contrastive Learning for Unpaired Image-to-Image Translation.
 \newblock In \emph{Proceedings of the European Conference on Computer Vision}.
 
-\bibitem[{Peyr{\'e} and Cuturi(2019)}]{peyre2019computational}
-Peyr{\'e}, G.; and Cuturi, M. 2019.
-\newblock Computational Optimal Transport.
-\newblock \emph{Foundations and Trends in Machine Learning}.
-
 \bibitem[{Phung, Dao, and Tran(2023)}]{phung2023wavelet}
 Phung, H.; Dao, Q.; and Tran, A. 2023.
 \newblock Wavelet Diffusion Models Are Fast and Scalable Image Generators.
@@ -247,11 +237,6 @@ Zhang, R.; Isola, P.; Efros, A.~A.; Shechtman, E.; and Wang, O. 2018.
 \newblock The Unreasonable Effectiveness of Deep Features as a Perceptual
   Metric.
 \newblock In \emph{CVPR}.
-
-\bibitem[{Zhang and Tang(2025)}]{zhang2025survey}
-Zhang, T.; and Tang, H. 2025.
-\newblock Style Transfer: A Decade Survey.
-\newblock \emph{arXiv preprint arXiv:2506.19278}.
 
 \bibitem[{Zhang et~al.(2023)Zhang, Huang, Tang, Huang, Ma, Dong, and
   Xu}]{zhang2023inst}
