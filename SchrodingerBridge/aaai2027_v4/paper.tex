@@ -322,27 +322,29 @@ The 903K-parameter velocity network has four width-64 residual blocks and separa
 $1{\times}1$ heads for LL, LH, and HL. HH has no velocity head and changes through the
 endpoint operation. Learned style-memory tokens provide a category-level prior to the
 shared backbone; the ablations show that this branch is auxiliary rather than the main
-style-injection path.
+style-injection path. HH is deliberately statistical rather than transported. Although it
+carries stroke and grain statistics, its phase is not registered in unpaired transfer:
+$h_{3,s}(i,j)$ is not the desired detail for source location $(i,j)$. A pointwise HH head
+would minimize $\|v_{h_3}-(h_{3,s}-h_{3,c})\|_2^2$, whose optimum averages incompatible
+phases and sends noisy gradients through the shared backbone. Endpoint AdaIN instead
+matches per-sample HH moments without learning target-image coordinates; a matched HH-head
+ablation did not improve the style-content frontier.
 
 \paragraph{Why the model is fast.}
 For a $512{\times}512$ image, the frozen VAE produces only $32{\times}32$ spatial positions;
 the velocity backbone operates on $16{\times}16$ subbands, versus $512{\times}512$ RGB
-positions. Training uses cached VAE latents, so the encoder and the large diffusion U-Net
-are absent from the optimization loop. Rectified flow supplies the target velocity directly,
-without an adversarial inner loop, denoising teacher, or inversion stage. Inference evaluates
-the small network along a short path, applies one analytic transform, and decodes once.
+positions. Cached latents remove the encoder and the large diffusion U-Net from training.
+Rectified flow supplies target velocities directly, so there is no adversarial loop,
+denoising teacher, or inversion stage; inference uses a short path, one analytic transform,
+and one VAE decode.
 
-Writing $C_v$ for one velocity evaluation and $C_{dec}$ for one frozen VAE decode,
-the generation cost is approximately
+With $C_v$ for one velocity evaluation and $C_{dec}$ for one frozen VAE decode,
 \begin{equation}
 C_{\mathrm{WEAVE}}\approx K C_v+C_{\mathrm{AdaIN}}+C_{dec}.
 \label{eq:compute-cost}
 \end{equation}
-Here $C_v$ acts on small subbands and $C_{\mathrm{AdaIN}}$ is a linear-time moment update.
-Training-free diffusion editors avoid weight updates but repeatedly evaluate a large
-denoiser, often with inversion. WEAVE combines VAE compression with cached encoding,
-compact transport, a short path, closed-form alignment, and one decode; together these make
-its training plus inference shorter than another method's inference alone.
+Here $C_v$ acts on small subbands and $C_{\mathrm{AdaIN}}$ is a linear-time moment update,
+whereas training-free diffusion editors still repeatedly evaluate a large denoiser.
 
 \paragraph{Spectral flow-matching objective.}
 The spectral flow-matching term is
@@ -397,25 +399,22 @@ For positive channel standard deviations, the update has a direct statistical me
 \end{equation}
 The scale $s_i$ therefore specifies how far each moment moves toward the reference, without
 requiring the velocity network to infer this global correction from spatial MSE. Applying
-the map only after the final Euler step keeps the image-specific correction out of later
-velocity updates. LL anchoring protects layout, while the learned LH/HL path still carries
-spatially organized edges and texture. The Latent-WCT control in
-Table~\ref{tab:main} confirms that endpoint statistics without learned transport are not
-sufficient.
+the map only after the final Euler step keeps the correction out of later velocity updates.
+LL anchoring protects layout, the learned LH/HL path carries organized texture, and
+Table~\ref{tab:main} shows that endpoint statistics alone are insufficient.
 
 
 \subsection{Training and Inference}
 
-Training adds an edge $\ell_1$ term (weight 0.1) and a low-pass anchor to
-Eq.~\ref{eq:weave-loss}; together they contribute less than 5\% of the measured gradient
-mass. We train for 10 epochs with cached latents. At inference, $z^0=z_c$ and, for $K=8$,
+Training adds a light edge $\ell_1$ term and low-pass anchor to Eq.~\ref{eq:weave-loss};
+together they contribute less than 5\% of measured gradient mass. At inference, $z^0=z_c$
+and, for $K=8$,
 \begin{equation}
 z^{k+1}=z^k+\frac{1}{K}\,\mathcal W^{-1}
 \big(v_\ell^k,v_{h_1}^k,v_{h_2}^k,0\big),
 \end{equation}
-then apply high-frequency AdaIN once and decode with the frozen VAE. One step is
-insufficient, while 32 steps matches eight within the measured metrics; eight is the chosen
-cost--quality point. Full architecture and training fields are in the supplement.
+then apply high-frequency AdaIN once and decode with the frozen VAE. Full architecture,
+training fields, and step ablations are in the supplement.
 
 
 
