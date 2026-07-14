@@ -1,6 +1,6 @@
 # Archives Index
 
-Updated: 2026-06-03
+Updated: 2026-07-15
 
 This directory stores retired source snapshots, old paper workspaces, and
 experiment bundles that should remain auditable but no longer belong in the
@@ -20,6 +20,8 @@ active working surface.
   - retired root-level scripts, manifests, and historical reports
 - `root_level_snapshots/`
   - coarse repository snapshots kept for recovery
+- `legacy-configs-20260715/`
+  - retired experiment configurations; active runs use root `config.json` and `inference.json`
 
 ## High-value preserved references
 
