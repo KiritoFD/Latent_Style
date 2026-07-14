@@ -112,3 +112,11 @@ def test_submission_launchers_do_not_use_src_entry_points() -> None:
     assert "src\\run.py" not in launcher
     assert "src\\default_config.json" not in launcher
     assert ' / "src" / "utils" ' not in evaluator
+
+
+def test_epoch_selection_parser() -> None:
+    sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+    from batch_eval_all import parse_epoch_selection
+
+    assert parse_epoch_selection("6") == {6}
+    assert parse_epoch_selection("1,3-5,8") == {1, 3, 4, 5, 8}

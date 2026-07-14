@@ -33,6 +33,25 @@ DINO_TRANSFORM = T.Compose([
 ])
 
 
+def parse_epoch_selection(raw: str) -> set[int]:
+    selected: set[int] = set()
+    for token in (part.strip() for part in raw.split(",")):
+        if not token:
+            continue
+        if "-" in token:
+            start_raw, end_raw = token.split("-", 1)
+            start, end = int(start_raw), int(end_raw)
+            if start <= 0 or end < start:
+                raise ValueError(f"Invalid epoch range: {token}")
+            selected.update(range(start, end + 1))
+        else:
+            epoch = int(token)
+            if epoch <= 0:
+                raise ValueError(f"Invalid epoch: {token}")
+            selected.add(epoch)
+    return selected
+
+
 def load_dino(model_name: str, device: str, cache_dir: str, allow_network: bool):
     os.environ["HF_HUB_OFFLINE"] = "0" if allow_network else "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "0" if allow_network else "1"
@@ -204,6 +223,7 @@ def main():
     parser.add_argument("--max_refs_per_style", type=int, default=30)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--allow_network", action="store_true")
+    parser.add_argument("--epochs", default="", help="Comma-separated epochs or ranges, e.g. 4,6-8")
     parser.add_argument("--skip_clip", action="store_true", help="Skip CLIP/LPIPS eval (only DINO)")
     parser.add_argument("--skip_dino", action="store_true", help="Skip DINO eval")
     parser.add_argument("--config_override", default="inference.json", help="Complete inference/evaluation config")
@@ -226,6 +246,13 @@ def main():
     checkpoints = sorted(ckpt_dir.glob("epoch_*.pt"))
     if not checkpoints:
         raise FileNotFoundError(f"No epoch_*.pt found in {ckpt_dir}")
+    if args.epochs.strip():
+        selected_epochs = parse_epoch_selection(args.epochs)
+        available = {int(path.stem.rsplit("_", 1)[-1]): path for path in checkpoints}
+        missing = sorted(selected_epochs - set(available))
+        if missing:
+            raise FileNotFoundError(f"Requested checkpoints are missing for epochs: {missing}")
+        checkpoints = [available[epoch] for epoch in sorted(selected_epochs)]
     print(f"Found {len(checkpoints)} checkpoints")
 
     # Extra eval args from config
