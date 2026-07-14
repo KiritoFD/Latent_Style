@@ -438,8 +438,8 @@
     "multistep_milestones": [40, 55],
     "multistep_gamma": 0.1,
     "grad_clip_norm": 1.0,
-    "num_epochs": 10,
-    "save_interval": 5,
+    "num_epochs": 15,
+    "save_interval": 1,
     "async_checkpoint_save": false,
     "log_interval": 20,
     "use_tqdm": true,
@@ -502,8 +502,8 @@
     "full_eval_convergence_flat_eps_lpips": 0.018,
     "full_eval_convergence_min_epochs": 0,
     "test_image_dir": "I:/datasets/wikiart_distinct5_samam_512_classview/test",
-    "full_eval_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache",
-    "full_eval_clip_hf_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache/hf",
+    "full_eval_cache_dir": "exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "exp/eval_cache/hf",
     "full_eval_clip_backend": "hf",
     "full_eval_hf_clip_skip_processor": false,
     "full_eval_disable_lpips": false,
@@ -550,7 +550,7 @@
     "dino_bank_limit_per_style": 8
   },
   "checkpoint": {
-    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_a_ll03_10ep",
+    "save_dir": "exp/dino_s_break/brk_a_ll03_15ep",
     "resume_checkpoint": ""
   },
   "full_eval": {
@@ -566,9 +566,9 @@
     "save_summary_grid": true
   },
   "ablation": {
-    "name": "brk_a_ll03_10ep",
+    "name": "brk_a_ll03_15ep",
     "axis": "dino_s_break",
     "stage": "brk_round1",
-    "notes": "LL AdaIN alpha=0.3 (mild unlock) + 10 epochs. Structural change: longer training (5->10ep) + mild LL color stats migration. Main-table checkpoint: DINO-S=0.4859, CLIP-S=0.7075, LPIPS=0.2583, DINO-C=0.8287. Eval protocol: endpoint_adain_scale=2.0."
+    "notes": "LL AdaIN alpha=0.3 + 15 epochs sweep to find best checkpoint. Each-epoch eval enabled."
   }
 }
