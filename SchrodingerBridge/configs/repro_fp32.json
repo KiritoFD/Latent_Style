@@ -1,0 +1,15 @@
+{
+  "_base": "../src/default_config.json",
+  "training": {
+    "use_amp": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/repro/fp32"
+  },
+  "ablation": {
+    "name": "repro_fp32",
+    "axis": "repro",
+    "stage": "repro_fp32",
+    "notes": "Same as repro_bf16 but AMP disabled (fp32). Test if higher precision breaks DINO-S=0.4859 ceiling."
+  }
+}

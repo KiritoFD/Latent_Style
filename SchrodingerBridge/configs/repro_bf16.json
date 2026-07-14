@@ -1,0 +1,12 @@
+{
+  "_base": "../src/default_config.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/repro/bf16"
+  },
+  "ablation": {
+    "name": "repro_bf16",
+    "axis": "repro",
+    "stage": "repro_bf16",
+    "notes": "Reproduce main-table metrics with default_config.json (bf16 AMP). Expect DINO-S=0.4859, CLIP-S=0.7075, LPIPS=0.2583, DINO-C=0.8287."
+  }
+}
