@@ -22,6 +22,26 @@ The old `src/` modules and promoted root modules produced exactly equal tensors:
 
 Path derivations that depended on the old extra `src/` level were then updated in the promoted copies only. No model computation was changed.
 
+## Full Evaluation Check
+
+The promoted root evaluator was also run on the complete 750-image board. A second legacy-layout run was made to separate layout changes from ordinary cross-process GPU/VAE nondeterminism.
+
+| Comparison | Mean absolute 8-bit channel difference | Changed channel fraction | Maximum difference |
+|---|---:|---:|---:|
+| Original legacy run vs. promoted root | 0.05731 | 0.05658 | 21 |
+| Original legacy run vs. legacy repeat | 0.05737 | 0.05662 | 19 |
+| Promoted root vs. legacy repeat | 0.05743 | 0.05667 | 20 |
+
+The root-layout pixel drift is indistinguishable from a second run of the unchanged legacy evaluator. Aggregate metrics are similarly stable:
+
+| Run | CLIP-S | LPIPS |
+|---|---:|---:|
+| Original legacy | 0.7073850 | 0.2507627 |
+| Promoted root | 0.7074457 | 0.2507637 |
+| Legacy repeat | 0.7074157 | 0.2507570 |
+
+This full-board check passes. Exact PNG hashes are not a valid cross-process equivalence criterion for this GPU VAE path; fixed-model latent outputs remain exactly equal, and full-board drift must be compared against the legacy repeat envelope.
+
 ## Tests
 
 ```text
