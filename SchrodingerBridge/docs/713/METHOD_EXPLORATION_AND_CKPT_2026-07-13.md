@@ -153,6 +153,7 @@ Rejected:
 | `target_hf_subband_current_delta_ft6` | 0.486683 | 0.793621 | 0.719366 | 0.297567 | Target-current pooled-code delta slightly strengthened condition flow but not direction or metrics; code/config removed. |
 | `target_hf_subband_affine_delta_ft6` | 0.482449 | 0.790343 | 0.717787 | 0.298913 | Affine scale+shift strengthened condition flow but widened an off-direction perturbation; code/config removed. |
 | `target_hf_subband_wct_direction_ft6` | 0.486511 | 0.793320 | 0.719448 | 0.297849 | WCT-stat direction improved local alignment but worsened final image metrics; code/config removed. |
+| `target_hf_subband_memdrop_ft6` | 0.486414 | 0.791995 | 0.719449 | 0.298218 | Training-only style-memory dropout slightly improved target-HF direction but weakened the useful memory prior; code/config removed. |
 
 ## 5. Correct Theory After Probing
 

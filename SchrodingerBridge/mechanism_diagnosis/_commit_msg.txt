@@ -1,0 +1,19 @@
+mechanism: M1-M4 complete, add causal evidence to paper Discussion
+
+M1 (gradient spectrum): LL loss 5x HF, head_ll grad 6x HF heads, LL input-grad
+share 19.2% even with w_ll=0.3 down-weighting - frequency dominance is structural.
+
+M2 (per-step comparison): Flow-only CLIP-S=0.708, AdaIN-only=0.710, Full=0.727
+- synergy +0.017 over best individual.
+
+M3 (per-subband style distance): LH transfer ratio=0.31 (primary carrier),
+HL=0.19, LL=0.06 (content), HH=0.00 (architecturally frozen) - wavelet
+decoupling is enforced, not just a training convenience.
+
+M4 (inference-time module swap): no_adain LH=0.02 then adain LH=0.30 (12.6x boost);
+WCT +8.8% marginal; per_subband -71% (train-inference mismatch) - AdaIN is
+near-optimal for 4-channel latents.
+
+Paper changes: claim softened from We reveal to We empirically observe;
+Discussion expanded with 4 new evidence paragraphs; Mechanistic Ablations
+Summary cross-references Discussion.

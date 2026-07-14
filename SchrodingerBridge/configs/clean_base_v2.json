@@ -4,7 +4,7 @@
     "num_styles": 5,
     "style_dim": 160,
     "style_tokenizer": "factorized",
-    "contract_family": "620_spectral_ode",
+    "contract_family": "weave",
     "style_condition_source": "target_dino_patches",
     "tokenizer_family": "legacy_factorized",
     "backbone_attention_family": "legacy_semantic_crossattn",

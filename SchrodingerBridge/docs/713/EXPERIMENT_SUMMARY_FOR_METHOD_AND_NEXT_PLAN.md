@@ -53,6 +53,7 @@ All listed runs use the same 6-epoch fine-tune recipe from the `brk_a_ll03_10ep`
 | `target_hf_subband_current_delta_ft6` | target-current pooled HF code difference | 0.486683 | 0.793621 | 0.719366 | 0.297567 | 0.402626 | Rejected; slightly stronger target-specific info flow but no residual-direction or metric gain; code/config removed. |
 | `target_hf_subband_affine_delta_ft6` | subband residual affine scale+shift | 0.482449 | 0.790343 | 0.717787 | 0.298913 | 0.398861 | Rejected; stronger condition flow but mostly off-direction; code/config removed. |
 | `target_hf_subband_wct_direction_ft6` | analytic WCT-stat direction residual | 0.486511 | 0.793320 | 0.719448 | 0.297849 | 0.402438 | Rejected; better local direction probe but worse final image frontier; code/config removed. |
+| `target_hf_subband_memdrop_ft6` | training-only style-memory token dropout | 0.486414 | 0.791995 | 0.719449 | 0.298218 | 0.402734 | Rejected; weakened useful style-memory prior more than it improved target-HF; code/config removed. |
 
 ## What This Proves
 
@@ -98,27 +99,78 @@ Cross-attention should be described as auxiliary style memory, not as the main s
 | Fallback | `target_hf_delta_strong_ft6/epoch_0006.pt` | Simpler route, already beats baseline. |
 | Reject | `target_hf_spatial_ft6` | Content collapse despite high style. |
 
+## Round 2: Low-risk capacity extensions (2026-07-14)
+
+Four extensions of the subband residual branch were fine-tuned from `brk_a_ll03_10ep` for 6 epochs (batch 96, AdaIN 1.5 eval, canonical DINOv2-small, remote RTX 3060).
+
+| Run | Mechanism | DINO-S | DINO-C | CLIP-S | LPIPS | Verdict |
+|---|---|---:|---:|---:|---:|---|
+| `target_hf_subband_tasm_ft6` | time embedding added to subband style MLP | 0.4837 | 0.7963 | 0.7183 | 0.2985 | underperforms subband-only |
+| `target_hf_subband_ldb_ft6` | K=4 learned direction basis for modulation | 0.4821 | 0.7938 | 0.7178 | 0.2969 | underperforms subband-only |
+| `target_hf_subband_isot_ft6` | 8 image-specific style tokens concatenated to style memory | 0.4864 | 0.7935 | 0.7192 | 0.2975 | close but below subband-only |
+| `target_hf_subband_mrsc_ft6` | 2-level multi-resolution subband codes | 0.4867 | 0.7930 | 0.7200 | 0.2977 | best of round2, still below subband-only |
+| **best** | `target_hf_subband_ft6` (unchanged) | **0.4886** | **0.7981** | **0.7209** | **0.2966** | **retain as operating point** |
+
+Interpretation: ISST and MRSC are positive relative to the original `brk_a_ll03_10ep` baseline (DINO-S 0.4859) but do not improve over the already-strong subband residual. TASM and LDB slightly hurt the frontier. The bottleneck is therefore not the capacity of the subband-delta branch (more time/basis/tokens/scales do not help), but the geometry of how target-HF information conditions the residual.
+
+## Round 3: Structural re-parameterizations (2026-07-14)
+
+Three re-parameterizations of the subband residual were fine-tuned from `brk_a_ll03_10ep` for 6 epochs (batch 96, AdaIN 1.5 eval, canonical DINOv2-small, remote RTX 3060).
+
+| Run | Mechanism | DINO-S | DINO-C | CLIP-S | LPIPS | Verdict |
+|---|---|---:|---:|---:|---:|---|
+| `target_hf_subband_isot_mrsc_ft6` | ISST + MRSC combined | 0.4862 | 0.7928 | 0.7199 | 0.2979 | below subband-only |
+| `target_hf_subband_gated_ft6` | content-dependent spatial gate on residual | 0.4824 | 0.7928 | 0.7182 | 0.2980 | below subband-only |
+| `target_hf_subband_dynamic_pw_ft6` | target-style dynamic pointwise conv residual | 0.4817 | 0.7935 | 0.7173 | 0.2977 | below subband-only |
+| **best** | `target_hf_subband_ft6` (unchanged) | **0.4886** | **0.7981** | **0.7209** | **0.2966** | **retain as operating point** |
+
+Interpretation: Changing the residual parameterization (content gate, dynamic pointwise convolution, combined tokens+multiscale) does not improve over the simple subband residual. The bottleneck is not how the residual is parameterized, but a deeper constraint of the current training paradigm.
+
+## Round 4: Longer fine-tuning (forced pivot, 2026-07-14)
+
+After two stalled rounds, the structural constraint was changed from architecture to training length. `target_hf_subband` was fine-tuned from `brk_a_ll03_10ep` for 10 epochs instead of 6.
+
+| Run | Mechanism | DINO-S | DINO-C | CLIP-S | LPIPS | Verdict |
+|---|---|---:|---:|---:|---:|---|
+| `target_hf_subband_ft10` | 10-epoch fine-tune | 0.4859 | 0.7910 | 0.7199 | 0.2985 | overtrains, degrades vs 6-epoch |
+| **best** | `target_hf_subband_ft6` | **0.4886** | **0.7981** | **0.7209** | **0.2966** | **retain as operating point** |
+
+Interpretation: Longer fine-tuning on the target-HF path degrades both style and content. The 6-epoch operating point is already at a sweet spot; additional optimization overfits the residual path.
+
+## Round 5: From-scratch training (forced pivot, 2026-07-14)
+
+After three stalled rounds, the structural constraint was changed to the optimization regime: train `target_hf_subband` from scratch for 5 epochs instead of fine-tuning from `brk_a_ll03_10ep`.
+
+| Run | Mechanism | DINO-S | DINO-C | CLIP-S | LPIPS | Verdict |
+|---|---|---:|---:|---:|---:|---|
+| `target_hf_subband_scratch_5ep` | train from scratch 5ep | 0.4818 | 0.7998 | 0.7186 | 0.2875 | better content, worse style |
+| **best** | `target_hf_subband_ft6` | **0.4886** | **0.7981** | **0.7209** | **0.2966** | **retain as operating point** |
+
+Interpretation: Training from scratch yields substantially better content preservation (LPIPS -0.0091, DINO-C +0.0017) but loses style (DINO-S -0.0068). The target-HF condition path can be made more content-friendly, but the current training paradigm trades style for that content gain.
+
 ## Next Plan
 
 ### A. Paper-facing next step
 
 Do not promote the raw spatial route. If incorporating the HF route into the paper, use `target_hf_subband_ft6` as an architecture improvement and clearly state it is a probe/follow-up unless fully re-run under the final main-table protocol.
 
-### B. Architecture next step
+### B. Architecture/optimization next step
 
-Increase coordinate-free HF capacity without target spatial leakage:
+After five rounds of probing, `target_hf_subband_ft6` remains the best operating point (DINO-S=0.4886, DINO-C=0.7981, LPIPS=0.2966, CLIP-S=0.7209). The following directions have been ruled out as unable to beat it:
 
-1. Orientation-specific residual depth for LH/HL/HH.
-2. Energy normalization against existing HF head output.
-3. Better-conditioned compact subband residual head; do not just multiply the learned residual.
-4. Do not add a direct residual-direction auxiliary loss in the current form; it improves probe alignment but hurts the image frontier.
-5. Do not time-gate the residual route as a standalone fix; normalized early/late windows both underperform the full residual.
-6. Keep LL disconnected from target image features except the existing mild LL target blend.
-7. Keep style memory as a bounded coarse prior, then make target-HF carry residual orientation/style details.
-8. Do not replace the residual with a low-rank content-derived basis unless a new probe shows the target-HF coefficient path is not underpowered.
-9. Do not add current-target global discrepancy statistics unless a direction probe shows they improve residual alignment without weakening image metrics.
-10. Do not add simple cross-orientation code mixing or target-current pooled-code deltas as-is; both were tested and removed after worse full eval.
-11. Do not add affine scale+shift to the subband residual or an analytic WCT/AdaIN direction residual as-is; both improved some mechanism numbers but worsened the final style/content frontier.
+- Capacity extensions: TASM, LDB, ISST, MRSC, ISST+MRSC.
+- Structural re-parameterizations: content-gated residual, dynamic pointwise convolution residual.
+- Training-regime changes: 10-epoch fine-tune (overtrains), 5-epoch from-scratch (content↑ style↓).
+
+Remaining options that change a structural constraint:
+
+1. **Train from scratch for 10 epochs** — test whether the 5-epoch content gain can be combined with longer training to recover style.
+2. **Change base checkpoint** — fine-tune `target_hf_subband` from a stronger/longer base (e.g., `710_s2_swd12_15ep`) instead of `brk_a_ll03_10ep`.
+3. **Change spectral loss weights** — raise `spectral_w_hh` or lower `spectral_w_ll` when training from scratch to bias the network toward using the target-HF path.
+4. **Condition the backbone blocks directly** — inject target-HF into the ResidualBlock via FiLM/AdaLN rather than only at the velocity-head residual level.
+5. **Accept the operating point** — promote `target_hf_subband_ft6` as the HF-route architecture improvement and move to full D5-512 / cross-dataset validation.
+
+Before more experiments, decide whether the DINO-S ceiling of ~0.4886 is acceptable or whether a fundamentally different conditioning mechanism is needed.
 
 ### C. Evaluation next step
 

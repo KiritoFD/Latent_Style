@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import torch
 
 from config_schema import BridgeConfig, ModelConfig
-from spectral_bridge620 import SpectralODEBridge620
+from model import WEAVE
 
 
 def _make_t11_cfg():
@@ -13,7 +13,7 @@ def _make_t11_cfg():
         num_res_blocks=4, style_attn_num_heads=4,
         style_cross_attn_gate_init=0.05, style_attn_temperature=1.0,
         style_shortcut_alpha=1.0,
-        cross_attn_dwt_route=True, cross_attn_dwt_ll_route_alpha=0.0,
+        cross_attn_dwt_route=True,
         dwt_route_train_prob=0.8,
         endpoint_adain_mode="per_subband_wct",
         endpoint_adain_scale_ll=0.0,
@@ -30,7 +30,7 @@ def _make_t11_cfg():
 def main():
     torch.manual_seed(0)
     mcfg, bcfg = _make_t11_cfg()
-    bridge = SpectralODEBridge620(mcfg, bcfg)
+    bridge = WEAVE(mcfg, bcfg)
     bridge.eval()
 
     B, C, H, W = 2, 4, 32, 32
@@ -92,7 +92,7 @@ def main():
         num_res_blocks=4, style_attn_num_heads=4,
         style_cross_attn_gate_init=0.05, style_attn_temperature=1.0,
         style_shortcut_alpha=1.0,
-        cross_attn_dwt_route=True, cross_attn_dwt_ll_route_alpha=0.0,
+        cross_attn_dwt_route=True,
         dwt_route_train_prob=0.8,
         endpoint_adain_mode="per_subband_wct_ll_ycbcr",
         endpoint_adain_scale_ll=0.5,
@@ -101,7 +101,7 @@ def main():
         endpoint_adain_scale_hh=0.5,
     )
     mcfg2.style_extrap_alpha = 0.4
-    bridge2 = SpectralODEBridge620(mcfg2, bcfg)
+    bridge2 = WEAVE(mcfg2, bcfg)
     bridge2.eval()
     x = torch.randn(2, 4, 32, 32)
     style_id = torch.tensor([0, 1])

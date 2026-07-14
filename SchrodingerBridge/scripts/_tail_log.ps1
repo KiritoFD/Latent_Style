@@ -1,6 +1,9 @@
-$logFile = $args[0]
-if (Test-Path $logFile) {
-    Get-Content $logFile -Tail 20
+param(
+    [string]$Path = "C:\Users\Administrator\logs\sty_inject\nonzero_only_train.out",
+    [int]$Tail = 30
+)
+if (Test-Path $Path) {
+    Get-Content $Path -Tail $Tail
 } else {
-    Write-Output "LOG_NOT_FOUND: $logFile"
+    Write-Output "FILE NOT FOUND: $Path"
 }

@@ -1,0 +1,24 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "structure_aligned_target": true,
+    "multi_level_dwt_enabled": true,
+    "multi_level_dwt_alpha2": 0.5
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 10,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_y_ml_dwt_a05"
+  },
+  "ablation": {
+    "name": "brk_y_ml_dwt_a05",
+    "axis": "dino_s_break",
+    "stage": "brk_round6",
+    "notes": "Multi-level DWT: LL1 -> DWT2 -> {LL2, LH2, HL2, HH2}. LL2 locked (content core), LH2/HL2/HH2 stylized at alpha2=0.5. Math: target = IDWT1(IDWT2(LL2_c, LH2_blend, HL2_blend, HH2_blend), LH1_s, HL1_s, HH1_s). Theory: single-level alpha=0.3 stylizes entire LL1 (incl mid-freq) coarsely; multi-level separates mid-freq from lowest-freq, allowing aggressive mid-freq migration (alpha2=0.5) without breaking content core (LL2 locked). DINOv2 CLS token is sensitive to mid-freq color statistics. Target: DINO-S>0.485."
+  }
+}

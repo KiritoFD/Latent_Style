@@ -1,0 +1,34 @@
+{
+  "_base": "exp_brk_a_ll03_10ep.json",
+  "bridge": {
+    "phase_anchored_hf_enabled": true,
+    "phase_anchored_lh": true,
+    "phase_anchored_hl": true,
+    "phase_anchored_hh": true
+  },
+  "model": {
+    "enable_hh_head": true
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 10,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false,
+    "save_interval": 2,
+    "resume_checkpoint": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_a_ll03_10ep/epoch_0010.pt",
+    "resume_prefer_local_checkpoint": false,
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/model_probe/phase_anchored_hf_v2"
+  },
+  "ablation": {
+    "name": "phase_anchored_hf_v2",
+    "axis": "model_probe",
+    "stage": "round7_phase_anchored_hf_v2_latent_space",
+    "notes": "v2: phase-anchored in latent space (before DWT) to fix v1 shift sensitivity. FFT on full latent (32x32) instead of subbands (16x16). LL locked from content. HH head re-enabled."
+  }
+}

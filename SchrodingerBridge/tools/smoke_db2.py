@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import torch
 
-from spectral620 import (
+from wavelet import (
     dwt2_haar,
     dwt2_haar_lowpass,
     dwt2_db2,

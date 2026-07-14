@@ -57,6 +57,7 @@ All runs used the same 6ep fine-tune recipe from `brk_a_ll03_10ep`, no hyperpara
 | `target_hf_subband_current_delta_ft6` | zero-init target-current pooled HF code difference | 0.486683 | 0.793621 | 0.024539 | 0.719366 | 0.297567 | 0.402626 | rejected: slightly stronger target-specific information flow but unchanged residual direction and worse image frontier; code/config removed |
 | `target_hf_subband_affine_delta_ft6` | subband residual changed from scale-only to affine scale+shift | 0.482449 | 0.790343 | 0.024682 | 0.717787 | 0.298913 | 0.398861 | rejected: condition route became stronger but remained mostly off-direction; code/config removed |
 | `target_hf_subband_wct_direction_ft6` | gated analytic WCT-stat direction residual | 0.486511 | 0.793320 | 0.024538 | 0.719448 | 0.297849 | 0.402438 | rejected: condition-direction probe improved, but final DINO-S/CLIP-S/content frontier worsened; code/config removed |
+| `target_hf_subband_memdrop_ft6` | training-only style-memory token dropout, target-HF kept active | 0.486414 | 0.791995 | 0.024542 | 0.719449 | 0.298218 | 0.402734 | rejected: slight target-HF direction gain but weakened useful style-memory prior and worse final frontier; code/config removed |
 
 ## Diagnosis
 
@@ -459,3 +460,37 @@ Two follow-up architecture tests were run from this diagnosis:
 3. preserve the learned ODE transport geometry over the full trajectory.
 
 The current compact subband residual remains best because it is compatible with the learned HF heads, not because its target-condition path is already strong. Do not retry affine scale+shift or analytic WCT/AdaIN direction residual as-is.
+
+## Route-competition probe and memory-dropout result (2026-07-14)
+
+`tools/probe_route_competition.py` was added to separate generic style memory from image-specific target-HF conditioning. It evaluates four temporary forward routes without changing the checkpoint:
+
+```text
+backbone only      = no style-memory cross-attention, no target-HF residual
+style-memory only  = style-memory cross-attention, no target-HF residual
+target-HF only     = target-HF residual, no style-memory cross-attention
+full               = both routes active
+```
+
+On `target_hf_subband_ft6`, both routes are useful but low-projection:
+
+| transition | mean delta/desired | mean cos(delta, desired) | mean MSE improvement |
+|---|---:|---:|---:|
+| backbone -> style memory | 0.1438 | 0.1599 | 0.0263 |
+| backbone -> target-HF | 0.1403 | 0.1498 | 0.0306 |
+| style memory -> full target-HF marginal | 0.1616 | 0.1555 | 0.0322 |
+| backbone -> full | 0.2339 | 0.2273 | 0.0576 |
+
+Gradient competition is present: under FM-HF, disabling style memory increases target-HF subband gradient norm from `8.18e-2` to `1.38e-1`. But style memory is not a bad shortcut, because the full route is better than target-HF only.
+
+`target_hf_subband_memdrop_ft6` tested the conservative follow-up: during training only, randomly replace style-memory tokens with a learned null memory (`p=0.25`) while keeping target-HF active; inference uses the normal full route. It failed:
+
+| metric | memdrop | subband-only | delta |
+|---|---:|---:|---:|
+| all DINO-S | 0.486414 | **0.488624** | -0.0022 |
+| off DINO-S | 0.402734 | **0.403917** | -0.0012 |
+| DINO-C | 0.791995 | **0.798123** | -0.0061 |
+| CLIP-S | 0.719449 | **0.720880** | -0.0014 |
+| LPIPS | 0.298218 | **0.296553** | +0.0017 |
+
+Mechanistically, target-HF residual direction improved only slightly (`cos 0.1575 -> 0.1606`), while style-memory route alignment fell sharply (`cos 0.1599 -> 0.0463`) and full-route MSE improvement dropped (`0.0576 -> 0.0361`). **Verdict: FAIL; implementation/config removed, metrics kept.** Do not use blunt style-memory dropout. The right target is not to suppress memory, but to make target-HF contribute a larger useful projection without degrading the memory prior.

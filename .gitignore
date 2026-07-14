@@ -80,6 +80,8 @@ Related_Works/baseline_pipeline/manual_grid_requests/**
 
 # SchrodingerBridge runtime outputs
 SchrodingerBridge/exp/**
+SchrodingerBridge/exp_sandbox/**
+SchrodingerBridge/exp_baselines/**/images/**
 SchrodingerBridge/external_eval/**
 SchrodingerBridge/archives/code_backups/**
 SchrodingerBridge/docs/experiments/history_audit_local_*.json

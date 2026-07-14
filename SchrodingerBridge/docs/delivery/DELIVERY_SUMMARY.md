@@ -107,6 +107,8 @@ Latest gradient/info-flow diagnosis:
 | Naive HF-stat loss gives large gradients and can conflict through time/global transport paths. | Strengthening style via an auxiliary stat loss is risky unless it is routed locally. |
 | Condition-direction probe shows target-condition deltas have only `0.054/0.045/0.032` cosine with the desired HF correction. | The route is not just weak; it is mostly off-direction. |
 | WCT-direction improves local condition-direction cosine to `0.110/0.125/0.093` but still worsens final metrics. | Local velocity alignment alone does not guarantee a better full transport/image frontier. |
+| Route-competition probe shows style memory and target-HF are both useful but low-projection; full route MSE improvement is `0.0576`. | Do not delete style memory; improve target-HF without degrading the coarse memory prior. |
+| Training-only style-memory dropout slightly improves target-HF direction but drops style-memory alignment from `0.1599` to `0.0463` and worsens full eval. | Blunt memory dropout is not the fix; implementation/config removed. |
 
 ---
 
@@ -131,6 +133,7 @@ All rows are diagnostic probes from the `brk_a_ll03_10ep` family. Do not promote
 | `target_hf_subband_current_delta_ft6` | 0.486683 | 0.793621 | 0.719366 | 0.297567 | 0.402626 | Reject: target-current code delta slightly improves condition flow but no frontier gain. |
 | `target_hf_subband_affine_delta_ft6` | 0.482449 | 0.790343 | 0.717787 | 0.298913 | 0.398861 | Reject: stronger condition route, worse direction/frontier. |
 | `target_hf_subband_wct_direction_ft6` | 0.486511 | 0.793320 | 0.719448 | 0.297849 | 0.402438 | Reject: better local direction probe, worse final metrics. |
+| `target_hf_subband_memdrop_ft6` | 0.486414 | 0.791995 | 0.719449 | 0.298218 | 0.402734 | Reject: training-only memory dropout weakens useful style-memory prior. |
 
 Conclusion:
 
@@ -191,7 +194,7 @@ Architecture first, tuning second:
 | 3 | Keep LL disconnected from target-image shortcuts. | Avoid buying style by destroying content. |
 | 4 | Rerun D5-512, P2A-256, R5-WikiArt before promotion. | Required before changing the main table. |
 
-Avoid raw target HF maps, scalar/HH residual amplification, direct residual-direction auxiliary loss, time-window residual gating, low-rank content-derived basis replacement, current-target global HF statistic codes, cross-orientation pooled-code mixing, target-current pooled-code deltas, global target-token fusion, and CFG claims without matched controls.
+Avoid raw target HF maps, scalar/HH residual amplification, direct residual-direction auxiliary loss, time-window residual gating, low-rank content-derived basis replacement, current-target global HF statistic codes, cross-orientation pooled-code mixing, target-current pooled-code deltas, blunt style-memory dropout, global target-token fusion, and CFG claims without matched controls.
 Also avoid affine scale+shift subband residuals and analytic WCT/AdaIN direction residuals inside the velocity field as currently tested: both improve some probe numbers but lower the final style/content frontier.
 
 ---

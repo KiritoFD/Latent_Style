@@ -48,11 +48,11 @@ if str(_SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(_SRC_ROOT))
 
 # Import WEAVE wavelet primitives + WCT helpers (standalone functions)
-from spectral620 import (
+from wavelet import (
     dwt2_haar_multi_decompose,
     idwt2_haar_multi_reconstruct,
 )
-from spectral_bridge620 import _wct_match_fiber, _precompute_style_wct_stats
+from model import _wct_match_fiber, _precompute_style_wct_stats
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -75,7 +75,7 @@ IMAGE_SIZE = 512
 
 
 # ---------------------------------------------------------------------------
-# WEAVE plugin (standalone, extracted from SpectralODEBridge620._apply_endpoint_adain)
+# WEAVE plugin (standalone, extracted from WEAVE._apply_endpoint_adain)
 # ---------------------------------------------------------------------------
 def weave_plugin(
     z_content: torch.Tensor,

@@ -43,7 +43,7 @@ if str(SRC) not in sys.path:
 
 from config_schema import load_experiment_config  # noqa: E402
 from model import build_model_from_config  # noqa: E402
-from spectral620 import dwt2_haar, idwt2_haar, dwt2_lowpass  # noqa: E402
+from wavelet import dwt2_haar, idwt2_haar, dwt2_lowpass  # noqa: E402
 from utils.dataset import AdaCUTLatentDataset  # noqa: E402
 from utils.training import strip_compile_prefix  # noqa: E402
 
@@ -426,7 +426,7 @@ def probe_d_style_injection(
     results["cross_attn_entropy"] = cross_entropy
 
     # 3. Style token utilization (variance across token dimension)
-    style_tokens, style_global = model.style_conditioner(
+    style_tokens = model.style_conditioner(
         style_id=target_style_id, batch=content.shape[0], device=device, dtype=content.dtype,
     )
     if torch.is_tensor(style_tokens):

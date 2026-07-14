@@ -1,0 +1,11 @@
+refactor: rename src/ files to remove 620 suffix, delete legacy modules
+
+- Rename: blocks620.py -> blocks.py, spectral620.py -> wavelet.py,
+  style_encoder620.py -> style.py, spectral_losses620.py -> flow.py
+- Delete: model620.py, losses620.py, spectral_bridge620.py (legacy contracts)
+- Rename classes: WEAVE, FlowMatchingObjective, ResidualBlock, StyleConditioner
+- trainer.py: only support 'weave' contract_family, remove legacy paths
+- config_schema.py: contract_family='weave' is the only active contract
+- Update SNAPSHOT_SOURCE_FILES and _assert_active_source_modules
+- Update clean_base_v2_local.json: contract_family='weave'
+- Verified: existing checkpoint loads with 0 missing/0 unexpected keys

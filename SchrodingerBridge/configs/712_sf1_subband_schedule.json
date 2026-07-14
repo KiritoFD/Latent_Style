@@ -1,0 +1,24 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "subband_time_schedule_enabled": true,
+    "subband_gamma_ll": "early_peak",
+    "subband_gamma_lh": "uniform",
+    "subband_gamma_hl": "uniform",
+    "subband_gamma_hh": "late_burst"
+  },
+  "training": {
+    "batch_size": 24,
+    "num_epochs": 5,
+    "patience": 2
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/712_sf1_subband"
+  },
+  "ablation": {
+    "name": "712_sf1_subband",
+    "axis": "time_frequency_coupled_flow",
+    "stage": "712_phase_sf1",
+    "notes": "Phase SF1: Subband-aware time schedule γ_k(t). LL=early_peak (先底色), LH/HL=uniform, HH=late_burst (后笔触). Training FM loss and inference ODE integration both weighted by γ_k(t)."
+  }
+}

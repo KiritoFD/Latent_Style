@@ -29,11 +29,11 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from config_schema import BridgeConfig, ModelConfig  # noqa: E402
-from spectral_bridge620 import (  # noqa: E402
-    SpectralODEBridge620,
-    build_spectral_ode_bridge_from_config,
+from model import (  # noqa: E402
+    WEAVE,
+    build_model_from_config,
 )
-from spectral_losses620 import SpectralODEObjective620  # noqa: E402
+from flow import FlowMatchingObjective  # noqa: E402
 
 
 def _make_t11_cfg() -> tuple[ModelConfig, BridgeConfig]:
@@ -46,15 +46,14 @@ def _make_t11_cfg() -> tuple[ModelConfig, BridgeConfig]:
         num_res_blocks=4,
         style_attn_num_heads=4,
         tokenizer_dino_dim=384,
-        contract_family="620_spectral_ode",
+        contract_family="weave",
         # 4J.1 DWT Route
         cross_attn_dwt_route=True,
-        cross_attn_dwt_ll_route_alpha=0.0,
         # T11 stochastic DWT route
         dwt_route_train_prob=0.8,
         # Declared ModelConfig fields
         # 630 Phase 72: endpoint_lowpass_levels=1 + endpoint_lowpass_basis="haar"
-        # 已硬编码进 spectral_bridge620.py (4D/4E 多级/小波基已验证无效)
+        # 已硬编码进 model.py (4D/4E 多级/小波基已验证无效)
         endpoint_adain_mode="spatial_fiber",
         endpoint_adain_only_last_step=True,
     )
@@ -74,16 +73,16 @@ def _make_t11_cfg() -> tuple[ModelConfig, BridgeConfig]:
     return mcfg, bcfg
 
 
-def _make_bridge(mcfg: ModelConfig, bcfg: BridgeConfig) -> SpectralODEBridge620:
-    return build_spectral_ode_bridge_from_config(mcfg, bridge_cfg=bcfg)
+def _make_bridge(mcfg: ModelConfig, bcfg: BridgeConfig) -> WEAVE:
+    return build_model_from_config(mcfg, bridge_cfg=bcfg)
 
 
 def test_imports_clean():
     """All modules must import without reference errors."""
-    import blocks620  # noqa: F401
-    import spectral620  # noqa: F401
-    import spectral_bridge620  # noqa: F401
-    import spectral_losses620  # noqa: F401
+    import blocks  # noqa: F401
+    import wavelet  # noqa: F401
+    import model  # noqa: F401
+    import flow  # noqa: F401
     import config_schema  # noqa: F401
 
 
@@ -95,9 +94,24 @@ def test_deleted_model_config_fields_absent():
         "ll_global_style_inject",
         "ll_global_style_gate_init",
         "ll_style_inject_source",
+        "cross_attn_dwt_ll_route_alpha",
+        "ll_adaln_zero",
+        "ll_tone_bias",
+        "style_film_enabled",
+        "style_film_init_std",
+        "style_adaln_mode",
+        "style_adaln_rank",
+        "style_adaln_layers",
+        "style_adaln_init_gain",
+        "style_adaln_max_scale",
+        "style_adaln_max_shift",
     ]
     for name in removed:
         assert not hasattr(cfg, name), f"ModelConfig.{name} should be removed"
+
+    retired_cfg = ModelConfig.from_mapping({name: 1 for name in removed})
+    for name in removed:
+        assert not hasattr(retired_cfg, name), f"ModelConfig.{name} should not be rehydrated"
 
 
 def test_deleted_bridge_config_fields_absent():
@@ -108,16 +122,32 @@ def test_deleted_bridge_config_fields_absent():
         "wct_aligned_alpha",
         "spectral_w_endpoint_style_lh",
         "spectral_w_endpoint_style_hl",
+        "source_endpoint_aux_weight",
+        "endpoint_energy_band_weight",
+        "w_attn_entropy_reg",
+        "w_style_strength_reg",
+        "w_style_contrastive",
+        "style_contrastive_margin",
+        "style_contrastive_projections",
     ]
     for name in removed:
         assert not hasattr(cfg, name), f"BridgeConfig.{name} should be removed"
 
+    retired_cfg = BridgeConfig.from_mapping({
+        "single_step_swd_weight": 8.0,
+        "terminal_swd_weight": 0.1,
+        "w_endpoint_style": 8.0,
+        "w_style_contrastive": 1.0,
+    })
+    for name in ("single_step_swd_weight", "terminal_swd_weight", "w_endpoint_style", "w_style_contrastive"):
+        assert not hasattr(retired_cfg, name), f"BridgeConfig.{name} should not be rehydrated"
 
-def test_blocks620_no_llgsi_attributes():
-    """SpatialBridgeBlock620 must not expose LLGSI/CASI/LLGQCA attributes."""
-    from blocks620 import SpatialBridgeBlock620
 
-    block = SpatialBridgeBlock620(
+def test_blocks_no_llgsi_attributes():
+    """ResidualBlock must not expose LLGSI/CASI/LLGQCA attributes."""
+    from blocks import ResidualBlock
+
+    block = ResidualBlock(
         dim=64, num_heads=4, dwt_route=True, dwt_route_train_prob=0.8,
     )
     removed_attrs = [
@@ -133,44 +163,44 @@ def test_blocks620_no_llgsi_attributes():
 
 def test_compute_use_dwt_method_exists():
     """Suggestion 6: _compute_use_dwt method must exist."""
-    from blocks620 import SpatialBridgeBlock620
+    from blocks import ResidualBlock
 
-    block = SpatialBridgeBlock620(dim=64, num_heads=4, dwt_route=True, dwt_route_train_prob=0.8)
+    block = ResidualBlock(dim=64, num_heads=4, dwt_route=True, dwt_route_train_prob=0.8)
     assert callable(getattr(block, "_compute_use_dwt", None)), "_compute_use_dwt missing"
 
 
 def test_compute_use_dwt_disabled_when_dwt_route_false():
     """_compute_use_dwt returns False when dwt_route=False."""
-    from blocks620 import SpatialBridgeBlock620
+    from blocks import ResidualBlock
 
-    block = SpatialBridgeBlock620(dim=64, num_heads=4, dwt_route=False)
+    block = ResidualBlock(dim=64, num_heads=4, dwt_route=False)
     block.train()
     assert block._compute_use_dwt() is False
 
 
 def test_compute_use_dwt_always_true_in_eval():
     """_compute_use_dwt returns True in eval mode when dwt_route=True."""
-    from blocks620 import SpatialBridgeBlock620
+    from blocks import ResidualBlock
 
-    block = SpatialBridgeBlock620(dim=64, num_heads=4, dwt_route=True, dwt_route_train_prob=0.8)
+    block = ResidualBlock(dim=64, num_heads=4, dwt_route=True, dwt_route_train_prob=0.8)
     block.eval()
     assert block._compute_use_dwt() is True
 
 
 def test_compute_use_dwt_deterministic_when_prob_zero():
     """_compute_use_dwt returns True in train mode when prob=0 (4J.1 behavior)."""
-    from blocks620 import SpatialBridgeBlock620
+    from blocks import ResidualBlock
 
-    block = SpatialBridgeBlock620(dim=64, num_heads=4, dwt_route=True, dwt_route_train_prob=0.0)
+    block = ResidualBlock(dim=64, num_heads=4, dwt_route=True, dwt_route_train_prob=0.0)
     block.train()
     assert block._compute_use_dwt() is True
 
 
 def test_compute_use_dwt_stochastic_when_prob_positive():
     """_compute_use_dwt returns mix of True/False in train mode when prob=0.8."""
-    from blocks620 import SpatialBridgeBlock620
+    from blocks import ResidualBlock
 
-    block = SpatialBridgeBlock620(dim=64, num_heads=4, dwt_route=True, dwt_route_train_prob=0.8)
+    block = ResidualBlock(dim=64, num_heads=4, dwt_route=True, dwt_route_train_prob=0.8)
     block.train()
     torch.manual_seed(0)
     results = [block._compute_use_dwt() for _ in range(200)]
@@ -355,7 +385,7 @@ def test_apply_endpoint_adain_ll_ycbcr_mode():
 
 
 def test_losses_compute_clean():
-    """SpectralODEObjective620.compute works without removed endpoint-style loss."""
+    """FlowMatchingObjective.compute works without removed endpoint-style loss."""
     torch.manual_seed(0)
     mcfg, bcfg = _make_t11_cfg()
     bridge = _make_bridge(mcfg, bcfg)
@@ -365,7 +395,7 @@ def test_losses_compute_clean():
     dc = DataConfig()
     tc = TrainingConfig(batch_size=2)
     ecfg = ExperimentConfig(model=mcfg, bridge=bcfg, data=dc, training=tc)
-    obj = SpectralODEObjective620(ecfg)
+    obj = FlowMatchingObjective(ecfg)
 
     B, C, H, W = 2, 4, 32, 32
     content = torch.randn(B, C, H, W)
@@ -387,18 +417,18 @@ def test_losses_compute_clean():
 
 def test_no_dead_wct_match_subband_function():
     """Suggestion 4: dead module-level _wct_match_subband function must be removed."""
-    import spectral_losses620 as mod
+    import flow as mod
 
     assert not hasattr(mod, "_wct_match_subband"), "_wct_match_subband should be removed"
 
 
 def test_no_dead_import():
-    """spectral_losses620 imports idwt2_haar for Plan B (structure_aligned_target)."""
-    import spectral_losses620 as mod
+    """flow imports idwt2_haar for Plan B (structure_aligned_target)."""
+    import flow as mod
 
-    src = open(mod.__file__).read()
+    src = Path(mod.__file__).read_text(encoding="utf-8")
     # 630 Phase 72 Plan B: idwt2_haar is re-imported and used for x₁* construction
-    assert "from spectral620 import dwt2_haar, idwt2_haar" in src, "idwt2_haar import missing"
+    assert "from wavelet import dwt2_haar, idwt2_haar" in src, "idwt2_haar import missing"
     assert src.count("idwt2_haar") >= 2, "idwt2_haar imported but not used"
 
 
@@ -521,7 +551,7 @@ def test_structure_aligned_target_changes_loss():
     target_style_id = torch.tensor([0, 1])
 
     # Disabled: original target = target_style
-    obj_disabled = SpectralODEObjective620(ecfg)
+    obj_disabled = FlowMatchingObjective(ecfg)
     metrics_disabled = obj_disabled.compute(
         bridge, content=content, target_style=target_style,
         target_style_id=target_style_id,
@@ -530,7 +560,7 @@ def test_structure_aligned_target_changes_loss():
     # Enabled: x₁* = IDWT(LL_content, LH_style, HL_style, HH_style)
     bcfg.structure_aligned_target = True
     ecfg_aligned = ExperimentConfig(model=mcfg, bridge=bcfg, data=dc, training=tc)
-    obj_aligned = SpectralODEObjective620(ecfg_aligned)
+    obj_aligned = FlowMatchingObjective(ecfg_aligned)
     metrics_aligned = obj_aligned.compute(
         bridge, content=content, target_style=target_style,
         target_style_id=target_style_id,

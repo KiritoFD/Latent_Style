@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 import json
 import torch
 from config_schema import load_experiment_config
-from spectral_bridge620 import build_spectral_ode_bridge_from_config
+from model import build_model_from_config
 
 
 def main():
@@ -29,7 +29,7 @@ def main():
     assert lp_levels == 3, f"FAIL: expected 3, got {lp_levels}"
 
     # Build model and verify integrate_transport respects lock_ll
-    model = build_spectral_ode_bridge_from_config(exp_cfg.model, bridge_cfg=exp_cfg.bridge)
+    model = build_model_from_config(exp_cfg.model, bridge_cfg=exp_cfg.bridge)
     model.eval()
     device = torch.device('cpu')
     model = model.to(device)
@@ -49,7 +49,7 @@ def main():
         )
 
     # Verify LL of output equals LL of input (locked)
-    from spectral620 import dwt2_haar
+    from wavelet import dwt2_haar
     ll_in, _, _, _ = dwt2_haar(x)
     ll_out, _, _, _ = dwt2_haar(out_locked)
     ll_diff = (ll_out - ll_in).abs().mean().item()
@@ -64,7 +64,7 @@ def main():
     original_adain = float(getattr(exp_cfg.model, 'endpoint_adain_scale', 0.0))
     exp_cfg.model.endpoint_adain_scale = 0.0
     exp_cfg.model.style_extrap_alpha = 0.0
-    model2 = build_spectral_ode_bridge_from_config(exp_cfg.model, bridge_cfg=exp_cfg.bridge).to(device).eval()
+    model2 = build_model_from_config(exp_cfg.model, bridge_cfg=exp_cfg.bridge).to(device).eval()
 
     with torch.no_grad():
         out_locked_pure = model2.integrate_transport(
@@ -80,7 +80,7 @@ def main():
     # Compare with lock_ll=False (baseline behavior)
     print("\n[verify] Running with endpoint_lock_ll=False for comparison...")
     exp_cfg.model.endpoint_lock_ll = False
-    model_unlocked = build_spectral_ode_bridge_from_config(exp_cfg.model, bridge_cfg=exp_cfg.bridge).to(device).eval()
+    model_unlocked = build_model_from_config(exp_cfg.model, bridge_cfg=exp_cfg.bridge).to(device).eval()
     with torch.no_grad():
         out_unlocked = model_unlocked.integrate_transport(
             x.clone(), style_id=style_id, num_steps=4, step_size=1.0,

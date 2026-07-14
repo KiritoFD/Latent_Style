@@ -1,7 +1,7 @@
-"""Tests for the active 620_spectral_ode contract (clean_base_v2_local).
+"""Tests for the active WEAVE contract (clean_base_v2_local).
 
 Covers:
-- M9: config style_attn_mode propagation to SpatialBridgeBlock620
+- M9: config style_attn_mode propagation to ResidualBlock
 - Model build smoke for the active contract
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ if str(SRC) not in sys.path:
 
 from config_schema import BridgeConfig, ModelConfig, load_experiment_config  # noqa: E402
 from model import build_model_from_config  # noqa: E402
-from spectral_bridge620 import SpectralODEBridge620  # noqa: E402
+from model import WEAVE  # noqa: E402
 
 
 ACTIVE_CONFIG = ROOT / "configs" / "clean_base_v2_local.json"
@@ -31,11 +31,11 @@ def _load_active_config():
 
 
 def test_active_config_builds_spectral_ode_bridge():
-    """Active config must build a SpectralODEBridge620."""
+    """Active config must build a WEAVE."""
     cfg = _load_active_config()
     model = build_model_from_config(cfg.model, bridge_cfg=cfg.bridge)
-    assert isinstance(model, SpectralODEBridge620), (
-        f"Expected SpectralODEBridge620, got {type(model).__name__}"
+    assert isinstance(model, WEAVE), (
+        f"Expected WEAVE, got {type(model).__name__}"
     )
 
 
@@ -43,7 +43,7 @@ def test_style_attn_mode_propagated_to_blocks():
     """M9 regression: config style_attn_mode must reach block.attn_mode.
 
     Previously spectral_bridge620.py did not pass attn_mode to
-    SpatialBridgeBlock620, so blocks silently defaulted to "softmax"
+    ResidualBlock, so blocks silently defaulted to "softmax"
     even when config said "relu2". This test guards against regression.
     """
     cfg = _load_active_config()
@@ -68,11 +68,11 @@ def test_historical_target_dino_patches_uses_style_memory_contract():
         num_res_blocks=4,
         style_attn_num_heads=4,
         tokenizer_dino_dim=384,
-        contract_family="620_spectral_ode",
+        contract_family="weave",
         style_condition_source="target_dino_patches",
     )
     model = build_model_from_config(model_cfg, bridge_cfg=BridgeConfig())
-    assert isinstance(model, SpectralODEBridge620)
+    assert isinstance(model, WEAVE)
     assert model.use_intrinsic_style is False
     assert model.intrinsic_style_cnn is None
 

@@ -5,7 +5,7 @@
     "lpips": 0.2583,
     "dino_c": 0.8287,
     "dino_s": 0.4859,
-    "checkpoint": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_a_ll03_10ep/epoch_0010.pt",
+    "checkpoint": "exp/dino_s_break/brk_a_ll03_10ep/epoch_0010.pt",
     "eval_protocol": "endpoint_adain_scale=2.0 (use --config_override configs/eval_adain_20.json at inference)",
     "training_endpoint_adain_scale": 1.0
   },
@@ -501,7 +501,7 @@
     "full_eval_convergence_flat_eps_style": 0.005,
     "full_eval_convergence_flat_eps_lpips": 0.018,
     "full_eval_convergence_min_epochs": 0,
-    "test_image_dir": "I:/datasets/wikiart_distinct5_samam_512_classview/test",
+    "test_image_dir": "$index:samam_512_test",
     "full_eval_cache_dir": "exp/eval_cache",
     "full_eval_clip_hf_cache_dir": "exp/eval_cache/hf",
     "full_eval_clip_backend": "hf",
@@ -517,7 +517,7 @@
     "start_epoch": 0
   },
   "data": {
-    "data_root": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train",
+    "data_root": "$index:samam_512_train",
     "style_subdirs": ["Early_Renaissance", "Impressionism", "Minimalism", "Rococo", "Ukiyo_e"],
     "allow_hflip": true,
     "identity_ratio": null,

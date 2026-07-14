@@ -39,13 +39,13 @@ def _add_src_to_path() -> None:
         sys.path.insert(0, src_str)
 
 
-def run_smoke(config_path: Path) -> int:
+def run_smoke(config_path: Path, *, batch_size: int = 4) -> int:
     """Single forward+backward+optimizer step on a fake batch. Returns exit code."""
     _add_src_to_path()
     import torch
     from config_schema import load_experiment_config
     from model import build_model_from_config
-    from spectral_losses620 import SpectralODEObjective620
+    from flow import FlowMatchingObjective
 
     try:
         print("[smoke] Loading config...", flush=True)
@@ -58,14 +58,14 @@ def run_smoke(config_path: Path) -> int:
         print(f"[smoke] Model params: {n_params:,}", flush=True)
 
         print("[smoke] Building loss fn...", flush=True)
-        loss_fn = SpectralODEObjective620(cfg)
+        loss_fn = FlowMatchingObjective(cfg)
         print(f"[smoke] loss_fn type: {type(loss_fn).__name__}", flush=True)
 
         print("[smoke] Building optimizer...", flush=True)
         opt = torch.optim.AdamW(model.parameters(), lr=2e-4, weight_decay=1e-4)
 
         print("[smoke] Creating fake batch...", flush=True)
-        B, C, H, W = 4, 4, 64, 64
+        B, C, H, W = max(1, int(batch_size)), 4, 64, 64
         content = torch.randn(B, C, H, W, device="cuda")
         target_style = torch.randn(B, C, H, W, device="cuda")
         target_style_id = torch.randint(0, 5, (B,), device="cuda")
@@ -179,6 +179,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Local one-click smoke + train + eval.")
     parser.add_argument("--config", type=str, required=True, help="Path to config json")
     parser.add_argument("--smoke-only", action="store_true", help="Only run smoke test")
+    parser.add_argument("--smoke-batch", type=int, default=4, help="Synthetic batch size for --smoke-only")
     parser.add_argument("--skip-train", action="store_true", help="Skip training step")
     parser.add_argument("--skip-eval", action="store_true", help="Skip evaluation step")
     parser.add_argument("--checkpoint", type=str, default=None, help="Checkpoint path (with --skip-train)")
@@ -196,7 +197,7 @@ def main() -> int:
 
     # Step 1: smoke test (always run unless explicitly skipped via --skip-train + --skip-eval)
     if args.smoke_only:
-        return run_smoke(config_path)
+        return run_smoke(config_path, batch_size=args.smoke_batch)
 
     print("[step 1] smoke test", flush=True)
     rc = run_smoke(config_path)

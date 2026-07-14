@@ -46,9 +46,12 @@ DATA = {
     "StyleAligned":   [(0.780, 0.869, 0.239, 0.675), (0.768, 0.786, 0.310, 0.612), (0.824, 0.829, 0.315, 0.649)],
     "Z-STAR":         [(0.784, 0.347, 0.549, 0.449), (0.786, 0.332, 0.552, 0.498), (0.822, 0.384, 0.526, 0.514)],
     "StyleShot":      [(0.787, 0.765, 0.377, 0.563), (0.774, 0.713, 0.335, 0.552), (0.787, 0.795, 0.380, 0.484)],
+    "StyleID":        [(0.822, 0.552, 0.416, 0.548), (0.648, 0.691, 0.147, 0.256), (0.815, 0.493, 0.374, 0.571)],
     "CUT":            [(0.714, 0.374, 0.795, 0.471), (0.754, 0.494, 0.7020, 0.5387), (0.710, 0.620, 0.795, 0.441)],
     "SaMST":          [(0.618, 0.749, 0.145, 0.271), (0.709, 0.398, 0.838, 0.501), (0.667, 0.612, 0.615, 0.461)],
     "SaMam":          [(0.582, 0.243, 0.812, 0.477), (0.677, 0.205, 0.870, 0.505), (0.712, 0.227, 0.925, 0.503)],
+    "StyTR-2":        [(0.709, 0.596, 0.747, 0.501), (0.722, 0.495, 0.555, 0.515), (0.759, 0.553, 0.737, 0.533)],
+    "AesPA-Net":      [(0.724, 0.548, 0.601, 0.520), (0.744, 0.571, 0.522, 0.498), (0.782, 0.409, 0.728, 0.545)],
     "Seedream 4.5":   [(0.720, 0.477, 0.739, 0.486), (0.752, 0.227, 0.785, 0.517), (0.742, 0.486, 0.725, 0.504)],
     "Ours (WEAVE)":   [(0.7075, 0.2583, 0.8287, 0.4859), (0.6681, 0.3116, 0.8612, 0.4801), (0.7747, 0.2895, 0.7717, 0.5226)],
 }
@@ -62,9 +65,12 @@ TRAIN_SEC = {
     "StyleAligned":   math.nan,        # free
     "Z-STAR":         math.nan,        # free
     "StyleShot":      math.nan,        # free
+    "StyleID":        math.nan,        # free (timing data incomplete -> gap)
     "CUT":            322.6 * 60.0,    # 322.6 min
     "SaMST":          39.5  * 60.0,    # 39.5 min
     "SaMam":          436.0 * 60.0,    # 436.0 min
+    "StyTR-2":        math.nan,        # -- (timing data incomplete -> gap)
+    "AesPA-Net":      math.nan,        # -- (timing data incomplete -> gap)
     "Seedream 4.5":   math.nan,        # API
     "Ours (WEAVE)":   3.0  * 60.0,    # 3.0 min (10 epochs)
 }
@@ -75,9 +81,12 @@ INFER_SEC = {
     "Z-STAR":         10800.0,         # ~3 h   ESTIMATED (30-step SD1.5 + dual-latent reweight;
                                        #          OOMs at 512^2 on 12GB -> step-count scaling)
     "StyleShot":      18472.0,         # 5.1 h  (24.63 s/img x750, RTX3060 measured)
+    "StyleID":        math.nan,        # 63 m (data exists but omitted: gap requested)
     "CUT":            300.0,           # 5 m    (not re-measured on 3060; prior value)
     "SaMST":          10.0 * 60.0,     # 10 m   (not re-measured on 3060; prior value)
     "SaMam":          17.6 * 60.0,     # 17.6 m (not re-measured on 3060; prior value)
+    "StyTR-2":        math.nan,        # ~4 m (data exists but omitted: gap requested)
+    "AesPA-Net":      math.nan,        # ~3 m (data exists but omitted: gap requested)
     "Seedream 4.5":   math.nan,        # --
     "Ours (WEAVE)":   50.0,            # 50 s (b16 optimized, RTX3060) per paper tab:main
 }
@@ -86,8 +95,10 @@ INFER_SEC = {
 METHOD_DIR = {
     "Identity": "identity",
     "SD-Turbo": "sdturbo", "StyleAligned": "stylealigned",
-    "Z-STAR": "zstar", "StyleShot": "styleshot", "CUT": "cut", "SaMST": "samst",
-    "SaMam": "samam", "Seedream 4.5": "seedream", "Ours (WEAVE)": "weave",
+    "Z-STAR": "zstar", "StyleShot": "styleshot", "StyleID": "styleid",
+    "CUT": "cut", "SaMST": "samst", "SaMam": "samam",
+    "StyTR-2": "stytr2", "AesPA-Net": "aespa",
+    "Seedream 4.5": "seedream", "Ours (WEAVE)": "weave",
 }
 
 # Load DINO (may be partial)
@@ -116,6 +127,9 @@ TIER3 = {
 }
 FAINT = {
     "StyleShot":    ("#9467BD", 1.3, 0.05, 0.45, 4),
+    "StyleID":      ("#8C564B", 1.3, 0.05, 0.45, 4),
+    "StyTR-2":      ("#7F7F7F", 1.3, 0.05, 0.45, 4),
+    "AesPA-Net":    ("#C49C94", 1.3, 0.05, 0.45, 4),
     "CUT":          ("#E377C2", 1.3, 0.05, 0.45, 4),
     "SaMST":        ("#17BECF", 1.2, 0.04, 0.40, 3),
     "SD-Turbo":     ("#AEC7E8", 1.1, 0.03, 0.35, 3),
@@ -141,7 +155,8 @@ TIER_OF.update({k: "t3" for k in TIER3})
 LINESTYLE = {"Identity": "--"}
 
 LEGEND_ORDER = ["Ours (WEAVE)", "Seedream 4.5", "Z-STAR", "StyleAligned", "SaMam",
-                "IP-Adapter", "StyleShot", "CUT", "SaMST", "SD-Turbo", "Identity"]
+                "IP-Adapter", "StyleShot", "StyleID", "StyTR-2", "AesPA-Net",
+                "CUT", "SaMST", "SD-Turbo", "Identity"]
 
 # Year / venue for each method (best-effort; AMiner token unavailable -> from public record).
 META = {
@@ -151,9 +166,12 @@ META = {
     "StyleAligned":   ("CVPR 2024",  "Hertz et al."),
     "Z-STAR":         ("CVPR 2024",  "Deng et al."),
     "StyleShot":      ("2024",       "Gao et al."),
+    "StyleID":        ("ICCV 2023",  "Zhang et al."),
     "CUT":            ("ECCV 2020",  "Park et al."),
     "SaMST":          ("ACCV 2024",  "Liu et al."),
     "SaMam":          ("CVPR 2025",  "Liu et al."),
+    "StyTR-2":        ("CVPR 2022",  "Deng et al."),
+    "AesPA-Net":      ("ICCV 2023",  "Hong et al."),
     "Seedream 4.5":   ("2025",       "ByteDance"),
     "Ours (WEAVE)":   ("AAAI 2027",  "this paper"),
 }
@@ -401,8 +419,8 @@ _CAPTION = (
     "Axes use per-metric v/max normalization, so the outer ring is the strongest observed method "
     "and every other radius keeps its true ratio. DINO-S is deliberately shown because it is more "
     "discriminative for real style movement than CLIP-S alone: Identity preserves content but stays "
-    "near the inner region on DINO-S, exposing no-op transfer. Speed is log-normalized and inverted "
-    "(faster -> outer ring), so WEAVE's real wall-clock advantage is larger than the visual gap suggests. "
+    "near the inner region on DINO-S, exposing no-op transfer. Speed axes are log-normalized and inverted "
+    "(faster -> outer ring); cells left blank indicate incomplete timing (training-free or pretrained-only methods). "
     "Across datasets, WEAVE keeps content preservation competitive with or above strong baselines while "
     "remaining the only method that is both high-quality and ultra-efficient."
 )
@@ -473,4 +491,5 @@ print("\nNote: LPIPS column in paper uses down-arrow (lower is better). "
       "Metric axes are per-axis normalized by v/max (strongest per axis = 1.0, outer; others\n"
       "keep their true ratio, not stretched to 0). The weakness analysis above uses RAW values.\n"
       "Train/Infer speed axes are log-inverted (1 - (log(t+1)-log(lo+1))/(log(hi+1)-log(lo+1))): "
-      "fastest=1.0 (outer). Missing (training-free / API) cells are gaps; no fill crosses them.")
+      "fastest=1.0 (outer). Missing (training-free / API / timing-omitted) cells are gaps; "
+      "no fill crosses them.")

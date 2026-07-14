@@ -1,0 +1,23 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "structure_aligned_target": true,
+    "spectral_w_ll": 1.0
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 10,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_d_wll10_10ep"
+  },
+  "ablation": {
+    "name": "brk_d_wll10_10ep",
+    "axis": "dino_s_break_wll_liberation",
+    "stage": "brk_round1",
+    "notes": "w_ll=1.0 (3.3x baseline 0.3) + SAT + 10 epochs. Liberate LL flow-matching supervision to let the model learn LL transport (color/contrast stats DINOv2 is sensitive to). Structural change vs Stage7-16 which kept w_ll=0.3. If DINO-S>0.485, LL transport supervision is the lever."
+  }
+}

@@ -5,8 +5,11 @@ Date: 2026-07-14
 This note records the mechanism diagnosis after adding probes inside the model, not just reading eval metrics. The main probe output is:
 
 - `docs/model_probe/target_hf_subband_gradinfo_actual.json`
+- `docs/model_probe/target_hf_subband_route_competition.json`
 - `docs/model_probe/target_hf_subband_affine_delta_gradinfo_actual.json`
 - `docs/model_probe/target_hf_subband_wct_direction_gradinfo_actual.json`
+- `docs/model_probe/target_hf_subband_memdrop_route_competition.json`
+- `docs/model_probe/target_hf_subband_memdrop_gradinfo.json`
 
 ## Direct Answers
 
@@ -65,6 +68,29 @@ For the current best subband route:
 | HH | 0.0191 | 0.0316 | 0.0006 | 0.9994 | 0.0009 |
 
 So the target-specific condition delta is both small and mostly orthogonal to the immediate target correction. This explains why simple residual scaling and route widening spend content budget without improving the final frontier.
+
+### Does style memory block target-HF?
+
+Not in the simple "bad shortcut" sense. A route-competition probe decomposes the same checkpoint into:
+
+```text
+backbone only      = no style-memory cross-attention, no target-HF residual
+style-memory only  = style-memory cross-attention, no target-HF residual
+target-HF only     = target-HF residual, no style-memory cross-attention
+full               = both routes active
+```
+
+On `target_hf_subband_ft6/epoch_0006.pt`, both style memory and target-HF are weakly helpful, but both have small useful projection and large orthogonal energy:
+
+| transition | mean delta/desired | mean cos(delta, desired) | mean projection | mean orthogonal fraction | mean MSE improvement |
+|---|---:|---:|---:|---:|---:|
+| backbone -> style memory | 0.1438 | 0.1599 | 0.0258 | 0.9840 | 0.0263 |
+| backbone -> target-HF | 0.1403 | 0.1498 | 0.0286 | 0.9832 | 0.0306 |
+| style memory -> full target-HF marginal | 0.1616 | 0.1555 | 0.0345 | 0.9824 | 0.0322 |
+| target-HF -> full style-memory marginal | 0.1676 | 0.1610 | 0.0306 | 0.9835 | 0.0279 |
+| backbone -> full | 0.2339 | 0.2273 | 0.0611 | 0.9681 | 0.0576 |
+
+The full route is better than either route alone, so deleting style memory is wrong. But the gradient competition is real: under FM-HF, disabling style memory raises target-HF subband gradient norm from `8.18e-2` to `1.38e-1`, while disabling target-HF raises head-HF gradient norm from `5.74e-1` to `3.06`. The model can route error through the generic memory/main HF heads rather than making the image-specific target-HF condition more predictive.
 
 ## Architecture Attempts From This Diagnosis
 
@@ -142,6 +168,42 @@ Full eval:
 
 Verdict: failed. Local direction alignment improved, but the final transport/image frontier still worsened.
 
+### 3. Training-only style-memory dropout
+
+Hypothesis:
+
+```text
+During training only:
+  with probability 0.25, replace style-memory tokens by learned null-memory tokens
+  keep target-HF image conditioning active
+During inference:
+  use the normal full route
+```
+
+This tested the route-competition diagnosis: style memory is useful as a coarse prior, but sometimes letting it dominate may prevent target-HF from learning image-specific residual style.
+
+Mechanism result was mixed:
+
+| metric | baseline | memory-dropout |
+|---|---:|---:|
+| mean cos(style-memory, desired) | 0.1599 | 0.0463 |
+| mean cos(target-HF, desired) | 0.1498 | 0.1561 |
+| mean cos(target-HF \| memory, desired) | 0.1555 | 0.1586 |
+| full route MSE improvement | 0.0576 | 0.0361 |
+| residual cos(residual, desired) | 0.1575 | 0.1606 |
+| residual MSE improvement | 0.0319 | 0.0334 |
+
+The target-HF residual became only slightly more aligned, while the learned style-memory route became much less target-aligned and the full route got worse.
+
+Full eval:
+
+| run | DINO-S | DINO-C | CLIP-S | LPIPS | off DINO-S |
+|---|---:|---:|---:|---:|---:|
+| baseline subband | 0.488624 | 0.798123 | 0.720880 | 0.296553 | 0.403917 |
+| memory-dropout | 0.486414 | 0.791995 | 0.719449 | 0.298218 | 0.402734 |
+
+Verdict: failed. The implementation and config were removed; probe/eval outputs are kept. Training-only memory dropout is too blunt: it weakens the useful coarse prior more than it improves the target-HF image-specific route.
+
 ## Current Theory
 
 The problem is not a single scalar bottleneck. Three facts must be true at the same time:
@@ -157,6 +219,7 @@ The failed attempts isolate these:
 | affine-delta | condition strength | direction and final metrics |
 | direct dir-aux | residual/desired cosine | final metrics |
 | WCT-direction | condition-direction cosine | final metrics |
+| memory-dropout | slight target-HF direction | style-memory prior and final metrics |
 
 So a probe improvement is necessary but not sufficient. The current subband residual remains best because it is small, continuous through the trajectory, and compatible with the learned HF heads, even though its image-specific condition component is weak.
 
@@ -177,5 +240,6 @@ Avoid as-is:
 - raw target-HF spatial maps;
 - cross-orientation code mixing;
 - target-current global/pool-stat codes.
+- training-only style-memory dropout as a blunt route regularizer.
 
 Next useful architecture must change the target-HF route while preserving the pretrained transport field, not merely add a larger residual or a locally aligned analytic correction.

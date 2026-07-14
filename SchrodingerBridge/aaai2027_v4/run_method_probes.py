@@ -18,7 +18,7 @@ if str(SRC) not in sys.path:
 
 from config_schema import ExperimentConfig
 from model import build_model_from_config
-from spectral620 import dwt2_haar
+from wavelet import dwt2_haar
 
 
 STYLE_NAMES = ["Early_Renaissance", "Impressionism", "Minimalism", "Rococo", "Ukiyo_e"]

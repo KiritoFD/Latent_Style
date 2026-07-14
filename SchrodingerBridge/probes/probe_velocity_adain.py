@@ -29,7 +29,7 @@ from model import build_model_from_config
 from utils.training import strip_compile_prefix
 from style_families import prune_state_dict_for_tokenizer_family
 from utils.dataset import AdaCUTLatentDataset
-from spectral620 import dwt2_haar, dwt2_lowpass, idwt2_haar
+from wavelet import dwt2_haar, dwt2_lowpass, idwt2_haar
 
 
 # ============================================================================

@@ -5,6 +5,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
 \usepackage{microtype}
+\usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{array}
@@ -74,15 +75,15 @@ The main paper directory is \texttt{aaai2027\_v4}. The supplement is aligned wit
 main-paper Table 1, Figure 5, and the method/ablation narrative current as of the AAAI v4
 packet. The formal source of record is:
 \begin{itemize}[leftmargin=1.5em,itemsep=0.2em]
-  \item \texttt{aaai2027\_v4/paper.tex}: main claims, tables, and captions.
-  \item \texttt{aaai2027\_v4/fig\_data/dino\_main.json}: DINO metric sidecar used by the figure scripts.
-  \item \texttt{aaai2027\_v4/fig\_data/method\_probes.json}: mechanism-probe sidecar.
-  \item \texttt{configs/exp\_brk\_a\_ll03\_10ep.json}: paper training configuration.
-  \item \texttt{exp/dino\_s\_break/brk\_a\_ll03\_10ep/config.json}: frozen merged run configuration.
-  \item \texttt{exp/dino\_s\_break/brk\_a\_ll03\_10ep/logs/training\_20260712\_214129.csv}: training log.
-  \item \texttt{exp/model\_probe/inf\_timing/generation\_only\_timing\_summary.json}: generation-only timing record.
-  \item \texttt{docs/model\_probe/target\_hf\_delta\_eval\_summary.json}: aggregate target-HF route probe metrics.
-  \item \texttt{docs/713/REPO\_REMOTE\_AUDIT\_2026-07-13.md}: internal audit used to sanitize public paths.
+  \item \path{aaai2027_v4/paper.tex}: main claims, tables, and captions.
+  \item \path{aaai2027_v4/fig_data/dino_main.json}: DINO metric sidecar used by the figure scripts.
+  \item \path{aaai2027_v4/fig_data/method_probes.json}: mechanism-probe sidecar.
+  \item \path{configs/exp_brk_a_ll03_10ep.json}: paper training configuration.
+  \item \path{exp/dino_s_break/brk_a_ll03_10ep/config.json}: frozen merged run configuration.
+  \item \path{exp/dino_s_break/brk_a_ll03_10ep/logs/training_20260712_214129.csv}: training log.
+  \item \path{exp/model_probe/inf_timing/generation_only_timing_summary.json}: generation-only timing record.
+  \item \path{docs/model_probe/target_hf_delta_eval_summary.json}: aggregate target-HF route probe metrics.
+  \item \path{docs/713/REPO_REMOTE_AUDIT_2026-07-13.md}: internal audit used to sanitize public paths.
 \end{itemize}
 
 All paths above are relative to either \texttt{<REPO\_ROOT>/SchrodingerBridge} or
@@ -129,7 +130,7 @@ Historical search runs & 65 & Earlier \texttt{630\_*}, \texttt{710\_*}, \texttt{
 Raw records may contain machine-specific cache paths. The public supplement normalizes
 all locations into four variables:
 \begin{center}
-\begin{tabular}{ll}
+\begin{tabularx}{\linewidth}{p{0.38\linewidth}X}
 \toprule
 Variable & Meaning \\
 \midrule
@@ -138,7 +139,7 @@ Variable & Meaning \\
 \texttt{<EXP\_ROOT>} & Experiment output/checkpoint root. \\
 \texttt{<CACHE\_ROOT>} & Evaluation feature-cache root. \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{center}
 No absolute paths, host addresses, machine names, or user names are needed to
 run the protocol.
@@ -201,16 +202,15 @@ method remains stable when high-frequency subbands are compressed by resolution.
 \paragraph{R5-WikiArt.}
 The broader WikiArt board evaluates style-family generalization. The full evaluation
 space is all 20 WikiArt families with \(20 \times 20 \times 30 = 12000\) ordered pairs.
-For compute-bounded baseline comparison in the main table, external baselines are
-reported on the same 750-pair subset, while the \weave{} checkpoint is also used to
-validate broader family coverage.
+For the cross-method main table, external baselines are reported on the same 750-pair
+subset, while the \weave{} checkpoint is also used to validate broader family coverage.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.88\linewidth]{supplement_figures/fig_dataset_boards.pdf}
 \caption{Evaluation-board construction. D5-512 and P2A-256 use 750-pair boards with
 identity rows retained. R5-WikiArt expands the style-family space to 20 by 20 styles;
-the main table uses the common compute-bounded subset when comparing all methods.}
+the main table uses the common 750-pair subset when comparing all methods.}
 \label{fig:supp-dataset-boards}
 \end{figure}
 
@@ -251,7 +251,7 @@ images per source style, for 750 ordered evaluations. For P2A-256, identity-styl
 are retained in the board definition but some external baselines only provide the 600
 off-diagonal transfers; this is why DINO sidecars record both \texttt{n\_images} and
 \texttt{n\_skipped}. For R5-WikiArt, the full board is 12000 pairs, while the main table
-uses the common 750-pair subset for compute-bounded cross-method comparison.
+uses the common 750-pair subset for cross-method comparison.
 
 \subsection{Data Preprocessing Contract}
 
@@ -287,7 +287,7 @@ All training and timing numbers reported in the paper come from a single consume
 GPU. The environment is described by role, not by machine identifier:
 
 \begin{center}
-\begin{tabular}{ll}
+\begin{tabularx}{\linewidth}{p{0.38\linewidth}X}
 \toprule
 Component & Value \\
 \midrule
@@ -296,7 +296,7 @@ Training precision & bfloat16 automatic mixed precision \\
 TF32 matmul & enabled \\
 Device count & 1 GPU \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{center}
 
 The method itself does not depend on a specific software stack version beyond the ranges listed above; any
@@ -318,12 +318,12 @@ heads for LL/LH/HL. The frozen VAE is reported separately in the main paper as
 \(903\mathrm{K}^{+84\mathrm{M}}\).
 
 \begin{center}
-\begin{tabular}{ll}
+\begin{tabularx}{\linewidth}{p{0.38\linewidth}X}
 \toprule
 Field & Paper configuration \\
 \midrule
-Config & \texttt{configs/exp\_brk\_a\_ll03\_10ep.json} \\
-Base config & \texttt{configs/710\_b0\_weave\_d5.json} \\
+Config & \path{configs/exp_brk_a_ll03_10ep.json} \\
+Base config & \path{configs/710_b0_weave_d5.json} \\
 Seed & 42 \\
 Epochs & 10 \\
 Batch size & 96 \\
@@ -340,7 +340,7 @@ Torch compile & disabled \\
 Workers & 0 \\
 Checkpoint interval & every 5 epochs \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{center}
 
 The structure-aligned target is constructed in the wavelet basis. The LL target is a mild
@@ -359,9 +359,10 @@ audited runs.
 The frozen merged configuration for the paper run resolves the short public config
 into the following relevant fields:
 
-\begin{center}
+\begin{table*}[t]
+\centering
 \footnotesize
-\begin{tabularx}{\linewidth}{p{0.34\linewidth}p{0.20\linewidth}X}
+\begin{tabularx}{\textwidth}{p{0.30\textwidth}p{0.16\textwidth}X}
 \toprule
 Field & Value & Relevance \\
 \midrule
@@ -384,8 +385,10 @@ Field & Value & Relevance \\
 \texttt{bridge.ll\_partial\_alpha} & 0.3 & Mild LL style-statistics migration. \\
 \bottomrule
 \end{tabularx}
+\caption{Resolved fields from the frozen paper configuration.}
+\label{tab:supp-resolved-config}
 \normalsize
-\end{center}
+\end{table*}
 
 \subsection{Training Log Audit}
 
@@ -623,7 +626,8 @@ checkpoint from \texttt{brk\_a\_ll03\_10ep} and the final inference setting used
 the reported main metric point.
 
 \begin{center}
-\begin{tabular}{ll}
+\footnotesize
+\begin{tabularx}{\linewidth}{p{0.42\linewidth}X}
 \toprule
 Inference field & Value \\
 \midrule
@@ -636,7 +640,8 @@ Style extrapolation & \(\alpha_{\mathrm{extrap}}=0.1\) \\
 Generated-image count for timing & 750 \\
 Timing column & generation only, metrics excluded \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
+\normalsize
 \end{center}
 
 \subsection{Evaluation Runtime Anatomy}
@@ -649,14 +654,16 @@ uses the separate generation-only timing record, which excludes metric computati
 therefore the correct cross-method speed comparison.
 
 \begin{center}
-\begin{tabular}{lrr}
+\footnotesize
+\begin{tabularx}{\linewidth}{Xrr}
 \toprule
 Run & Wall time (s) & Network generation (s) \\
 \midrule
 \texttt{brk\_a\_ll03\_10ep} & 94.63 & 53.57 \\
 \texttt{target\_hf\_subband\_ft6} & 106.25 & 65.25 \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
+\normalsize
 \end{center}
 
 \begin{figure}[t]
@@ -675,8 +682,10 @@ inference-time endpoint AdaIN strength. This is important for reproducibility: t
 training run does not need to be repeated to reproduce the \texttt{WEAVE-m},
 \texttt{WEAVE-s}, or \texttt{WEAVE-q} diagnostic points.
 
-\begin{center}
-\begin{tabular}{lrrrrp{0.35\linewidth}}
+\begin{table*}[t]
+\centering
+\footnotesize
+\begin{tabularx}{\textwidth}{lrrrrX}
 \toprule
 Variant & Scale & \dinos{} & \clips{} & LPIPS & Use \\
 \midrule
@@ -684,8 +693,10 @@ Variant & Scale & \dinos{} & \clips{} & LPIPS & Use \\
 \texttt{WEAVE-s} & 1.6 & 0.4845 & 0.7179 & 0.2867 & Peak average of DINO-S and CLIP-S. \\
 \texttt{WEAVE-q} & 2.0 & 0.4859 & 0.7075 & 0.2583 & Main table D5 row emphasizing max DINO-S with strong content preservation. \\
 \bottomrule
-\end{tabular}
-\end{center}
+\end{tabularx}
+\caption{Inference-only operating points produced from the same trained checkpoint.}
+\label{tab:supp-inference-variants}
+\end{table*}
 
 The audited generation-only timing on a single RTX 3060 (12\,GB) is:
 
@@ -724,10 +735,46 @@ generated image and the source image.
 LPIPS uses the AlexNet backbone and is reported as a lower-is-better content distance.
 Radar plots display \(1-\mathrm{LPIPS}\) so all axes point outward for better values.
 
-\paragraph{Identity calibration.}
-The Identity row is not removed. For style metrics, it is the no-op style floor: the
-unchanged source image evaluated against the requested target style. For content metrics,
-it is the ceiling: LPIPS is 0 and \dinoc{} is 1 by construction.
+\subsection{IDT--TGT Evaluation Guideline}
+
+The guideline adds two source-independent reference outputs to the ordinary metric table.
+For a request with source image $x$ and target style $s$, define
+\begin{equation}
+  y_{\mathrm{IDT}}(x,s)=x,
+  \qquad
+  y_{\mathrm{TGT}}(x,s)=r_s,
+\end{equation}
+where $r_s$ is a fixed image from the held-out reference pool for style $s$. The D5
+implementation selects the first image in the deterministic reference order and reuses it
+for every source paired with that target style. Thus TGT depends on the requested style but
+not on source content. It is an evaluation control, not an input to \weave{} or any baseline.
+
+\paragraph{Why two references are needed.}
+IDT represents a no-op: it preserves all source content but makes no requested edit. A
+method should therefore score above IDT on \dinos{} and \clips{} before a low LPIPS can be
+read as successful transfer. TGT represents the opposite extreme: it has the requested
+style but unrelated content. A content-preserving method should have lower LPIPS and higher
+\dinoc{} than TGT. The intuitive acceptable region is therefore bracketed by
+\begin{equation}
+\begin{aligned}
+M_{\mathrm{style}}(y)&>M_{\mathrm{style}}(y_{\mathrm{IDT}}),\\
+\mathrm{LPIPS}(y,x)&<\mathrm{LPIPS}(y_{\mathrm{TGT}},x),\\
+\mathrm{DINO\text{-}C}(y,x)&>\mathrm{DINO\text{-}C}(y_{\mathrm{TGT}},x).
+\end{aligned}
+\end{equation}
+We inspect the inequalities separately and do not combine them into a weighted score.
+
+\paragraph{Interpretation and scope.}
+IDT and TGT are empirical anchors, not mathematical bounds: a generated image may score
+outside either reference because the metrics are imperfect. Crossing IDT in the wrong
+direction indicates style suppression under that metric. Moving beyond TGT in content
+distance identifies a content-loss regime relative to a deliberately unrelated target-style
+image. This is a prompt for visual inspection, not a verdict on the method outside the
+current board and metric. On D5-512, IDT
+is (\dinos{} 0.419, \clips{} 0.693, LPIPS 0, \dinoc{} 1), while TGT is
+(1.000, 0.874, 0.733, 0.176). TGT reaches \dinos{} 1.000 because the selected reference is
+part of the same target-style feature pool used by that metric; this value is expected and
+should not be read as model performance.
 
 \subsection{Metric Cache and Determinism}
 
@@ -790,6 +837,7 @@ Method & \multicolumn{4}{c}{D5-512} & \multicolumn{4}{c}{P2A-256} & \multicolumn
 & D-S & C-S & LPIPS & D-C & D-S & C-S & LPIPS & D-C & D-S & C-S & LPIPS & D-C & & min & 750 imgs \\
 \midrule
 Identity & 0.419 & 0.693 & 0.000 & 1.000 & 0.416 & 0.663 & 0.000 & 1.000 & 0.433 & 0.731 & 0.000 & 1.000 & 0 & free & 0 s \\
+Target Style & 1.000 & 0.874 & 0.733 & 0.176 & 1.000 & 0.835 & 0.800 & 0.169 & 1.000 & 0.796 & 0.747 & 0.230 & 0 & free & 0 s \\
 SD-Turbo & 0.484 & 0.693 & 0.003 & 0.922 & 0.341 & 0.674 & 0.603 & 0.279 & 0.505 & 0.767 & 0.449 & 0.538 & 0$^{+1.1B}$ & free & 5 m \\
 StyleAligned & 0.675 & 0.780 & 0.869 & 0.239 & 0.612 & 0.768 & 0.786 & 0.310 & 0.649 & 0.824 & 0.829 & 0.315 & 0$^{+1.1B}$ & free & 77 m \\
 Z-STAR & 0.449 & 0.784 & 0.347 & 0.549 & 0.514 & 0.786 & 0.332 & 0.526 & 0.514 & 0.822 & 0.384 & 0.526 & 0$^{+1.1B}$ & free & 3 h \\
@@ -815,7 +863,7 @@ inversion for readability, while annotations show raw values.}
 The D5-512 claim is a balanced Pareto claim rather than a winner-on-every-axis claim:
 StyleAligned reaches higher raw \dinos{} but with severe content loss, while \weave{}
 keeps low LPIPS, high \dinoc{}, sub-million trainable parameters, and a 3-minute training
-budget on one RTX 3060.
+time on one RTX 3060.
 
 \begin{figure}[t]
 \centering

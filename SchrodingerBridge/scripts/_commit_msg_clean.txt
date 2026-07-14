@@ -1,0 +1,7 @@
+refactor: clean baseline trained and verified after ASG removal
+
+- Train refactor_clean_baseline (5ep, batch=24, ASG-free code)
+- Results: CLIP-S=0.7272 LPIPS=0.3431 DINO-S=0.4829 DINO-C=0.7552
+- Performance matches old baseline within noise (CLIP-S +0.0011, DINO-S -0.0014)
+- Confirms ASG removal is lossless for codebase simplification
+- Add training/eval/sweep scripts for parameter exploration

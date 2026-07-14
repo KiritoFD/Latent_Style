@@ -12,8 +12,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 import torch
 from config_schema import ModelConfig, BridgeConfig
-from spectral620 import dwt2_haar_multi_decompose, idwt2_haar_multi_reconstruct
-from spectral_bridge620 import build_spectral_ode_bridge_from_config
+from wavelet import dwt2_haar_multi_decompose, idwt2_haar_multi_reconstruct
+from model import build_model_from_config
 
 
 def check_pr():
@@ -57,7 +57,7 @@ def check_integrate_runs():
     cfg.style_extrap_alpha = 0.1
     cfg.style_attn_mode = "softmax"
     bridge_cfg = BridgeConfig()
-    model = build_spectral_ode_bridge_from_config(cfg, bridge_cfg=bridge_cfg)
+    model = build_model_from_config(cfg, bridge_cfg=bridge_cfg)
     model.eval()
 
     x = torch.randn(2, 4, 64, 64)
@@ -90,7 +90,7 @@ def check_modes_differ():
     cfg_spatial.style_extrap_alpha = 0.1
     cfg_spatial.style_attn_mode = "softmax"
     cfg_spatial.endpoint_adain_mode = "spatial_fiber"
-    model_spatial = build_spectral_ode_bridge_from_config(cfg_spatial, bridge_cfg=BridgeConfig())
+    model_spatial = build_model_from_config(cfg_spatial, bridge_cfg=BridgeConfig())
     model_spatial.eval()
     with torch.no_grad():
         out_spatial = model_spatial.integrate_transport(
@@ -106,7 +106,7 @@ def check_modes_differ():
     cfg_per.style_extrap_alpha = 0.1
     cfg_per.style_attn_mode = "softmax"
     cfg_per.endpoint_adain_mode = "per_subband"
-    model_per = build_spectral_ode_bridge_from_config(cfg_per, bridge_cfg=BridgeConfig())
+    model_per = build_model_from_config(cfg_per, bridge_cfg=BridgeConfig())
     model_per.eval()
     with torch.no_grad():
         out_per = model_per.integrate_transport(

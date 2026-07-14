@@ -96,8 +96,10 @@ _P2A_RE = re.compile(r"^(?P<src>[a-zA-Z]+)_(?P<id>.+?)_to_(?P<tgt>[a-zA-Z]+)$")
 
 
 def parse_p2a(stem):
-    """'{src_domain}_{id}_to_{tgt_domain}' e.g. cezanne_00057_to_Hayao."""
-    m = _P2A_RE.match(stem)
+    """'{src_domain}_{id}_to_{tgt_domain}' e.g. cezanne_00057_to_Hayao.
+    Also handles double-underscore variant '{src}__{id}__to__{tgt}' (e.g. StyTR-2 output)."""
+    normalized = stem.replace("__", "_")
+    m = _P2A_RE.match(normalized)
     if not m:
         return None
     return m.group("src"), m.group("id"), m.group("tgt")

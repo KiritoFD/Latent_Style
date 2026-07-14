@@ -1,0 +1,25 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "structure_aligned_target": true,
+    "ll_partial_style_enabled": true,
+    "ll_partial_alpha": 0.2,
+    "ll_partial_mode": "adain"
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 10,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_i_ll02_10ep"
+  },
+  "ablation": {
+    "name": "brk_i_ll02_10ep",
+    "axis": "dino_s_break_round3",
+    "stage": "brk_round3",
+    "notes": "LL AdaIN α=0.2 + 10ep. Round2 showed α=0.3 is optimal (0.4832), α=0.4 same, α=0.5 worse. Try milder α=0.2 — maybe less LL disruption gives better style-content balance."
+  }
+}

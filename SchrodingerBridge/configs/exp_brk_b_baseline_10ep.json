@@ -1,0 +1,22 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "structure_aligned_target": true
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 10,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_b_baseline_10ep"
+  },
+  "ablation": {
+    "name": "brk_b_baseline_10ep",
+    "axis": "dino_s_break",
+    "stage": "brk_round1",
+    "notes": "Pure baseline (SAT, LL locked) + 10 epochs. Isolates the effect of longer training vs 5ep baseline. If DINO-S>0.485, training duration alone is the structural lever."
+  }
+}

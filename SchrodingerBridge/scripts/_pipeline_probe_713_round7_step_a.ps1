@@ -1,0 +1,53 @@
+# Pipeline: Round 7 Step A — re-eval target_hf_subband_ft6 with AdaIN=2.0 (main-table protocol)
+# Goal: fair comparison against brk_a_ll03_10ep baseline (DINO-S=0.485935)
+$ErrorActionPreference = "Continue"
+$Root = "I:\Github\Latent_Style\SchrodingerBridge"
+$Py = "C:\Program Files\Python312\python.exe"
+Set-Location $Root
+$env:PYTHONIOENCODING = "utf-8"
+
+$TestDir = "I:\datasets\wikiart_distinct5_samam_512_classview\test"
+$CacheDir = "$Root\exp\eval_cache"
+$HfCache = "C:\Users\Administrator\.cache\huggingface\hub"
+
+$Name = "target_hf_subband_ft6_adain20"
+$Ckpt = "$Root\exp\model_probe\target_hf_subband_ft6\epoch_0006.pt"
+$EvalDir = "$Root\exp\model_probe\target_hf_subband_ft6\full_eval\adain20"
+$LogDir = "$Root\exp\model_probe\target_hf_subband_ft6\logs"
+New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+
+if (-not (Test-Path $Ckpt)) {
+    Write-Output "=== [$Name] CHECKPOINT MISSING: $Ckpt ==="
+    exit 1
+}
+Write-Output "=== [$Name] EVAL START $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ==="
+Write-Output "=== [$Name] Checkpoint: $Ckpt ==="
+$EvalLog = "$LogDir\eval_adain20.log"
+& $Py -u "$Root\src\utils\run_evaluation.py" `
+    --config "$Root\configs\eval_adain_20.json" `
+    --checkpoint $Ckpt `
+    --output $EvalDir `
+    --save_generated_images `
+    --batch_size 2 `
+    --clip_hf_cache_dir $HfCache 2>&1 > $EvalLog
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "=== [$Name] EVAL FAILED exit=$LASTEXITCODE ==="
+    exit 1
+}
+Write-Output "=== [$Name] EVAL DONE $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ==="
+
+Write-Output "=== [$Name] DINO START $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ==="
+$DinoLog = "$LogDir\dino_adain20.log"
+& $Py -u "$Root\_compute_dino.py" `
+    --images_dir "$EvalDir\images" `
+    --test_dir $TestDir `
+    --dataset wikiart `
+    --output "$EvalDir\dino.json" `
+    --hf_cache $HfCache `
+    --max_refs 30 2>&1 > $DinoLog
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "=== [$Name] DINO FAILED exit=$LASTEXITCODE ==="
+    exit 1
+}
+Write-Output "=== [$Name] DINO DONE $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ==="
+Write-Output "=== [$Name] COMPLETE $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ==="
