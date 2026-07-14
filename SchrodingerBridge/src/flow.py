@@ -9,6 +9,7 @@ redundant with FM). Dead zero-placeholder metrics removed. Unused attrs removed.
 """
 from __future__ import annotations
 
+import math
 from typing import Dict
 
 import torch
@@ -105,6 +106,31 @@ class FlowMatchingObjective:
         )
         self.semantic_local_adain_tau = float(
             getattr(self.bridge_cfg, "semantic_local_adain_tau", 0.1)
+        )
+        # Round10 Semantic Patch-Match — hard route, original brush strokes preserved
+        # Find NN style position per content position via LL cosine similarity,
+        # directly transport style HF (no averaging — sharper than local AdaIN).
+        self.semantic_patch_match_enabled = bool(
+            getattr(self.bridge_cfg, "semantic_patch_match_enabled", False)
+        )
+        self.semantic_patch_match_alpha = float(
+            getattr(self.bridge_cfg, "semantic_patch_match_alpha", 0.5)
+        )
+        # Round10 Semantic Sinkhorn OT — regularized optimal transport (soft matching)
+        # Solves Patch-Match many-to-one collapse: enforces uniform style marginals,
+        # every style position used equally. Sweet spot between Local AdaIN (soft, K=N)
+        # and Patch-Match (hard, K=1).
+        self.semantic_sinkhorn_match_enabled = bool(
+            getattr(self.bridge_cfg, "semantic_sinkhorn_match_enabled", False)
+        )
+        self.semantic_sinkhorn_match_alpha = float(
+            getattr(self.bridge_cfg, "semantic_sinkhorn_match_alpha", 0.5)
+        )
+        self.semantic_sinkhorn_match_eps = float(
+            getattr(self.bridge_cfg, "semantic_sinkhorn_match_eps", 0.05)
+        )
+        self.semantic_sinkhorn_match_iters = int(
+            getattr(self.bridge_cfg, "semantic_sinkhorn_match_iters", 20)
         )
 
     def _sample_t(self, content: torch.Tensor) -> torch.Tensor:
@@ -413,6 +439,147 @@ class FlowMatchingObjective:
         blended = (1.0 - alpha) * c_f + alpha * matched
         return blended.to(dtype=content_hf.dtype)
 
+    def _semantic_patch_match(
+        self,
+        content_hf: torch.Tensor,
+        style_hf: torch.Tensor,
+        ll_content: torch.Tensor,
+        ll_style: torch.Tensor,
+        alpha: float,
+    ) -> torch.Tensor:
+        """Round10 Semantic Patch-Match — hard route, sharpest brush strokes.
+
+        Theory (user spec, 方案一):
+            Softmax attention averages style textures across regions, causing
+            high-frequency washout. Hard NN matching preserves original brush
+            strokes — no averaging, no washout.
+
+        Math:
+            D[i,j] = cos(LL_c[i], LL_s[j])                    # [B, HW, HW]
+            j*[i] = argmax_j D[i,j]                            # [B, HW]
+            target_HF[i] = HF_s[j*[i]]                         # [B, C, HW]
+            blended = (1-alpha)*hf_c + alpha*target_HF
+
+        Args:
+            content_hf: [B, C, H, W] content HF subband
+            style_hf: [B, C, H, W] style HF subband (batch=1 broadcasts)
+            ll_content: [B, C_ll, H, W] content LL subband (semantic descriptor)
+            ll_style: [B, C_ll, H, W] style LL subband (semantic descriptor)
+            alpha: blending strength (0=keep content, 1=full patch-match)
+        """
+        c_f = content_hf.float()
+        s_f = style_hf.float().to(device=c_f.device)
+        ll_c = ll_content.float()
+        ll_s = ll_style.float().to(device=c_f.device)
+        B, C, H, W = c_f.shape
+        N = H * W
+        # Broadcast style batch=1
+        if s_f.shape[0] == 1 and B > 1:
+            s_f = s_f.expand(B, -1, -1, -1)
+        if ll_s.shape[0] == 1 and B > 1:
+            ll_s = ll_s.expand(B, -1, -1, -1)
+        # Flatten to [B, C, N]
+        c_flat = c_f.reshape(B, C, N)
+        s_flat = s_f.reshape(B, C, N)
+        # Semantic descriptors: normalize LL per position
+        ll_c_flat = ll_c.reshape(B, -1, N)
+        ll_s_flat = ll_s.reshape(B, -1, N)
+        ll_c_norm = ll_c_flat / (ll_c_flat.norm(dim=1, keepdim=True).clamp_min(1e-6))
+        ll_s_norm = ll_s_flat / (ll_s_flat.norm(dim=1, keepdim=True).clamp_min(1e-6))
+        # Cosine similarity [B, N, N]
+        sim = torch.bmm(ll_c_norm.transpose(1, 2), ll_s_norm)
+        # Hard route: argmax over style positions
+        idx = sim.argmax(dim=2)  # [B, N]
+        # Gather style HF at matched positions: s_flat.gather(2, idx expanded)
+        matched_flat = s_flat.gather(2, idx.unsqueeze(1).expand(-1, C, -1))  # [B, C, N]
+        matched = matched_flat.reshape(B, C, H, W)
+        blended = (1.0 - alpha) * c_f + alpha * matched
+        return blended.to(dtype=content_hf.dtype)
+
+    def _sinkhorn_ot_match(
+        self,
+        content_hf: torch.Tensor,
+        style_hf: torch.Tensor,
+        ll_content: torch.Tensor,
+        ll_style: torch.Tensor,
+        alpha: float,
+        eps: float,
+        iters: int,
+    ) -> torch.Tensor:
+        """Round10 Semantic Sinkhorn OT — regularized optimal transport (user spec 方案一).
+
+        Theory:
+            Hard NN (Patch-Match) suffers from many-to-one collapse: multiple content
+            positions may match the same style position, causing repetitive blocks.
+            Sinkhorn OT enforces uniform marginal probabilities, ensuring every style
+            position is used equally. Sweet spot between Local AdaIN (soft, K=N) and
+            Patch-Match (hard, K=1). When eps→0, Pi approaches a permutation matrix.
+
+        Math (log-domain stabilized Sinkhorn):
+            C[i,j] = 1 - cos(LL_c[i], LL_s[j])         # cost matrix [B, N, N]
+            log_K = -C / eps                            # Gibbs kernel (log domain)
+            # Sinkhorn iterations in log domain (uniform marginals a=b=1/N):
+            log_u = -logsumexp_j(log_K + log_v)         # row update
+            log_v = -logsumexp_i(log_K + log_u)         # col update
+            log_Pi = log_u + log_K + log_v              # transport plan
+            # Pi is doubly-stochastic: row sums = col sums = 1/N
+            # Scale to row-stochastic so target_HF[i] = weighted_avg(HF_s):
+            Pi_row = N * Pi                              # each row sums to 1
+            target_HF = Pi_row @ HF_s
+            blended = (1-alpha)*hf_c + alpha*target_HF
+
+        Args:
+            content_hf: [B, C, H, W] content HF subband
+            style_hf: [B, C, H, W] style HF subband (batch=1 broadcasts)
+            ll_content: [B, C_ll, H, W] content LL subband (semantic descriptor)
+            ll_style: [B, C_ll, H, W] style LL subband (semantic descriptor)
+            alpha: blending strength (0=keep content, 1=full OT-transported)
+            eps: entropic regularization (smaller=sharper, →permutation; larger=softer)
+            iters: Sinkhorn iterations (20 is sufficient for N=256)
+        """
+        c_f = content_hf.float()
+        s_f = style_hf.float().to(device=c_f.device)
+        ll_c = ll_content.float()
+        ll_s = ll_style.float().to(device=c_f.device)
+        B, C, H, W = c_f.shape
+        N = H * W
+        # Broadcast style batch=1
+        if s_f.shape[0] == 1 and B > 1:
+            s_f = s_f.expand(B, -1, -1, -1)
+        if ll_s.shape[0] == 1 and B > 1:
+            ll_s = ll_s.expand(B, -1, -1, -1)
+        # Flatten to [B, C, N]
+        c_flat = c_f.reshape(B, C, N)
+        s_flat = s_f.reshape(B, C, N)
+        # Semantic descriptors: normalize LL per position
+        ll_c_flat = ll_c.reshape(B, -1, N)
+        ll_s_flat = ll_s.reshape(B, -1, N)
+        ll_c_norm = ll_c_flat / (ll_c_flat.norm(dim=1, keepdim=True).clamp_min(1e-6))
+        ll_s_norm = ll_s_flat / (ll_s_flat.norm(dim=1, keepdim=True).clamp_min(1e-6))
+        # Cost matrix C[i,j] = 1 - cos(LL_c[i], LL_s[j])
+        sim = torch.bmm(ll_c_norm.transpose(1, 2), ll_s_norm)  # [B, N, N]
+        cost = 1.0 - sim  # [B, N, N]
+        # Log-domain stabilized Sinkhorn (uniform marginals a=b=1/N)
+        log_K = -cost / max(eps, 1e-6)  # [B, N, N]
+        log_u = torch.zeros(B, N, 1, device=c_f.device)
+        log_v = torch.zeros(B, N, 1, device=c_f.device)
+        for _ in range(max(1, iters)):
+            # Row update: log_u = log_a - logsumexp_j(log_K + log_v)
+            # For uniform a=1/N, log_a = -log(N)
+            log_u = -math.log(N) - torch.logsumexp(log_K + log_v.transpose(1, 2), dim=2, keepdim=True)
+            # Col update: log_v = log_b - logsumexp_i(log_K + log_u)
+            log_v = -math.log(N) - torch.logsumexp(log_K.transpose(1, 2) + log_u.transpose(1, 2), dim=2, keepdim=True)
+        # Transport plan: Pi = diag(u) @ K @ diag(v) → log_Pi = log_u + log_K + log_v
+        log_Pi = log_u.transpose(1, 2) + log_K + log_v.transpose(1, 2)  # [B, N, N]
+        Pi = torch.exp(log_Pi)
+        # Pi is doubly-stochastic (row/col sums ≈ 1/N). Scale to row-stochastic (row sums = 1).
+        Pi_row = Pi * N  # [B, N, N]
+        # target_HF[b,c,n] = sum_j Pi_row[b,n,j] * s_flat[b,c,j]
+        matched_flat = torch.bmm(Pi_row, s_flat.transpose(1, 2)).transpose(1, 2)  # [B, C, N]
+        matched = matched_flat.reshape(B, C, H, W)
+        blended = (1.0 - alpha) * c_f + alpha * matched
+        return blended.to(dtype=content_hf.dtype)
+
     def _phase_anchored_hf(
         self, content_hf: torch.Tensor, style_hf: torch.Tensor
     ) -> torch.Tensor:
@@ -536,6 +703,25 @@ class FlowMatchingObjective:
                 lh_t = self._semantic_local_adain(lh_c, lh_t, ll_c, ll_t, a, tau)
                 hl_t = self._semantic_local_adain(hl_c, hl_t, ll_c, ll_t, a, tau)
                 hh_t = self._semantic_local_adain(hh_c, hh_t, ll_c, ll_t, a, tau)
+            # Round10 Semantic Patch-Match — hard NN route, sharpest brush strokes
+            # Complementary to local AdaIN: hard route preserves original texture
+            # without averaging. Each content position gets the most semantically
+            # similar style position's HF directly (no statistical aggregation).
+            if self.semantic_patch_match_enabled:
+                a = self.semantic_patch_match_alpha
+                lh_t = self._semantic_patch_match(lh_c, lh_t, ll_c, ll_t, a)
+                hl_t = self._semantic_patch_match(hl_c, hl_t, ll_c, ll_t, a)
+                hh_t = self._semantic_patch_match(hh_c, hh_t, ll_c, ll_t, a)
+            # Round10 Semantic Sinkhorn OT — regularized optimal transport (soft matching)
+            # Solves Patch-Match many-to-one collapse: enforces uniform style marginals.
+            # Sweet spot: sharper than Local AdaIN, softer than Patch-Match.
+            if self.semantic_sinkhorn_match_enabled:
+                a = self.semantic_sinkhorn_match_alpha
+                eps = self.semantic_sinkhorn_match_eps
+                iters = self.semantic_sinkhorn_match_iters
+                lh_t = self._sinkhorn_ot_match(lh_c, lh_t, ll_c, ll_t, a, eps, iters)
+                hl_t = self._sinkhorn_ot_match(hl_c, hl_t, ll_c, ll_t, a, eps, iters)
+                hh_t = self._sinkhorn_ot_match(hh_c, hh_t, ll_c, ll_t, a, eps, iters)
             # Round8 brk_ab: HF over-stylization — beta>1.0 放大 HF 风格差异
             # target_hf = (1-beta)*hf_c + beta*hf_t = hf_c + beta*(hf_t - hf_c)
             # beta=1.0: 标准替换; beta>1.0: 放大风格差异, 增强纹理注入
