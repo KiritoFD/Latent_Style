@@ -439,9 +439,12 @@ SD-Turbo & 0.484 & 0.693$^{\dagger}$ & 0.003 & 0.922 & 0.341$^{\dagger}$ & 0.674
 StyleAligned & 0.675 & 0.780 & 0.869$^{\ddagger}$ & 0.239 & 0.612 & 0.768 & 0.786 & 0.310 & 0.649 & 0.824 & 0.829$^{\ddagger}$ & 0.315 & 0$^{+1.1B}$ & free & 77\,m \\
 Z-STAR & 0.449 & 0.784 & 0.347 & 0.549 & 0.514 & 0.786 & 0.332 & 0.526 & 0.514 & 0.822 & 0.384 & 0.526 & 0$^{+1.1B}$ & free & 3\,h\\
 StyleShot & 0.563 & 0.787 & 0.765$^{\ddagger}$ & 0.377 & 0.552 & 0.774 & 0.713 & 0.335 & 0.484 & 0.787 & 0.795$^{\ddagger}$ & 0.380 & 0$^{+2.4B}$ & free & 5.1\,h \\
+StyleID & 0.548 & 0.822 & 0.552 & 0.416 & 0.256$^{\dagger}$ & 0.648$^{\dagger}$ & 0.691 & 0.147$^{\ddagger}$ & 0.551 & -- & -- & 0.385 & 0$^{+1.1B}$ & free & -- \\
 CUT & 0.471 & 0.714 & 0.374 & 0.795 & 0.539 & 0.754 & 0.494 & 0.702 & 0.441 & 0.710$^{\dagger}$ & 0.620 & 0.795 & 7.0M & 322.6 & 5\,m \\
 SaMST & 0.271$^{\dagger}$ & 0.618$^{\dagger}$ & 0.749$^{\ddagger}$ & 0.145$^{\ddagger}$ & 0.501 & 0.709 & 0.398 & 0.838 & 0.461 & 0.667$^{\dagger}$ & 0.612 & 0.615 & 8.3M & 39.5 & 10\,m \\
 SaMam & 0.477 & 0.582$^{\dagger}$ & \underline{0.243} & 0.812 & 0.505 & 0.677 & \underline{0.205} & 0.870 & 0.503 & 0.712$^{\dagger}$ & \underline{0.227} & 0.925 & 8.8M & 436.0 & 17.6\,m \\
+StyTR-2 & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+AesPA-Net & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
 Seedream 4.5 & 0.486 & 0.720 & 0.477 & 0.739 & 0.517 & 0.752 & 0.227 & 0.785 & 0.504 & 0.742 & 0.486 & 0.725 & -- & API & -- \\
 Latent-WCT & 0.362$^{\dagger}$ & 0.673$^{\dagger}$ & 0.441 & 0.559 & 0.338$^{\dagger}$ & 0.738 & 0.585 & 0.386 & 0.414$^{\dagger}$ & 0.710$^{\dagger}$ & 0.444 & 0.553 & 0 & free & 18\,s \\
 \midrule
@@ -464,7 +467,7 @@ training and 150 test images per style; its $5{\times}5{\times}30$ board has 750
 P2A-256 tests lower resolution, and R5 expands to all 20 WikiArt families (12{,}000
 requests). DINO-S, our primary style metric, compares output DINOv2 features with the
 target-style pool; CLIP-S is secondary. DINO-C and LPIPS measure source retention.
-Table~\ref{tab:main} compares ten representative baselines under all four views.
+Table~\ref{tab:main} compares twelve representative baselines under all four views.
 
 IDT copies the source and TGT returns a fixed source-independent target-style image. Table
 symbols mark values outside the resulting bracket for that board and metric, not global
@@ -529,7 +532,7 @@ wavelet statistics alone do not replace learned transport.
 \subsection{Mechanistic Ablations}
 \label{sec:ablation}
 
-Table~\ref{tab:ablation} compares variants from one five-epoch checkpoint. Removing AdaIN
+Table~\ref{tab:ablation} compares matched diagnostic variants on D5. Removing AdaIN
 or flow matching shifts the result toward source preservation, while removing cross-attention
 changes every metric by at most 0.010. One Euler step and strong extrapolation degrade both
 objectives, identifying the active paths and their stable operating range.
@@ -557,12 +560,12 @@ extrap $=1.0$ & 0.704 & 0.591 & 0.411 & 0.616 \\
 num\_steps $=1$ & 0.709 & 0.476 & 0.376 & 0.448 \\
 \bottomrule
 \end{tabular}
-\caption{Ablation on D5 (5 epochs, 750 pairs). The main result uses 10 epochs and a 0.3 LL target blend. Changes below 0.002 CLIP-S are omitted.}
+\caption{Ablation on D5 (750 pairs). The reported main model uses 10 epochs and a 0.3 LL target blend. Changes below 0.002 CLIP-S are omitted.}
 \label{tab:ablation}
 \end{table}
 
 Setting $\lambda_{LL}=0$ moves the model toward the source, so weak LL supervision is useful
-for coarse tone. Remaining low-impact sweeps are reported in the supplement.
+for coarse tone. Additional diagnostic sweeps are reported in the supplement.
 
 
 
