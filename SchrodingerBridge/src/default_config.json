@@ -501,9 +501,9 @@
     "full_eval_convergence_flat_eps_style": 0.005,
     "full_eval_convergence_flat_eps_lpips": 0.018,
     "full_eval_convergence_min_epochs": 0,
-    "test_image_dir": "$index:samam_512_test",
-    "full_eval_cache_dir": "exp/eval_cache",
-    "full_eval_clip_hf_cache_dir": "exp/eval_cache/hf",
+    "test_image_dir": "data/test",
+    "full_eval_cache_dir": "runs/cache",
+    "full_eval_clip_hf_cache_dir": "runs/cache/hf",
     "full_eval_clip_backend": "hf",
     "full_eval_hf_clip_skip_processor": false,
     "full_eval_disable_lpips": false,
@@ -517,7 +517,7 @@
     "start_epoch": 0
   },
   "data": {
-    "data_root": "$index:samam_512_train",
+    "data_root": "data/train",
     "style_subdirs": ["Early_Renaissance", "Impressionism", "Minimalism", "Rococo", "Ukiyo_e"],
     "allow_hflip": true,
     "identity_ratio": null,
@@ -528,7 +528,7 @@
     "virtual_length_multiplier": 1.0,
     "content_style_sampling_weights": null,
     "target_style_sampling_weights": null,
-    "pairing_cache_path": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "pairing_cache_path": "data/train/.latent_cache/prototype_pairing_top8.pt",
     "pairing_cache_topk": 8,
     "pairing_cache_active_topk": 0,
     "pairing_cache_sample_mode": "rank_stratified",
@@ -544,13 +544,13 @@
     "pairing_cache_cross_only": true,
     "style_caption_path": "",
     "latent_cache_mode": "packed",
-    "latent_cache_dir": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/packed",
+    "latent_cache_dir": ".latent_cache/packed",
     "dino_cache_path": "",
     "dino_cache_required": false,
     "dino_bank_limit_per_style": 8
   },
   "checkpoint": {
-    "save_dir": "exp/dino_s_break/brk_a_ll03_15ep",
+    "save_dir": "runs/submission/repro_brk_a_15ep",
     "resume_checkpoint": ""
   },
   "full_eval": {

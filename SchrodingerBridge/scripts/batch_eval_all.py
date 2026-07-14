@@ -178,10 +178,10 @@ def run_dino_for_epoch(eval_dir: Path, test_dir: Path, model, device: str, batch
 def main():
     parser = argparse.ArgumentParser(description="Batch eval all checkpoints")
     parser.add_argument("--checkpoint_dir", required=True, help="Directory with epoch_XXXX.pt files")
-    parser.add_argument("--test_dir", required=True, help="Test image directory")
-    parser.add_argument("--config", default="default_config.json", help="Config for eval params")
+    parser.add_argument("--test_dir", default="", help="Test image directory; defaults to the resolved training config path")
+    parser.add_argument("--config", default="src/default_config.json", help="Config for eval params")
     parser.add_argument("--dino_model_name", default="facebook/dinov2-small")
-    parser.add_argument("--dino_cache_dir", default="I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache/hf")
+    parser.add_argument("--dino_cache_dir", default="", help="DINO cache; defaults to training.full_eval_clip_hf_cache_dir")
     parser.add_argument("--dino_batch_size", type=int, default=8)
     parser.add_argument("--max_refs_per_style", type=int, default=30)
     parser.add_argument("--device", default="cuda")
@@ -199,7 +199,8 @@ def main():
     train_cfg = config.training
 
     ckpt_dir = Path(args.checkpoint_dir)
-    test_dir = Path(args.test_dir)
+    test_dir = Path(args.test_dir or train_cfg.test_image_dir)
+    dino_cache_dir = str(args.dino_cache_dir or train_cfg.full_eval_clip_hf_cache_dir)
     eval_subdir = args.output_subdir
     eval_script = Path(__file__).resolve().parent.parent / "src" / "utils" / "run_evaluation.py"
 
@@ -233,7 +234,7 @@ def main():
     if not args.skip_dino:
         print(f"\n=== Phase 2: DINO eval (batch, reuse model) ===")
         print("[dino] Loading DINOv2 model...")
-        model = load_dino(args.dino_model_name, args.device, args.dino_cache_dir, args.allow_network)
+        model = load_dino(args.dino_model_name, args.device, dino_cache_dir, args.allow_network)
         batch_size = args.dino_batch_size
 
         # Extract source features once (shared across all epochs)
@@ -290,8 +291,9 @@ def main():
     print(f"\n=== Final Summary ===")
     print(f"{'Ep':>3} | {'CLIP-S':>7} | {'LPIPS':>7} | {'DINO-S':>7} | {'DINO-C':>7}")
     print("-" * 50)
-    for i, ckpt in enumerate(checkpoints):
-        ep = i + 1
+    metric_rows = []
+    for ckpt in checkpoints:
+        ep = int(ckpt.stem.rsplit("_", 1)[-1])
         eval_dir = ckpt.parent / eval_subdir / ckpt.stem
         summary_path = eval_dir / "summary.json"
         dino_path = eval_dir / "dino_summary.json"
@@ -307,7 +309,28 @@ def main():
                 d = json.load(f)
             ds = float(d.get("all_dino_s", 0) or 0)
             dc = float(d.get("all_dino_c", 0) or 0)
+        row = {
+            "epoch": ep,
+            "checkpoint": ckpt.name,
+            "clip_s": clip_s,
+            "lpips": lpips,
+            "dino_s": ds,
+            "dino_c": dc,
+            "eval_subdir": eval_subdir,
+            "config_override": str(args.config_override),
+        }
+        metric_rows.append(row)
         print(f"{ep:>3} | {clip_s:>7.4f} | {lpips:>7.4f} | {ds:>7.4f} | {dc:>7.4f}")
+
+    csv_path = ckpt_dir / f"{eval_subdir}_epoch_metrics.csv"
+    json_path = ckpt_dir / f"{eval_subdir}_epoch_metrics.json"
+    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(metric_rows[0]))
+        writer.writeheader()
+        writer.writerows(metric_rows)
+    json_path.write_text(json.dumps(metric_rows, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"Wrote {csv_path}")
+    print(f"Wrote {json_path}")
 
 
 if __name__ == "__main__":

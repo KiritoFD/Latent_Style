@@ -82,6 +82,8 @@ Related_Works/baseline_pipeline/manual_grid_requests/**
 SchrodingerBridge/exp/**
 SchrodingerBridge/exp_sandbox/**
 SchrodingerBridge/exp_baselines/**/images/**
+SchrodingerBridge/data/**
+!SchrodingerBridge/data/README.md
 SchrodingerBridge/external_eval/**
 SchrodingerBridge/archives/code_backups/**
 SchrodingerBridge/docs/experiments/history_audit_local_*.json
