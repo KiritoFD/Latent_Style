@@ -120,3 +120,26 @@ def test_epoch_selection_parser() -> None:
 
     assert parse_epoch_selection("6") == {6}
     assert parse_epoch_selection("1,3-5,8") == {1, 3, 4, 5, 8}
+
+
+def test_oriented_hf_route_changes_only_matching_hf_heads() -> None:
+    import torch
+
+    sys.path.insert(0, str(PROJECT_ROOT))
+    from config_schema import load_experiment_config
+    from model import build_model_from_config
+
+    config = load_experiment_config(PROJECT_ROOT / "experiments" / "architecture" / "hf_oriented_nohh.json")
+    model = build_model_from_config(config.model, bridge_cfg=config.bridge).eval()
+    source = torch.linspace(-1.0, 1.0, 4 * 16 * 16).reshape(1, 4, 16, 16)
+    style_a = torch.flip(source, dims=(-1,))
+    style_b = torch.flip(source, dims=(-2,))
+
+    with torch.inference_mode():
+        output_a = model(source, t=0.5, style_id=2, style_latent=style_a)
+        output_b = model(source, t=0.5, style_id=2, style_latent=style_b)
+
+    assert output_a.keys() == {"ll", "lh", "hl"}
+    assert torch.equal(output_a["ll"], output_b["ll"])
+    assert not torch.equal(output_a["lh"], output_b["lh"])
+    assert not torch.equal(output_a["hl"], output_b["hl"])

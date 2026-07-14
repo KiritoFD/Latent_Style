@@ -1,0 +1,25 @@
+{
+  "_base": "../../config.json",
+  "model": {
+    "target_latent_hf_subband_fusion_enabled": true,
+    "target_latent_hf_subband_head_fusion_enabled": false,
+    "target_latent_hf_head_fusion_gate_init": 0.18,
+    "target_latent_hf_head_fusion_init_std": 0.08,
+    "enable_hh_head": false
+  },
+  "training": {
+    "resume_checkpoint": "",
+    "num_epochs": 15,
+    "save_interval": 1
+  },
+  "checkpoint": {
+    "save_dir": "runs/submission/arch_hf_oriented_nohh_15ep",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "arch_hf_oriented_nohh_15ep",
+    "axis": "architecture",
+    "stage": "submission_hf_route",
+    "notes": "Coordinate-free target HF route: pooled LH and HL codes modulate only their matching residual velocity heads; HH remains unlearned and LL remains disconnected."
+  }
+}
