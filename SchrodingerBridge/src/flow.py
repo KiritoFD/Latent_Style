@@ -79,6 +79,33 @@ class FlowMatchingObjective:
         self.training_sde_noise_mode = str(
             getattr(self.bridge_cfg, "training_sde_noise_mode", "subtractive")
         ).strip().lower()
+        # Round7 phase-anchored HF transport — define aligned FM endpoint
+        # h_tilde = iFFT(|FFT(h_s)| * exp(j * angle(FFT(h_c))))
+        # Content phase preserved, style amplitude transferred -> resolves HF phase cancellation
+        self.phase_anchored_hf_enabled = bool(
+            getattr(self.bridge_cfg, "phase_anchored_hf_enabled", False)
+        )
+        # Per-subband enable flags (default all-on when phase_anchored_hf_enabled)
+        self.phase_anchored_lh = bool(getattr(self.bridge_cfg, "phase_anchored_lh", True))
+        self.phase_anchored_hl = bool(getattr(self.bridge_cfg, "phase_anchored_hl", True))
+        self.phase_anchored_hh = bool(getattr(self.bridge_cfg, "phase_anchored_hh", True))
+        # Round8 latent-space target blending — inject raw style latent into FM endpoint
+        # target = (1-gamma)*SAT_target + gamma*style_latent
+        # SAT provides frequency-domain content protection, gamma injects spatial-domain
+        # style stats that DINOv2 CLS is sensitive to (color/contrast/global illumination)
+        self.latent_blend_gamma = float(getattr(self.bridge_cfg, "latent_blend_gamma", 0.0))
+        # Round10 Semantic Local AdaIN — attention-guided spatial-varying style stats
+        # Uses LL_c/LL_s as semantic descriptors to compute per-position style stats.
+        # Solves global AdaIN washout: sky gets sky's covariance, trees get trees'.
+        self.semantic_local_adain_enabled = bool(
+            getattr(self.bridge_cfg, "semantic_local_adain_enabled", False)
+        )
+        self.semantic_local_adain_alpha = float(
+            getattr(self.bridge_cfg, "semantic_local_adain_alpha", 0.5)
+        )
+        self.semantic_local_adain_tau = float(
+            getattr(self.bridge_cfg, "semantic_local_adain_tau", 0.1)
+        )
 
     def _sample_t(self, content: torch.Tensor) -> torch.Tensor:
         lo = max(0.0, min(1.0, self.t_min))
@@ -315,6 +342,124 @@ class FlowMatchingObjective:
         matched = (c_f - c_mean) / c_std * s_std + s_mean
         return ((1.0 - alpha) * c_f + alpha * matched).to(dtype=content.dtype)
 
+    def _semantic_local_adain(
+        self,
+        content_hf: torch.Tensor,
+        style_hf: torch.Tensor,
+        ll_content: torch.Tensor,
+        ll_style: torch.Tensor,
+        alpha: float,
+        tau: float,
+    ) -> torch.Tensor:
+        """Round10 Semantic Local AdaIN — attention-guided spatial-varying style stats.
+
+        Theory: Global AdaIN averages style stats across all semantic regions,
+        causing texture washout (sky's smoothness dilutes trees' sharp edges).
+        Solution: Use LL subbands as semantic descriptors to compute per-position
+        style statistics via softmax attention.
+
+        Math:
+            A[i,j] = softmax_j( cos(LL_c[i], LL_s[j]) / tau )   # [B, HW, HW]
+            mu_s_local[i] = sum_j A[i,j] * hf_s[j]              # [B, C, HW]
+            sigma_s_local[i] = sqrt(sum_j A[i,j] * (hf_s[j] - mu_s_local[i])^2)
+            target[i] = (hf_c[i] - mu_c[i])/sigma_c[i] * sigma_s_local[i] + mu_s_local[i]
+            blended = (1-alpha)*hf_c + alpha*target
+
+        Args:
+            content_hf: [B, C, H, W] content HF subband
+            style_hf: [B, C, H, W] style HF subband (batch=1 broadcasts)
+            ll_content: [B, C_ll, H, W] content LL subband (semantic descriptor)
+            ll_style: [B, C_ll, H, W] style LL subband (semantic descriptor)
+            alpha: blending strength (0=keep content, 1=full local AdaIN)
+            tau: attention temperature (smaller=sharper, approaches patch-match)
+        """
+        c_f = content_hf.float()
+        s_f = style_hf.float().to(device=c_f.device)
+        ll_c = ll_content.float()
+        ll_s = ll_style.float().to(device=ll_c.device)
+        B, C, H, W = c_f.shape
+        N = H * W
+        # Broadcast style batch=1
+        if s_f.shape[0] == 1 and B > 1:
+            s_f = s_f.expand(B, -1, -1, -1)
+        if ll_s.shape[0] == 1 and B > 1:
+            ll_s = ll_s.expand(B, -1, -1, -1)
+        # Flatten to [B, C, N]
+        c_flat = c_f.reshape(B, C, N)
+        s_flat = s_f.reshape(B, C, N)
+        # Semantic descriptors: normalize LL per position, flatten to [B, C_ll, N]
+        ll_c_flat = ll_c.reshape(B, -1, N)
+        ll_s_flat = ll_s.reshape(B, -1, N)
+        ll_c_norm = ll_c_flat / (ll_c_flat.norm(dim=1, keepdim=True).clamp_min(1e-6))
+        ll_s_norm = ll_s_flat / (ll_s_flat.norm(dim=1, keepdim=True).clamp_min(1e-6))
+        # Attention matrix [B, N, N] = LL_c_norm @ LL_s_norm^T / tau
+        attn = torch.bmm(ll_c_norm.transpose(1, 2), ll_s_norm) / max(tau, 1e-6)
+        attn = torch.softmax(attn, dim=2)  # softmax over style positions
+        # Local style stats: [B, C, N]
+        # mu_s_local[i] = sum_j A[i,j] * s[j]  =>  attn @ s_flat^T => [B, N, N] @ [B, N, C]
+        mu_s_local = torch.bmm(attn, s_flat.transpose(1, 2)).transpose(1, 2)  # [B, C, N]
+        # sigma_s_local[i] = sqrt(sum_j A[i,j] * (s[j] - mu_s_local[i])^2)
+        # Efficient: var = E[s^2] - E[s]^2
+        s_sq = s_flat ** 2  # [B, C, N]
+        e_s_sq = torch.bmm(attn, s_sq.transpose(1, 2)).transpose(1, 2)  # [B, C, N]
+        var_s_local = (e_s_sq - mu_s_local ** 2).clamp_min(1e-6)
+        sigma_s_local = var_s_local.sqrt()
+        # Content stats (global, as before)
+        c_mean = c_flat.mean(dim=2, keepdim=True)
+        c_std = c_flat.std(dim=2, keepdim=True).clamp_min(1e-6)
+        # Local AdaIN: normalize content, apply local style stats
+        matched = (c_flat - c_mean) / c_std * sigma_s_local + mu_s_local
+        matched = matched.reshape(B, C, H, W)
+        blended = (1.0 - alpha) * c_f + alpha * matched
+        return blended.to(dtype=content_hf.dtype)
+
+    def _phase_anchored_hf(
+        self, content_hf: torch.Tensor, style_hf: torch.Tensor
+    ) -> torch.Tensor:
+        """Round7 phase-anchored HF transport — define aligned FM endpoint.
+
+        Theory (user spec):
+            h_tilde = F^{-1}( |F(h_s)| * exp(j * angle(F(h_c))) )
+            - Content phase preserved (angle from h_c)
+            - Style amplitude transferred (|F(h_s)|)
+            - Resolves pointwise HF regression phase cancellation
+
+        Round7 v2 fix: Apply phase-anchored in latent space (before DWT)
+        to avoid Haar DWT shift sensitivity. When called from compute()
+        with full latent tensors, FFT operates on larger spatial dimensions
+        with better boundary behavior.
+
+        Diagnosis motivation:
+            Unregistered HF translation showed RMS 9.4e-9 but Fourier
+            magnitude change only 2.0e-8 — pointwise HF regression cancels
+            in phase because source/target HF are not spatially aligned.
+            Phase-anchoring fixes the phase to content while transferring
+            style amplitude, giving FM a unique aligned endpoint.
+
+        HH head becomes learnable after phase alignment (old HH was dead
+        because misaligned phases made its gradient noisy).
+
+        Different from failed FFT loss: FFT loss fought unaligned MSE;
+        this directly defines the aligned FM target.
+        """
+        c_f = content_hf.float()
+        s_f = style_hf.float().to(device=c_f.device)
+        # Broadcast style batch=1 to content batch
+        if s_f.shape[0] == 1 and c_f.shape[0] > 1:
+            s_f = s_f.expand(c_f.shape[0], -1, -1, -1)
+        # 2D rFFT (orthonormal norm for energy preservation)
+        F_c = torch.fft.rfftn(c_f, dim=(-2, -1), norm="ortho")
+        F_s = torch.fft.rfftn(s_f, dim=(-2, -1), norm="ortho")
+        # Phase from content, amplitude from style
+        amp_s = F_s.abs()
+        phase_c = F_c.angle()
+        # Reconstruct: |F_s| * exp(j * angle(F_c))
+        F_tilde = amp_s * torch.exp(1j * phase_c)
+        h_tilde = torch.fft.irfftn(
+            F_tilde, s=c_f.shape[-2:], dim=(-2, -1), norm="ortho"
+        )
+        return h_tilde.to(dtype=content_hf.dtype)
+
     def compute(
         self, model, *, content, target_style, target_style_id,
         source_style_id=None, aux_target_style=None, aux_target_valid=None,
@@ -381,6 +526,16 @@ class FlowMatchingObjective:
                 lh_t = self._adain_blend(lh_c, lh_t, self.hf_adain_alpha_lh)
                 hl_t = self._adain_blend(hl_c, hl_t, self.hf_adain_alpha_hl)
                 hh_t = self._adain_blend(hh_c, hh_t, self.hf_adain_alpha_hh)
+            # Round10 Semantic Local AdaIN — attention-guided spatial-varying style stats
+            # Uses LL_c/LL_s as semantic descriptors to compute per-position style stats.
+            # Solves global AdaIN washout: sky gets sky's covariance, trees get trees'.
+            # Replaces global HF AdaIN when enabled — local stats preserve texture diversity.
+            if self.semantic_local_adain_enabled:
+                a = self.semantic_local_adain_alpha
+                tau = self.semantic_local_adain_tau
+                lh_t = self._semantic_local_adain(lh_c, lh_t, ll_c, ll_t, a, tau)
+                hl_t = self._semantic_local_adain(hl_c, hl_t, ll_c, ll_t, a, tau)
+                hh_t = self._semantic_local_adain(hh_c, hh_t, ll_c, ll_t, a, tau)
             # Round8 brk_ab: HF over-stylization — beta>1.0 放大 HF 风格差异
             # target_hf = (1-beta)*hf_c + beta*hf_t = hf_c + beta*(hf_t - hf_c)
             # beta=1.0: 标准替换; beta>1.0: 放大风格差异, 增强纹理注入
@@ -389,7 +544,32 @@ class FlowMatchingObjective:
                 lh_t = (1.0 - b) * lh_c + b * lh_t
                 hl_t = (1.0 - b) * hl_c + b * hl_t
                 hh_t = (1.0 - b) * hh_c + b * hh_t
+            # Round7 v2 phase-anchored HF transport — latent-space operation
+            # v1 failed: subband-level FFT on Haar DWT coefficients is NOT
+            # translation-invariant (Probe: shift diff 0.83-1.38).
+            # v2 fix: apply phase-anchored in latent space (before DWT),
+            # then extract HF from the phase-anchored result. FFT on full
+            # latent dimensions (32x32) has better boundary behavior than
+            # on half-size subbands (16x16), and avoids DWT shift sensitivity.
+            if self.phase_anchored_hf_enabled:
+                h_tilde = self._phase_anchored_hf(content, target)
+                _, lh_pa, hl_pa, hh_pa = dwt2_haar(h_tilde)
+                if self.phase_anchored_lh:
+                    lh_t = lh_pa
+                if self.phase_anchored_hl:
+                    hl_t = hl_pa
+                if self.phase_anchored_hh:
+                    hh_t = hh_pa
             target = idwt2_haar(ll_c, lh_t, hl_t, hh_t)
+
+        # Round8 latent-space target blending — inject raw style latent
+        # target = (1-gamma)*SAT_target + gamma*style_latent
+        # gamma=0: pure SAT (baseline). gamma>0: extra spatial-domain style injection.
+        if self.latent_blend_gamma > 0.0 and torch.is_tensor(style_latent):
+            s_lat = style_latent.to(dtype=target.dtype, device=target.device)
+            if s_lat.shape[0] == 1 and target.shape[0] > 1:
+                s_lat = s_lat.expand(target.shape[0], -1, -1, -1)
+            target = (1.0 - self.latent_blend_gamma) * target + self.latent_blend_gamma * s_lat
 
         # Stage9: 训练时 Endpoint AdaIN — 对 target 做 spatial_fiber mean+std matching
         # 让模型直接学习生成 AdaIN 后的输出, 推理时不再需要后处理
