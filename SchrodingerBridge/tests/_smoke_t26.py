@@ -1,6 +1,6 @@
 """Standalone smoke test for Plan H (T26) per_subband_wct_ll_ycbcr mode."""
 import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import torch
 
 from config_schema import BridgeConfig, ModelConfig

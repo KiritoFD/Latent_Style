@@ -14,16 +14,15 @@ import torch
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from config_schema import BridgeConfig, ModelConfig, load_experiment_config  # noqa: E402
 from model import build_model_from_config  # noqa: E402
 from model import WEAVE  # noqa: E402
 
 
-ACTIVE_CONFIG = ROOT / "configs" / "clean_base_v2_local.json"
+ACTIVE_CONFIG = ROOT / "config.json"
 
 
 def _load_active_config():

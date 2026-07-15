@@ -24,9 +24,8 @@ from pathlib import Path
 import torch
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from config_schema import BridgeConfig, ModelConfig  # noqa: E402
 from model import (  # noqa: E402
