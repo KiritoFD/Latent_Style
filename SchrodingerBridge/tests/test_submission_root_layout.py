@@ -103,6 +103,9 @@ def test_canonical_configs_are_portable_and_complete() -> None:
             if WINDOWS_ABSOLUTE_PATH.match(value) or value.startswith(("/mnt/", "\\\\"))
         ]
         assert not bad_paths, f"absolute paths in {path.name}: {bad_paths}"
+        assert all(not value.startswith("$index:") for value in _walk_strings(payload))
+
+    assert not (PROJECT_ROOT / "dataset_index.json").exists()
 
 
 def test_submission_launchers_do_not_use_src_entry_points() -> None:

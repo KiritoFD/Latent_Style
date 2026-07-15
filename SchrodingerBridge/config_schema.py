@@ -1222,72 +1222,8 @@ def load_config(config_path: str | Path, *, _seen: set[Path] | None = None) -> d
     return _deep_merge(merged, raw)
 
 
-def _find_dataset_index(config_path: Path) -> Path | None:
-    """Search for dataset_index.json from config dir up to repo root."""
-    config_dir = config_path.resolve().parent
-    for d in [config_dir, *config_dir.parents]:
-        if (d / "src").is_dir() and (d / "dataset_index.json").is_file():
-            return d / "dataset_index.json"
-        if (d / "dataset_index.json").is_file():
-            return d / "dataset_index.json"
-    # Also check cwd as last resort
-    cwd_index = Path.cwd() / "dataset_index.json"
-    return cwd_index if cwd_index.is_file() else None
-
-
-_INDEX_CACHE: dict[str, dict] = {}
-
-
-def _load_dataset_index(index_path: Path) -> dict[str, list[str]]:
-    key = str(index_path)
-    if key not in _INDEX_CACHE:
-        try:
-            with open(index_path, "r", encoding="utf-8") as f:
-                _INDEX_CACHE[key] = json.load(f)
-        except (json.JSONDecodeError, OSError):
-            _INDEX_CACHE[key] = {}
-    return _INDEX_CACHE[key]
-
-
-def _resolve_via_index(value: str, index: dict[str, list[str]]) -> str:
-    """If value starts with '$index:', resolve via index; else return as-is."""
-    if not isinstance(value, str) or not value.startswith("$index:"):
-        return value
-    key = value[len("$index:"):]
-    candidates = index.get(key, [])
-    for cand in candidates:
-        if Path(cand).exists():
-            return cand
-    # No candidate exists; return first candidate (will fail downstream with clear error) or original
-    return candidates[0] if candidates else value
-
-
-_INDEX_PATH_FIELDS = [
-    ("data", ["data_root", "pairing_cache_path", "latent_cache_dir"]),
-    ("training", ["test_image_dir", "full_eval_cache_dir", "full_eval_clip_hf_cache_dir"]),
-]
-
-
-def _resolve_dataset_paths_via_index(raw: dict[str, Any], config_path: str | Path) -> dict[str, Any]:
-    """Resolve $index: prefixed paths via dataset_index.json for portability."""
-    index_file = _find_dataset_index(Path(config_path))
-    if index_file is None:
-        return raw
-    index = _load_dataset_index(index_file)
-    if not index:
-        return raw
-    for section, fields_list in _INDEX_PATH_FIELDS:
-        if section not in raw or not isinstance(raw[section], dict):
-            continue
-        for field_name in fields_list:
-            if field_name in raw[section]:
-                raw[section][field_name] = _resolve_via_index(raw[section][field_name], index)
-    return raw
-
-
 def load_experiment_config(config_path: str | Path) -> ExperimentConfig:
     raw = load_config(config_path)
-    raw = _resolve_dataset_paths_via_index(raw, config_path)
     return ExperimentConfig.from_mapping(raw)
 
 
