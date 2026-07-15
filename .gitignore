@@ -61,15 +61,15 @@ Related_Works/**/*.png
 Dataset/
 _tmp/
 _tmp/**
-SchrodingerBridge/_codex_tmp/
-SchrodingerBridge/_tmp/
-SchrodingerBridge/_tmp/**
+WEAVE/_codex_tmp/
+WEAVE/_tmp/
+WEAVE/_tmp/**
 tmp/
-SchrodingerBridge/tmp/
-SchrodingerBridge/aaai_submission/tmp_*/
-SchrodingerBridge/aaai_submission_recovery_*/
-SchrodingerBridge/aaai_submission/paper_aaai2026.recovery_backup_*.tex
-SchrodingerBridge/aaai_submission/fix_colors.py
+WEAVE/tmp/
+WEAVE/aaai_submission/tmp_*/
+WEAVE/aaai_submission_recovery_*/
+WEAVE/aaai_submission/paper_aaai2026.recovery_backup_*.tex
+WEAVE/aaai_submission/fix_colors.py
 
 # Bulk external baseline checkouts and generated results
 Related_Works/repos/**
@@ -78,23 +78,23 @@ Related_Works/run_511/repos/**
 Related_Works/baseline_pipeline/results/**
 Related_Works/baseline_pipeline/manual_grid_requests/**
 
-# SchrodingerBridge runtime outputs
-SchrodingerBridge/exp/**
-SchrodingerBridge/exp_sandbox/**
-SchrodingerBridge/exp_baselines/**/images/**
-SchrodingerBridge/data/**
-!SchrodingerBridge/data/README.md
-SchrodingerBridge/runs/**
-SchrodingerBridge/external_eval/**
-SchrodingerBridge/archives/code_backups/**
-SchrodingerBridge/docs/experiments/history_audit_local_*.json
-SchrodingerBridge/datasets/**
-SchrodingerBridge/stabilityai/**
-SchrodingerBridge/configs/aaai2027/**/*.segmented.launch.json
-SchrodingerBridge/configs/aaai2027/**/*.remote.launch.json
-SchrodingerBridge/aaai2027/*_watcher.out.log
-SchrodingerBridge/aaai2027/*_watcher.err.log
-SchrodingerBridge/aaai2027/*_watcher.log
+# WEAVE runtime outputs
+WEAVE/exp/**
+WEAVE/exp_sandbox/**
+WEAVE/exp_baselines/**/images/**
+WEAVE/data/**
+!WEAVE/data/README.md
+WEAVE/runs/**
+WEAVE/external_eval/**
+WEAVE/archives/code_backups/**
+WEAVE/docs/experiments/history_audit_local_*.json
+WEAVE/datasets/**
+WEAVE/stabilityai/**
+WEAVE/configs/aaai2027/**/*.segmented.launch.json
+WEAVE/configs/aaai2027/**/*.remote.launch.json
+WEAVE/aaai2027/*_watcher.out.log
+WEAVE/aaai2027/*_watcher.err.log
+WEAVE/aaai2027/*_watcher.log
 stabilityai/**
 
 # Top-level runtime dumps
@@ -103,24 +103,24 @@ exp/**
 tmp_*
 
 # Paper build artifacts
-SchrodingerBridge/aaai_submission/*.aux
-SchrodingerBridge/aaai_submission/*.bbl
-SchrodingerBridge/aaai_submission/*.blg
-SchrodingerBridge/aaai_submission/*.fdb_latexmk
-SchrodingerBridge/aaai_submission/*.fls
-SchrodingerBridge/aaai_submission/*.log
-SchrodingerBridge/aaai_submission/*.out
-SchrodingerBridge/aaai_submission/*.xdv
-SchrodingerBridge/aaai_submission/*.synctex.gz
-SchrodingerBridge/aaai_submission/**/*.aux
-SchrodingerBridge/aaai_submission/**/*.bbl
-SchrodingerBridge/aaai_submission/**/*.blg
-SchrodingerBridge/aaai_submission/**/*.fdb_latexmk
-SchrodingerBridge/aaai_submission/**/*.fls
-SchrodingerBridge/aaai_submission/**/*.log
-SchrodingerBridge/aaai_submission/**/*.out
-SchrodingerBridge/aaai_submission/**/*.xdv
-SchrodingerBridge/aaai_submission/**/*.synctex.gz
+WEAVE/aaai_submission/*.aux
+WEAVE/aaai_submission/*.bbl
+WEAVE/aaai_submission/*.blg
+WEAVE/aaai_submission/*.fdb_latexmk
+WEAVE/aaai_submission/*.fls
+WEAVE/aaai_submission/*.log
+WEAVE/aaai_submission/*.out
+WEAVE/aaai_submission/*.xdv
+WEAVE/aaai_submission/*.synctex.gz
+WEAVE/aaai_submission/**/*.aux
+WEAVE/aaai_submission/**/*.bbl
+WEAVE/aaai_submission/**/*.blg
+WEAVE/aaai_submission/**/*.fdb_latexmk
+WEAVE/aaai_submission/**/*.fls
+WEAVE/aaai_submission/**/*.log
+WEAVE/aaai_submission/**/*.out
+WEAVE/aaai_submission/**/*.xdv
+WEAVE/aaai_submission/**/*.synctex.gz
 node_modules/
 .opencode/
 # Agent / tool scratch directories (never track)
