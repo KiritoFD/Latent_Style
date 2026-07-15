@@ -172,14 +172,35 @@ causes severe collapse and should not be revisited as a tuning direction.
 - One-off root diagnostics and rejected spectral/content image blending scripts
   are archived.
 - Machine-specific dataset path indexing is removed.
-- Current tests: 42 passed with one existing test-only tensor conversion warning.
+- Current tests: 45 passed with one existing test-only tensor conversion warning.
 
 Windows note: the current Codex task was opened with the former directory as
 its process working directory, so an empty, untracked `SchrodingerBridge/`
 shell may remain until that workspace handle is released. It contains zero
 files; all tracked and runtime content is under `WEAVE/`.
 
-## 8. Next Architecture Gate
+## 8. Internal-Dynamics Stop
+
+External-metric early stopping is no longer required for the oriented-HF run.
+The original 15-epoch curve showed that FM-target residual alignment continues
+to improve after the DINO-S peak, so loss convergence is not an adequate
+proxy. The useful event is the first epoch where:
+
+1. the mean LH/HL target-HF gate changes from contraction to expansion; and
+2. the shared-trunk LL/HF gradient-norm ratio crosses below one.
+
+The retrospective curve and a fresh online run both select epoch 4. The fresh
+run used the canonical 15-epoch cosine schedule, decoded no images, consulted
+no DINO/CLIP/LPIPS metric, and stopped after saving `epoch_0004.pt`. The probe
+uses a fixed latent batch, two extra backwards per epoch, and preserves the
+CPU/CUDA RNG state. See `docs/reproduction/internal_dynamics_early_stop.md`.
+
+Active configs:
+
+- record only: `experiments/architecture/hf_oriented_internal_probe.json`;
+- automatic stop: `experiments/architecture/hf_oriented_internal_early_stop.json`.
+
+## 9. Next Architecture Gate
 
 The next justified experiment is gradient ownership for the oriented target-HF
 residual route:

@@ -1,7 +1,7 @@
 {
   "_base": "hf_oriented_nohh.json",
   "training": {
-    "num_epochs": 8,
+    "num_epochs": 15,
     "save_interval": 1,
     "internal_probe_enabled": true,
     "internal_probe_batch_size": 4,
@@ -14,12 +14,12 @@
     "full_eval_each_epoch": false
   },
   "checkpoint": {
-    "save_dir": "runs/submission/hf_oriented_internal_probe_8ep"
+    "save_dir": "runs/submission/hf_oriented_internal_probe_15ep"
   },
   "ablation": {
-    "name": "hf_oriented_internal_probe_8ep",
+    "name": "hf_oriented_internal_probe_15ep",
     "axis": "training_dynamics",
     "stage": "submission_internal_early_stop_validation",
-    "notes": "Fresh oriented-HF run. Record fixed-latent gradient and gate dynamics without online image metrics or active early stopping; evaluate checkpoints only after training."
+    "notes": "Canonical 15-epoch scheduler. Record fixed-latent gradient and gate dynamics without online image metrics or active early stopping."
   }
 }

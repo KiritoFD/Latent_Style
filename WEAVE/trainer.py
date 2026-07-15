@@ -396,17 +396,21 @@ class SBTrainer:
             )
         if self.device.type == "cuda":
             autocast_ctx = torch.amp.autocast("cuda", enabled=self.use_amp, dtype=self.amp_dtype)
+            rng_devices = [self.device.index if self.device.index is not None else torch.cuda.current_device()]
         else:
             autocast_ctx = torch.autocast("cpu", enabled=False)
+            rng_devices = []
         try:
-            with autocast_ctx:
-                probe_metrics = probe_internal_dynamics(
-                    model,
-                    self.loss_fn,
-                    probe_batch,
-                    fixed_t=self.internal_probe_fixed_t,
-                    noise=noise,
-                )
+            with torch.random.fork_rng(devices=rng_devices, enabled=True):
+                torch.manual_seed(int(self.train_cfg.get("seed", 42)) + self.internal_probe_seed_offset)
+                with autocast_ctx:
+                    probe_metrics = probe_internal_dynamics(
+                        model,
+                        self.loss_fn,
+                        probe_batch,
+                        fixed_t=self.internal_probe_fixed_t,
+                        noise=noise,
+                    )
         finally:
             model.zero_grad(set_to_none=True)
             model.train(was_training)
