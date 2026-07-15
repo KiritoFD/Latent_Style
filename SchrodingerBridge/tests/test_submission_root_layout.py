@@ -95,6 +95,13 @@ def test_canonical_configs_are_portable_and_complete() -> None:
     assert eval_settings["target_chunk_size"] == 1
     assert eval_settings["save_generated_images"] is True
     assert merged["model"]["endpoint_adain_scale"] == 2.0
+    assert config.training.freeze_mode == "none"
+    assert config.training.resume_checkpoint == ""
+    assert config.checkpoint.resume_checkpoint == ""
+    assert config.model.output_appearance_alignment_mode == "none"
+    assert eval_settings["postprocess_mode"] == "none"
+    assert eval_settings["latent_postprocess_mode"] == "none"
+    assert eval_settings["allow_metric_postprocess"] is False
 
     for path in (config_path, inference_path):
         payload = json.loads(path.read_text(encoding="utf-8"))
