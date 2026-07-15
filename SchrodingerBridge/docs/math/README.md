@@ -35,7 +35,7 @@
 | `all_pairs_clip_style` | 5×5 风格矩阵 (150 src × 5 tgt) 平均 CLIP 余弦相似度 | 风格相似度 (越高越好) |
 | `all_pairs_content_lpips` | 同矩阵 LPIPS(AlexNet) 平均 | 内容差异 (越低越好) |
 
-详见 [docs/tools/README.md §2 评估协议](../tools/README.md)。
+当前提交评估协议与可复现路径见 [713 submission handoff](../713/SUBMISSION_HANDOFF_2026-07-15.md)。
 
 ---
 

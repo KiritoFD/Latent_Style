@@ -30,6 +30,8 @@ active working surface.
   - exact pre-promotion `src/` implementation retained for provenance; active modules live at the project root
 - `legacy-root-research-scripts-20260715/`
   - one-off diagnostics, plotting, remote inventory, and rejected inference post-processing scripts; none are part of the train-from-scratch method
+- `legacy-tools-docs-pre-relative-20260715/`
+  - retired machine-specific infrastructure and dataset registry docs that still prescribed old `src/` and absolute-path workflows
 - `legacy-dataset-index-20260715.json`
   - retired machine-specific path index; canonical configs now use the same project-relative `data/` and `runs/` paths locally and remotely
 

@@ -52,6 +52,13 @@ The remote directory is a synchronized execution copy, not a Git checkout.
 Sync only active code/config/scripts and never overwrite `data/`, `runs/`, or
 remote model caches. Verify file hashes when reproducing a paper number.
 
+Remote audit on 2026-07-15 found 5,021 files below `data/train` (including
+caches/manifests) and 150 files below `data/test`. The remote config and
+inference JSON hashes matched local exactly. The remote training interpreter
+loads both entry points and the canonical config, but does not currently have
+`pytest`; run the full test suite locally unless the remote environment is
+explicitly provisioned for development.
+
 ## 3. Canonical From-Scratch Run
 
 From the project root on either machine:
