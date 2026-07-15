@@ -19,6 +19,7 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from config_schema import ExperimentConfig, compact_runtime_config
+from internal_dynamics import InternalDynamicsState, probe_internal_dynamics
 from model import build_model_from_config, count_parameters
 from style_families import prune_state_dict_for_tokenizer_family
 from utils.training import (
@@ -295,12 +296,28 @@ class SBTrainer:
         self.numeric_debug_dump_limit = max(1, int(train_cfg.get("numeric_debug_dump_limit", 200)))
         self.numeric_debug_events = 0
         self._offloaded_for_full_eval = False
+        self.internal_probe_enabled = bool(train_cfg.get("internal_probe_enabled", False))
+        self.internal_probe_batch_size = max(1, int(train_cfg.get("internal_probe_batch_size", 4)))
+        self.internal_probe_fixed_t = float(train_cfg.get("internal_probe_fixed_t", 0.5))
+        self.internal_probe_seed_offset = int(train_cfg.get("internal_probe_seed_offset", 9173))
+        self.internal_early_stop_enabled = bool(train_cfg.get("internal_early_stop_enabled", False))
+        self.internal_early_stop_min_epoch = max(2, int(train_cfg.get("internal_early_stop_min_epoch", 3)))
+        self.internal_early_stop_gate_delta_threshold = float(
+            train_cfg.get("internal_early_stop_gate_delta_threshold", 0.0)
+        )
+        self.internal_early_stop_shared_ratio_threshold = float(
+            train_cfg.get("internal_early_stop_shared_ratio_threshold", 1.0)
+        )
+        self._internal_probe_batch: dict | None = None
+        self._internal_probe_noise: torch.Tensor | None = None
+        self._internal_dynamics_state = InternalDynamicsState()
 
         self.checkpoint_dir = Path(ckpt_cfg.save_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir = self.checkpoint_dir / "logs"
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.numeric_debug_file = self.checkpoint_dir / "numeric_debug.jsonl"
+        self.internal_dynamics_file = self.checkpoint_dir / "internal_dynamics.jsonl"
         self._maybe_load_transport_style_stats_bank()
 
         write_config_and_source_snapshot(
@@ -341,6 +358,84 @@ class SBTrainer:
         self._maybe_resume(str(train_cfg.get("resume_checkpoint", "")))
         self._configure_distillation()
         self._configure_compile()
+
+    def _capture_internal_probe_batch(self, batch: dict) -> None:
+        if not self.internal_probe_enabled or self._internal_probe_batch is not None:
+            return
+        count = min(self.internal_probe_batch_size, int(batch["content"].shape[0]))
+        captured: dict = {}
+        for key in ("content", "target_style", "target_style_id", "target_style_text_tokens", "target_style_latent"):
+            value = batch.get(key)
+            if torch.is_tensor(value):
+                captured[key] = value[:count].detach().to(device="cpu").clone()
+        self._internal_probe_batch = captured
+        generator = torch.Generator(device="cpu")
+        generator.manual_seed(int(self.train_cfg.get("seed", 42)) + self.internal_probe_seed_offset)
+        self._internal_probe_noise = torch.randn(
+            captured["content"].shape,
+            generator=generator,
+            dtype=torch.float32,
+        )
+
+    def update_internal_dynamics(self, epoch: int, metrics: Dict[str, float]) -> bool:
+        if not self.internal_probe_enabled or self._internal_probe_batch is None:
+            return False
+        model = unwrap_compiled_model(self.model)
+        was_training = model.training
+        model.eval()
+        probe_batch = {
+            key: value.to(device=self.device, non_blocking=True)
+            for key, value in self._internal_probe_batch.items()
+        }
+        noise = None
+        if self._internal_probe_noise is not None:
+            noise = self._internal_probe_noise.to(
+                device=self.device,
+                dtype=probe_batch["content"].dtype,
+                non_blocking=True,
+            )
+        if self.device.type == "cuda":
+            autocast_ctx = torch.amp.autocast("cuda", enabled=self.use_amp, dtype=self.amp_dtype)
+        else:
+            autocast_ctx = torch.autocast("cpu", enabled=False)
+        try:
+            with autocast_ctx:
+                probe_metrics = probe_internal_dynamics(
+                    model,
+                    self.loss_fn,
+                    probe_batch,
+                    fixed_t=self.internal_probe_fixed_t,
+                    noise=noise,
+                )
+        finally:
+            model.zero_grad(set_to_none=True)
+            model.train(was_training)
+        metrics.update(probe_metrics)
+        crossed = self._internal_dynamics_state.update(
+            epoch,
+            metrics,
+            min_epoch=self.internal_early_stop_min_epoch,
+            gate_delta_threshold=self.internal_early_stop_gate_delta_threshold,
+            shared_ratio_threshold=self.internal_early_stop_shared_ratio_threshold,
+        )
+        metrics["internal_probe_stop_requested"] = float(crossed and self.internal_early_stop_enabled)
+        payload = {"epoch": int(epoch), **{key: float(value) for key, value in metrics.items() if key.startswith("internal_probe_")}}
+        with open(self.internal_dynamics_file, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+        logger.info(
+            "Internal dynamics epoch=%d gate=%.6f delta=%+.6f shared_ll_hf=%.4f route_shared=%.4f route_head=%.4f transition=%s",
+            epoch,
+            metrics["internal_probe_gate_mean"],
+            metrics["internal_probe_gate_delta"],
+            metrics["internal_probe_shared_ll_hf_grad_ratio"],
+            metrics["internal_probe_route_shared_hf_grad_ratio"],
+            metrics["internal_probe_route_hf_head_grad_ratio"],
+            crossed,
+        )
+        if crossed and self.internal_early_stop_enabled:
+            self.requested_stop = True
+            logger.info("Internal-dynamics early stop requested at epoch %d.", epoch)
+        return crossed
 
     def _move_optimizer_state(self, device: torch.device) -> None:
         for state in self.optimizer.state.values():
@@ -1347,6 +1442,7 @@ class SBTrainer:
                         text_tokens_list.append(self.clip_null_token[0])
                 if text_tokens_list:
                     batch["target_style_text_tokens"] = torch.stack(text_tokens_list).to(device=self.device)
+            self._capture_internal_probe_batch(batch)
 
             t0 = time.perf_counter()
             if self.device.type == "cuda":

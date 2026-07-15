@@ -1001,6 +1001,14 @@ class TrainingConfig:
     numeric_debug_interval: int = 10
     numeric_debug_halt_on_nonfinite: bool = True
     numeric_debug_dump_limit: int = 200
+    internal_probe_enabled: bool = False
+    internal_probe_batch_size: int = 4
+    internal_probe_fixed_t: float = 0.5
+    internal_probe_seed_offset: int = 9173
+    internal_early_stop_enabled: bool = False
+    internal_early_stop_min_epoch: int = 3
+    internal_early_stop_gate_delta_threshold: float = 0.0
+    internal_early_stop_shared_ratio_threshold: float = 1.0
     distill: dict[str, Any] = field(default_factory=dict)
     extra: dict[str, Any] = field(default_factory=dict)
 

@@ -154,6 +154,89 @@ class FlowMatchingObjective:
         ll_blended = (1.0 - alpha) * c_f + alpha * ll_style_matched
         return ll_blended.to(dtype=ll_content.dtype)
 
+    def _build_training_target(
+        self,
+        content: torch.Tensor,
+        target_style: torch.Tensor,
+        style_latent: torch.Tensor,
+    ) -> torch.Tensor:
+        target = target_style
+        if self.structure_aligned_target:
+            ll_c, _lh_c, _hl_c, _hh_c = dwt2_haar(content)
+            ll_t, lh_t, hl_t, hh_t = dwt2_haar(target)
+            if self.ll_partial_style_enabled and 0.0 < self.ll_partial_alpha <= 1.0:
+                ll_c = self._partial_style_ll(ll_c, ll_t, self.ll_partial_alpha)
+            target = idwt2_haar(ll_c, lh_t, hl_t, hh_t)
+
+        if self.train_adain_enabled and self.train_adain_scale > 0.0:
+            target = self._apply_train_adain(target, style_latent)
+        return target
+
+    def compute_probe_losses(
+        self,
+        model,
+        *,
+        content: torch.Tensor,
+        target_style: torch.Tensor,
+        target_style_id: torch.Tensor,
+        conditioning=None,
+        t: torch.Tensor,
+        noise: torch.Tensor | None = None,
+    ) -> Dict[str, torch.Tensor]:
+        """Compute graph-preserving spectral losses for internal diagnostics."""
+        conditioning = conditioning or {}
+        style_text_tokens = conditioning.get("target_style_text_tokens")
+        style_latent = conditioning.get("target_style_latent")
+        if not torch.is_tensor(style_text_tokens):
+            style_text_tokens = None
+        if not torch.is_tensor(style_latent):
+            style_latent = target_style
+
+        target = self._build_training_target(content, target_style, style_latent)
+        t_view = t.view(-1, 1, 1, 1).to(dtype=content.dtype)
+        if self.bridge_sigma > 0.0:
+            eps = torch.zeros_like(content) if noise is None else noise.to(dtype=content.dtype)
+            bridge_noise = eps * self.bridge_sigma * (t_view * (1.0 - t_view)).sqrt()
+            if self.training_sde_noise_mode == "subtractive":
+                x_t = (1.0 - t_view) * content + t_view * target - bridge_noise
+            else:
+                x_t = (1.0 - t_view) * content + t_view * target + bridge_noise
+        else:
+            x_t = (1.0 - t_view) * content + t_view * target
+
+        target_ll, target_lh, target_hl, target_hh = dwt2_haar(target - content)
+        v_dict = model(
+            x_t,
+            t=t,
+            style_id=target_style_id,
+            style_latent=style_latent,
+            style_text_tokens=style_text_tokens,
+        )
+        loss_ll = self._fm_loss(v_dict["ll"], target_ll)
+        loss_lh = self._fm_loss(v_dict["lh"], target_lh)
+        loss_hl = self._fm_loss(v_dict["hl"], target_hl)
+        loss_hh = content.new_tensor(0.0)
+        if "hh" in v_dict:
+            loss_hh = self._fm_loss(v_dict["hh"], target_hh)
+
+        weighted_ll = self.w_ll * loss_ll
+        weighted_lh = self.w_lh * loss_lh
+        weighted_hl = self.w_hl * loss_hl
+        weighted_hh = self.w_hh * loss_hh if "hh" in v_dict else content.new_tensor(0.0)
+        loss_hf = weighted_lh + weighted_hl + weighted_hh
+        return {
+            "loss": weighted_ll + loss_hf,
+            "loss_fm_hf_total": loss_hf,
+            "loss_fm_spectral_ll": weighted_ll,
+            "loss_fm_spectral_lh": weighted_lh,
+            "loss_fm_spectral_hl": weighted_hl,
+            "loss_fm_spectral_hh": weighted_hh,
+            "loss_fm_spectral_ll_raw": loss_ll,
+            "loss_fm_spectral_lh_raw": loss_lh,
+            "loss_fm_spectral_hl_raw": loss_hl,
+            "loss_fm_spectral_hh_raw": loss_hh,
+        }
+
     def compute(
         self, model, *, content, target_style, target_style_id,
         source_style_id=None, aux_target_style=None, aux_target_valid=None,
@@ -168,61 +251,28 @@ class FlowMatchingObjective:
         if not torch.is_tensor(style_latent):
             style_latent = target_style
 
-        target = target_style
-
-        if self.structure_aligned_target:
-            ll_c, lh_c, hl_c, hh_c = dwt2_haar(content)
-            ll_t, lh_t, hl_t, hh_t = dwt2_haar(target)
-            # Stage10: LL 子带部分风格化 (brk_a 核心配置)
-            # LL_blended = (1-α)·LL_c + α·AdaIN(LL_c -> LL_s)
-            if self.ll_partial_style_enabled and 0.0 < self.ll_partial_alpha <= 1.0:
-                ll_c = self._partial_style_ll(ll_c, ll_t, self.ll_partial_alpha)
-            # HF 子带完全替换为 style 的 HF (SAT 核心机制)
-            target = idwt2_haar(ll_c, lh_t, hl_t, hh_t)
-
-        # Stage9: 训练时 Endpoint AdaIN — 对 target 做 spatial_fiber mean+std matching
-        # 让模型直接学习生成 AdaIN 后的输出, 推理时不再需要后处理
-        if self.train_adain_enabled and self.train_adain_scale > 0.0 and torch.is_tensor(style_latent):
-            target = self._apply_train_adain(target, style_latent)
-
         t = self._sample_t(content)
-        t_view = t.view(-1, 1, 1, 1).to(dtype=content.dtype)
-
-        if self.bridge_sigma > 0.0:
-            noise = torch.randn_like(content) * self.bridge_sigma
-            if self.training_sde_noise_mode == "subtractive":
-                x_t = (1.0 - t_view) * content + t_view * target - noise * (t_view * (1.0 - t_view)).sqrt()
-            else:
-                x_t = (1.0 - t_view) * content + t_view * target + noise * (t_view * (1.0 - t_view)).sqrt()
-        else:
-            x_t = (1.0 - t_view) * content + t_view * target
-
-        target_delta = target - content
-        target_ll, target_lh, target_hl, target_hh = dwt2_haar(target_delta)
-
-        v_dict = model(
-            x_t, t=t, style_id=target_style_id,
-            style_latent=style_latent,
-            style_text_tokens=style_text_tokens,
+        noise = torch.randn_like(content) if self.bridge_sigma > 0.0 else None
+        probe_losses = self.compute_probe_losses(
+            model,
+            content=content,
+            target_style=target_style,
+            target_style_id=target_style_id,
+            conditioning={
+                "target_style_text_tokens": style_text_tokens,
+                "target_style_latent": style_latent,
+            },
+            t=t,
+            noise=noise,
         )
-
-        # Spectral FM losses (core mechanism).
-        loss_ll = self._fm_loss(v_dict["ll"], target_ll)
-        loss_lh = self._fm_loss(v_dict["lh"], target_lh)
-        loss_hl = self._fm_loss(v_dict["hl"], target_hl)
-        loss_hh = content.new_tensor(0.0)
-        if "hh" in v_dict:
-            loss_hh = self._fm_loss(v_dict["hh"], target_hh)
-        loss_fm = self.w_ll * loss_ll + self.w_lh * loss_lh + self.w_hl * loss_hl
-        if "hh" in v_dict:
-            loss_fm = loss_fm + self.w_hh * loss_hh
+        loss_fm = probe_losses["loss"]
 
         metrics: Dict[str, torch.Tensor] = {
             "loss": loss_fm,
-            "loss_fm_spectral_ll": loss_ll.detach(),
-            "loss_fm_spectral_lh": loss_lh.detach(),
-            "loss_fm_spectral_hl": loss_hl.detach(),
-            "loss_fm_spectral_hh": loss_hh.detach(),
+            "loss_fm_spectral_ll": probe_losses["loss_fm_spectral_ll_raw"].detach(),
+            "loss_fm_spectral_lh": probe_losses["loss_fm_spectral_lh_raw"].detach(),
+            "loss_fm_spectral_hl": probe_losses["loss_fm_spectral_hl_raw"].detach(),
+            "loss_fm_spectral_hh": probe_losses["loss_fm_spectral_hh_raw"].detach(),
             "t_mean": t.detach().float().mean(),
             "flow": loss_fm.detach(),
         }

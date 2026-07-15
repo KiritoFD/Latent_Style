@@ -540,81 +540,23 @@ def spectral_losses_with_graph(
     t: torch.Tensor,
     noise: torch.Tensor | None,
 ) -> dict[str, torch.Tensor]:
-    content = batch["content"]
-    target_style = batch["target_style"]
-    target_style_id = batch["target_style_id"]
-    style_text_tokens = batch.get("target_style_text_tokens")
-    style_latent = batch.get("target_style_latent")
-    if not torch.is_tensor(style_text_tokens):
-        style_text_tokens = None
-    if not torch.is_tensor(style_latent):
-        style_latent = target_style
-
-    target = target_style
-    if loss_fn.structure_aligned_target:
-        ll_c, lh_c, hl_c, hh_c = dwt2_haar(content)
-        ll_t, lh_t, hl_t, hh_t = dwt2_haar(target)
-        if loss_fn.ll_partial_style_enabled and 0.0 < loss_fn.ll_partial_alpha <= 1.0:
-            ll_c = loss_fn._partial_style_ll(ll_c, ll_t, loss_fn.ll_partial_alpha)
-        target = idwt2_haar(ll_c, lh_t, hl_t, hh_t)
-
-    if loss_fn.train_adain_enabled and loss_fn.train_adain_scale > 0.0 and torch.is_tensor(style_latent):
-        target = loss_fn._apply_train_adain(target, style_latent)
-
-    t_view = t.view(-1, 1, 1, 1).to(dtype=content.dtype)
-    if loss_fn.bridge_sigma > 0.0:
-        eps = torch.zeros_like(content) if noise is None else noise
-        eps = eps * loss_fn.bridge_sigma
-        if loss_fn.training_sde_noise_mode == "subtractive":
-            x_t = (1.0 - t_view) * content + t_view * target - eps * (t_view * (1.0 - t_view)).sqrt()
-        else:
-            x_t = (1.0 - t_view) * content + t_view * target + eps * (t_view * (1.0 - t_view)).sqrt()
-    else:
-        x_t = (1.0 - t_view) * content + t_view * target
-
-    target_delta = target - content
-    target_ll, target_lh, target_hl, target_hh = dwt2_haar(target_delta)
-    v_dict = model(
-        x_t,
+    losses = loss_fn.compute_probe_losses(
+        model,
+        content=batch["content"],
+        target_style=batch["target_style"],
+        target_style_id=batch["target_style_id"],
+        conditioning=batch,
         t=t,
-        style_id=target_style_id,
-        style_latent=style_latent,
-        style_text_tokens=style_text_tokens,
+        noise=noise,
     )
-
-    loss_ll = loss_fn._fm_loss(v_dict["ll"], target_ll)
-    loss_lh = loss_fn._fm_loss(v_dict["lh"], target_lh)
-    loss_hl = loss_fn._fm_loss(v_dict["hl"], target_hl)
-    loss_hh = content.new_tensor(0.0)
-    if "hh" in v_dict:
-        loss_hh = loss_fn._fm_loss(v_dict["hh"], target_hh)
-
-    weighted_ll = loss_fn.w_ll * loss_ll
-    weighted_lh = loss_fn.w_lh * loss_lh
-    weighted_hl = loss_fn.w_hl * loss_hl
-    weighted_hh = loss_fn.w_hh * loss_hh if "hh" in v_dict else content.new_tensor(0.0)
-    stat_lh = content.new_tensor(0.0)
-    stat_hl = content.new_tensor(0.0)
-    stat_hh = content.new_tensor(0.0)
-    if bool(getattr(loss_fn, "hf_stat_loss_enabled", False)) and hasattr(loss_fn, "_statistical_loss"):
-        stat_lh = loss_fn.hf_stat_weight * loss_fn._statistical_loss(v_dict["lh"], target_lh)
-        stat_hl = loss_fn.hf_stat_weight * loss_fn._statistical_loss(v_dict["hl"], target_hl)
-        if "hh" in v_dict:
-            stat_hh = loss_fn.hf_stat_weight * loss_fn._statistical_loss(v_dict["hh"], target_hh)
-    loss_fm = weighted_ll + weighted_lh + weighted_hl + weighted_hh
-    loss_stat = stat_lh + stat_hl + stat_hh
-    return {
-        "loss": loss_fm + loss_stat,
-        "loss_fm_hf_total": weighted_lh + weighted_hl + weighted_hh,
-        "loss_fm_spectral_ll": weighted_ll,
-        "loss_fm_spectral_lh": weighted_lh,
-        "loss_fm_spectral_hl": weighted_hl,
-        "loss_fm_spectral_hh": weighted_hh,
-        "loss_stat": loss_stat,
-        "loss_stat_lh": stat_lh,
-        "loss_stat_hl": stat_hl,
-        "loss_stat_hh": stat_hh,
-    }
+    zero = batch["content"].new_tensor(0.0)
+    losses.update({
+        "loss_stat": zero,
+        "loss_stat_lh": zero,
+        "loss_stat_hl": zero,
+        "loss_stat_hh": zero,
+    })
+    return losses
 
 
 def collect_block_debug(model: torch.nn.Module) -> list[dict[str, float]]:

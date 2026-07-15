@@ -9,6 +9,38 @@ if str(ROOT) not in sys.path:
 from utils.training import append_training_log, initialize_training_log  # noqa: E402
 
 
+def test_training_log_keeps_internal_dynamics_probes(tmp_path):
+    log_file = tmp_path / "training.csv"
+    initialize_training_log(log_file)
+    append_training_log(
+        log_file,
+        {
+            "loss_fm_spectral_ll": 0.12,
+            "loss_fm_spectral_lh": 0.34,
+            "loss_fm_spectral_hl": 0.56,
+            "internal_probe_active": 1.0,
+            "internal_probe_gate_mean": 0.175,
+            "internal_probe_gate_delta": 0.0037,
+            "internal_probe_shared_ll_hf_grad_ratio": 0.889,
+            "internal_probe_route_shared_hf_grad_ratio": 0.251,
+            "internal_probe_route_hf_head_grad_ratio": 0.359,
+            "internal_probe_transition": 1.0,
+            "internal_probe_transition_epoch": 4.0,
+            "internal_probe_stop_requested": 1.0,
+        },
+        epoch=4,
+    )
+
+    row = list(csv.DictReader(log_file.open("r", encoding="utf-8", newline="")))[0]
+    assert row["loss_fm_spectral_ll"] == "0.12"
+    assert row["loss_fm_spectral_lh"] == "0.34"
+    assert row["loss_fm_spectral_hl"] == "0.56"
+    assert row["internal_probe_gate_mean"] == "0.175"
+    assert row["internal_probe_shared_ll_hf_grad_ratio"] == "0.889"
+    assert row["internal_probe_transition_epoch"] == "4.0"
+    assert row["internal_probe_stop_requested"] == "1.0"
+
+
 def test_training_log_keeps_style_delta_observability(tmp_path):
     log_file = tmp_path / "training.csv"
     initialize_training_log(log_file)

@@ -597,6 +597,7 @@ def main() -> None:
             )
         metrics = trainer.train_epoch(dataloader, epoch)
         trainer.step_scheduler()
+        trainer.update_internal_dynamics(epoch, metrics)
         trainer.log_epoch(epoch, metrics)
         logger.info(
             "Epoch %d/%d | loss=%.4f flow=%.4f kin=%.4f ot=%.4f tswd=%.4f "
