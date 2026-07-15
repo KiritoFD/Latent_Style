@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex paper"] 1784094656.61877 "paper.aux" "paper.bbl" "paper" 1784094659.9096 0
+["bibtex paper"] 1784080259.67622 "paper.aux" "paper.bbl" "paper" 1784084125.91 0
   "./aaai2027.bst" 1777882188 30207 bd248dfe461b9b2fc7481a44feafe197 ""
   "./refs.bib" 1784000534 15462 f9401ec961367ab25ec84a6b595b9761 ""
-  "paper.aux" 1784094658 6748 c8cc84594bf912f9d99b2079da79aaf1 "pdflatex"
+  "paper.aux" 1784084124 6707 5ceae2fcb6dea7016da642152a2a32b0 "pdflatex"
   (generated)
   "paper.bbl"
   "paper.blg"
   (rewritten before read)
-["pdflatex"] 1784094657.08016 "g:/GitHub/Latent_Style/WEAVE/aaai2027_v4/paper.tex" "paper.pdf" "paper" 1784094659.91086 0
+["pdflatex"] 1784084123.12536 "g:/GitHub/Latent_Style/SchrodingerBridge/aaai2027_v4/paper.tex" "paper.pdf" "paper" 1784084125.91058 0
   "aaai2027.sty" 1779092464 16915 1b1c792e2acfbbd8b672259e267b95d8 ""
   "aaai_arch_diagram_v16_staggered_bundle.drawio.png" 1783869797 170363 e5fcbe8c0c50d35c9c2d15c6d2e8d876 ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/newtx/ntx-ec-tlf.enc" 1775847907 2914 fdbc4a54b9bc76f4551b5303f2737d33 ""
@@ -183,14 +183,14 @@
   "c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1775849172 5587484 f8c68a611032439b64384a9c9a056676 ""
   "c:/texlive/2026/texmf-var/web2c/pdftex/pdflatex.fmt" 1775849342 3636406 34e2b4bb6da69ff2bca321e49648e0af ""
   "c:/texlive/2026/texmf.cnf" 1775849151 713 e69b156964470283e0530f5060668171 ""
-  "fig_distinct5_page1_summary.pdf" 1784089499 77412 8f9dad170c034a8f33f27e2d18df7755 ""
+  "fig_distinct5_page1_summary.pdf" 1783946128 76650 14258ea7491e8fbffc765ef741a7dd08 ""
   "fig_probe_combined.pdf" 1783688254 17777 3026efafda8d194db68ffcd7216c2f83 ""
   "fig_teaser_comparison.png" 1783482694 816971 6b6eb704ff3afcb251da97d21a8a69ef ""
-  "g:/GitHub/Latent_Style/WEAVE/aaai2027_v4/paper.tex" 1784094653 40449 68b2cd6a150899cd51e28d937155f96d ""
-  "paper.aux" 1784094658 6748 c8cc84594bf912f9d99b2079da79aaf1 "pdflatex"
-  "paper.bbl" 1784094657 11936 e146ea3ec5365b7aa1fe62db5dce2e76 "bibtex paper"
-  "paper.tex" 1784094653 40449 68b2cd6a150899cd51e28d937155f96d ""
-  "radar_metric_blocks_A_clip_dinos_robustbreak.png" 1784082826 767828 274b28e08ec14b7fd05f47fb184d51f8 ""
+  "g:/GitHub/Latent_Style/SchrodingerBridge/aaai2027_v4/paper.tex" 1784080139 41079 a60d45802ffe5e4c182b03d24f7455bf ""
+  "paper.aux" 1784084124 6707 5ceae2fcb6dea7016da642152a2a32b0 "pdflatex"
+  "paper.bbl" 1784080320 12030 2638dfc7dc89a55a5cef8f41f17acc48 "bibtex paper"
+  "paper.tex" 1784080139 41079 a60d45802ffe5e4c182b03d24f7455bf ""
+  "radar_metric_blocks_A_clip_dinos_robustbreak.png" 1783946129 792460 2cb770fdb957eb5077493ab55b253a29 ""
   (generated)
   "paper.aux"
   "paper.log"
