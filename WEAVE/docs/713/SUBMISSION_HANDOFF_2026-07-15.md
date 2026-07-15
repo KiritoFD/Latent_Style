@@ -157,6 +157,12 @@ causes severe collapse and should not be revisited as a tuning direction.
 
 ## 7. Repository Cleanup Completed
 
+- The tracked project directory was renamed from `SchrodingerBridge/` to
+  `WEAVE/` in commit `68884b684`; Git verified all 5,010 tracked paths as
+  exact `R100` renames.
+- The remote execution tree was renamed to `I:\Github\Latent_Style\WEAVE`.
+  Both entry points and canonical config loading pass from the new path, and
+  local/remote config hashes remain identical.
 - Root implementation verified against the old `src/` implementation with
   exact fixed-checkpoint latent equality.
 - Full-board root-layout drift is within ordinary repeated GPU/VAE evaluation
@@ -167,6 +173,11 @@ causes severe collapse and should not be revisited as a tuning direction.
   are archived.
 - Machine-specific dataset path indexing is removed.
 - Current tests: 42 passed with one existing test-only tensor conversion warning.
+
+Windows note: the current Codex task was opened with the former directory as
+its process working directory, so an empty, untracked `SchrodingerBridge/`
+shell may remain until that workspace handle is released. It contains zero
+files; all tracked and runtime content is under `WEAVE/`.
 
 ## 8. Next Architecture Gate
 
