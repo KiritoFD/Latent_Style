@@ -26,6 +26,8 @@ active working surface.
   - retired launchers and one-off analysis scripts; active runs use the two files in `scripts/`
 - `legacy-tests-20260715/`
   - retired Phase 618 and round-2 audit tests tied to archived evidence packets
+- `legacy-src-pre-root-20260715/`
+  - exact pre-promotion `src/` implementation retained for provenance; active modules live at the project root
 
 ## High-value preserved references
 
