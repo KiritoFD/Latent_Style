@@ -28,7 +28,7 @@ The model has 873,680 parameters. Remote training ran from 2026-07-15 00:49:23 t
 
 ## Portable Paths
 
-Both machines use the same paths relative to `SchrodingerBridge/`:
+Both machines use the same paths relative to `WEAVE/`:
 
 ```text
 data/train/                  # packed training latents and pairing cache
@@ -43,7 +43,7 @@ The remote model snapshots initially existed only under the user-level Hugging F
 
 ## Commands
 
-From `SchrodingerBridge/` on either machine:
+From `WEAVE/` on either machine:
 
 ```powershell
 # Fresh training followed by evaluation of every epoch

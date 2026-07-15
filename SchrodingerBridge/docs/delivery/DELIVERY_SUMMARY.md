@@ -13,9 +13,9 @@
 |---|---|
 | Paper bundle | `aaai2027_v4/` has a committed AAAI v4 packet from `0867d43d7`; the supplement has now been expanded in `supplement.tex` and mirrored in `SUPPLEMENTARY_MATERIAL.md`. |
 | Local worktree | Not clean. The 2026-07-13 audit found roughly 816 working-tree changes: large historical deletions, new probe files, source edits, and supplement scratch. |
-| Remote `I:` | `I:\Github\Latent_Style\SchrodingerBridge` is a synchronized experiment tree, not a git repo. |
+| Remote `I:` | `I:\Github\Latent_Style\WEAVE` is the synchronized execution tree, not a git repo. |
 | Stale checkpoint path | Old checkpoint-drive references are not valid for the audited remote. Use logical paths such as `<EXP_ROOT>/dino_s_break/brk_a_ll03_10ep/epoch_0010.pt`. |
-| Current probe root | `I:\Github\Latent_Style\SchrodingerBridge\exp\model_probe` mirrored into local `docs/model_probe/`. |
+| Historical probe root | `I:\Github\Latent_Style\WEAVE\exp\model_probe` mirrored into local `docs/model_probe/`. |
 
 Old statements saying the codebase is fully clean should be treated as historical cleanup intent, not current state.
 

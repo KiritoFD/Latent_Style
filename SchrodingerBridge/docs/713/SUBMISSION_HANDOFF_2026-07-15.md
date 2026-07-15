@@ -20,13 +20,13 @@ appearance alignment.
 Local project:
 
 ```text
-G:\GitHub\Latent_Style\SchrodingerBridge
+G:\GitHub\Latent_Style\WEAVE
 ```
 
 Remote project:
 
 ```text
-I:\Github\Latent_Style\SchrodingerBridge
+I:\Github\Latent_Style\WEAVE
 ```
 
 Remote access:
