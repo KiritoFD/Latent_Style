@@ -29,9 +29,11 @@ from torch.utils.data import DataLoader
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 TOOLS = ROOT / "tools"
-for path in (SRC, TOOLS):
-    if str(path) not in sys.path:
-        sys.path.insert(0, str(path))
+for path in (TOOLS, SRC, ROOT):
+    path_str = str(path)
+    if path_str in sys.path:
+        sys.path.remove(path_str)
+    sys.path.insert(0, path_str)
 
 from config_schema import load_experiment_config  # noqa: E402
 from flow import FlowMatchingObjective  # noqa: E402
@@ -40,6 +42,7 @@ from probe_baseline_internal_flow import (  # noqa: E402
     _rms,
     build_and_load_model,
     build_dataset,
+    collect_loss_path_gradients,
     module_groups,
     move_batch,
     spectral_losses_with_graph,
@@ -628,8 +631,7 @@ def main() -> None:
     model.train()
     loss_fn = FlowMatchingObjective(config)
     if args.enable_hf_stat_loss:
-        loss_fn.hf_stat_loss_enabled = True
-        loss_fn.hf_stat_weight = float(args.hf_stat_weight)
+        raise ValueError("HF-stat loss was removed from the active objective; probe the current FM losses directly.")
 
     results = {
         "config": str(args.config),
@@ -648,8 +650,8 @@ def main() -> None:
             "spectral_w_hl": float(getattr(config.bridge, "spectral_w_hl", 0.0)),
             "spectral_w_hh": float(getattr(config.bridge, "spectral_w_hh", 0.0)),
             "train_hf_stat_loss_enabled_in_config": bool(getattr(config.bridge, "hf_stat_loss_enabled", False)),
-            "probe_hf_stat_loss_enabled": bool(loss_fn.hf_stat_loss_enabled),
-            "probe_hf_stat_weight": float(loss_fn.hf_stat_weight),
+            "probe_hf_stat_loss_enabled": False,
+            "probe_hf_stat_weight": 0.0,
             "target_latent_hf_subband_fusion_enabled": bool(
                 getattr(config.model, "target_latent_hf_subband_fusion_enabled", False)
             ),
@@ -657,6 +659,7 @@ def main() -> None:
             "cfg_dropout_prob": float(getattr(config.model, "cfg_dropout_prob", 0.0)),
         },
         "group_gradient_cosines": collect_group_gradient_cosines(model, loss_fn, batch, config),
+        "loss_path_gradients": collect_loss_path_gradients(model, loss_fn, batch, config),
         "residual_activation_gradients": collect_residual_activation_gradients(model, loss_fn, batch, config),
         "condition_interventions": collect_condition_interventions(model, loss_fn, batch),
         "input_band_gradients": collect_input_band_gradients(model, loss_fn, batch, config),

@@ -31,9 +31,11 @@ from torch.utils.data import DataLoader
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 TOOLS = ROOT / "tools"
-for path in (SRC, TOOLS):
-    if str(path) not in sys.path:
-        sys.path.insert(0, str(path))
+for path in (TOOLS, SRC, ROOT):
+    path_str = str(path)
+    if path_str in sys.path:
+        sys.path.remove(path_str)
+    sys.path.insert(0, path_str)
 
 from config_schema import load_experiment_config  # noqa: E402
 from flow import FlowMatchingObjective  # noqa: E402

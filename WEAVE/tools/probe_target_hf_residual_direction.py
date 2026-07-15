@@ -26,9 +26,11 @@ from torch.utils.data import DataLoader
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 TOOLS = ROOT / "tools"
-for path in (SRC, TOOLS):
-    if str(path) not in sys.path:
-        sys.path.insert(0, str(path))
+for path in (TOOLS, SRC, ROOT):
+    path_str = str(path)
+    if path_str in sys.path:
+        sys.path.remove(path_str)
+    sys.path.insert(0, path_str)
 
 from config_schema import load_experiment_config  # noqa: E402
 from flow import FlowMatchingObjective  # noqa: E402
@@ -93,37 +95,11 @@ def construct_training_pair(
         style_latent = target_style
 
     target = target_style
-    if loss_fn.latent_adain_enabled:
-        content = loss_fn._adain_blend(content, target, loss_fn.latent_adain_gamma)
-
     if loss_fn.structure_aligned_target:
         ll_c, lh_c, hl_c, hh_c = dwt2_haar(content)
         ll_t, lh_t, hl_t, hh_t = dwt2_haar(target)
-        if loss_fn.multi_level_dwt_enabled:
-            ll2_c, lh2_c, hl2_c, hh2_c = dwt2_haar(ll_c)
-            _ll2_t, lh2_t, hl2_t, hh2_t = dwt2_haar(ll_t)
-            alpha2 = loss_fn.multi_level_dwt_alpha2
-            ll_c = idwt2_haar(
-                ll2_c,
-                (1.0 - alpha2) * lh2_c + alpha2 * lh2_t,
-                (1.0 - alpha2) * hl2_c + alpha2 * hl2_t,
-                (1.0 - alpha2) * hh2_c + alpha2 * hh2_t,
-            )
-        elif loss_fn.ll_partial_style_enabled and 0.0 < loss_fn.ll_partial_alpha <= 1.0:
+        if loss_fn.ll_partial_style_enabled and 0.0 < loss_fn.ll_partial_alpha <= 1.0:
             ll_c = loss_fn._partial_style_ll(ll_c, ll_t, loss_fn.ll_partial_alpha)
-        if loss_fn.hf_wct_enabled:
-            lh_t = loss_fn._wct_match_hf(lh_c, lh_t, loss_fn.hf_wct_beta)
-            hl_t = loss_fn._wct_match_hf(hl_c, hl_t, loss_fn.hf_wct_beta)
-            hh_t = loss_fn._wct_match_hf(hh_c, hh_t, loss_fn.hf_wct_beta)
-        if loss_fn.hf_adain_enabled:
-            lh_t = loss_fn._adain_blend(lh_c, lh_t, loss_fn.hf_adain_alpha_lh)
-            hl_t = loss_fn._adain_blend(hl_c, hl_t, loss_fn.hf_adain_alpha_hl)
-            hh_t = loss_fn._adain_blend(hh_c, hh_t, loss_fn.hf_adain_alpha_hh)
-        if loss_fn.hf_overstylize_beta > 1.0:
-            beta = loss_fn.hf_overstylize_beta
-            lh_t = (1.0 - beta) * lh_c + beta * lh_t
-            hl_t = (1.0 - beta) * hl_c + beta * hl_t
-            hh_t = (1.0 - beta) * hh_c + beta * hh_t
         target = idwt2_haar(ll_c, lh_t, hl_t, hh_t)
 
     if loss_fn.train_adain_enabled and loss_fn.train_adain_scale > 0.0 and torch.is_tensor(style_latent):

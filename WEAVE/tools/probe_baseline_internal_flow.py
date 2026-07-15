@@ -26,8 +26,11 @@ from torch.utils.data import DataLoader
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+for path in (SRC, ROOT):
+    path_str = str(path)
+    if path_str in sys.path:
+        sys.path.remove(path_str)
+    sys.path.insert(0, path_str)
 
 from config_schema import load_experiment_config  # noqa: E402
 from flow import FlowMatchingObjective  # noqa: E402
@@ -548,36 +551,11 @@ def spectral_losses_with_graph(
         style_latent = target_style
 
     target = target_style
-    if loss_fn.latent_adain_enabled:
-        content = loss_fn._adain_blend(content, target, loss_fn.latent_adain_gamma)
-
     if loss_fn.structure_aligned_target:
         ll_c, lh_c, hl_c, hh_c = dwt2_haar(content)
         ll_t, lh_t, hl_t, hh_t = dwt2_haar(target)
-        if loss_fn.multi_level_dwt_enabled:
-            ll2_c, lh2_c, hl2_c, hh2_c = dwt2_haar(ll_c)
-            ll2_t, lh2_t, hl2_t, hh2_t = dwt2_haar(ll_t)
-            del ll2_t
-            a2 = loss_fn.multi_level_dwt_alpha2
-            lh2_blend = (1.0 - a2) * lh2_c + a2 * lh2_t
-            hl2_blend = (1.0 - a2) * hl2_c + a2 * hl2_t
-            hh2_blend = (1.0 - a2) * hh2_c + a2 * hh2_t
-            ll_c = idwt2_haar(ll2_c, lh2_blend, hl2_blend, hh2_blend)
-        elif loss_fn.ll_partial_style_enabled and 0.0 < loss_fn.ll_partial_alpha <= 1.0:
+        if loss_fn.ll_partial_style_enabled and 0.0 < loss_fn.ll_partial_alpha <= 1.0:
             ll_c = loss_fn._partial_style_ll(ll_c, ll_t, loss_fn.ll_partial_alpha)
-        if loss_fn.hf_wct_enabled:
-            lh_t = loss_fn._wct_match_hf(lh_c, lh_t, loss_fn.hf_wct_beta)
-            hl_t = loss_fn._wct_match_hf(hl_c, hl_t, loss_fn.hf_wct_beta)
-            hh_t = loss_fn._wct_match_hf(hh_c, hh_t, loss_fn.hf_wct_beta)
-        if loss_fn.hf_adain_enabled:
-            lh_t = loss_fn._adain_blend(lh_c, lh_t, loss_fn.hf_adain_alpha_lh)
-            hl_t = loss_fn._adain_blend(hl_c, hl_t, loss_fn.hf_adain_alpha_hl)
-            hh_t = loss_fn._adain_blend(hh_c, hh_t, loss_fn.hf_adain_alpha_hh)
-        if loss_fn.hf_overstylize_beta > 1.0:
-            b = loss_fn.hf_overstylize_beta
-            lh_t = (1.0 - b) * lh_c + b * lh_t
-            hl_t = (1.0 - b) * hl_c + b * hl_t
-            hh_t = (1.0 - b) * hh_c + b * hh_t
         target = idwt2_haar(ll_c, lh_t, hl_t, hh_t)
 
     if loss_fn.train_adain_enabled and loss_fn.train_adain_scale > 0.0 and torch.is_tensor(style_latent):
@@ -604,24 +582,12 @@ def spectral_losses_with_graph(
         style_text_tokens=style_text_tokens,
     )
 
-    if loss_fn.subband_time_schedule_enabled:
-        g_ll = subband_gamma_tensor(t, loss_fn.subband_gamma_ll).view(-1, 1, 1, 1).to(dtype=content.dtype)
-        g_lh = subband_gamma_tensor(t, loss_fn.subband_gamma_lh).view(-1, 1, 1, 1).to(dtype=content.dtype)
-        g_hl = subband_gamma_tensor(t, loss_fn.subband_gamma_hl).view(-1, 1, 1, 1).to(dtype=content.dtype)
-        g_hh = subband_gamma_tensor(t, loss_fn.subband_gamma_hh).view(-1, 1, 1, 1).to(dtype=content.dtype)
-        loss_ll = (g_ll * (v_dict["ll"].float() - target_ll.float()) ** 2).mean()
-        loss_lh = (g_lh * (v_dict["lh"].float() - target_lh.float()) ** 2).mean()
-        loss_hl = (g_hl * (v_dict["hl"].float() - target_hl.float()) ** 2).mean()
-        loss_hh = content.new_tensor(0.0)
-        if "hh" in v_dict:
-            loss_hh = (g_hh * (v_dict["hh"].float() - target_hh.float()) ** 2).mean()
-    else:
-        loss_ll = loss_fn._fm_loss(v_dict["ll"], target_ll)
-        loss_lh = loss_fn._fm_loss(v_dict["lh"], target_lh)
-        loss_hl = loss_fn._fm_loss(v_dict["hl"], target_hl)
-        loss_hh = content.new_tensor(0.0)
-        if "hh" in v_dict:
-            loss_hh = loss_fn._fm_loss(v_dict["hh"], target_hh)
+    loss_ll = loss_fn._fm_loss(v_dict["ll"], target_ll)
+    loss_lh = loss_fn._fm_loss(v_dict["lh"], target_lh)
+    loss_hl = loss_fn._fm_loss(v_dict["hl"], target_hl)
+    loss_hh = content.new_tensor(0.0)
+    if "hh" in v_dict:
+        loss_hh = loss_fn._fm_loss(v_dict["hh"], target_hh)
 
     weighted_ll = loss_fn.w_ll * loss_ll
     weighted_lh = loss_fn.w_lh * loss_lh
@@ -630,7 +596,7 @@ def spectral_losses_with_graph(
     stat_lh = content.new_tensor(0.0)
     stat_hl = content.new_tensor(0.0)
     stat_hh = content.new_tensor(0.0)
-    if loss_fn.hf_stat_loss_enabled:
+    if bool(getattr(loss_fn, "hf_stat_loss_enabled", False)) and hasattr(loss_fn, "_statistical_loss"):
         stat_lh = loss_fn.hf_stat_weight * loss_fn._statistical_loss(v_dict["lh"], target_lh)
         stat_hl = loss_fn.hf_stat_weight * loss_fn._statistical_loss(v_dict["hl"], target_hl)
         if "hh" in v_dict:
