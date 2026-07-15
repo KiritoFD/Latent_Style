@@ -97,7 +97,7 @@ def test_canonical_configs_are_portable_and_complete() -> None:
     assert merged["model"]["endpoint_adain_scale"] == 2.0
     assert config.training.freeze_mode == "none"
     assert config.training.resume_checkpoint == ""
-    assert config.checkpoint.resume_checkpoint == ""
+    assert merged["checkpoint"]["resume_checkpoint"] == ""
     assert config.model.output_appearance_alignment_mode == "none"
     assert eval_settings["postprocess_mode"] == "none"
     assert eval_settings["latent_postprocess_mode"] == "none"
