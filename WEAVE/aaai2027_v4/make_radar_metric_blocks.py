@@ -42,7 +42,8 @@ DINO_JSON = SCRIPT_DIR / "fig_data" / "dino_main.json"
 DATA = {
     # tuple = (CLIP-S, LPIPS(raw, lower=better), DINO-C, DINO-S); MUSIQ dropped.
     # CLIP-S/LPIPS from paper tab:main; DINO-C/DINO-S from local DINOv2 (state/dino/dino_main.json).
-    "Identity":       [(0.693, 0.000, 1.000, 0.419), (0.663, 0.000, 1.000, 0.416), (0.731, 0.000, 1.000, 0.433)],
+    # Per-axis empirical boundary: IDT on style axes, TGT on content axes.
+    "IDT-TGT bound":  [(0.693, 0.733, 0.176, 0.419), (0.663, 0.800, 0.169, 0.416), (0.731, 0.747, 0.230, 0.433)],
     "SD-Turbo":       [(0.693, 0.003, 0.922, 0.484), (0.674, 0.603, 0.279, 0.341), (0.767, 0.449, 0.538, 0.505)],
     "StyleAligned":   [(0.780, 0.869, 0.239, 0.675), (0.768, 0.786, 0.310, 0.612), (0.824, 0.829, 0.315, 0.649)],
     "Z-STAR":         [(0.784, 0.347, 0.549, 0.449), (0.786, 0.332, 0.552, 0.498), (0.822, 0.384, 0.526, 0.514)],
@@ -52,14 +53,14 @@ DATA = {
     "SaMam":          [(0.582, 0.243, 0.812, 0.477), (0.677, 0.205, 0.870, 0.505), (0.712, 0.227, 0.925, 0.503)],
     "Latent-WCT":     [(0.673, 0.441, 0.559, 0.362), (0.738, 0.585, 0.386, 0.338), (0.710, 0.444, 0.553, 0.414)],
     "Seedream 4.5":   [(0.720, 0.477, 0.739, 0.486), (0.752, 0.227, 0.785, 0.517), (0.742, 0.486, 0.725, 0.504)],
-    "Ours (WEAVE)":   [(0.7075, 0.2583, 0.8287, 0.4859), (0.6681, 0.3116, 0.8612, 0.4801), (0.7747, 0.2895, 0.7717, 0.5226)],
+    "Ours (WEAVE)":   [(0.7126, 0.2596, 0.8103, 0.4915), (0.6681, 0.3116, 0.8612, 0.4801), (0.7747, 0.2895, 0.7717, 0.5226)],
 }
 DATASETS = ["D5-512", "P2A-256", "R5-WikiArt"]
 
 # Train / Infer times from paper tab:main (D5 context, single value per method).
 # Converted to SECONDS. math.nan = training-free ("free") or closed API ("--"/"API").
 TRAIN_SEC = {
-    "Identity":       math.nan,        # free
+    "IDT-TGT bound":  math.nan,        # reference only
     "SD-Turbo":       math.nan,        # free
     "StyleAligned":   math.nan,        # free
     "Z-STAR":         math.nan,        # free
@@ -69,10 +70,10 @@ TRAIN_SEC = {
     "SaMam":          436.0 * 60.0,    # 436.0 min
     "Latent-WCT":     math.nan,        # free
     "Seedream 4.5":   math.nan,        # API
-    "Ours (WEAVE)":   3.0  * 60.0,    # 3.0 min (10 epochs)
+    "Ours (WEAVE)":   82.8,            # 1.38 min, internal stop at epoch 4
 }
 INFER_SEC = {
-    "Identity":       math.nan,        # 0 s dropped (training-free -> gap on infer axis)
+    "IDT-TGT bound":  math.nan,        # reference only
     "SD-Turbo":       303.0,           # 5.1 m  (0.404 s/img x750, RTX3060 measured)
     "StyleAligned":   4635.0,          # 77 m   (6.18 s/img x750, RTX3060 measured)
     "Z-STAR":         10800.0,         # ~3 h   ESTIMATED (30-step SD1.5 + dual-latent reweight;
@@ -83,12 +84,12 @@ INFER_SEC = {
     "SaMam":          17.6 * 60.0,     # 17.6 m (not re-measured on 3060; prior value)
     "Latent-WCT":     math.nan,        # free / not drawn on speed axis
     "Seedream 4.5":   math.nan,        # --
-    "Ours (WEAVE)":   94.6,            # 94.6 s generation-only (bs=2, 8-step, AdaIN1.5, RTX3060 measured 2026-07-13)
+    "Ours (WEAVE)":   106.25,          # oriented target-HF route, 750 images
 }
 
 # radar method name -> local results/<ds>/<dir> name (for DINO lookup)
 METHOD_DIR = {
-    "Identity": "identity",
+    "IDT-TGT bound": "identity",
     "SD-Turbo": "sdturbo", "StyleAligned": "stylealigned",
     "Z-STAR": "zstar", "StyleShot": "styleshot", "CUT": "cut", "SaMST": "samst",
     "SaMam": "samam", "Latent-WCT": "latent_wct", "Seedream 4.5": "seedream", "Ours (WEAVE)": "weave",
@@ -124,7 +125,7 @@ FAINT = {
     "SaMST":        ("#17BECF", 0.80, 0.03, 0.34, 3),
     "SD-Turbo":     ("#AEC7E8", 0.75, 0.025, 0.30, 3),
     "Latent-WCT":   ("#8C564B", 1.00, 0.04, 0.58, 5),
-    "Identity":     ("#000000", 1.25, 0.06, 0.70, 3),
+    "IDT-TGT bound":("#000000", 1.25, 0.06, 0.70, 3),
 }
 TIERS = {}
 TIERS.update(FAINT)
@@ -142,15 +143,15 @@ TIER_OF.update({k: "t1" for k in TIER1})
 TIER_OF.update({k: "t2" for k in TIER2})
 TIER_OF.update({k: "t3" for k in TIER3})
 
-# Identity is drawn as a distinctive secondary reference: black, dashed, thin.
-LINESTYLE = {"Identity": "--"}
+# The mixed IDT--TGT boundary is drawn as a black dashed reference.
+LINESTYLE = {"IDT-TGT bound": "--"}
 
 LEGEND_ORDER = ["Ours (WEAVE)", "Seedream 4.5", "Z-STAR", "StyleAligned", "SaMam",
-                "IP-Adapter", "Latent-WCT", "StyleShot", "CUT", "SaMST", "SD-Turbo", "Identity"]
+                "IP-Adapter", "Latent-WCT", "StyleShot", "CUT", "SaMST", "SD-Turbo", "IDT-TGT bound"]
 
 # Year / venue for each method (best-effort; AMiner token unavailable -> from public record).
 META = {
-    "Identity":       ("ref",        "reference"),
+    "IDT-TGT bound":  ("ref",        "reference"),
     "SD-Turbo":       ("2023",       "Sauer et al."),
     "IP-Adapter":     ("2023",       "Ye et al."),
     "StyleAligned":   ("CVPR 2024",  "Hertz et al."),
@@ -375,7 +376,12 @@ for n in LEGEND_ORDER:
             ordered_hl.append((h, n))
             break
 oh, onames = list(zip(*ordered_hl)) if ordered_hl else ([], [])
-olabels = [n if n == "Ours (WEAVE)" else f"{n}  ({META.get(n, ('?',))[0]})" for n in onames]
+olabels = [
+    "IDT--TGT boundary (ref)" if n == "IDT-TGT bound"
+    else n if n == "Ours (WEAVE)"
+    else f"{n}  ({META.get(n, ('?',))[0]})"
+    for n in onames
+]
 
 # Legend sits in the right margin (dedicated column, clear of the squashed radar);
 # three-tier font weight mirrors the plot hierarchy.
@@ -433,13 +439,10 @@ def _wrap_to_px(text, fs, max_px):
 
 
 _CAPTION = (
-    "Metric blocks separate style, content, and speed: speed is placed on the left, DINO-S on the right, "
-    "CLIP-S on the upper-left, and content metrics at the bottom. DINO-S is the primary style axis and uses "
-    "a robust broken scale: the weakest value maps near the inner ring, the second-highest maps to 0.84, "
-    "and the highest maps to 1.0; raw table values remain the numeric reference. "
-    "CLIP-S, DINO-C, and 1-LPIPS use linear v/max. WEAVE shows its "
-    "strongest balance on the 512px D5 setting while retaining a much lower training/inference cost, "
-    "indicating better headroom for scaling resolution and style coverage."
+    "Axes group speed (left), style (top/right), and content (bottom). DINO-S uses a robust broken scale; "
+    "CLIP-S, DINO-C, and 1-LPIPS use linear v/max, and speed is log-inverted. The dashed boundary uses "
+    "IDT on style axes and TGT on content axes. Raw table values remain the numeric reference. "
+    "WEAVE's D5 checkpoint is selected by a fixed-latent gate/gradient transition without online metrics."
 )
 _CAPTION_FS = 13.8
 _CAPTION_WRAPPED = _wrap_to_px(_CAPTION, _CAPTION_FS, _CAP_W_PX)

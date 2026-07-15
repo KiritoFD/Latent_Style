@@ -117,30 +117,30 @@ def fig_dataset_boards() -> None:
 
 
 def fig_training_curve() -> None:
-    epochs = np.arange(1, 11)
-    loss = np.array([1.342929, 1.319093, 1.260078, 1.162800, 1.122725, 1.092592, 1.073926, 1.066655, 1.062016, 1.057791])
-    lr = np.array([2.0000e-4, 1.9535e-4, 1.8186e-4, 1.6084e-4, 1.3436e-4, 1.0500e-4, 7.5643e-5, 4.9160e-5, 2.8143e-5, 1.4650e-5])
-    sec = np.array([22.11, 17.81, 17.45, 17.08, 17.08, 17.07, 17.08, 17.08, 17.08, 17.09])
+    epochs = np.arange(1, 5)
+    loss = np.array([1.363058, 1.331848, 1.319913, 1.249944])
+    lr = np.array([2.0000e-4, 1.9792e-4, 1.9179e-4, 1.8186e-4])
+    sec = np.array([25.72, 19.23, 18.94, 18.90])
 
     fig, axes = plt.subplots(1, 3, figsize=(6.7, 1.95))
     axes[0].plot(epochs, loss, marker="o", color=COLORS["ours"])
     axes[0].set_title("Training loss")
     axes[0].set_xlabel("epoch")
     axes[0].set_ylabel("loss")
-    axes[0].set_xticks([1, 5, 10])
+    axes[0].set_xticks(epochs)
 
     axes[1].plot(epochs, lr * 1e4, marker="s", color=COLORS["blue"])
     axes[1].set_title("Cosine LR")
     axes[1].set_xlabel("epoch")
     axes[1].set_ylabel(r"LR $\times 10^4$")
-    axes[1].set_xticks([1, 5, 10])
+    axes[1].set_xticks(epochs)
 
-    axes[2].bar(epochs, sec, color=[COLORS["gray"]] + [COLORS["green"]] * 9, edgecolor="white", linewidth=0.4)
+    axes[2].bar(epochs, sec, color=[COLORS["gray"]] * 3 + [COLORS["ours"]], edgecolor="white", linewidth=0.4)
     axes[2].set_title("Epoch time")
     axes[2].set_xlabel("epoch")
     axes[2].set_ylabel("seconds")
     axes[2].set_ylim(0, 24)
-    axes[2].set_xticks([1, 5, 10])
+    axes[2].set_xticks(epochs)
     fig.tight_layout(w_pad=1.2)
     save(fig, "fig_training_audit")
 
@@ -157,7 +157,7 @@ def fig_main_tradeoff() -> None:
         ["SaMam", 0.477, 0.243, 0.812, "learned"],
         ["Seedream 4.5", 0.486, 0.477, 0.739, "other"],
         ["Latent-WCT", 0.362, 0.441, 0.559, "analytic"],
-        ["WEAVE", 0.4859, 0.2583, 0.8287, "ours"],
+        ["WEAVE", 0.4915, 0.2596, 0.8103, "ours"],
     ]
     df = pd.DataFrame(rows, columns=["method", "dino_s", "lpips", "dino_c", "type"])
     fig, ax = plt.subplots(figsize=(4.15, 3.0))
@@ -251,7 +251,7 @@ def fig_d5_metric_heatmap() -> None:
             [0.477, 0.582, 0.243, 0.812],
             [0.486, 0.720, 0.477, 0.739],
             [0.362, 0.673, 0.441, 0.559],
-            [0.486, 0.708, 0.258, 0.829],
+            [0.492, 0.713, 0.260, 0.810],
         ]
     )
     # Normalize each metric to visual desirability; LPIPS is inverted.
@@ -281,9 +281,9 @@ def fig_d5_metric_heatmap() -> None:
 
 def fig_cost_quality() -> None:
     methods = ["CUT", "SaMST", "SaMam", "WEAVE"]
-    train_min = np.array([322.6, 39.5, 436.0, 3.0])
-    infer_min = np.array([5.0, 10.0, 17.6, 1.58])
-    dino_c = np.array([0.795, 0.145, 0.812, 0.829])
+    train_min = np.array([322.6, 39.5, 436.0, 1.38])
+    infer_min = np.array([5.0, 10.0, 17.6, 1.77])
+    dino_c = np.array([0.795, 0.145, 0.812, 0.810])
     fig, axes = plt.subplots(1, 2, figsize=(6.7, 2.45))
     y = np.arange(len(methods))
     colors = [COLORS["gray"], COLORS["gray"], COLORS["blue"], COLORS["ours"]]

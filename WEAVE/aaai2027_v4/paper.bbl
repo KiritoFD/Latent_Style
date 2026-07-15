@@ -13,13 +13,17 @@
 
 \bibitem[{Cai et~al.(2021)Cai, Zhang, Huang, Geng, Li, and Huang}]{cai2021fdit}
 Cai, M.; Zhang, H.; Huang, H.; Geng, Q.; Li, Y.; and Huang, G. 2021.
-\newblock Frequency Domain Image Translation: More Photo-Realistic, Better Identity-Preserving.
-\newblock In \emph{Proceedings of the IEEE/CVF International Conference on Computer Vision}.
+\newblock Frequency Domain Image Translation: More Photo-Realistic, Better
+  Identity-Preserving.
+\newblock In \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision}.
 
 \bibitem[{Chung, Hyun, and Heo(2024)}]{chung2024style}
 Chung, J.; Hyun, S.; and Heo, J.-P. 2024.
-\newblock Style Injection in Diffusion: A Training-free Approach for Adapting Large-scale Diffusion Models for Style Transfer.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}.
+\newblock Style Injection in Diffusion: A Training-free Approach for Adapting
+  Large-scale Diffusion Models for Style Transfer.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition (CVPR)}.
 
 \bibitem[{Cuturi(2013)}]{cuturi2013sinkhorn}
 Cuturi, M. 2013.
@@ -31,15 +35,19 @@ Daubechies, I. 1992.
 \newblock Ten Lectures on Wavelets.
 \newblock \emph{SIAM}.
 
-\bibitem[{De~Bortoli et~al.(2021)De~Bortoli, Thornton, Heng, and Doucet}]{debortoli2021dsb}
+\bibitem[{De~Bortoli et~al.(2021)De~Bortoli, Thornton, Heng, and
+  Doucet}]{debortoli2021dsb}
 De~Bortoli, V.; Thornton, J.; Heng, J.; and Doucet, A. 2021.
-\newblock Diffusion Schr{\"o}dinger Bridge with Applications to Score-Based Generative Modeling.
+\newblock Diffusion Schr{\"o}dinger Bridge with Applications to Score-Based
+  Generative Modeling.
 \newblock \emph{arXiv preprint arXiv:2106.01357}.
 
-\bibitem[{Deng et~al.(2022)Deng, Tang, Dong, Sun, Huang, and Xu}]{deng2022stytr2}
+\bibitem[{Deng et~al.(2022)Deng, Tang, Dong, Sun, Huang, and
+  Xu}]{deng2022stytr2}
 Deng, Y.; Tang, F.; Dong, W.; Sun, W.; Huang, F.; and Xu, C. 2022.
 \newblock StyTr2: Image Style Transfer with Transformers.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}.
 
 \bibitem[{Gatys, Ecker, and Bethge(2015)}]{gatys2015neural}
 Gatys, L.~A.; Ecker, A.~S.; and Bethge, M. 2015.
@@ -49,11 +57,13 @@ Gatys, L.~A.; Ecker, A.~S.; and Bethge, M. 2015.
 \bibitem[{Gatys, Ecker, and Bethge(2016)}]{gatys2016image}
 Gatys, L.~A.; Ecker, A.~S.; and Bethge, M. 2016.
 \newblock Image Style Transfer Using Convolutional Neural Networks.
-\newblock In \emph{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}.
+\newblock In \emph{Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition}.
 
 \bibitem[{Gim, Yoo, and Uh(2024)}]{gim2024cast}
 Gim, H.; Yoo, J.; and Uh, Y. 2024.
-\newblock Content-Adaptive Style Transfer: A Training-Free Approach with VQ Autoencoders.
+\newblock Content-Adaptive Style Transfer: A Training-Free Approach with VQ
+  Autoencoders.
 \newblock In \emph{Proceedings of the Asian Conference on Computer Vision}.
 
 \bibitem[{Gu and Dao(2023)}]{gu2023mamba}
@@ -61,53 +71,66 @@ Gu, A.; and Dao, T. 2023.
 \newblock Mamba: Linear-Time Sequence Modeling with Selective State Spaces.
 \newblock \emph{arXiv preprint arXiv:2312.00752}.
 
-\bibitem[{Hertz et~al.(2022)Hertz, Mokady, Tenenbaum, Aberman, Pritch, and Cohen-Or}]{hertz2022prompt}
-Hertz, A.; Mokady, R.; Tenenbaum, J.; Aberman, K.; Pritch, Y.; and Cohen-Or, D. 2022.
+\bibitem[{Hertz et~al.(2022)Hertz, Mokady, Tenenbaum, Aberman, Pritch, and
+  Cohen-Or}]{hertz2022prompt}
+Hertz, A.; Mokady, R.; Tenenbaum, J.; Aberman, K.; Pritch, Y.; and Cohen-Or, D.
+  2022.
 \newblock Prompt-to-Prompt Image Editing with Cross Attention Control.
 \newblock \emph{arXiv preprint arXiv:2208.01626}.
 
-\bibitem[{Hertz et~al.(2024)Hertz, Voynov, Fruchter, and Cohen-Or}]{hertz2024style}
+\bibitem[{Hertz et~al.(2024)Hertz, Voynov, Fruchter, and
+  Cohen-Or}]{hertz2024style}
 Hertz, A.; Voynov, A.; Fruchter, S.; and Cohen-Or, D. 2024.
 \newblock Style Aligned Image Generation via Shared Attention.
-\newblock In \emph{Proceedings of the International Conference on Learning Representations (ICLR)}.
+\newblock In \emph{Proceedings of the International Conference on Learning
+  Representations (ICLR)}.
 
 \bibitem[{Hong et~al.(2023)Hong, Jeon, Yang, Fu, and Byun}]{hong2023aespa}
 Hong, K.; Jeon, S.; Yang, H.; Fu, J.; and Byun, H. 2023.
 \newblock AesPA-Net: Aesthetic Pattern-Aware Style Transfer Networks.
-\newblock In \emph{Proceedings of the IEEE/CVF International Conference on Computer Vision}.
+\newblock In \emph{Proceedings of the IEEE/CVF International Conference on
+  Computer Vision}.
 
 \bibitem[{Huang and Belongie(2017)}]{huang2017arbitrary}
 Huang, X.; and Belongie, S. 2017.
-\newblock Arbitrary Style Transfer in Real-time with Adaptive Instance Normalization.
+\newblock Arbitrary Style Transfer in Real-time with Adaptive Instance
+  Normalization.
 \newblock In \emph{ICCV}.
 
 \bibitem[{Kim, Kwon, and Ye(2023)}]{kim2022diffuseit}
 Kim, G.; Kwon, T.; and Ye, J.~C. 2023.
-\newblock Diffusion-based Image Translation using Disentangled Style and Content Representation.
+\newblock Diffusion-based Image Translation using Disentangled Style and
+  Content Representation.
 \newblock In \emph{International Conference on Learning Representations}.
 
 \bibitem[{Kwon et~al.(2024)Kwon, Kim, Lin, Yoo, and Cha}]{kwon2024aesfa}
 Kwon, J.; Kim, S.; Lin, Y.; Yoo, S.; and Cha, J. 2024.
 \newblock AesFA: An Aesthetic Feature-Aware Arbitrary Neural Style Transfer.
-\newblock In \emph{Proceedings of the AAAI Conference on Artificial Intelligence}.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}.
 
 \bibitem[{L{\'e}onard(2014)}]{leonard2014survey}
 L{\'e}onard, C. 2014.
-\newblock A Survey of the Schr{\"o}dinger Problem and Some of Its Connections with Optimal Transport.
+\newblock A Survey of the Schr{\"o}dinger Problem and Some of Its Connections
+  with Optimal Transport.
 \newblock \emph{Discrete and Continuous Dynamical Systems - A}.
 
 \bibitem[{Li et~al.(2017)Li, Fang, Yang, Wang, Lu, and Yang}]{li2017universal}
 Li, Y.; Fang, C.; Yang, J.; Wang, Z.; Lu, X.; and Yang, M.-H. 2017.
 \newblock Universal Style Transfer via Feature Transforms.
-\newblock In \emph{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}.
+\newblock In \emph{Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition}.
 
-\bibitem[{Lipman et~al.(2022)Lipman, Chen, Ben-Hamu, Nickel, and Le}]{lipman2022flow}
+\bibitem[{Lipman et~al.(2022)Lipman, Chen, Ben-Hamu, Nickel, and
+  Le}]{lipman2022flow}
 Lipman, Y.; Chen, R. T.~Q.; Ben-Hamu, H.; Nickel, M.; and Le, M. 2022.
 \newblock Flow Matching for Generative Modeling.
 \newblock \emph{arXiv preprint arXiv:2210.02747}.
 
-\bibitem[{Liu et~al.(2023)Liu, Vahdat, Huang, Theodorou, Nie, and Anandkumar}]{liu2023i2sb}
-Liu, G.-H.; Vahdat, A.; Huang, D.-A.; Theodorou, E.~A.; Nie, W.; and Anandkumar, A. 2023.
+\bibitem[{Liu et~al.(2023)Liu, Vahdat, Huang, Theodorou, Nie, and
+  Anandkumar}]{liu2023i2sb}
+Liu, G.-H.; Vahdat, A.; Huang, D.-A.; Theodorou, E.~A.; Nie, W.; and
+  Anandkumar, A. 2023.
 \newblock I2SB: Image-to-Image Schr{\"o}dinger Bridge.
 \newblock In \emph{International Conference on Machine Learning}.
 
@@ -118,28 +141,37 @@ Liu, H.; Wang, L.; Guan, W.; Zhang, Y.; and Guo, Y. 2024.
 
 \bibitem[{Liu et~al.(2025)Liu, Wang, Zhang, Yu, and Guo}]{liu2024samam}
 Liu, H.; Wang, L.; Zhang, Y.; Yu, Z.; and Guo, Y. 2025.
-\newblock SaMam: Style-aware State Space Model for Arbitrary Image Style Transfer.
+\newblock SaMam: Style-aware State Space Model for Arbitrary Image Style
+  Transfer.
 \newblock \emph{arXiv preprint arXiv:2503.15934}.
 
 \bibitem[{Liu, Gong, and Liu(2023)}]{liu2022rectified}
 Liu, X.; Gong, C.; and Liu, Q. 2023.
-\newblock Flow Straight and Fast: Learning to Generate and Transfer Data with Rectified Flow.
+\newblock Flow Straight and Fast: Learning to Generate and Transfer Data with
+  Rectified Flow.
 \newblock In \emph{International Conference on Learning Representations}.
 
 \bibitem[{Lu et~al.(2024)Lu, Vukoti, Hadji, Dorken, and Levi}]{lu2024zstar}
 Lu, Z.-S.; Vukoti, S.; Hadji, I.; Dorken, W.; and Levi, G. 2024.
-\newblock Z-STAR: Training-Free Zero-Shot Style Transfer via Attention Rearrangement.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}.
+\newblock Z-STAR: Training-Free Zero-Shot Style Transfer via Attention
+  Rearrangement.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}.
 
-\bibitem[{Meng et~al.(2021)Meng, He, Song, Song, Blackwell, Jia, and Ermon}]{meng2021sdedit}
-Meng, C.; He, Y.; Song, Y.; Song, J.; Blackwell, J.; Jia, J.; and Ermon, S. 2021.
-\newblock SDEdit: Guided Image Synthesis and Editing with Stochastic Differential Equations.
-\newblock In \emph{Proceedings of the IEEE International Conference on Computer Vision}.
+\bibitem[{Meng et~al.(2021)Meng, He, Song, Song, Blackwell, Jia, and
+  Ermon}]{meng2021sdedit}
+Meng, C.; He, Y.; Song, Y.; Song, J.; Blackwell, J.; Jia, J.; and Ermon, S.
+  2021.
+\newblock SDEdit: Guided Image Synthesis and Editing with Stochastic
+  Differential Equations.
+\newblock In \emph{Proceedings of the IEEE International Conference on Computer
+  Vision}.
 
 \bibitem[{Park and Lee(2019)}]{park2019sanet}
 Park, D.~Y.; and Lee, K.~H. 2019.
 \newblock Arbitrary Style Transfer with Style-Attentional Networks.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}.
 
 \bibitem[{Park et~al.(2020)Park, Efros, Zhang, and Zhu}]{park2020cut}
 Park, T.; Efros, A.~A.; Zhang, R.; and Zhu, J.-Y. 2020.
@@ -154,14 +186,18 @@ Peyr{\'e}, G.; and Cuturi, M. 2019.
 \bibitem[{Phung, Dao, and Tran(2023)}]{phung2023wavelet}
 Phung, H.; Dao, Q.; and Tran, A. 2023.
 \newblock Wavelet Diffusion Models Are Fast and Scalable Image Generators.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}.
 
-\bibitem[{Rahaman et~al.(2019)Rahaman, Baratin, Arpit, Draxler, Li, Hamprecht, Bengio, and Courville}]{rahaman2019spectral}
-Rahaman, N.; Baratin, A.; Arpit, D.; Draxler, F.; Li, M.; Hamprecht, F.; Bengio, Y.; and Courville, A. 2019.
+\bibitem[{Rahaman et~al.(2019)Rahaman, Baratin, Arpit, Draxler, Li, Hamprecht,
+  Bengio, and Courville}]{rahaman2019spectral}
+Rahaman, N.; Baratin, A.; Arpit, D.; Draxler, F.; Li, M.; Hamprecht, F.;
+  Bengio, Y.; and Courville, A. 2019.
 \newblock On the Spectral Bias of Neural Networks.
 \newblock In \emph{ICML}.
 
-\bibitem[{Rombach et~al.(2022)Rombach, Blattmann, Lorenz, Esser, and Ommer}]{rombach2022high}
+\bibitem[{Rombach et~al.(2022)Rombach, Blattmann, Lorenz, Esser, and
+  Ommer}]{rombach2022high}
 Rombach, R.; Blattmann, A.; Lorenz, D.; Esser, P.; and Ommer, B. 2022.
 \newblock High-Resolution Image Synthesis with Latent Diffusion Models.
 \newblock In \emph{CVPR}.
@@ -188,7 +224,8 @@ Xu, Z.-Q.~J.; Zhang, Y.; and Luo, T. 2022.
 
 \bibitem[{Ye et~al.(2023)Ye, Zhang, Liu, Han, and Yang}]{ye2023ipadapter}
 Ye, H.; Zhang, J.; Liu, S.; Han, X.; and Yang, W. 2023.
-\newblock IP-Adapter: Text Compatible Image Prompt Adapter for Text-to-Image Diffusion Models.
+\newblock IP-Adapter: Text Compatible Image Prompt Adapter for Text-to-Image
+  Diffusion Models.
 \newblock \emph{arXiv preprint arXiv:2308.06721}.
 
 \bibitem[{Yoo et~al.(2019)Yoo, Uh, Chun, Kang, and Ha}]{yoo2019photorealistic}
@@ -198,16 +235,22 @@ Yoo, J.; Uh, Y.; Chun, S.; Kang, B.; and Ha, J.-W. 2019.
 
 \bibitem[{Zang, Hu, and Song(2026)}]{zang2026fddb}
 Zang, C.; Hu, J.; and Song, X. 2026.
-\newblock FD-DB: Frequency-Decoupled Dual-Branch Network for Unpaired Synthetic-to-Real Domain Translation.
+\newblock FD-DB: Frequency-Decoupled Dual-Branch Network for Unpaired
+  Synthetic-to-Real Domain Translation.
 
-\bibitem[{Zhang et~al.(2024{\natexlab{a}})Zhang, Xu, Wang, Dai, and Yang}]{zhang2024s2wat}
+\bibitem[{Zhang et~al.(2024{\natexlab{a}})Zhang, Xu, Wang, Dai, and
+  Yang}]{zhang2024s2wat}
 Zhang, C.; Xu, X.; Wang, L.; Dai, Z.; and Yang, J. 2024{\natexlab{a}}.
-\newblock S2WAT: Image Style Transfer via Hierarchical Vision Transformer Using Strips Window Attention.
-\newblock In \emph{Proceedings of the AAAI Conference on Artificial Intelligence}.
+\newblock S2WAT: Image Style Transfer via Hierarchical Vision Transformer Using
+  Strips Window Attention.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}.
 
-\bibitem[{Zhang et~al.(2018)Zhang, Isola, Efros, Shechtman, and Wang}]{zhang2018unreasonable}
+\bibitem[{Zhang et~al.(2018)Zhang, Isola, Efros, Shechtman, and
+  Wang}]{zhang2018unreasonable}
 Zhang, R.; Isola, P.; Efros, A.~A.; Shechtman, E.; and Wang, O. 2018.
-\newblock The Unreasonable Effectiveness of Deep Features as a Perceptual Metric.
+\newblock The Unreasonable Effectiveness of Deep Features as a Perceptual
+  Metric.
 \newblock In \emph{CVPR}.
 
 \bibitem[{Zhang and Tang(2025)}]{zhang2025survey}
@@ -215,14 +258,18 @@ Zhang, T.; and Tang, H. 2025.
 \newblock Style Transfer: A Decade Survey.
 \newblock \emph{arXiv preprint arXiv:2506.19278}.
 
-\bibitem[{Zhang et~al.(2023)Zhang, Huang, Tang, Huang, Ma, Dong, and Xu}]{zhang2023inst}
+\bibitem[{Zhang et~al.(2023)Zhang, Huang, Tang, Huang, Ma, Dong, and
+  Xu}]{zhang2023inst}
 Zhang, Y.; Huang, N.; Tang, F.; Huang, H.; Ma, C.; Dong, W.; and Xu, C. 2023.
 \newblock Inversion-Based Style Transfer with Diffusion Models.
-\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision
+  and Pattern Recognition}.
 
 \bibitem[{Zhang et~al.(2024{\natexlab{b}})}]{zhang2024artbank}
 Zhang, Y.; et~al. 2024{\natexlab{b}}.
-\newblock ArtBank: Artistic Style Transfer with Pre-trained Diffusion Model and Implicit Style Prompt.
-\newblock In \emph{Proceedings of the AAAI Conference on Artificial Intelligence}.
+\newblock ArtBank: Artistic Style Transfer with Pre-trained Diffusion Model and
+  Implicit Style Prompt.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}.
 
 \end{thebibliography}

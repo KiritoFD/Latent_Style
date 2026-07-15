@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex paper"] 1784013370.83802 "paper.aux" "paper.bbl" "paper" 1784013374.22035 0
+["bibtex paper"] 1784082854.95461 "paper.aux" "paper.bbl" "paper" 1784083031.44428 0
   "./aaai2027.bst" 1777882188 30207 bd248dfe461b9b2fc7481a44feafe197 ""
   "./refs.bib" 1784000534 15462 f9401ec961367ab25ec84a6b595b9761 ""
-  "paper.aux" 1784013373 6707 5ceae2fcb6dea7016da642152a2a32b0 "pdflatex"
+  "paper.aux" 1784083030 6772 4d3787618b8a45460d69f17d5a6ad3ed "pdflatex"
   (generated)
   "paper.bbl"
   "paper.blg"
   (rewritten before read)
-["pdflatex"] 1784013371.3279 "g:/GitHub/Latent_Style/SchrodingerBridge/aaai2027_v4/paper.tex" "paper.pdf" "paper" 1784013374.2214 0
+["pdflatex"] 1784083028.95989 "paper.tex" "paper.pdf" "paper" 1784083031.44554 0
   "aaai2027.sty" 1779092464 16915 1b1c792e2acfbbd8b672259e267b95d8 ""
   "aaai_arch_diagram_v16_staggered_bundle.drawio.png" 1783869797 170363 e5fcbe8c0c50d35c9c2d15c6d2e8d876 ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/newtx/ntx-ec-tlf.enc" 1775847907 2914 fdbc4a54b9bc76f4551b5303f2737d33 ""
@@ -186,11 +186,10 @@
   "fig_distinct5_page1_summary.pdf" 1783946128 76650 14258ea7491e8fbffc765ef741a7dd08 ""
   "fig_probe_combined.pdf" 1783688254 17777 3026efafda8d194db68ffcd7216c2f83 ""
   "fig_teaser_comparison.png" 1783482694 816971 6b6eb704ff3afcb251da97d21a8a69ef ""
-  "g:/GitHub/Latent_Style/SchrodingerBridge/aaai2027_v4/paper.tex" 1784013366 41310 a60d45802ffe5e4c182b03d24f7455bf ""
-  "paper.aux" 1784013373 6707 5ceae2fcb6dea7016da642152a2a32b0 "pdflatex"
-  "paper.bbl" 1784013371 11936 e146ea3ec5365b7aa1fe62db5dce2e76 "bibtex paper"
-  "paper.tex" 1784013366 41310 a60d45802ffe5e4c182b03d24f7455bf ""
-  "radar_metric_blocks_A_clip_dinos_robustbreak.png" 1783946129 792460 2cb770fdb957eb5077493ab55b253a29 ""
+  "paper.aux" 1784083030 6772 4d3787618b8a45460d69f17d5a6ad3ed "pdflatex"
+  "paper.bbl" 1784082855 12030 2638dfc7dc89a55a5cef8f41f17acc48 "bibtex paper"
+  "paper.tex" 1784083007 40996 6c29df98592650769550ef861f9a83fa ""
+  "radar_metric_blocks_A_clip_dinos_robustbreak.png" 1784082826 767828 274b28e08ec14b7fd05f47fb184d51f8 ""
   (generated)
   "paper.aux"
   "paper.log"

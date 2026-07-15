@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.11)  14 JUL 2026 15:16
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.11)  15 JUL 2026 10:37
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -761,70 +761,72 @@ LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
 (Font)              scaled to size 5.0pt on input line 49.
 CUTED [- LAST -]
 Extra skip:9.75pt
-Left:181.24998pt/1.9485pt
-Right:173.44849pt/0.0pt
-Split: 178.34923pt
-Output:178.34923pt
+Left:191.24998pt/1.9485pt
+Right:183.44849pt/0.0pt
+Split: 188.34923pt
+Output:188.34923pt
 Pageshrink: 0.0pt
 Pagestretch: 0.0pt
 @colht:487.8225pt
-CUTED [output]: 178.34923pt
+CUTED [output]: 188.34923pt
 CUTED [leftcolumn badness]: 57
 CUTED [rightcolumn badness]: 752
 
-Overfull \vbox (2.11151pt too high) has occurred while \output is active []
+
+LaTeX Warning: Optional argument of \twocolumn too tall on page 1(1column).
 
 
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [1{c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/20
-26/texmf-dist/fonts/enc/dvips/newtx/ntx-ec-tlf.enc}
+
+Overfull \vbox (12.11151pt too high) has occurred while \output is active []
+
+
+[1{c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/202
+6/texmf-dist/fonts/enc/dvips/newtx/ntx-ec-tlf.enc}
 
 
 
  <./fig_distinct5_page1_summary.pdf>]
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
-(Font)              scaled to size 10.95pt on input line 107.
+(Font)              scaled to size 10.95pt on input line 109.
 LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
-(Font)              scaled to size 10.95pt on input line 107.
-
-[2]
+(Font)              scaled to size 10.95pt on input line 109.
+ [2]
 <aaai_arch_diagram_v16_staggered_bundle.drawio.png, id=113, 1522.68875pt x 446.
 66875pt>
 File: aaai_arch_diagram_v16_staggered_bundle.drawio.png Graphic file (type png)
 
 <use aaai_arch_diagram_v16_staggered_bundle.drawio.png>
 Package pdftex.def Info: aaai_arch_diagram_v16_staggered_bundle.drawio.png  use
-d on input line 228.
+d on input line 230.
 (pdftex.def)             Requested size: 505.89pt x 148.39621pt.
  [3]
 <fig_probe_combined.pdf, id=125, 238.99876pt x 106.33943pt>
 File: fig_probe_combined.pdf Graphic file (type pdf)
 <use fig_probe_combined.pdf>
-Package pdftex.def Info: fig_probe_combined.pdf  used on input line 305.
+Package pdftex.def Info: fig_probe_combined.pdf  used on input line 307.
 (pdftex.def)             Requested size: 234.60545pt x 104.3904pt.
 <fig_teaser_comparison.png, id=126, 1927.2pt x 271.0125pt>
 File: fig_teaser_comparison.png Graphic file (type png)
 <use fig_teaser_comparison.png>
-Package pdftex.def Info: fig_teaser_comparison.png  used on input line 312.
+Package pdftex.def Info: fig_teaser_comparison.png  used on input line 314.
 (pdftex.def)             Requested size: 505.89pt x 71.13977pt.
  [4 <./aaai_arch_diagram_v16_staggered_bundle.drawio.png> <./fig_probe_combined
 .pdf>]
 LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
-(Font)              scaled to size 9.0pt on input line 454.
-<radar_metric_blocks_A_clip_dinos_robustbreak.png, id=146, 1087.2118pt x 703.72
+(Font)              scaled to size 9.0pt on input line 473.
+ [5 <./fig_teaser_comparison.png (PNG copy)>]
+<radar_metric_blocks_A_clip_dinos_robustbreak.png, id=149, 1087.2118pt x 703.72
 913pt>
 File: radar_metric_blocks_A_clip_dinos_robustbreak.png Graphic file (type png)
 <use radar_metric_blocks_A_clip_dinos_robustbreak.png>
 Package pdftex.def Info: radar_metric_blocks_A_clip_dinos_robustbreak.png  used
- on input line 485.
+ on input line 504.
 (pdftex.def)             Requested size: 215.45348pt x 139.45476pt.
- [5 <./fig_teaser_comparison.png (PNG copy)>]
-Underfull \vbox (badness 1789) has occurred while \output is active []
-
  [6 <./radar_metric_blocks_A_clip_dinos_robustbreak.png>] [7] (./paper.bbl
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/it' will be
-(Font)              scaled to size 10.0pt on input line 17.
+(Font)              scaled to size 10.0pt on input line 19.
  [8]) [9]
 (./paper.aux)
  ***********
@@ -833,11 +835,11 @@ L3 programming layer <2020/03/25>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 20530 strings out of 467525
- 400865 string characters out of 5423209
- 850632 words of memory out of 5000000
- 48906 multiletter control sequences out of 15000+600000
- 678875 words of font info for 160 fonts, out of 8000000 for 9000
+ 20533 strings out of 467525
+ 400933 string characters out of 5423209
+ 851663 words of memory out of 5000000
+ 48907 multiletter control sequences out of 15000+600000
+ 678967 words of font info for 161 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  89i,12n,117p,1002b,414s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/tex
@@ -857,7 +859,7 @@ msy9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10
 .pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmb.pfb><c:/texlive/
 2026/texmf-dist/fonts/type1/public/newtx/ztmr.pfb><c:/texlive/2026/texmf-dist/f
 onts/type1/public/newtx/ztmri.pfb>
-Output written on paper.pdf (9 pages, 1903140 bytes).
+Output written on paper.pdf (9 pages, 1884836 bytes).
 PDF statistics:
  252 PDF objects out of 1000 (max. 8388607)
  110 compressed objects within 2 object streams
