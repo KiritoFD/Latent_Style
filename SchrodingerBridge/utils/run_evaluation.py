@@ -2662,9 +2662,9 @@ def main(argv: list[str] | None = None):
     # 1. Setup Paths & Config
     path_bases = [
         Path.cwd(),
-        Path(__file__).resolve().parent,      # src/utils
-        Path(__file__).resolve().parents[1],  # src
-        Path(__file__).resolve().parents[2],  # Cycle-NCE
+        Path(__file__).resolve().parent,      # utils
+        Path(__file__).resolve().parents[1],  # project root
+        Path(__file__).resolve().parents[2],  # workspace root
     ]
 
     out_dir = _resolve_dir_path(args.output, path_bases)

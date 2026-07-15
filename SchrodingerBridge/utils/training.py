@@ -630,15 +630,8 @@ class GpuStatSampler:
 
     @staticmethod
     def _resolve_nvidia_smi() -> str | None:
-        candidates = [
-            shutil.which("nvidia-smi"),
-            "/usr/lib/wsl/lib/nvidia-smi",
-            r"C:\Windows\System32\nvidia-smi.exe",
-        ]
-        for candidate in candidates:
-            if candidate and Path(candidate).exists():
-                return candidate
-        return None
+        candidate = shutil.which("nvidia-smi")
+        return candidate if candidate and Path(candidate).exists() else None
 
     def _poll_once(self) -> None:
         if not self.enabled or not self._nvidia_smi:
