@@ -28,6 +28,8 @@ active working surface.
   - retired Phase 618 and round-2 audit tests tied to archived evidence packets
 - `legacy-src-pre-root-20260715/`
   - exact pre-promotion `src/` implementation retained for provenance; active modules live at the project root
+- `legacy-root-research-scripts-20260715/`
+  - one-off diagnostics, plotting, remote inventory, and rejected inference post-processing scripts; none are part of the train-from-scratch method
 
 ## High-value preserved references
 
