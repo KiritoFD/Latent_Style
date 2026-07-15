@@ -68,4 +68,4 @@ The remote working directory is a synchronized execution copy rather than a Git 
 
 ## Gate Decision
 
-The pre-refactor baseline is reproduced. Source promotion and configuration cleanup may proceed, but fixed-checkpoint output equivalence must be checked against epoch 6 before the legacy `src/` entry points are retired.
+The pre-refactor baseline was reproduced, fixed-checkpoint and full-board root-layout equivalence passed, and the legacy `src/` entry points were retired. The project now uses only root modules, project-relative data paths, `config.json`, and `inference.json` for submission runs.

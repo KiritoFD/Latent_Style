@@ -2,11 +2,12 @@
 
 Read this first:
 
-- `HANDOFF_2026-07-13.md`
+- `SUBMISSION_HANDOFF_2026-07-15.md`
 - `METHOD_EXPLORATION_AND_CKPT_2026-07-13.md`
 
 Detailed 713 notes are intentionally kept in this directory:
 
+- `HANDOFF_2026-07-13.md` (historical pre-cleanup handoff)
 - `REPO_REMOTE_AUDIT_2026-07-13.md`
 - `HF_ARCHITECTURE_PROBE_2026-07-13.md`
 - `GRADIENT_INFORMATION_FLOW_DEBUG_2026-07-14.md`

@@ -1,51 +1,58 @@
-# SchrodingerBridge
+# WEAVE
 
-This directory contains the SchrodingerBridge branch of the latent style-transfer project.
+This directory is the active, portable implementation used for submission
+reproduction and architecture experiments. The method trains from scratch;
+the canonical pipeline does not use a frozen adapter or image/latent
+post-processing.
 
-## Start Here
+## Reproduce
 
-- Current working index:
-  `docs/aaai2027_working_index_20260602.md`
-- Current paper source:
-  `aaai_submission/paper_aaai2026.tex`
-- Current paper PDF:
-  `aaai_submission/paper_aaai2026.pdf`
-- Current experiment ledger:
-  `docs/experiments/aaai2027_master_experiment_log.csv`
-- Current review lane:
-  `docs/reviews/README.md`
-- Theory / design notes:
-  `docs/maths/`
+Both local and remote machines use the same project-relative layout:
 
-## Important Status Notes
+```text
+data/train/          packed training latents and pairing cache
+data/test/           150-image evaluation board
+runs/cache/hf/       untracked model cache
+runs/submission/     untracked checkpoints, images, metrics, and logs
+```
 
-- `aaai_submission/` is the canonical manuscript location.
-- `archives/old_paper_workspaces/` contains superseded paper workspaces kept
-  only for provenance and recovery.
-- Root `config.json` is not the trusted baseline for the current OMF
-  conclusions.
-- The current paper-facing experiment surface is centered on:
-  - `docs/experiments/`
-  - `docs/reviews/`
-  - `configs/aaai2027/`
-  - `exp/aaai2027_*`
+From this directory:
 
-## Code Layout
+```powershell
+# Train 15 epochs from a fresh initialization, then evaluate every checkpoint.
+powershell -ExecutionPolicy Bypass -File scripts/run_submission_repro.ps1
 
-- `src/model.py`: bridge model wrapper
-- `src/style_tokenizer.py`: style-side representation module
-- `src/lancet_runtime.py`: time-conditioned execution path
-- `src/losses.py`: training objectives and regularizers
-- `src/ot_cost.py`: SWD computation
-- `src/trainer.py`: training loop
-- `src/utils/`: evaluation and inference helpers
+# Reuse existing checkpoints and evaluate missing epochs only.
+powershell -ExecutionPolicy Bypass -File scripts/run_submission_repro.ps1 -EvalOnly
+```
 
-## Cleanup Rule
+The canonical files are:
 
-The root should contain only active project entry points, stable evidence, and
-clearly labeled historical folders. For the current cleanup and retention
-policy, start from:
+- `config.json`: model, objective, optimizer, data, and checkpoint settings.
+- `inference.json`: fixed 8-step evaluation protocol.
+- `run.py`: root training entry point.
+- `scripts/batch_eval_all.py`: per-epoch DINO-S, CLIP-S, DINO-C, and LPIPS evaluation.
 
-- `docs/experiments/2026-06-03-repo-cleanup-and-archive-pass.md`
-- `docs/experiments/2026-06-03-exp-surface-classification.md`
-- `docs/cleanup/worktree_triage_20260603.md`
+## Current Baseline
+
+The clean 15-epoch reproduction selected epoch 6:
+
+| DINO-S | CLIP-S | LPIPS | DINO-C |
+|---:|---:|---:|---:|
+| 0.4867 | 0.7074 | 0.2508 | 0.8280 |
+
+DINO-S is the primary style metric. CLIP-S is secondary; DINO-C and LPIPS
+reject style gains caused by content collapse. No mixed selection score is
+used.
+
+## Documentation
+
+- `docs/713/SUBMISSION_HANDOFF_2026-07-15.md`: current repository, remote, method, and experiment handoff.
+- `docs/reproduction/baseline_reproduction.md`: baseline protocol and full per-epoch provenance.
+- `docs/reproduction/root_layout_equivalence.md`: old-to-root implementation equivalence.
+- `docs/reproduction/hf_oriented_nohh_result.md`: latest from-scratch architecture result.
+- `archives/README.md`: historical material retained for provenance only.
+
+The active Python package lives at the project root. The former `src/` tree,
+legacy launchers/configs/tests, and rejected post-processing experiments are
+archived and must not be used for new submission runs.

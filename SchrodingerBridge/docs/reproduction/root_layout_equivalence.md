@@ -1,6 +1,6 @@
 # Root Layout Equivalence Check
 
-The active Python modules were copied from `src/` to the `SchrodingerBridge/` root after the baseline reproduction passed. The legacy `src/` tree remains intact for comparison and compatibility during the transition.
+The active Python modules were copied from `src/` to the project root after the baseline reproduction passed. After the equivalence checks below passed, the legacy tree was moved to `archives/legacy-src-pre-root-20260715/` for provenance and removed from the active import surface.
 
 ## Fixed-Checkpoint Check
 
@@ -45,7 +45,7 @@ This full-board check passes. Exact PNG hashes are not a valid cross-process equ
 ## Tests
 
 ```text
-35 passed, 1 warning
+42 passed, 1 warning
 ```
 
-The checked set covers the root import/entry-point contract, inference infrastructure, cleanup smoke tests, and spectral ODE behavior. The warning is an existing test-only tensor-to-float conversion warning.
+The checked set covers the root import/entry-point contract, portable canonical configs, inference infrastructure, cleanup smoke tests, and spectral ODE behavior. The warning is an existing test-only tensor-to-float conversion warning.
