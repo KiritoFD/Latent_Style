@@ -22,6 +22,10 @@ active working surface.
   - coarse repository snapshots kept for recovery
 - `legacy-configs-20260715/`
   - retired experiment configurations; active runs use root `config.json` and `inference.json`
+- `legacy-scripts-20260715/`
+  - retired launchers and one-off analysis scripts; active runs use the two files in `scripts/`
+- `legacy-tests-20260715/`
+  - retired Phase 618 and round-2 audit tests tied to archived evidence packets
 
 ## High-value preserved references
 
