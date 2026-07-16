@@ -1008,7 +1008,7 @@ class TrainingConfig:
     internal_early_stop_enabled: bool = False
     internal_early_stop_min_epoch: int = 3
     internal_early_stop_gate_delta_threshold: float = 0.0
-    internal_early_stop_shared_ratio_threshold: float = 1.0
+    internal_early_stop_shared_ratio_drop_threshold: float = 0.65
     distill: dict[str, Any] = field(default_factory=dict)
     extra: dict[str, Any] = field(default_factory=dict)
 

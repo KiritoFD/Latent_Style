@@ -5,7 +5,7 @@ ArtFID = mean_per_target((1 + FID_t) * (1 + LPIPS_t)) using the art-domain
 Inception checkpoint for FID and AlexNet LPIPS for content distance.
 
 Usage:
-    python tools/compute_artfid_simple.py --validate          # WEAVE D5 sanity check
+    python tools/compute_artfid_simple.py --validate          # current WEAVE D5 sanity check
     python tools/compute_artfid_simple.py --all               # compute all method x dataset
     python tools/compute_artfid_simple.py --dataset D5-512 --method weave
 """
@@ -21,9 +21,8 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from utils.artfid_metric import (  # noqa: E402
     collect_artfid_features_from_paths,
@@ -43,8 +42,14 @@ DATASETS = {
         "results_dir": ROOT / "results" / "D5-512",
         "target_root": Path("G:/GitHub/Latent_Style/Dataset/distinct5_512/test"),
         "source_root": Path("G:/GitHub/Latent_Style/Dataset/distinct5_512/test"),
-        "methods": ["identity", "adain", "wct", "sdturbo", "cut", "samst", "samam", "styleid", "seedream", "weave"],
+        "methods": ["identity", "adain", "wct", "sdturbo", "cut", "samst", "samam", "styleid", "stylealigned", "zstar", "seedream", "weave_oriented_e4"],
         "format": "wikiart",
+        # StyleAligned and Z-STAR use the canonical Random20 source manifest;
+        # all other D5 result folders use the Distinct5 test sources.
+        "source_overrides": {
+            "stylealigned": Path("G:/GitHub/Latent_Style/Dataset/wikiart_random20_512/wikiart_random20_512/images/test"),
+            "zstar": Path("G:/GitHub/Latent_Style/Dataset/wikiart_random20_512/wikiart_random20_512/images/test"),
+        },
     },
     "P256": {
         "results_dir": ROOT / "results" / "P256",
@@ -352,14 +357,14 @@ def main() -> int:
     parser.add_argument("--dataset", type=str, default=None)
     parser.add_argument("--method", type=str, default=None)
     parser.add_argument("--all", action="store_true")
-    parser.add_argument("--validate", action="store_true", help="WEAVE D5 sanity check against ~300.87")
+    parser.add_argument("--validate", action="store_true", help="Current WEAVE D5 sanity check against ~295.27")
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--limit", type=int, default=None, help="Limit images per method (debug)")
     args = parser.parse_args()
 
     if args.validate:
-        tasks: list[tuple[str, str]] = [("D5-512", "weave")]
+        tasks: list[tuple[str, str]] = [("D5-512", "weave_oriented_e4")]
     elif args.all:
         tasks = [(ds, m) for ds, cfg in DATASETS.items() for m in cfg["methods"]]
     elif args.dataset and args.method:
@@ -440,10 +445,10 @@ def main() -> int:
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
     if args.validate:
-        weave_d5 = summary.get("D5-512", {}).get("weave", {})
+        weave_d5 = summary.get("D5-512", {}).get("weave_oriented_e4", {})
         if "art_fid" in weave_d5:
             val = weave_d5["art_fid"]
-            print(f"\nValidation: WEAVE D5 ArtFID = {val:.4f} (expected ~300.87, diff {abs(val - 300.87):.4f})")
+            print(f"\nValidation: WEAVE D5 ArtFID = {val:.4f} (expected ~295.27, diff {abs(val - 295.27):.4f})")
 
     return 0
 

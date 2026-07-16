@@ -1,0 +1,6 @@
+{
+  "_base": "../architecture/hf_oriented_internal_early_stop.json",
+  "training": {"seed": 123},
+  "checkpoint": {"save_dir": "runs/submission/robustness/early_stop_seed123"},
+  "ablation": {"name": "early_stop_seed123", "axis": "early_stop_robustness"}
+}

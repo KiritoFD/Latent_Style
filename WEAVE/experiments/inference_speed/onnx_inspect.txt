@@ -1,0 +1,3 @@
+file MB 99.6
+num initializers 156
+first 3 init shapes [('post_quant_conv.weight', [4, 4, 1, 1]), ('post_quant_conv.bias', [4]), ('decoder.conv_in.weight', [512, 4, 3, 3])]

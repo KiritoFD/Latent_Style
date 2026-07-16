@@ -160,24 +160,26 @@ Main configuration:
 
 | Item | Value |
 |---|---:|
-| Training epochs | 10 |
+| Training epochs | 4, selected by the fixed-latent criterion |
 | Hardware | 1x RTX 3060 12GB |
-| Train time | 176.9 s = 2.95 min |
-| Inference, 750 pairs, generation only | 94.6 s |
-| Full metrics eval | about 2 min |
+| Train time | 82.8 s = 1.4 min |
+| Inference, 750 pairs, generation only | 126.0 s |
+| Full metrics eval | reported separately; not used for the inference comparison |
 | ODE steps | 8 |
-| Trainable parameters | 903K |
+| Trainable parameters | 1.04M (plus frozen 84M VAE) |
 
-Generation-only timing excludes CLIP/LPIPS/DINO metric computation. This is the value used for fair inference-speed comparison in the main table.
+Generation-only timing includes the 8-step trajectory and VAE decoding, and excludes latent
+caching, CLIP/LPIPS/DINO metric computation, and result serialization. This is the value
+used for the inference-speed comparison in the main table.
 
-Probe timing:
+Selected checkpoint timing:
 
-| Run | Wall total | Network generation | VAE decode |
+| Run | Wall total | Images | Wall time/image |
 |---|---:|---:|---:|
-| `brk_a_ll03_10ep` | 94.63 s | 53.57 s | 39.36 s |
-| `target_hf_subband_ft6` | 106.25 s | 65.25 s | 39.34 s |
+| selected WEAVE | 126.00 s | 750 | 168.00 ms |
 
-The architecture probe adds modest network cost but keeps the same fixed VAE decode cost.
+Older checkpoint-level component traces are not used here because they do not describe the
+selected model.
 
 ---
 
@@ -243,7 +245,7 @@ Non-claims:
 |---|---|
 | Human preference study | Not completed |
 | Exhaustive HPO for heavyweight baselines | Not attempted |
-| No-DWT matched 903K control under final recipe | Not yet published |
+| No-DWT matched control under final recipe | Not yet published |
 | Full D5/P2A/R5 rerun for target-HF subband architecture | Next required experiment |
 | Public cleanup of scratch build artifacts | Pending after supplement stabilization |
 

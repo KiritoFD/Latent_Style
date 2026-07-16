@@ -305,8 +305,8 @@ class SBTrainer:
         self.internal_early_stop_gate_delta_threshold = float(
             train_cfg.get("internal_early_stop_gate_delta_threshold", 0.0)
         )
-        self.internal_early_stop_shared_ratio_threshold = float(
-            train_cfg.get("internal_early_stop_shared_ratio_threshold", 1.0)
+        self.internal_early_stop_shared_ratio_drop_threshold = float(
+            train_cfg.get("internal_early_stop_shared_ratio_drop_threshold", 0.65)
         )
         self._internal_probe_batch: dict | None = None
         self._internal_probe_noise: torch.Tensor | None = None
@@ -420,7 +420,7 @@ class SBTrainer:
             metrics,
             min_epoch=self.internal_early_stop_min_epoch,
             gate_delta_threshold=self.internal_early_stop_gate_delta_threshold,
-            shared_ratio_threshold=self.internal_early_stop_shared_ratio_threshold,
+            shared_ratio_drop_threshold=self.internal_early_stop_shared_ratio_drop_threshold,
         )
         metrics["internal_probe_stop_requested"] = float(crossed and self.internal_early_stop_enabled)
         payload = {"epoch": int(epoch), **{key: float(value) for key, value in metrics.items() if key.startswith("internal_probe_")}}

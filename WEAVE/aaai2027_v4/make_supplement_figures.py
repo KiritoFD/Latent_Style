@@ -157,7 +157,7 @@ def fig_main_tradeoff() -> None:
         ["SaMam", 0.477, 0.243, 0.812, "learned"],
         ["Seedream 4.5", 0.486, 0.477, 0.739, "other"],
         ["Latent-WCT", 0.362, 0.441, 0.559, "analytic"],
-        ["WEAVE", 0.4915, 0.2596, 0.8103, "ours"],
+        ["WEAVE", 0.4918, 0.2595, 0.8102, "ours"],
     ]
     df = pd.DataFrame(rows, columns=["method", "dino_s", "lpips", "dino_c", "type"])
     fig, ax = plt.subplots(figsize=(4.15, 3.0))
@@ -181,22 +181,13 @@ def fig_main_tradeoff() -> None:
 
 
 def fig_timing_breakdown() -> None:
-    labels = ["network", "VAE decode", "copy/other"]
-    brk = np.array([53.569, 39.359, 94.63 - 53.569 - 39.359])
-    probe = np.array([65.252, 39.341, 106.25 - 65.252 - 39.341])
-    data = np.vstack([brk, probe])
     fig, ax = plt.subplots(figsize=(3.35, 2.15))
-    left = np.zeros(2)
-    colors = [COLORS["blue"], COLORS["orange"], COLORS["gray"]]
-    for i, lab in enumerate(labels):
-        ax.barh(["paper ckpt", "HF-subband probe"], data[:, i], left=left, label=lab, color=colors[i], edgecolor="white", linewidth=0.5)
-        left += data[:, i]
+    total = 126.0
+    ax.barh(["selected WEAVE"], [total], color=COLORS["ours"], edgecolor="white", linewidth=0.5)
     ax.set_xlabel("seconds for 750 images")
     ax.set_title("Generation-only timing")
-    ax.legend(ncol=3, loc="lower center", bbox_to_anchor=(0.5, -0.42))
-    for y, total in enumerate(left):
-        ax.text(total + 1.0, y, f"{total:.1f}s", va="center", fontsize=7.5)
-    ax.set_xlim(0, 118)
+    ax.text(total + 1.5, 0, f"{total:.0f}s", va="center", fontsize=8)
+    ax.set_xlim(0, 145)
     save(fig, "fig_timing_breakdown")
 
 

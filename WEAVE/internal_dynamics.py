@@ -177,21 +177,26 @@ class InternalDynamicsState:
         *,
         min_epoch: int,
         gate_delta_threshold: float,
-        shared_ratio_threshold: float,
+        shared_ratio_drop_threshold: float,
     ) -> bool:
         gate_mean = float(metrics["internal_probe_gate_mean"])
         shared_ratio = float(metrics["internal_probe_shared_ll_hf_grad_ratio"])
         gate_delta = 0.0 if self.previous_gate_mean is None else gate_mean - self.previous_gate_mean
+        ratio_step = (
+            1.0
+            if self.previous_shared_ll_hf_ratio is None
+            else shared_ratio / max(self.previous_shared_ll_hf_ratio, 1e-12)
+        )
         crossed = bool(
             epoch >= int(min_epoch)
             and self.previous_shared_ll_hf_ratio is not None
-            and self.previous_shared_ll_hf_ratio > float(shared_ratio_threshold)
-            and shared_ratio <= float(shared_ratio_threshold)
+            and ratio_step <= float(shared_ratio_drop_threshold)
             and gate_delta > float(gate_delta_threshold)
         )
         if crossed and self.transition_epoch is None:
             self.transition_epoch = int(epoch)
         metrics["internal_probe_gate_delta"] = gate_delta
+        metrics["internal_probe_shared_ratio_step"] = ratio_step
         metrics["internal_probe_transition"] = float(crossed)
         metrics["internal_probe_transition_epoch"] = float(self.transition_epoch or 0)
         self.previous_gate_mean = gate_mean

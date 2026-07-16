@@ -1,15 +1,10 @@
-\begin{thebibliography}{45}
+\begin{thebibliography}{46}
 \providecommand{\natexlab}[1]{#1}
 
-\bibitem[{{Alibaba Cloud}(2024)}]{alibaba2024qwen}
-{Alibaba Cloud}. 2024.
-\newblock Qwen-Image: Advanced Generative Vision Models.
-\newblock \url{https://qwenlm.github.io/}.
-
-\bibitem[{{Black Forest Labs}(2024)}]{blackforestlabs2024flux}
-{Black Forest Labs}. 2024.
-\newblock FLUX.1: A State-of-the-Art Text-to-Image Model.
-\newblock \url{https://blackforestlabs.ai/}.
+\bibitem[{{Black Forest Labs}(2025)}]{blackforestlabs2025flux2}
+{Black Forest Labs}. 2025.
+\newblock {FLUX.2: Frontier Visual Intelligence}.
+\newblock \url{https://bfl.ai/blog/flux-2}.
 
 \bibitem[{Cai et~al.(2021)Cai, Zhang, Huang, Geng, Li, and Huang}]{cai2021fdit}
 Cai, M.; Zhang, H.; Huang, H.; Geng, Q.; Li, Y.; and Huang, G. 2021.
@@ -161,6 +156,11 @@ Rahaman, N.; Baratin, A.; Arpit, D.; Draxler, F.; Li, M.; Hamprecht, F.; Bengio,
 \newblock On the Spectral Bias of Neural Networks.
 \newblock In \emph{ICML}.
 
+\bibitem[{Ren et~al.(2026)Ren, Yu, He, Shen, Yuille, and Chen}]{ren2026freqflow}
+Ren, S.; Yu, Q.; He, J.; Shen, X.; Yuille, A.; and Chen, L.-C. 2026.
+\newblock Frequency-Aware Flow Matching for High-Quality Image Generation.
+\newblock arXiv:2604.15521.
+
 \bibitem[{Rombach et~al.(2022)Rombach, Blattmann, Lorenz, Esser, and Ommer}]{rombach2022high}
 Rombach, R.; Blattmann, A.; Lorenz, D.; Esser, P.; and Ommer, B. 2022.
 \newblock High-Resolution Image Synthesis with Latent Diffusion Models.
@@ -180,6 +180,11 @@ Su, X.; Song, J.; Meng, C.; and Ermon, S. 2023.
 Wright, M.; and Ommer, B. 2022.
 \newblock ArtFID: Quantitative Evaluation of Neural Style Transfer.
 \newblock \emph{arXiv preprint arXiv:2207.12280}.
+
+\bibitem[{Wu et~al.(2025)Wu, Li, Zhou, Lin, Gao, Yan, ming Yin, Bai, Xu, Chen, Chen, Tang, Zhang, Wang, Yang, Yu, Cheng, Liu, Li, Zhang, Meng, Wei, Ni, Chen, Cao, Peng, Qu, Wu, Wang, Yu, Wen, Feng, Xu, Wang, Zhang, Zhu, Wu, Cai, and Liu}]{wu2025qwenimagetechnicalreport}
+Wu, C.; Li, J.; Zhou, J.; Lin, J.; Gao, K.; Yan, K.; ming Yin, S.; Bai, S.; Xu, X.; Chen, Y.; Chen, Y.; Tang, Z.; Zhang, Z.; Wang, Z.; Yang, A.; Yu, B.; Cheng, C.; Liu, D.; Li, D.; Zhang, H.; Meng, H.; Wei, H.; Ni, J.; Chen, K.; Cao, K.; Peng, L.; Qu, L.; Wu, M.; Wang, P.; Yu, S.; Wen, T.; Feng, W.; Xu, X.; Wang, Y.; Zhang, Y.; Zhu, Y.; Wu, Y.; Cai, Y.; and Liu, Z. 2025.
+\newblock Qwen-Image Technical Report.
+\newblock arXiv:2508.02324.
 
 \bibitem[{Xu, Zhang, and Luo(2022)}]{xu2022frequency}
 Xu, Z.-Q.~J.; Zhang, Y.; and Luo, T. 2022.

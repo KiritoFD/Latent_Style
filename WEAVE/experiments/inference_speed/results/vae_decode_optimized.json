@@ -1,0 +1,34 @@
+{
+  "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "device_vram_gb": 8.0,
+  "num_images": 750,
+  "batch_size": 6,
+  "scaling_factor": 0.18215,
+  "backend": "torch.compile(mode=max-autotune, fullgraph=True, dynamic=False) on VAEDecodeWrapper",
+  "optimizations": [
+    "fp16",
+    "channels_last (NHWC)",
+    "VAEDecodeWrapper (pure tensor path)",
+    "torch.compile(max-autotune, fullgraph, static shape)",
+    "inductor CUDA Graph Trees (automatic)",
+    "tiling/slicing DISABLED",
+    "inference_mode (autograd off)",
+    "requires_grad_(False)",
+    "tail-batch zero-padding (no recompile)"
+  ],
+  "compile_cache": "G:\\GitHub\\Latent_Style\\WEAVE\\experiments\\inference_speed\\.compile_cache",
+  "compile_first_call_sec": 137.8,
+  "runs": 3,
+  "all_times_ms": [
+    85959.6,
+    72555.7,
+    72669.5
+  ],
+  "best_ms_total": 72555.7,
+  "best_sec": 72.556,
+  "best_ms_per_img": 96.741,
+  "best_images_per_sec": 10.3,
+  "median_ms_total": 72669.5,
+  "speedup_vs_baseline": 1.78,
+  "speedup_vs_stage3": 1.03
+}

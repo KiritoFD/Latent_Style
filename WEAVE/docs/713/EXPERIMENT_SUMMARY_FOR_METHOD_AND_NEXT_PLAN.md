@@ -85,7 +85,7 @@ For the paper, the method should be explained as three separable pathways:
 |---|---|---|
 | Structure path | LL mostly preserves content. | Unlocking/spatial shortcuts harm content. |
 | Style statistics path | Endpoint AdaIN and target-HF codes inject style. | AdaIN scaling and HF route probes improve DINO-S. |
-| Transport path | Rectified flow produces content-aware motion. | Latent-WCT alone is weak; raw stats alone are insufficient. |
+| Transport path | Endpoint-velocity regression produces content-aware motion. | Latent-WCT alone is weak; raw stats alone are insufficient. |
 
 Cross-attention should be described as auxiliary style memory, not as the main style injector.
 

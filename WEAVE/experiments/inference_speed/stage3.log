@@ -1,0 +1,7 @@
+[loaded latents] (750, 4, 64, 64) torch.float16
+[loaded DECODER only] scaling_factor=0.18215
+[compile] torch.compile(mode=reduce-overhead) requested...
+W0715 18:18:58.220000 143456 site-packages\torch\_inductor\utils.py:1731] [0/0] Not enough SMs to use max_autotune_gemm mode
+[compile] done (first call compiled).
+[decode] bs=2: 85.463s (113.950 ms/img, 8.8 img/s)
+[decode] bs=4: 77.782s (103.709 ms/img, 9.6 img/s)

@@ -1,0 +1,12 @@
+[
+  {
+    "epoch": 4,
+    "checkpoint": "epoch_0004.pt",
+    "clip_s": 0.7139646155834198,
+    "lpips": 0.26680339457200003,
+    "dino_s": 0.4910016287999849,
+    "dino_c": 0.8075948120355606,
+    "eval_subdir": "robustness_eval",
+    "config_override": "inference.json"
+  }
+]

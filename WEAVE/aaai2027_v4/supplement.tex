@@ -106,9 +106,8 @@ its source of record instead of relying on the ambient working-tree state.
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.48\linewidth]{supplement_figures/fig_exp_inventory.pdf}
-\caption{Audited experiment-tree inventory. The paper-facing records are a small
-subset of a much larger experimental history; the supplement separates source-of-truth
-runs from diagnostic and historical runs.}
+\caption{Experiment inventory. Results used in the paper are separated from diagnostic
+and historical runs retained for traceability.}
 \label{fig:supp-exp-inventory}
 \end{figure}
 
@@ -351,9 +350,8 @@ content-preserving blend,
   + 0.3\,\mathrm{AdaIN}(\mathrm{LL}_{content}, \mathrm{LL}_{style}),
 \]
 while the high-frequency target uses the target-style LH/HL/HH bands. The implementation
-loss is the active flow-matching driver. Auxiliary edge and low-pass anchors are retained
-for compatibility but contribute less than 5 percent of the observed gradient mass in the
-audited runs.
+minimizes the band-weighted velocity-matching loss given in the main paper; no additional edge
+or low-pass loss is active in the submitted configuration.
 
 \subsection{Resolved Configuration Details}
 
@@ -376,15 +374,16 @@ Field & Value & Relevance \\
 \texttt{model.target\_latent\_hf\_subband\_fusion\_enabled} & true & Activates orientation-specific target-HF residuals. \\
 \texttt{model.target\_latent\_hf\_head\_fusion\_gate\_init} & 0.18 & Initial LH/HL route gate. \\
 \texttt{model.lowpass\_mode} & \texttt{dwt\_haar} & Single-level Haar decomposition. \\
-\texttt{model.endpoint\_adain\_mode} & \texttt{spatial\_fiber} & Endpoint style-statistics alignment mode. \\
+\texttt{model.endpoint\_adain\_mode} & \texttt{spatial\_fiber} & High-frequency residual statistics matched after every Euler step. \\
+\texttt{model.endpoint\_adain\_only\_last\_step} & false & Keeps AdaIN inside all eight integration updates. \\
+\texttt{model.endpoint\_adain\_scale} & 2.0 & Inference-time extrapolation toward matched statistics. \\
 \texttt{model.style\_extrap\_alpha} & 0.1 & Slight target-statistics extrapolation at inference. \\
-\texttt{bridge.objective\_mode} & \texttt{flow\_matching} & Rectified-flow training objective. \\
+\texttt{bridge.objective\_mode} & \texttt{flow\_matching} & Noise-regularized endpoint-velocity regression. \\
 \texttt{bridge.loss\_type} & \texttt{mse} & Velocity matching loss. \\
-\texttt{bridge.t\_sampling\_mode} & \texttt{logit\_normal} & Time sampling distribution. \\
-\texttt{bridge.bridge\_sigma} & 0.02 & Bridge noise scale. \\
-\texttt{bridge.bridge\_noise\_window} & 0.18--0.82 & Delayed noise window. \\
+training path & $t\sim\mathcal U[0,1]$ & Time sampling used by the submitted flow objective. \\
+\texttt{bridge.bridge\_sigma} & 0.02 & Scales the $\sqrt{t(1-t)}$ interpolation perturbation. \\
 \texttt{bridge.training\_target\_projection\_mode} & \texttt{dwt} & Target construction in wavelet space. \\
-\texttt{bridge.spectral\_w\_ll/lh/hl/hh} & 0.3/1.0/1.0/2.0 & Subband loss weighting. \\
+\texttt{bridge.spectral\_w\_ll/lh/hl/hh} & 0.3/1.0/1.0/inactive & HH has no velocity head in WEAVE. \\
 \texttt{bridge.ll\_partial\_alpha} & 0.3 & Mild LL style-statistics migration. \\
 \texttt{training.internal\_probe\_enabled} & true & Measures fixed-batch loss-path gradients after each epoch. \\
 \texttt{training.internal\_early\_stop\_enabled} & true & Stops at the first gate/gradient transition. \\
@@ -443,18 +442,26 @@ Epoch & Mean gate & Gate delta & Shared LL/HF & Route/shared HF & Route/HF head 
 \end{center}
 
 Epoch 4 is the first joint event where the gate derivative is positive and the shared
-LL/HF ratio crosses below one. A retrospective probe of the complete 15-epoch curve selects
+LL/HF ratio contracts by at least 35\% from the preceding epoch. A retrospective probe of the complete 15-epoch curve selects
 the same epoch, whose DINO-S is the curve maximum. Residual alignment to the FM target,
 however, continues to improve after epoch 4 while DINO-S declines. This separates the
 proposed transition from ordinary loss-based early stopping: it detects a change in route
 ownership rather than a plateau in endpoint regression.
 
+The original absolute crossing-at-one rule was scale-sensitive. Replacing it by
+$\rho_e/(\rho_{e-1}+\epsilon)\leq0.65$ selects epoch 4 for probe batches 2/4/8 and seeds
+42/7, and epoch 3 for seed 123. The additional seed-7 and seed-123 checkpoints give
+(DINO-S, CLIP-S, LPIPS, DINO-C) of (0.4910, 0.7140, 0.2668, 0.8076) and
+(0.4862, 0.7144, 0.2552, 0.8040), respectively. Thus the event is stable to the tested
+probe scale and keeps the selected point near the canonical frontier; it is not claimed as
+an architecture-independent criterion.
+
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.9\linewidth]{supplement_figures/fig_training_audit.pdf}
-\caption{Training audit for the internally selected D5-512 checkpoint. Training stops at
-epoch 4 when the target-HF gates start expanding and the shared LL/HF gradient ratio first
-crosses below one.}
+\caption{Training dynamics for the selected D5-512 checkpoint. Training stops at
+epoch 4 when the high-frequency conditioning gates increase and the shared LL/HF gradient ratio
+contracts sharply relative to the preceding epoch.}
 \label{fig:supp-training-audit}
 \end{figure}
 
@@ -526,7 +533,7 @@ Route & Signal path & Probe reading \\
 \midrule
 Baseline style memory & \texttt{style\_id} \(\rightarrow\) style memory \(\rightarrow\) cross-attention & Coarse style prior. Gates stay near 0.056--0.061, but removing this route hurts full metrics, so it is useful but not sufficient. \\
 Global target-token fusion & target latent \(\rightarrow\) all style tokens \(\rightarrow\) backbone & Connected but too global; it over-controls LL and does not improve useful style transfer. \\
-Raw spatial target-HF & target DWT-HF maps \(\rightarrow\) HF residual maps & Proves capacity exists, but leaks target geometry and collapses content. \\
+Raw spatial target-HF & target DWT-HF maps \(\rightarrow\) HF residual maps & Has sufficient capacity, but leaks target geometry and collapses content. \\
 Pooled subband target-HF & target DWT-HF \(\rightarrow\) per-subband pooled code \(\rightarrow\) HF residual velocity & Current usable path: stronger style signal without target-coordinate leakage. \\
 \bottomrule
 \end{tabularx}
@@ -649,8 +656,8 @@ without perturbing the useful category prior.
 
 \section{Inference Setup}
 
-The main paper uses an 8-step Euler solver. Endpoint high-frequency AdaIN is applied at
-inference in the wavelet domain. The main D5-512 row uses
+The main paper uses an 8-step Euler solver. Spatial-fiber AdaIN is applied to the
+high-frequency residual after every solver step. The main D5-512 row uses
 \path{runs/submission/hf_oriented_internal_early_stop/epoch_0004.pt}. P2A and R5 use the
 audited base-WEAVE checkpoints reported before the oriented D5 route was enabled.
 
@@ -664,7 +671,7 @@ ODE solver & Euler \\
 ODE steps & 8 \\
 Evaluation batch size & 2 for D5-512 generation timing \\
 VAE decode batch size & 16 in the timing script \\
-Endpoint AdaIN & enabled \\
+Spatial-fiber AdaIN & every Euler step, scale 2.0 \\
 Style extrapolation & \(\alpha_{\mathrm{extrap}}=0.1\) \\
 Generated-image count for timing & 750 \\
 Timing column & generation only, metrics excluded \\
@@ -675,39 +682,24 @@ Timing column & generation only, metrics excluded \\
 
 \subsection{Evaluation Runtime Anatomy}
 
-The full D5-512 evaluation summary contains both generation and metric timings. A
-representative full-eval record reports 92.37 s wall time, including 13.52 s
-\weave{} generation, 2.48 s VAE decode, 6.32 s metric loop, and a large CPU image-copy
-component when image materialization is enabled. The paper's ``Infer'' column deliberately
-uses the separate generation-only timing record, which excludes metric computation and is
-therefore the correct cross-method speed comparison.
-
-\begin{center}
-\footnotesize
-\begin{tabularx}{\linewidth}{Xrr}
-\toprule
-Run & Wall time (s) & Network generation (s) \\
-\midrule
-Base WEAVE & 94.63 & 53.57 \\
-Oriented target-HF route & 106.25 & 65.25 \\
-\bottomrule
-\end{tabularx}
-\normalsize
-\end{center}
+The paper reports the measured generation-only time for the selected D5 checkpoint:
+126.00\,s for 750 images on one RTX 3060 (12\,GB). This timing includes the 8-step
+trajectory and VAE decoding, but excludes latent caching, metric extraction, and result
+serialization. We do not reuse component traces from earlier checkpoints because they do
+not describe the selected model.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.56\linewidth]{supplement_figures/fig_timing_breakdown.pdf}
-\caption{Generation-only timing decomposition on a single RTX 3060 (12\,GB). VAE decode is a
-large fixed cost; the compact velocity network remains the dominant method-specific
-component.}
+\caption{Generation-only time for the selected WEAVE checkpoint on a single RTX 3060
+(12\,GB): 126.00\,s for 750 images. Latent caching and metric computation are excluded.}
 \label{fig:supp-timing}
 \end{figure}
 
 \subsection{Inference Variants}
 
 The following older base-WEAVE variants share one checkpoint and differ only in
-inference-time endpoint AdaIN strength. They remain diagnostic operating points and are
+inference-time stepwise AdaIN strength. They remain diagnostic operating points and are
 not the updated main D5 result.
 
 \begin{table*}[t]
@@ -722,24 +714,21 @@ Variant & Scale & \dinos{} & \clips{} & LPIPS & Use \\
 \texttt{WEAVE-q} & 2.0 & 0.4859 & 0.7075 & 0.2583 & Previous base-WEAVE max-DINO diagnostic. \\
 \bottomrule
 \end{tabularx}
-\caption{Inference-only operating points produced from the previous base checkpoint.}
+\caption{Alternative inference settings evaluated from the same base checkpoint.}
 \label{tab:supp-inference-variants}
 \end{table*}
 
-The audited generation-only timing on a single RTX 3060 (12\,GB) is:
+The audited generation-only timing for the selected checkpoint on a single RTX 3060
+(12\,GB) is:
 
 \begin{center}
 \begin{tabular}{lr}
 \toprule
-Timing component & Seconds \\
+Timing field & Value \\
 \midrule
-Total generation-only wall clock & 94.63 \\
-Velocity-network generation & 53.57 \\
-VAE decode & 39.36 \\
-CPU uint8 copy & 0.09 \\
+Total generation-only wall clock & 126.00 s \\
 Images & 750 \\
-Wall time per image & 126.17 ms \\
-Network time per image & 71.42 ms \\
+Wall time per image & 168.00 ms \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -800,9 +789,13 @@ distance identifies a content-loss regime relative to a deliberately unrelated t
 image. This is a prompt for visual inspection, not a verdict on the method outside the
 current board and metric. On D5-512, IDT
 is (\dinos{} 0.419, \clips{} 0.693, LPIPS 0, \dinoc{} 1), while TGT is
-(1.000, 0.874, 0.733, 0.176). TGT reaches \dinos{} 1.000 because the selected reference is
+(1.000, 0.863, 0.776, 0.215). TGT reaches \dinos{} 1.000 because the selected reference is
 part of the same target-style feature pool used by that metric; this value is expected and
 should not be read as model performance.
+
+Using each of the first five deterministic target exemplars changes TGT LPIPS from 0.752
+to 0.783 and \dinoc{} from 0.189 to 0.246. StyleAligned remains beyond every TGT LPIPS
+anchor (0.869), so the content-collapse diagnosis is not determined by the first exemplar.
 
 \subsection{Metric Cache and Determinism}
 
@@ -842,7 +835,7 @@ The main table reports the following \weave{} rows:
 \toprule
 Board & \dinos{} & \clips{} & LPIPS & \dinoc{} \\
 \midrule
-D5-512 (oriented HF) & 0.4915 & 0.7126 & 0.2596 & 0.8103 \\
+D5-512 (oriented HF) & 0.4918 & 0.7128 & 0.2595 & 0.8102 \\
 P2A-256 & 0.4801 & 0.6681 & 0.3116 & 0.8612 \\
 R5-WikiArt & 0.5226 & 0.7747 & 0.2895 & 0.7717 \\
 \bottomrule
@@ -853,8 +846,8 @@ R5-WikiArt & 0.5226 & 0.7747 & 0.2895 & 0.7717 \\
 \centering
 \scriptsize
 \setlength{\tabcolsep}{2.0pt}
-\caption{Full automatic-metric ledger used by the main paper. DINO-S, CLIP-S, and
-DINO-C are higher better; LPIPS is lower better. Dashes mark unavailable or withheld
+\caption{Full comparison ledger used by the main paper. Higher DINO-S, CLIP-S, and
+DINO-C and lower LPIPS are better. Dashes mark unavailable or withheld
 metadata rather than inferred values.}
 \label{tab:supp-full-main}
 \resizebox{\textwidth}{!}{%
@@ -865,7 +858,7 @@ Method & \multicolumn{4}{c}{D5-512} & \multicolumn{4}{c}{P2A-256} & \multicolumn
 & D-S & C-S & LPIPS & D-C & D-S & C-S & LPIPS & D-C & D-S & C-S & LPIPS & D-C & M & min & 750 imgs \\
 \midrule
 Identity & 0.419 & 0.693 & 0.000 & 1.000 & 0.416 & 0.663 & 0.000 & 1.000 & 0.433 & 0.731 & 0.000 & 1.000 & 0 & free & 0 s \\
-Target Style & 1.000 & 0.874 & 0.733 & 0.176 & 1.000 & 0.835 & 0.800 & 0.169 & 1.000 & 0.796 & 0.747 & 0.230 & 0 & free & 0 s \\
+Target Style & 1.000 & 0.863 & 0.776 & 0.215 & 1.000 & 0.835 & 0.800 & 0.169 & 1.000 & 0.796 & 0.747 & 0.230 & 0 & free & 0 s \\
 SD-Turbo & 0.484 & 0.693 & 0.003 & 0.922 & 0.341 & 0.674 & 0.603 & 0.279 & 0.505 & 0.767 & 0.449 & 0.538 & 0$^{+1100}$ & free & 5 m \\
 StyleAligned & 0.675 & 0.780 & 0.869 & 0.239 & 0.612 & 0.768 & 0.786 & 0.310 & 0.649 & 0.824 & 0.829 & 0.315 & 0$^{+1100}$ & free & 77 m \\
 Z-STAR & 0.449 & 0.784 & 0.347 & 0.549 & 0.514 & 0.786 & 0.332 & 0.526 & 0.514 & 0.822 & 0.384 & 0.526 & 0$^{+1100}$ & free & 3 h \\
@@ -875,7 +868,7 @@ SaMST & 0.271 & 0.618 & 0.749 & 0.145 & 0.501 & 0.709 & 0.398 & 0.838 & 0.461 & 
 SaMam & 0.477 & 0.582 & 0.243 & 0.812 & 0.505 & 0.677 & 0.205 & 0.870 & 0.503 & 0.712 & 0.227 & 0.925 & 8.8 & 436.0 & 17.6 m \\
 Seedream 4.5 & 0.486 & 0.720 & 0.477 & 0.739 & 0.517 & 0.752 & 0.227 & 0.785 & 0.504 & 0.742 & 0.486 & 0.725 & -- & API & -- \\
 Latent-WCT & 0.362 & 0.673 & 0.441 & 0.559 & 0.338 & 0.738 & 0.585 & 0.386 & 0.414 & 0.710 & 0.444 & 0.553 & 0 & free & 18 s \\
-\textbf{WEAVE} & \textbf{0.492} & 0.713 & 0.260 & 0.810 & 0.480 & 0.668 & 0.312 & 0.861 & 0.523 & 0.775 & 0.290 & 0.772 & 1.04$^{+84}$ & 1.4 & 106 s \\
+\textbf{WEAVE} & \textbf{0.492} & 0.713 & 0.260 & 0.810 & 0.480 & 0.668 & 0.312 & 0.861 & 0.523 & 0.775 & 0.290 & 0.772 & 1.04$^{+84}$ & 1.4 & 126 s \\
 \bottomrule
 \end{tabular}}
 \end{table*}
@@ -970,13 +963,13 @@ The current evidence supports a compact reading of the method:
 \[
   \begin{array}{l}
   \weave{}=\mathrm{Haar\ wavelet\ decomposition}\\
-  \quad+\mathrm{rectified\ flow\ matching}\\
-  \quad+\mathrm{endpoint\ high\ frequency\ AdaIN}.
+  \quad+\mathrm{endpoint\ velocity\ matching}\\
+  \quad+\mathrm{stepwise\ high\ frequency\ AdaIN}.
   \end{array}
 \]
 
 The component ablations and the target-HF probes point to the same causal picture:
-endpoint statistics and wavelet-domain transport are active, while learned
+stepwise statistics and wavelet-domain transport are active, while learned
 cross-attention memory acts as a coarse prior rather than the main image-specific style
 injector. This is why the paper frames \weave{} as a compact wavelet-flow model with an
 auxiliary style memory, not as a transformer-style memory architecture.
@@ -985,7 +978,7 @@ auxiliary style memory, not as a transformer-style memory architecture.
 \centering
 \includegraphics[width=0.9\linewidth]{supplement_figures/fig_probe_mechanisms.pdf}
 \caption{Mechanism-probe comparison. Spatial target-HF injection raises style but
-collapses content, while pooled/subband target-HF routes preserve content at nearly the
+substantially reduces content scores, while pooled/subband target-HF routes preserve content at nearly the
 same style level.}
 \label{fig:supp-probe}
 \end{figure}
@@ -993,7 +986,7 @@ same style level.}
 The cross-attention branch is treated as auxiliary. Probe runs show near-closed gates
 around 0.056--0.061 and weak gradient mass on the style-memory branch, yet the no-memory
 subband run underperforms the standard subband route. The effective style movement comes
-mainly from endpoint AdaIN/statistics, flow transport, and coordinate-free target-HF
+mainly from stepwise AdaIN/statistics, flow transport, and coordinate-free target-HF
 codes; style memory supplies a useful coarse category prior but cannot replace the
 image-specific HF route.
 
@@ -1001,7 +994,7 @@ image-specific HF route.
 
 The 30 ablation directories are organized into:
 \begin{itemize}[leftmargin=1.5em,itemsep=0.2em]
-  \item destructive component removals, including no-flow, no-wavelet, no-endpoint-AdaIN,
+  \item destructive component removals, including no-flow, no-wavelet, and no-AdaIN,
   and no-spectral-ODE settings;
   \item robust/sensitive hyperparameter sweeps, including LL weight, sigma, gate
   initialization, HH weight, learning rate, loss type, endpoint scale, extrapolation,
@@ -1011,10 +1004,52 @@ The 30 ablation directories are organized into:
   \item seed checks for the board metrics.
 \end{itemize}
 
-The consistent outcome is that flow matching, wavelet decomposition, and endpoint
+The consistent outcome is that endpoint-velocity matching, wavelet decomposition, and stepwise
 high-frequency AdaIN are the active components. Cross-attention and several auxiliary
 regularizers remain in historical configs for compatibility but are not the causal center
 of the final result.
+
+\subsection{Corrected Controls and Stability Checks}
+
+The inference-time AdaIN control was rerun from the reported epoch-4 checkpoint after
+verifying that the active nested configuration field was set to zero. All 20 checked
+corresponding PNG hashes differ from the full model. Removing AdaIN changes DINO-S from
+0.4918 to 0.4821 and CLIP-S from 0.7128 to 0.7005, while DINO-C increases from 0.8102 to
+0.8455 and LPIPS decreases from 0.2595 to 0.2258. Thus the operator is active and induces
+the intended style--content trade-off; the earlier no-effect result is not used.
+
+For the matched training control, changing $\lambda_{LL}$ from 0.3 to 1.0 changes peak
+DINO-S only from 0.4917 to 0.4910. The 1.0 run reaches its peak at epoch 3 and the frozen
+probe selects epoch 5 with regret $6.8\times10^{-5}$. This supports robustness to a broad
+nonzero LL weight, not a claim that 0.3 is uniquely optimal. In contrast, removing the
+source-aligned endpoint yields peak DINO-S 0.4894 with LPIPS 0.3138, and the probe fires
+eight epochs before that peak; this is the stronger endpoint-specific intervention.
+
+Finally, reference-pool stability is evaluated without regenerating images. For each of
+1,000 repetitions and each target style, one size-$m$ subset is sampled without replacement
+from its 30 held-out references and reused for all 150 requests to that style. The board mean
+of DINO-S(\weave{}) minus DINO-S(IDT) is positive in all repetitions: mean 0.0298 with
+95\% interval [0.0204, 0.0394] for $m=8$, and mean 0.0319 with [0.0225, 0.0380] for
+$m=16$. The corresponding per-request positive fractions are about 69\%, so this is
+evidence for a stable board-level conclusion, not an assertion that every source improves.
+
+\subsection{Frozen SD1.5 Extension}
+
+We test whether the wavelet alignment operator transfers independently of the compact
+velocity model. The control is a frozen SD1.5 image-to-image pipeline with an empty prompt,
+strength 0.5, and 20 DDIM steps. The extension applies one-level Haar decomposition to the
+output latent, aligns the channel-wise moments of LH, HL, and HH to the target-style latent
+at scale 0.8, leaves LL unchanged, and then applies the inverse transform. No SD1.5 weights
+are updated.
+
+On the 600 cross-style D5 pairs, the base and extended editors obtain respectively
+DINO-S 0.3974/0.4080, CLIP-S 0.7221/0.7366, LPIPS 0.3591/0.3630, and DINO-C
+0.6589/0.6531. Both style gains are significant under paired $t$-tests
+($p<10^{-15}$). On all 750 pairs, DINO-S changes from 0.4525 to 0.4613 and CLIP-S
+from 0.7476 to 0.7594, while LPIPS remains 0.3586/0.3588 and DINO-C changes from
+0.6583 to 0.6539. Timing over 720 completed requests gives 4.9\,ms per image for the
+DWT--AdaIN--IDWT operation. The extension therefore isolates the portability of the
+frequency-domain operator; it is not used to equate the compact model with SD1.5.
 
 \section{Next Architecture Plan}
 
@@ -1162,8 +1197,8 @@ python utils/run_evaluation.py \
 \begin{table*}[t]
 \centering
 \footnotesize
-\caption{Sanitized artifact ledger. All paths are logical paths under \texttt{<REPO\_ROOT>}
-or \texttt{<EXP\_ROOT>}.}
+\caption{Artifact paths required for reproduction. All entries are logical paths under
+\texttt{<REPO\_ROOT>} or \texttt{<EXP\_ROOT>}.}
 \label{tab:supp-artifacts}
 \begin{tabularx}{\textwidth}{p{0.34\textwidth}p{0.17\textwidth}X}
 \toprule

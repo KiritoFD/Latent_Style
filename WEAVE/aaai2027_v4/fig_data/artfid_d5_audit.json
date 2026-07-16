@@ -1,0 +1,14 @@
+{
+  "protocol": "mean_target((1 + art-domain FID) * (1 + source LPIPS))",
+  "dataset": "D5-512",
+  "source": "results/_artfid_details.json",
+  "methods": {
+    "IDT": {"artfid": 216.5097, "artfid_std": 3.3012, "artfid_q025": 209.9281, "artfid_q975": 223.0913, "fid": 215.5097, "lpips": 0.0, "count": 750, "bootstrap_replicates": 10000, "bootstrap_unit": "five target-style ArtFID components"},
+    "TGT (random)": {"artfid": 545.6990, "artfid_std": 56.0843, "artfid_q025": 472.0733, "artfid_q975": 671.1305, "fid": 305.2613, "lpips": 0.787034, "count": 750, "replicates": 30},
+    "WEAVE": {"artfid": 295.2679, "fid": 230.5231, "lpips": 0.283129, "count": 750, "checkpoint": "hf_oriented_internal_early_stop/epoch_0004.pt"},
+    "SaMam": {"artfid": 297.3159, "fid": 231.8669, "lpips": 0.282842, "count": 750},
+    "Seedream 4.5": {"artfid": 310.9730, "fid": 217.3736, "lpips": 0.421549},
+    "Z-STAR": {"artfid": 332.9112, "fid": 251.9887, "lpips": 0.321232, "count": 750},
+    "StyleAligned": {"artfid": 368.6293, "fid": 202.6702, "lpips": 0.821774, "count": 750}
+  }
+}

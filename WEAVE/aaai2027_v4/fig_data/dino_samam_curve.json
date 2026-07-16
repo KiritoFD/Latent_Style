@@ -1,0 +1,122 @@
+[
+  {
+    "step": 250,
+    "n_images": 750,
+    "dino_s": 0.2748764974325895,
+    "per_style": {
+      "Early_Renaissance": 0.26615460122625034,
+      "Impressionism": 0.2688192141801119,
+      "Minimalism": 0.2754518224298954,
+      "Rococo": 0.2605453473329544,
+      "Ukiyo_e": 0.3034115019937356
+    }
+  },
+  {
+    "step": 500,
+    "n_images": 750,
+    "dino_s": 0.1949077643652757,
+    "per_style": {
+      "Early_Renaissance": 0.18077065909902254,
+      "Impressionism": 0.14640648479262988,
+      "Minimalism": 0.2881123423576355,
+      "Rococo": 0.12416871095697085,
+      "Ukiyo_e": 0.23508062462011972
+    }
+  },
+  {
+    "step": 1000,
+    "n_images": 750,
+    "dino_s": 0.31632666984697183,
+    "per_style": {
+      "Early_Renaissance": 0.3357634880145391,
+      "Impressionism": 0.2701415972908338,
+      "Minimalism": 0.28442979117234546,
+      "Rococo": 0.32713659810523193,
+      "Ukiyo_e": 0.36416187465190886
+    }
+  },
+  {
+    "step": 2000,
+    "n_images": 750,
+    "dino_s": 0.3888367269684871,
+    "per_style": {
+      "Early_Renaissance": 0.4184274005393187,
+      "Impressionism": 0.36809300057590005,
+      "Minimalism": 0.2844796812037627,
+      "Rococo": 0.4416369574268659,
+      "Ukiyo_e": 0.43154659509658816
+    }
+  },
+  {
+    "step": 3000,
+    "n_images": 750,
+    "dino_s": 0.39525614843765894,
+    "per_style": {
+      "Early_Renaissance": 0.4288343417147795,
+      "Impressionism": 0.37987640892465907,
+      "Minimalism": 0.28144966716567676,
+      "Rococo": 0.4427363614241282,
+      "Ukiyo_e": 0.44338396295905114
+    }
+  },
+  {
+    "step": 4000,
+    "n_images": 750,
+    "dino_s": 0.393036934842666,
+    "per_style": {
+      "Early_Renaissance": 0.4187881382803122,
+      "Impressionism": 0.38677752335866294,
+      "Minimalism": 0.2872870320578416,
+      "Rococo": 0.43155779331922534,
+      "Ukiyo_e": 0.4407741871972879
+    }
+  },
+  {
+    "step": 5000,
+    "n_images": 750,
+    "dino_s": 0.39745195703332625,
+    "per_style": {
+      "Early_Renaissance": 0.424598609705766,
+      "Impressionism": 0.39028326963384946,
+      "Minimalism": 0.29021798700094226,
+      "Rococo": 0.447036908796678,
+      "Ukiyo_e": 0.4351230100293954
+    }
+  },
+  {
+    "step": 6000,
+    "n_images": 750,
+    "dino_s": 0.3933106134881576,
+    "per_style": {
+      "Early_Renaissance": 0.41808934167027473,
+      "Impressionism": 0.3893308754016956,
+      "Minimalism": 0.2863916239639123,
+      "Rococo": 0.4413051262994607,
+      "Ukiyo_e": 0.4314361001054446
+    }
+  },
+  {
+    "step": 7000,
+    "n_images": 750,
+    "dino_s": 0.39715938153117897,
+    "per_style": {
+      "Early_Renaissance": 0.4202091360588868,
+      "Impressionism": 0.39072362408041955,
+      "Minimalism": 0.293617620964845,
+      "Rococo": 0.43848960102846224,
+      "Ukiyo_e": 0.4427569255232811
+    }
+  },
+  {
+    "step": "last",
+    "n_images": 750,
+    "dino_s": 0.39715938153117897,
+    "per_style": {
+      "Early_Renaissance": 0.4202091360588868,
+      "Impressionism": 0.39072362408041955,
+      "Minimalism": 0.293617620964845,
+      "Rococo": 0.43848960102846224,
+      "Ukiyo_e": 0.4427569255232811
+    }
+  }
+]

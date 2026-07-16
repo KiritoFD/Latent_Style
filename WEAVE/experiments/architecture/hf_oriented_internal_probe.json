@@ -10,7 +10,7 @@
     "internal_early_stop_enabled": false,
     "internal_early_stop_min_epoch": 3,
     "internal_early_stop_gate_delta_threshold": 0.0,
-    "internal_early_stop_shared_ratio_threshold": 1.0,
+    "internal_early_stop_shared_ratio_drop_threshold": 0.65,
     "full_eval_each_epoch": false
   },
   "checkpoint": {

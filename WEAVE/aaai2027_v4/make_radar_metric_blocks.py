@@ -4,14 +4,12 @@ Source of truth = aaai2027_v4/paper.tex, Table "tab:main" (lines 330-343).
 14 axes = 12 metric axes (4 metrics x 3 datasets) + 2 speed axes:
   DINO-S(D5,R5,P2A) -> CLIP-S(D5,R5,P2A) -> DINO-C(D5,R5,P2A) -> 1-LPIPS(D5,R5,P2A)
   -> Infer speed(750img) -> Train speed(min)
-MUSIQ is intentionally omitted. Metric axes come from the paper table; DINO-C / DINO-S
-from local DINOv2 inference. Train / Infer speed axes come from the paper main table
-(D5 context, single value per method); both are LOG-INVERTED so the FASTEST method sits
-at the OUTER edge (value -> 1.0). DINO-S uses a robust broken scale: the weakest value maps
-near the inner ring, the second-highest value maps to 0.84, and the highest value maps to 1.0.
-CLIP-S, DINO-C, and 1-LPIPS are linearly normalized by v/max. Speed axes are log-inverted to 0..1
-(fastest -> 1.0). Training-free methods leave a GAP on the Train-speed axis (not drawn,
-no cross-gap fill). Cells without DINO data are gaps (NaN).
+MUSIQ is intentionally omitted. Each metric family is min-max normalized once across all
+reported methods and all three datasets, so the best reported value reaches the outer ring
+and D5/P2A/R5 remain on the same scale. Train / Infer speed axes apply the same min-max
+rule after log10(1 + seconds), with smaller times better. Training-free methods leave a GAP
+on the Train-speed axis (not drawn, no cross-gap fill). Cells without DINO data are gaps
+(NaN).
 
 Color & visual hierarchy:
   - BOLD (thick, drawn on top): Ours(WEAVE), Seedream 4.5, Z-STAR, StyleAligned
@@ -43,7 +41,7 @@ DATA = {
     # tuple = (CLIP-S, LPIPS(raw, lower=better), DINO-C, DINO-S); MUSIQ dropped.
     # CLIP-S/LPIPS from paper tab:main; DINO-C/DINO-S from local DINOv2 (state/dino/dino_main.json).
     # Per-axis empirical boundary: IDT on style axes, TGT on content axes.
-    "IDT-TGT bound":  [(0.693, 0.733, 0.176, 0.419), (0.663, 0.800, 0.169, 0.416), (0.731, 0.747, 0.230, 0.433)],
+    "IDT-TGT bound":  [(0.693, 0.776, 0.215, 0.419), (0.663, 0.800, 0.169, 0.416), (0.731, 0.747, 0.230, 0.433)],
     "SD-Turbo":       [(0.693, 0.003, 0.922, 0.484), (0.674, 0.603, 0.279, 0.341), (0.767, 0.449, 0.538, 0.505)],
     "StyleAligned":   [(0.780, 0.869, 0.239, 0.675), (0.768, 0.786, 0.310, 0.612), (0.824, 0.829, 0.315, 0.649)],
     "Z-STAR":         [(0.784, 0.347, 0.549, 0.449), (0.786, 0.332, 0.552, 0.498), (0.822, 0.384, 0.526, 0.514)],
@@ -53,7 +51,7 @@ DATA = {
     "SaMam":          [(0.582, 0.243, 0.812, 0.477), (0.677, 0.205, 0.870, 0.505), (0.712, 0.227, 0.925, 0.503)],
     "Latent-WCT":     [(0.673, 0.441, 0.559, 0.362), (0.738, 0.585, 0.386, 0.338), (0.710, 0.444, 0.553, 0.414)],
     "Seedream 4.5":   [(0.720, 0.477, 0.739, 0.486), (0.752, 0.227, 0.785, 0.517), (0.742, 0.486, 0.725, 0.504)],
-    "Ours (WEAVE)":   [(0.7126, 0.2596, 0.8103, 0.4915), (0.6681, 0.3116, 0.8612, 0.4801), (0.7747, 0.2895, 0.7717, 0.5226)],
+    "Ours (WEAVE)":   [(0.7128, 0.2595, 0.8102, 0.4918), (0.6681, 0.3116, 0.8612, 0.4801), (0.7747, 0.2895, 0.7717, 0.5226)],
 }
 DATASETS = ["D5-512", "P2A-256", "R5-WikiArt"]
 
@@ -84,7 +82,7 @@ INFER_SEC = {
     "SaMam":          17.6 * 60.0,     # 17.6 m (not re-measured on 3060; prior value)
     "Latent-WCT":     math.nan,        # free / not drawn on speed axis
     "Seedream 4.5":   math.nan,        # --
-    "Ours (WEAVE)":   106.25,          # oriented target-HF route, 750 images
+    "Ours (WEAVE)":   126.0,           # selected WEAVE model, 750 images
 }
 
 # radar method name -> local results/<ds>/<dir> name (for DINO lookup)
@@ -179,35 +177,22 @@ DS_ORDER = {"dino_style": [0, 2, 1], "clip": [0, 2, 1], "dino_content": [0, 2, 1
 def _ds_idx(kind):
     return DS_ORDER.get(kind, list(range(len(DATASETS))))
 
-# Time axes (2 single axes, no dataset multiplier). Log-inverted: fastest -> outer.
-def _time_range(secdict):
-    vals = [v for v in secdict.values()
-            if isinstance(v, float) and not math.isnan(v)]
-    return (min(vals), max(vals))
-
 # Infer BEFORE Train: most training-free methods have an Infer value but Train=NaN, so putting
 # Infer adjacent to the metric block lets their polygon connect through Infer, leaving the gap on
 # the trailing Train axis instead of breaking the line mid-way.
 TIME_AXES = [
-    ("Infer speed$\\uparrow$\n750img", INFER_SEC, *_time_range(INFER_SEC)),
-    ("Train speed$\\uparrow$\nmin",  TRAIN_SEC, *_time_range(TRAIN_SEC)),
+    ("Infer speed$\\uparrow$\n750img", INFER_SEC),
+    ("Train speed$\\uparrow$\nmin",  TRAIN_SEC),
 ]
 
-def _norm_time(sec, lo, hi):
-    """Log-inverted normalization: fastest (smallest sec) -> 1.0 (outer), slowest -> 0.0."""
+def _time_score(sec):
+    """Log-time score before standard min-max scaling; smaller time is better."""
     if not isinstance(sec, float) or math.isnan(sec):
         return math.nan          # training-free / API -> gap
-    if sec <= 0:
-        return 1.0               # instantaneous (e.g. Identity 0 s) -> outermost
-    return 1.0 - (math.log(sec + 1.0) - math.log(lo + 1.0)) / \
-               (math.log(hi + 1.0) - math.log(lo + 1.0))
+    return -math.log10(1.0 + max(sec, 0.0))
 
 AXIS_LABELS = [f"{gname}\n{DATASETS[d]}" for gname, kind in METRICS for d in _ds_idx(kind)] + \
-              [tlab for tlab, _, _, _ in TIME_AXES]
-N_METRIC_AXES = len(METRICS) * len(DATASETS)   # 12 metric axes; remaining are log speed axes
-AXIS_KINDS = [kind for _, kind in METRICS for _ in _ds_idx(kind)]
-DINO_STYLE_FLOOR = 0.16
-DINO_STYLE_KNEE_RADIUS = 0.84
+              [tlab for tlab, _ in TIME_AXES]
 
 
 def _dino_val(method, kind, d_idx):
@@ -223,8 +208,8 @@ def _dino_val(method, kind, d_idx):
 
 
 def raw_axes(method):
-    """Raw (un-normalized) values: metrics as-is, speed axes log-inverted to 0..1.
-    DATA tuple = (CLIP-S, LPIPS(raw), DINO-C, DINO-S); MUSIQ dropped."""
+    """Unnormalized comparison values; LPIPS is inverted and time is log-scored.
+    DATA tuple = (CLIP-S, LPIPS(raw, lower is better), DINO-C, DINO-S)."""
     triples = DATA[method]
     out = []
     for _, kind in METRICS:
@@ -237,53 +222,39 @@ def raw_axes(method):
                 out.append(triples[d][2])
             elif kind == "dino_style":
                 out.append(triples[d][3])
-    for _, secdict, lo, hi in TIME_AXES:
-        out.append(_norm_time(secdict.get(method), lo, hi))
+    for _, secdict in TIME_AXES:
+        out.append(_time_score(secdict.get(method)))
     return out
 
 
-# Per-axis v/v_max for CLIP-S, DINO-C, and 1-LPIPS: strongest method per axis -> 1.0 (outer
-# edge); the others keep their TRUE proportional ratio (v / v_max), i.e. we do NOT stretch
-# the minimum down to 0. DINO-S uses a robust broken scale: min -> inner ring, second-highest
-# -> knee radius, max -> 1.0. This preserves the outlier winner while expanding the middle tier.
-# Speed axes are already log-inverted to 0..1 (fastest -> 1.0) -> left as-is.
-METRIC_VMAX = []
-METRIC_VMIN = []
-METRIC_VKNEE = []
-for i in range(N_METRIC_AXES):
-    col = [raw_axes(m)[i] for m in DATA]
-    vals = [v for v in col if isinstance(v, float) and not math.isnan(v)]
-    vals_sorted = sorted(vals)
-    METRIC_VMAX.append(max(vals))
-    METRIC_VMIN.append(min(vals))
-    METRIC_VKNEE.append(vals_sorted[-2] if len(vals_sorted) >= 2 else max(vals))
+AXIS_GROUPS = [kind for _, kind in METRICS for _ in _ds_idx(kind)] + ["infer_speed", "train_speed"]
+
+
+def _range(values):
+    valid = [v for v in values if isinstance(v, (int, float)) and not math.isnan(v)]
+    return min(valid), max(valid)
+
+
+# A metric has one shared range across D5/P2A/R5. This is a standard min-max
+# normalization, not a per-axis knee or a rank transform.
+GROUP_RANGES = {}
+for group in set(AXIS_GROUPS):
+    positions = [i for i, axis_group in enumerate(AXIS_GROUPS) if axis_group == group]
+    GROUP_RANGES[group] = _range([raw_axes(name)[i] for name in DATA for i in positions])
+
+
+def _minmax(value, bounds):
+    if not isinstance(value, (int, float)) or math.isnan(value):
+        return math.nan
+    lo, hi = bounds
+    if hi <= lo:
+        return 1.0
+    return (value - lo) / (hi - lo)
 
 
 def to_axes(method):
-    raw = raw_axes(method)
-    out = []
-    for i, v in enumerate(raw):
-        if isinstance(v, float) and not math.isnan(v):
-            if i < N_METRIC_AXES:
-                if AXIS_KINDS[i] == "dino_style":
-                    lo, knee, hi = METRIC_VMIN[i], METRIC_VKNEE[i], METRIC_VMAX[i]
-                    if hi <= lo:
-                        out.append(0.5)
-                    elif v <= knee or hi <= knee:
-                        denom = max(knee - lo, 1e-9)
-                        t = (v - lo) / denom
-                        out.append(DINO_STYLE_FLOOR + (DINO_STYLE_KNEE_RADIUS - DINO_STYLE_FLOOR) * max(0.0, min(1.0, t)))
-                    else:
-                        denom = max(hi - knee, 1e-9)
-                        t = (v - knee) / denom
-                        out.append(DINO_STYLE_KNEE_RADIUS + (1.0 - DINO_STYLE_KNEE_RADIUS) * max(0.0, min(1.0, t)))
-                else:
-                    out.append(v / METRIC_VMAX[i] if METRIC_VMAX[i] > 0 else 0.5)
-            else:
-                out.append(v)   # speed axis already 0..1 (log-inverted)
-        else:
-            out.append(math.nan)
-    return out
+    values = raw_axes(method)
+    return [_minmax(value, GROUP_RANGES[group]) for value, group in zip(values, AXIS_GROUPS)]
 
 
 def contiguous_runs(mask):
@@ -439,10 +410,9 @@ def _wrap_to_px(text, fs, max_px):
 
 
 _CAPTION = (
-    "Axes group speed (left), style (top/right), and content (bottom). DINO-S uses a robust broken scale; "
-    "CLIP-S, DINO-C, and 1-LPIPS use linear v/max, and speed is log-inverted. The dashed boundary uses "
-    "IDT on style axes and TGT on content axes. Raw table values remain the numeric reference. "
-    "WEAVE's D5 checkpoint is selected by a fixed-latent gate/gradient transition without online metrics."
+    "Metric families are min-max normalized once across all reported methods and datasets; "
+    "time is min-max normalized after log10(1+t), with t in seconds. The dashed boundary "
+    "uses IDT for style and TGT for content. Table 1 reports raw values."
 )
 _CAPTION_FS = 13.8
 _CAPTION_WRAPPED = _wrap_to_px(_CAPTION, _CAPTION_FS, _CAP_W_PX)
@@ -508,8 +478,8 @@ for m_idx, (metric, _) in enumerate(METRICS):
 
 print("\nNote: LPIPS column in paper uses down-arrow (lower is better). "
       "On radar we plot 1-LPIPS so higher = always better. DINO-C/DINO-S higher = better.\n"
-      "DINO-S uses robust broken normalization: min -> inner ring, second-highest -> 0.84, max -> 1.0.\n"
-      "CLIP-S, DINO-C, and 1-LPIPS are linear v/max (strongest per axis = 1.0, outer; others keep true ratio).\n"
-      "The weakness analysis above uses RAW values.\n"
-      "Train/Infer speed axes are log-inverted (1 - (log(t+1)-log(lo+1))/(log(hi+1)-log(lo+1))): "
-      "fastest=1.0 (outer). Missing (training-free / API) cells are gaps; no fill crosses them.")
+      "Metric families use one shared min-max range across all reported methods and datasets; "
+      "the best reported value reaches the outer ring.\n"
+      "The weakness analysis above uses raw values.\n"
+      "Train/Infer speed axes use min-max normalization after -log10(1+t), with t in seconds. Missing "
+      "(training-free / API) cells are gaps; no fill crosses them.")

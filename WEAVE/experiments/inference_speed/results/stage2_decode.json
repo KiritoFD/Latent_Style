@@ -1,0 +1,9 @@
+{
+  "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "num_images": 750,
+  "decode_batch": 2,
+  "config": "SD-VAE ft-ema, fp16, batched (no compile)",
+  "latent_decode_sec": 129.183,
+  "latent_decode_ms_per_img": 172.245,
+  "images_per_sec": 5.8
+}

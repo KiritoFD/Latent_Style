@@ -1,0 +1,18 @@
+{
+  "_base": "../runs/submission/hf_oriented_internal_early_stop/config.json",
+  "bridge": {
+    "spectral_w_ll": 1.0
+  },
+  "training": {
+    "internal_early_stop_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "runs/submission/rebuttal_D3_wll_1p0"
+  },
+  "ablation": {
+    "name": "rebuttal_D3_wll_1p0",
+    "axis": "matched_ablation_lambda_LL",
+    "stage": "rebuttal_batch2",
+    "notes": "D3: lambda_LL=1.0 (unweighted LL, no de-weighting). Current production uses 0.3. Tests unweighted LL dominance claim on current 1.04M architecture. Seed=42, 15 epochs, internal early stop disabled (probe kept)."
+  }
+}

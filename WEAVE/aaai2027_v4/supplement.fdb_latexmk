@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1784084414.14924 "supplement.tex" "supplement.pdf" "supplement" 1784084415.57357 0
+["pdflatex"] 1784192961.37468 "supplement.tex" "supplement.pdf" "supplement" 1784192962.80489 0
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc" 1775847598 2375 baa924870cfb487815765f9094cf3728 ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc" 1775847598 2405 5dcf2c1b967ee25cc46c58cd52244aed ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc" 1775847598 2840 216e6e45ad352e2456e1149f28885bee ""
@@ -137,9 +137,9 @@
   "c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1775849172 5587484 f8c68a611032439b64384a9c9a056676 ""
   "c:/texlive/2026/texmf-var/web2c/pdftex/pdflatex.fmt" 1775849342 3636406 34e2b4bb6da69ff2bca321e49648e0af ""
   "c:/texlive/2026/texmf.cnf" 1775849151 713 e69b156964470283e0530f5060668171 ""
-  "supplement.aux" 1784084415 13119 dca083bdbbee8c6acea638746b00b183 "pdflatex"
-  "supplement.out" 1784084415 5636 7ce7059705461f2d63483def457dbe8e "pdflatex"
-  "supplement.tex" 1784084371 62976 f0ee04c844274028ce651226dd15b6d5 ""
+  "supplement.aux" 1784192962 13331 6f46d09ea55261ac27619e9b33d02c10 "pdflatex"
+  "supplement.out" 1784192962 5901 fd43e0bdefcc8cb83718d45f8782cacb "pdflatex"
+  "supplement.tex" 1784192935 65848 c0bc100b12727187facde80c29ff00bc ""
   "supplement_figures/fig_cost_quality.pdf" 1784081386 31587 d899b783e6aca5e46c44082753c5d9d0 ""
   "supplement_figures/fig_d5_metric_heatmap.pdf" 1784081386 32467 b9b067197a71ac610dedf4267af46241 ""
   "supplement_figures/fig_d5_tradeoff.pdf" 1784081385 34493 37bc218ecf7c8f966b09e3954da5be6c ""

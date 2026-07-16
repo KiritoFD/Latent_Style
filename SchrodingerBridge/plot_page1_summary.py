@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import csv
 import math
 from pathlib import Path
+
+# No external data files.
 
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
@@ -13,20 +14,6 @@ import matplotlib.patheffects as pe
 SCRIPT_DIR = Path(__file__).resolve().parent
 OUT_DIR = Path("G:/GitHub/Latent_Style/WEAVE/aaai2027_v4")
 DOC72_DIR = OUT_DIR
-FIG_DATA = Path("G:/GitHub/Latent_Style/WEAVE/aaai2027_v4/fig_data")
-
-# ── Convergence curve data paths ──────────────────────────────────────────
-SAMAM_CURVE_CSV = FIG_DATA / "curve_metrics_hf.csv"
-SAMST_CURVE_CSV = Path(
-    "G:/GitHub/Latent_Style/Related_Works/baseline_pipeline/results/"
-    "samst_wikiarts5_wsl_20260610_172206/eval_bundle/clip_lpips_curve.csv"
-)
-
-# DINO-S / CLIP-S ratios at final points (用于估算曲线中点的 DINO-S)
-SAMAM_DINO_CLIP_RATIO = 0.4771 / 0.5816   # ≈ 0.8203
-SAMST_DINO_CLIP_RATIO = 0.2710 / 0.6183   # ≈ 0.4383
-# SaMST curve CLIP-S 与散点图 CLIP-S 的缩放因子 (不同测试集)
-SAMST_CLIP_SCALE = 0.6183 / 0.6884         # ≈ 0.8982
 
 # IDT floor for the averaged style axis: mean(IDT_DINO_S, IDT_CLIP_S) = mean(0.419, 0.693)
 IDT_AVG = 0.556
@@ -88,10 +75,8 @@ BASELINES = [
 ]
 
 OURS_FRONTIER = [
-    # brk_q (adain=2.0): DINO-S=0.4859, CLIP-S=0.7075, LPIPS=0.2583 — secondary point (max DINO-S)
-    point("WEAVE-q", 0.4859, 0.7075, 0.2583, "ours", label=True, display="WEAVE", train_min=2.07),
-    # brk_m (adain=1.5): DINO-S=0.4843, CLIP-S=0.7180, LPIPS=0.2925 — primary point (main table, 4/4 Pareto)
-    point("WEAVE-m", 0.4843, 0.7180, 0.2925, "ours", label=True, display="Ours", train_min=2.07),
+    # WEAVE-m (adain=1.5): DINO-S=0.4843, CLIP-S=0.7180, LPIPS=0.2925 — single highlighted point
+    point("WEAVE-m", 0.4843, 0.7180, 0.2925, "ours", label=True, display="WEAVE", train_min=2.07),
 ]
 
 ALL_POINTS = BASELINES + OURS_FRONTIER
@@ -121,11 +106,14 @@ LABEL_POS = {
 }
 
 ARTFID_BARS = [
-    {"name": "IDT", "value": 216.5, "time": "ref", "color": "#8F63BF"},
-    {"name": "SaMam", "value": 146.1, "time": "7.6h", "color": "#3B82C4"},
-    {"name": "WEAVE", "value": 300.9, "time": "2.07m", "color": "#D6452F"},
-    {"name": "Seedream\n4.5", "value": 311.5, "time": "API", "color": "#C98B00"},
+    {"name": "IDT", "value": 216.5, "time": "free", "color": "#8F63BF"},
+    {"name": "WEAVE", "value": 295.3, "time": "1.4m", "color": "#D6452F"},
+    {"name": "SaMam", "value": 297.3, "time": "7.3h", "color": "#3B82C4"},
+    {"name": "Seedream\n4.5", "value": 311.0, "time": "API", "color": "#C98B00"},
+    {"name": "Z-STAR", "value": 332.9, "time": "free", "color": "#3C9D3D"},
+    {"name": "Style\nAligned", "value": 368.6, "time": "free", "color": "#F28E2B"},
 ]
+
 
 
 def annotate_point(ax: plt.Axes, p: dict) -> None:
@@ -173,76 +161,14 @@ def bubble_size(p: dict) -> float:
     return math.pi * (radius**2)
 
 
-# ── Convergence curve loading ──────────────────────────────────────────────
-
-
-def load_samam_curve(sample_every: int = 1000) -> list[dict]:
-    """Load SaMam 750-image/step curve from curve_metrics_hf.csv.
-    
-    Returns list of {step, clip_s, lpips, x, dino_s_est, y} sorted by step.
-    Samples every `sample_every` steps to avoid overcrowding.
-    """
-    points = []
-    with open(SAMAM_CURVE_CSV, newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            step = int(row["step"])
-            if step <= 0:          # skip sentinel rows (step=-1, step=1000000000000)
-                continue
-            clip_s = float(row["clip_style"])
-            lpips = float(row["content_lpips"])
-            if step % sample_every == 0:
-                points.append({"step": step, "clip_s": clip_s, "lpips": lpips})
-    points.sort(key=lambda p: p["step"])
-    for p in points:
-        p["dino_s_est"] = p["clip_s"] * SAMAM_DINO_CLIP_RATIO
-        p["x"] = 1.0 - p["lpips"]
-        p["y"] = 0.5 * (p["dino_s_est"] + p["clip_s"])
-    return points
-
-
-def load_samst_curve() -> list[dict]:
-    """Load SaMST 3-epoch curve from clip_lpips_curve.csv.
-    
-    CLIP-S values are scaled to match the scatter plot's final point
-    (different test sets between curve eval and main table).
-    """
-    points = []
-    with open(SAMST_CURVE_CSV, newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            epoch = int(row["epoch_num"])
-            clip_s_raw = float(row["transfer_clip_style"])
-            lpips = float(row["transfer_content_lpips"])
-            clip_s = clip_s_raw * SAMST_CLIP_SCALE
-            dino_s_est = clip_s * SAMST_DINO_CLIP_RATIO
-            points.append({
-                "epoch": epoch,
-                "clip_s": clip_s,
-                "lpips": lpips,
-                "dino_s_est": dino_s_est,
-                "x": 1.0 - lpips,
-                "y": 0.5 * (dino_s_est + clip_s),
-            })
-    points.sort(key=lambda p: p["epoch"])
-    return points
-
-
-def plot_curve_trajectory(
-    ax: plt.Axes,
-    curve: list[dict],
-    color: str,
-    label: str,
-    zorder: int = 2,
-) -> None:
-    """Plot a convergence curve as small semi-transparent dots + line."""
-    xs = [p["x"] for p in curve]
-    ys = [p["y"] for p in curve]
-    # connecting line
-    ax.plot(xs, ys, color=color, lw=0.8, alpha=0.22, zorder=zorder)
-    # small semi-transparent dots
-    ax.scatter(xs, ys, s=7, color=color, alpha=0.32, zorder=zorder + 1,
-               edgecolors="none", label=label)
+def plot_trajectory(ax, points, color, *, lw=1.2, alpha_line=0.55, s=30, alpha_dots=0.70, zorder=2.5):
+    """Plot trajectory with connecting line and dots."""
+    if len(points) < 2:
+        return
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    ax.plot(xs, ys, color=color, lw=lw, alpha=alpha_line, zorder=zorder)
+    ax.scatter(xs, ys, s=s, c=color, alpha=alpha_dots, edgecolors="none", zorder=zorder + 0.5)
 
 
 def build_scatter(ax: plt.Axes) -> None:
@@ -276,24 +202,31 @@ def build_scatter(ax: plt.Axes) -> None:
             alpha=0.95,
         )
 
-    frontier = sorted(OURS_FRONTIER, key=lambda p: p["x"])
-    ax.plot(
-        [p["x"] for p in frontier],
-        [p["avg"] for p in frontier],
-        color="#D6452F",
-        lw=1.8,
-        alpha=0.92,
-        zorder=5,
+    # Highlight the single WEAVE point with a strong marker and edge
+    ax.scatter(
+        [OURS_FRONTIER[0]["x"]],
+        [OURS_FRONTIER[0]["avg"]],
+        s=bubble_size(OURS_FRONTIER[0]) * 1.5,
+        marker=GROUP_STYLE["ours"]["marker"],
+        facecolor=GROUP_STYLE["ours"]["face"],
+        edgecolor="#FFDFD9",
+        linewidth=2.0,
+        zorder=GROUP_STYLE["ours"]["z"] + 1,
+        alpha=0.98,
+    )
+    # White halo behind the WEAVE point
+    ax.scatter(
+        [OURS_FRONTIER[0]["x"]],
+        [OURS_FRONTIER[0]["avg"]],
+        s=bubble_size(OURS_FRONTIER[0]) * 1.5 * 2.2,
+        marker=GROUP_STYLE["ours"]["marker"],
+        facecolor="white",
+        edgecolor="none",
+        zorder=GROUP_STYLE["ours"]["z"] - 0.5,
+        alpha=0.55,
     )
 
-    # ── Convergence curves (small semi-transparent dots + lines) ──────────
-    samam_curve = load_samam_curve(sample_every=1000)
-    if samam_curve:
-        plot_curve_trajectory(ax, samam_curve, color="#4F5865", label="SaMam training")
-
-    samst_curve = load_samst_curve()
-    if samst_curve:
-        plot_curve_trajectory(ax, samst_curve, color="#4F5865", label="SaMST training")
+    # No convergence trajectories — SaMam is fully converged (see supplementary material).
 
     for p in ALL_POINTS:
         if p["label"]:
@@ -360,10 +293,10 @@ def build_bars(ax: plt.Axes) -> None:
         zorder=3,
     )
 
-    ax.set_ylim(0, 360)
+    ax.set_ylim(0, 410)
     ax.set_ylabel("ArtFID")
     ax.set_xticks(list(xs))
-    ax.set_xticklabels([item["name"] for item in ARTFID_BARS])
+    ax.set_xticklabels([item["name"] for item in ARTFID_BARS], fontsize=8.6)
     ax.grid(axis="y", color="#D6D9DF", alpha=0.55, linewidth=0.6, zorder=0)
 
     for bar, item in zip(bars, ARTFID_BARS):
@@ -386,7 +319,7 @@ def build_bars(ax: plt.Axes) -> None:
             item["time"],
             ha="center",
             va="center",
-            fontsize=11.5,
+            fontsize=9.4,
             color=label_color,
             fontweight="bold",
             fontname="Arial",
@@ -395,7 +328,7 @@ def build_bars(ax: plt.Axes) -> None:
     ax.text(
         0.02,
         0.98,
-        "Lower is cleaner.",
+        "Lower; interpret with IDT/TGT.",
         transform=ax.transAxes,
         ha="left",
         va="top",

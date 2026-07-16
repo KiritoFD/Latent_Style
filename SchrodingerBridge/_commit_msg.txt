@@ -1,0 +1,24 @@
+rebuttal: complete batch1+batch2 ablations and ArtFID audit
+
+Batch 1 (no training):
+- Exp A: per-epoch DINO-S evaluation for seeds 7/42/123
+  - seed7: 15 epochs, oracle=4 (0.4910), e_internal=null
+  - seed42: 4 epochs, oracle=4 (0.4917), e_internal=4, regret=0.0
+  - seed123: 3 epochs, oracle=3 (0.4862), e_internal=3, regret=0.0
+- Exp B1: reference-pool margin sensitivity (m=8/16/30)
+- Exp D: inference ablations (D0_full, D1_adain0, D2_no_hf_route)
+- Exp C: canonical ArtFID audit (IDT/WEAVE/SaMam canonical,
+  Z-STAR/StyleAligned excluded due to manifest mismatch)
+
+Batch 2 (matched ablations, seed=42, 15 epochs):
+- D3 (lambda_LL=1.0): oracle=3 (0.4910), e_internal=5, regret=6.8e-05
+- D4 (direct target, no source-aligned LL): oracle=13 (0.4894),
+  e_internal=5, regret=0.0039 -- source-aligned LL is critical
+- D5 (learned HH head): oracle=4 (0.4930), e_internal=4, regret=0.0
+  -- best DINO-S of all variants
+
+Key findings:
+- Source-aligned LL endpoint strongly supported by D4 ablation
+- lambda_LL de-weighting has minor effect (D3)
+- HH head improves content preservation (D5), challenges production config
+- Internal early-stop robust when source-aligned LL present

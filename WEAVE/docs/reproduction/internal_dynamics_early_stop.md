@@ -18,8 +18,8 @@ loss therefore measures endpoint regression, not perceptual style quality.
 The useful event is a route-level phase transition:
 
 1. The mean LH/HL target-HF gate changes from contraction to expansion.
-2. The shared-trunk LL/HF gradient-norm ratio crosses from above one to below
-   one for the first time.
+2. The shared-trunk LL/HF gradient-norm ratio contracts sharply relative to the
+   preceding epoch.
 3. The target-HF route gradient becomes much larger relative to the ordinary
    HF velocity head.
 
@@ -63,9 +63,21 @@ learning a useful style direction and over-absorbing the paired endpoint.
 
 ## Rule And Scope
 
-The implemented candidate event is:
+The implemented event is:
 
-`gate_delta > 0` and the shared LL/HF gradient ratio crosses `1.0` downward.
+`gate_delta > 0` and `rho_epoch / rho_previous <= 0.65`.
+
+The first implementation used an absolute crossing at `rho=1`. Seed and probe-batch
+stress tests showed that this threshold is scale-sensitive: seed 7 and probe batch 8
+started below one and could not cross it. The relative contraction rule selects epoch 4
+for seeds 42/7 and probe batches 2/4/8, and epoch 3 for seed 123. Full evaluation of the
+two new seeds gives:
+
+| seed | selected epoch | DINO-S | CLIP-S | LPIPS | DINO-C |
+|---:|---:|---:|---:|---:|---:|
+| 7 | 4 | 0.4910 | 0.7140 | 0.2668 | 0.8076 |
+| 42 | 4 | 0.4915 | 0.7126 | 0.2596 | 0.8103 |
+| 123 | 3 | 0.4862 | 0.7144 | 0.2552 | 0.8040 |
 
 The event is measured after the epoch and before checkpoint saving. Probe
 forwards run under `eval`, do not call the optimizer, and preserve CPU/CUDA RNG

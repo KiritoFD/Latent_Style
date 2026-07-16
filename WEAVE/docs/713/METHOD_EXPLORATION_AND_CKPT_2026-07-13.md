@@ -10,20 +10,20 @@ Current paper checkpoint family:
 
 | Field | Value |
 |---|---|
-| Config | `configs/exp_brk_a_ll03_10ep.json` |
-| Logical checkpoint | `<EXP_ROOT>/dino_s_break/brk_a_ll03_10ep/epoch_0010.pt` |
-| Remote observed root | `I:\Github\Latent_Style\SchrodingerBridge\exp\dino_s_break\brk_a_ll03_10ep` |
-| Training | 10 epochs, batch 96, seed 42 |
+| Config | submission oriented-HF recipe |
+| Logical checkpoint | `runs/submission/hf_oriented_internal_early_stop/epoch_0004.pt` |
+| Remote observed root | `I:\Github\Latent_Style\WEAVE\runs\submission\hf_oriented_internal_early_stop` |
+| Training | 4 epochs selected by the fixed-latent criterion, batch 96, seed 42 |
 | Hardware | RTX 3060 12GB |
-| Train time | 176.9 s |
-| Inference | 8-step Euler, 750 pairs, generation-only 94.63 s |
+| Train time | 82.8 s (1.4 min), after latent caching |
+| Inference | 8-step Euler plus VAE decode, 750 pairs, generation-only 126.00 s |
 | Main source of paper values | `aaai2027_v4/paper.tex`, Table 1 |
 
 Current main-table row:
 
 | Board | DINO-S | CLIP-S | LPIPS | DINO-C |
 |---|---:|---:|---:|---:|
-| D5-512 | **0.4859** | 0.7075 | **0.2583** | **0.8287** |
+| D5-512 | **0.4918** | 0.7128 | **0.2595** | **0.8102** |
 | P2A-256 | 0.4801 | 0.6681 | 0.3116 | 0.8612 |
 | R5-WikiArt | 0.5226 | 0.7747 | 0.2895 | 0.7717 |
 
@@ -35,7 +35,7 @@ The effective method should be described as:
 
 ```text
 WEAVE = Haar wavelet coordinates
-      + band-weighted rectified-flow transport
+      + band-weighted endpoint-velocity transport
       + endpoint high-frequency style statistics
       + auxiliary style-memory conditioning
 ```
@@ -45,7 +45,7 @@ Current component status:
 | Component | Current status | Reason |
 |---|---|---|
 | Haar DWT / IDWT | Core | Separates LL structure from LH/HL/HH texture bands. |
-| Rectified flow matching | Core | Learns content-aware latent transport with low inference step count. |
+| Endpoint-velocity matching | Core | Learns content-aware latent transport with a short inference trajectory. |
 | Band-weighted target | Core | LL is weakly stylized, HF uses target-style bands. |
 | Endpoint AdaIN / HF statistics | Core style injector | Stable inference-side style-statistics lever. |
 | Cross-attention / style memory | Auxiliary | Probe gates are near-closed and gradient mass is weak; do not frame as main style path. |
@@ -76,11 +76,11 @@ Useful findings retained:
 
 | Finding | Current use |
 |---|---|
-| Flow matching is necessary. | Still part of the method core. |
+| Endpoint-velocity matching is necessary. | Still part of the method core. |
 | Haar wavelet coordinates help content/style separation. | Still the main coordinate system. |
 | LL weighting matters. | Current recipe uses a weak LL style blend / low LL weight to protect content. |
 | Canonical DINO protocol matters. | DINO-S is primary style; DINO-C is content; old patch-SSM DINO-C interpretation is retired. |
-| VAE decode is a major inference-time fixed cost. | Timing discussion separates network generation and VAE decode. |
+| VAE decode is included in the reported selected generation time. | The selected timing does not reuse older per-component traces. |
 
 Findings downgraded:
 
@@ -94,8 +94,8 @@ Findings downgraded:
 
 The current paper checkpoint stabilized the low-cost operating point:
 
-- 10 epochs on RTX 3060.
-- 903K trainable parameters plus frozen VAE.
+- 4 selected epochs on RTX 3060.
+- 1.04M trainable parameters plus frozen VAE.
 - Strong content preservation relative to high-style diffusion/editing baselines.
 - DINO-S near Seedream 4.5 on D5 while LPIPS/DINO-C are much better.
 

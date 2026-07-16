@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.11)  15 JUL 2026 13:50
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.4.11)  16 JUL 2026 21:44
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -583,42 +583,20 @@ LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
 <fig_distinct5_page1_summary.pdf, id=4, 691.98926pt x 233.67752pt>
 File: fig_distinct5_page1_summary.pdf Graphic file (type pdf)
 <use fig_distinct5_page1_summary.pdf>
-Package pdftex.def Info: fig_distinct5_page1_summary.pdf  used on input line 39.
+Package pdftex.def Info: fig_distinct5_page1_summary.pdf  used on input line 40.
 (pdftex.def)             Requested size: 505.89pt x 170.83632pt.
- (c:/texlive/2026/texmf-dist/tex/latex/microtype/mt-cmr.cfg
-File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman (RS)
-)
-LaTeX Font Info:    Trying to load font information for U+msa on input line 46.
- (c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsa.fd
-File: umsa.fd 2013/01/14 v3.01 AMS symbols A
-) (c:/texlive/2026/texmf-dist/tex/latex/microtype/mt-msa.cfg
-File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
-)
-LaTeX Font Info:    Trying to load font information for U+msb on input line 46.
- (c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsb.fd
-File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-) (c:/texlive/2026/texmf-dist/tex/latex/microtype/mt-msb.cfg
-File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
-)
-LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
-(Font)              scaled to size 7.0pt on input line 46.
-LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
-(Font)              scaled to size 5.0pt on input line 46.
 CUTED [- LAST -]
-Extra skip:9.58601pt
-Left:149.24998pt/1.9485pt
-Right:141.61247pt/0.0pt
-Split: 146.43123pt
-Output:146.43123pt
+Extra skip:0.0pt
+Left:139.24998pt/1.9485pt
+Right:143.44849pt/0.0pt
+Split: 141.34923pt
+Output:141.34923pt
 Pageshrink: 0.0pt
 Pagestretch: 0.0pt
 @colht:487.8225pt
-CUTED [output]: 146.43123pt
-CUTED [leftcolumn badness]: 83
-CUTED [rightcolumn badness]: 714
-
-Underfull \vbox (badness 1163) has occurred while \output is active []
-
+CUTED [output]: 141.34923pt
+CUTED [leftcolumn badness]: 22
+CUTED [rightcolumn badness]: 34
 
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
@@ -627,79 +605,82 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
  <./fig_distinct5_page1_summary.pdf>]
-LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
-(Font)              scaled to size 10.95pt on input line 106.
-LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
-(Font)              scaled to size 10.95pt on input line 106.
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
- [2]
-
-LaTeX Warning: Reference `sec:mechanism' on page 3 undefined on input line 222.
-
-<aaai_arch_diagram_v16_staggered_bundle.drawio.png, id=114, 1522.68875pt x 446.66875pt>
+<aaai_arch_diagram_v16_staggered_bundle.drawio.png, id=116, 1522.68875pt x 446.66875pt>
 File: aaai_arch_diagram_v16_staggered_bundle.drawio.png Graphic file (type png)
 <use aaai_arch_diagram_v16_staggered_bundle.drawio.png>
-Package pdftex.def Info: aaai_arch_diagram_v16_staggered_bundle.drawio.png  used on input line 227.
+Package pdftex.def Info: aaai_arch_diagram_v16_staggered_bundle.drawio.png  used on input line 100.
 (pdftex.def)             Requested size: 505.89pt x 148.39621pt.
-[3]
-<fig_probe_combined.pdf, id=126, 238.99876pt x 106.33943pt>
+LaTeX Font Info:    Font shape `T1/ntxtlf/m/n' will be
+(Font)              scaled to size 10.95pt on input line 111.
+LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
+(Font)              scaled to size 10.95pt on input line 111.
+ [2] (c:/texlive/2026/texmf-dist/tex/latex/microtype/mt-cmr.cfg
+File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman (RS)
+)
+LaTeX Font Info:    Trying to load font information for U+msa on input line 224.
+ (c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+) (c:/texlive/2026/texmf-dist/tex/latex/microtype/mt-msa.cfg
+File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
+)
+LaTeX Font Info:    Trying to load font information for U+msb on input line 224.
+ (c:/texlive/2026/texmf-dist/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+) (c:/texlive/2026/texmf-dist/tex/latex/microtype/mt-msb.cfg
+File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
+) [3 <./aaai_arch_diagram_v16_staggered_bundle.drawio.png>]
+<fig_probe_combined.pdf, id=132, 238.99876pt x 106.33943pt>
 File: fig_probe_combined.pdf Graphic file (type pdf)
 <use fig_probe_combined.pdf>
-Package pdftex.def Info: fig_probe_combined.pdf  used on input line 304.
+Package pdftex.def Info: fig_probe_combined.pdf  used on input line 306.
 (pdftex.def)             Requested size: 234.60545pt x 104.3904pt.
-<fig_teaser_comparison.png, id=127, 1927.2pt x 271.0125pt>
+<fig_teaser_comparison.png, id=133, 1927.2pt x 271.0125pt>
 File: fig_teaser_comparison.png Graphic file (type png)
 <use fig_teaser_comparison.png>
-Package pdftex.def Info: fig_teaser_comparison.png  used on input line 311.
+Package pdftex.def Info: fig_teaser_comparison.png  used on input line 313.
 (pdftex.def)             Requested size: 505.89pt x 71.13977pt.
- [4 <./aaai_arch_diagram_v16_staggered_bundle.drawio.png> <./fig_probe_combined.pdf>]
 
-LaTeX Warning: Reference `sec:mechanism' on page 5 undefined on input line 376.
+Underfull \hbox (badness 10000) in paragraph at lines 334--337
+ \T1/ntxtlf/b/n/10 (+20) Spec-tral velocity-matching ob-jec-tive. \T1/ntxtlf/m/n/10 (+20) Let
+ []
 
-
-LaTeX Warning: Reference `sec:mechanism' on page 5 undefined on input line 390.
-
+[4 <./fig_probe_combined.pdf>]
 LaTeX Font Info:    Font shape `T1/ntxtlf/b/n' will be
-(Font)              scaled to size 9.0pt on input line 470.
-[5 <./fig_teaser_comparison.png (PNG copy)>]
-<radar_metric_blocks_A_clip_dinos_robustbreak.png, id=150, 1087.2118pt x 703.72913pt>
+(Font)              scaled to size 9.0pt on input line 423.
+<radar_metric_blocks_A_clip_dinos_robustbreak.png, id=154, 1087.2118pt x 703.72913pt>
 File: radar_metric_blocks_A_clip_dinos_robustbreak.png Graphic file (type png)
 <use radar_metric_blocks_A_clip_dinos_robustbreak.png>
-Package pdftex.def Info: radar_metric_blocks_A_clip_dinos_robustbreak.png  used on input line 501.
+Package pdftex.def Info: radar_metric_blocks_A_clip_dinos_robustbreak.png  used on input line 446.
 (pdftex.def)             Requested size: 215.45348pt x 139.45476pt.
+ [5 <./fig_teaser_comparison.png (PNG copy)> <./radar_metric_blocks_A_clip_dinos_robustbreak.png>]
+Underfull \hbox (badness 1365) in paragraph at lines 531--536
+ \T1/ntxtlf/b/n/10 (+20) Reference-pool sta-bil-ity. \T1/ntxtlf/m/n/10 (+20) We re-sam-ple one without-
+ []
 
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
- [6 <./radar_metric_blocks_A_clip_dinos_robustbreak.png>] [7] (./paper.bbl
+[6] (./paper.bbl
 LaTeX Font Info:    Font shape `T1/ntxtlf/m/it' will be
-(Font)              scaled to size 10.0pt on input line 17.
- [8]) [9
+(Font)              scaled to size 10.0pt on input line 12.
+ [7] [8]) [9
 
 ] (./paper.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2020/03/25>
  ***********
-
-
-LaTeX Warning: There were undefined references.
-
  ) 
 Here is how much of TeX's memory you used:
- 20530 strings out of 467525
- 400986 string characters out of 5423209
- 853643 words of memory out of 5000000
- 48907 multiletter control sequences out of 15000+600000
- 678789 words of font info for 159 fonts, out of 8000000 for 9000
+ 20516 strings out of 467525
+ 400768 string characters out of 5423209
+ 860822 words of memory out of 5000000
+ 48905 multiletter control sequences out of 15000+600000
+ 672504 words of font info for 151 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 89i,17n,117p,1043b,414s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmb.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmr.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmri.pfb>
-Output written on paper.pdf (9 pages, 1885619 bytes).
+ 89i,17n,117p,1043b,397s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmb.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmr.pfb><c:/texlive/2026/texmf-dist/fonts/type1/public/newtx/ztmri.pfb>
+Output written on paper.pdf (9 pages, 1809727 bytes).
 PDF statistics:
- 253 PDF objects out of 1000 (max. 8388607)
- 110 compressed objects within 2 object streams
+ 256 PDF objects out of 1000 (max. 8388607)
+ 107 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 29222 words of extra memory for PDF output out of 29859 (max. 10000000)
+ 25126 words of extra memory for PDF output out of 29859 (max. 10000000)
 

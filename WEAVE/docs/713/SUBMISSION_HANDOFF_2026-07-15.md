@@ -109,7 +109,7 @@ The current baseline is best understood as:
 source/style latent pair
   -> one-level Haar coordinates
   -> content-protected LL target + target-style HF supervision
-  -> compact rectified-flow transport with style-memory conditioning
+  -> compact endpoint-velocity transport with style-memory conditioning
   -> 8-step solver
   -> declared endpoint HF-statistics alignment
   -> VAE decode
@@ -150,9 +150,9 @@ and evaluated at every epoch.
 | Oriented route epoch 4 | **0.4915** | **0.7126** | 0.2596 | 0.8103 |
 | Oriented route epoch 6 | 0.4878 | 0.7101 | 0.2563 | 0.8215 |
 
-This route raises the style ceiling but does not dominate the baseline because
-the content loss is measurable. It remains an architecture probe, not the
-canonical config. The endpoint AdaIN scale axis is closed at 2.0; scale 2.5
+This route raises the style ceiling with a measurable but bounded content cost.
+Epoch 4 is the current D5 main-table checkpoint and is selected by the internal
+dynamics rule below. The endpoint AdaIN scale axis is closed at 2.0; scale 2.5
 causes severe collapse and should not be revisited as a tuning direction.
 
 ## 7. Repository Cleanup Completed
@@ -172,7 +172,9 @@ causes severe collapse and should not be revisited as a tuning direction.
 - One-off root diagnostics and rejected spectral/content image blending scripts
   are archived.
 - Machine-specific dataset path indexing is removed.
-- Current tests: 45 passed with one existing test-only tensor conversion warning.
+- Current tests: 46 passed with one existing test-only tensor conversion warning.
+  `pytest.ini` restricts collection to `tests/`, so archived diagnostics are not
+  mistaken for the active suite.
 
 Windows note: the current Codex task was opened with the former directory as
 its process working directory, so an empty, untracked `SchrodingerBridge/`
@@ -187,9 +189,13 @@ to improve after the DINO-S peak, so loss convergence is not an adequate
 proxy. The useful event is the first epoch where:
 
 1. the mean LH/HL target-HF gate changes from contraction to expansion; and
-2. the shared-trunk LL/HF gradient-norm ratio crosses below one.
+2. the shared-trunk LL/HF gradient-norm ratio contracts by at least 35% from the preceding epoch.
 
-The retrospective curve and a fresh online run both select epoch 4. The fresh
+The retrospective curve and a fresh online run both select epoch 4. Seed/probe
+stress tests exposed that the first absolute crossing-at-one implementation was
+scale-sensitive, so the implemented event uses
+`rho_epoch / rho_previous <= 0.65`. It selects epochs 3--4 across seeds
+7/42/123 and probe batches 2/4/8. The fresh
 run used the canonical 15-epoch cosine schedule, decoded no images, consulted
 no DINO/CLIP/LPIPS metric, and stopped after saving `epoch_0004.pt`. The probe
 uses a fixed latent batch, two extra backwards per epoch, and preserves the
@@ -200,7 +206,23 @@ Active configs:
 - record only: `experiments/architecture/hf_oriented_internal_probe.json`;
 - automatic stop: `experiments/architecture/hf_oriented_internal_early_stop.json`.
 
-## 9. Next Architecture Gate
+## 9. Metric Audits
+
+The current oriented-HF epoch-4 packet was regenerated from its checkpoint and
+matched all 750 requests. Its targetwise ArtFID is 295.27, versus SaMam 297.32,
+Seedream 310.97 (720 successful API requests), Z-STAR 332.91, and StyleAligned
+368.63. IDT remains much lower at 216.51 because the multiplicative ArtFID
+content term is exactly zero for a no-op. See
+`docs/reproduction/artfid_d5_audit.md`.
+
+The previous D5 TGT values mixed individual/off-diagonal statistics with the
+full board. The corrected full-750 reference is DINO-S 1.000, CLIP-S 0.863,
+LPIPS 0.776, and DINO-C 0.215. Across the first five deterministic target
+exemplars, TGT LPIPS ranges from 0.752 to 0.783 and DINO-C from 0.189 to 0.246;
+StyleAligned LPIPS 0.869 remains outside every reference choice. Raw results are
+in `docs/reproduction/tgt_reference_sensitivity.{csv,json}`.
+
+## 10. Next Architecture Gate
 
 The next justified experiment is gradient ownership for the oriented target-HF
 residual route:

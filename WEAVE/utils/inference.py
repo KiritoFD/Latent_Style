@@ -64,16 +64,23 @@ except Exception:
 
 
 class VAEDecodeWrapper(torch.nn.Module):
-    """Minimal tensor-only VAE decoder wrapper for torch.compile."""
+    """Fully fused tensor-only VAE decoder wrapper for torch.compile."""
 
     def __init__(self, vae: torch.nn.Module) -> None:
         super().__init__()
         self.post_quant_conv = vae.post_quant_conv
         self.decoder = vae.decoder
+        self.scaling_factor = float(vae.config.scaling_factor)
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
+        z = z.to(dtype=self.post_quant_conv.weight.dtype)
+        # Fuse input scaling
+        z = z / max(self.scaling_factor, 1e-8)
         z = self.post_quant_conv(z)
-        return self.decoder(z)
+        out = self.decoder(z)
+        # Fuse output scaling, offset, and clamping
+        out = (out + 1.0) / 2.0
+        return torch.clamp(out, 0.0, 1.0)
 
 
 class _DecoderOnlyVAEConfig:
@@ -767,9 +774,10 @@ def load_vae(
     enable_xformers: bool = True,
     compile_decoder: bool = False,
     compile_method: str = "pt2",
-    compile_mode: str = "reduce-overhead",
-    compile_fullgraph: bool = False,
+    compile_mode: str = "max-autotune",
+    compile_fullgraph: bool = True,
     compile_cache_dir: str | os.PathLike | None = None,
+    compile_dtype: torch.dtype = torch.bfloat16,
 ):
     if device == "cuda" and not torch.cuda.is_available():
         logger.warning("CUDA not available, fallback to CPU for VAE.")
@@ -778,9 +786,11 @@ def load_vae(
     vae = download_vae_with_fallback(model_id, device=device, cache_dir=cache_dir)
     if str(device).startswith("cuda"):
         try:
-            vae = vae.to(device=device, dtype=torch.float16, memory_format=torch.channels_last)
+            vae = vae.to(device=device, dtype=compile_dtype, memory_format=torch.channels_last)
         except Exception:
             logger.debug("VAE channels_last conversion skipped.", exc_info=True)
+        # Freeze all parameters — inference only, no gradient tracking needed.
+        vae.requires_grad_(False)
         for method_name in ("disable_slicing", "disable_tiling"):
             try:
                 method = getattr(vae, method_name, None)
@@ -795,11 +805,12 @@ def load_vae(
             logger.debug("VAE xFormers attention not available; continue without it.", exc_info=True)
         if bool(compile_decoder):
             try:
-                wrapper = VAEDecodeWrapper(vae).to(device=device, dtype=torch.float16, memory_format=torch.channels_last)
+                wrapper = VAEDecodeWrapper(vae).to(device=device, dtype=compile_dtype, memory_format=torch.channels_last)
                 wrapper.eval()
+                wrapper.requires_grad_(False)
                 method = requested_compile_method
                 if method == "jit":
-                    dummy_z = torch.randn(1, 4, 64, 64, device=device, dtype=torch.float16)
+                    dummy_z = torch.randn(1, 4, 64, 64, device=device, dtype=compile_dtype)
                     if str(device).startswith("cuda"):
                         dummy_z = dummy_z.contiguous(memory_format=torch.channels_last)
                     with torch.inference_mode():
@@ -810,14 +821,28 @@ def load_vae(
                     configure_torch_compile_cache(compile_cache_dir)
                     vae.compiled_decoder = torch.compile(
                         wrapper,
-                        mode=str(compile_mode or "reduce-overhead"),
+                        mode=str(compile_mode or "max-autotune"),
                         fullgraph=bool(compile_fullgraph),
+                        dynamic=False,  # fixed shape → no dynamic guards
                     )
                     logger.info(
-                        "Enabled torch.compile VAE decoder: mode=%s fullgraph=%s",
-                        str(compile_mode or "reduce-overhead"),
+                        "Enabled torch.compile VAE decoder: mode=%s fullgraph=%s dynamic=False",
+                        str(compile_mode or "max-autotune"),
                         bool(compile_fullgraph),
                     )
+                    # Warmup: trigger Triton compilation (cached to disk after first run)
+                    try:
+                        dummy_z = torch.randn(1, 4, 64, 64, device=device, dtype=compile_dtype)
+                        if str(device).startswith("cuda"):
+                            dummy_z = dummy_z.contiguous(memory_format=torch.channels_last)
+                        with torch.inference_mode():
+                            for _ in range(3):
+                                _ = vae.compiled_decoder(dummy_z)
+                        if torch.cuda.is_available():
+                            torch.cuda.synchronize()
+                        logger.info("VAE compiled decoder warmup complete.")
+                    except Exception:
+                        logger.debug("VAE compiled decoder warmup failed.", exc_info=True)
                 else:
                     raise ValueError(f"Unsupported VAE compile method: {compile_method}")
             except Exception:
@@ -827,7 +852,11 @@ def load_vae(
 
 @torch.no_grad()
 def encode_image(vae, image_tensor, device="cuda"):
-    image_tensor = image_tensor.to(device, dtype=torch.float16)
+    vae_dtype = torch.float16
+    for param in vae.parameters():
+        vae_dtype = param.dtype
+        break
+    image_tensor = image_tensor.to(device, dtype=vae_dtype)
     if image_tensor.ndim == 4 and str(device).startswith("cuda"):
         image_tensor = image_tensor.contiguous(memory_format=torch.channels_last)
     latent = vae.encode(image_tensor).latent_dist.sample()
@@ -835,28 +864,36 @@ def encode_image(vae, image_tensor, device="cuda"):
     return latent
 
 
-@torch.no_grad()
 def decode_latent(vae, latent, device="cuda", scaling_factor=None):
-    latent = latent.to(device, dtype=torch.float16)
-    if latent.ndim == 4 and str(device).startswith("cuda"):
-        latent = latent.contiguous(memory_format=torch.channels_last)
-    scale = float(vae.config.scaling_factor if scaling_factor is None else scaling_factor)
-    latent = latent / max(scale, 1e-8)
-    compiled_decoder = getattr(vae, "compiled_decoder", None)
-    if compiled_decoder is not None:
-        try:
-            image = compiled_decoder(latent)
-        except Exception:
-            logger.exception("Compiled VAE decoder failed; falling back to diffusers decode.")
+    # Use inference_mode for deeper autograd disabling than no_grad:
+    # kills autograd engine + view tracking at C++ level.
+    with torch.inference_mode():
+        vae_dtype = torch.float16
+        for param in vae.parameters():
+            vae_dtype = param.dtype
+            break
+        latent = latent.to(device, dtype=vae_dtype)
+        if latent.ndim == 4 and str(device).startswith("cuda"):
+            latent = latent.contiguous(memory_format=torch.channels_last)
+            
+        compiled_decoder = getattr(vae, "compiled_decoder", None)
+        if compiled_decoder is not None:
             try:
-                delattr(vae, "compiled_decoder")
+                # Fully-fused compiled wrapper already handles scaling and post-processing!
+                return compiled_decoder(latent)
             except Exception:
-                pass
-            image = vae.decode(latent).sample
-    else:
+                logger.exception("Compiled VAE decoder failed; falling back to diffusers decode.")
+                try:
+                    delattr(vae, "compiled_decoder")
+                except Exception:
+                    pass
+
+        # Fallback (eager path)
+        scale = float(vae.config.scaling_factor if scaling_factor is None else scaling_factor)
+        latent = latent / max(scale, 1e-8)
         image = vae.decode(latent).sample
-    image = (image + 1.0) / 2.0
-    return torch.clamp(image, 0.0, 1.0)
+        image = (image + 1.0) / 2.0
+        return torch.clamp(image, 0.0, 1.0)
 
 
 def tensor_to_pil(tensor):

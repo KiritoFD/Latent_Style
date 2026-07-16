@@ -1,0 +1,5 @@
+{
+  "model": {
+    "solver_family": "euler_legacy"
+  }
+}

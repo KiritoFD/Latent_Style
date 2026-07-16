@@ -4,9 +4,9 @@
 \providecommand\HyField@AuxAddToCoFields[2]{}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Scope and Source of Record}{1}{section.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Directory Audit and Cleanup Policy}{1}{subsection.1.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Audited experiment-tree inventory. The paper-facing records are a small subset of a much larger experimental history; the supplement separates source-of-truth runs from diagnostic and historical runs.}}{1}{figure.caption.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Experiment inventory. Results used in the paper are separated from diagnostic and historical runs retained for traceability.}}{1}{figure.caption.2}\protected@file@percent }
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
-\newlabel{fig:supp-exp-inventory}{{1}{1}{Audited experiment-tree inventory. The paper-facing records are a small subset of a much larger experimental history; the supplement separates source-of-truth runs from diagnostic and historical runs}{figure.caption.2}{}}
+\newlabel{fig:supp-exp-inventory}{{1}{1}{Experiment inventory. Results used in the paper are separated from diagnostic and historical runs retained for traceability}{figure.caption.2}{}}
 \@writefile{toc}{\contentsline {paragraph}{Cleanup rule.}{2}{section*.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Paper Directory Contents}{2}{subsection.1.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {2}Datasets and Evaluation Boards}{2}{section.2}\protected@file@percent }
@@ -27,16 +27,16 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Resolved Configuration Details}{4}{subsection.4.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Training Log Audit}{4}{subsection.4.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Internal-Dynamics Probe}{4}{subsection.4.3}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Training audit for the internally selected D5-512 checkpoint. Training stops at epoch 4 when the target-HF gates start expanding and the shared LL/HF gradient ratio first crosses below one.}}{4}{figure.caption.13}\protected@file@percent }
-\newlabel{fig:supp-training-audit}{{4}{4}{Training audit for the internally selected D5-512 checkpoint. Training stops at epoch 4 when the target-HF gates start expanding and the shared LL/HF gradient ratio first crosses below one}{figure.caption.13}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Training dynamics for the selected D5-512 checkpoint. Training stops at epoch 4 when the high-frequency conditioning gates increase and the shared LL/HF gradient ratio contracts sharply relative to the preceding epoch.}}{4}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:supp-training-audit}{{4}{4}{Training dynamics for the selected D5-512 checkpoint. Training stops at epoch 4 when the high-frequency conditioning gates increase and the shared LL/HF gradient ratio contracts sharply relative to the preceding epoch}{figure.caption.13}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Implementation Notes}{4}{subsection.4.4}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Resolved fields from the frozen paper configuration.}}{5}{table.caption.12}\protected@file@percent }
 \newlabel{tab:supp-resolved-config}{{1}{5}{Resolved fields from the frozen paper configuration}{table.caption.12}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {5}Information-Flow Diagnosis}{5}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Probe Protocol and Result Ledger}{5}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Probe Protocol and Result Ledger}{6}{subsection.5.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {6}Inference Setup}{6}{section.6}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Generation-only timing decomposition on a single RTX 3060 (12\,GB). VAE decode is a large fixed cost; the compact velocity network remains the dominant method-specific component.}}{7}{figure.caption.14}\protected@file@percent }
-\newlabel{fig:supp-timing}{{5}{7}{Generation-only timing decomposition on a single RTX 3060 (12\,GB). VAE decode is a large fixed cost; the compact velocity network remains the dominant method-specific component}{figure.caption.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Generation-only time for the selected WEAVE checkpoint on a single RTX 3060 (12\,GB): 126.00\,s for 750 images. Latent caching and metric computation are excluded.}}{7}{figure.caption.14}\protected@file@percent }
+\newlabel{fig:supp-timing}{{5}{7}{Generation-only time for the selected WEAVE checkpoint on a single RTX 3060 (12\,GB): 126.00\,s for 750 images. Latent caching and metric computation are excluded}{figure.caption.14}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Evaluation Runtime Anatomy}{7}{subsection.6.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Inference Variants}{7}{subsection.6.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {7}Metrics}{7}{section.7}\protected@file@percent }
@@ -47,8 +47,8 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.1}IDT--TGT Evaluation Guideline}{7}{subsection.7.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Why two references are needed.}{7}{section*.20}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Interpretation and scope.}{7}{section*.21}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Inference-only operating points produced from the previous base checkpoint.}}{8}{table.caption.15}\protected@file@percent }
-\newlabel{tab:supp-inference-variants}{{2}{8}{Inference-only operating points produced from the previous base checkpoint}{table.caption.15}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Alternative inference settings evaluated from the same base checkpoint.}}{8}{table.caption.15}\protected@file@percent }
+\newlabel{tab:supp-inference-variants}{{2}{8}{Alternative inference settings evaluated from the same base checkpoint}{table.caption.15}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Metric Cache and Determinism}{8}{subsection.7.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.3}DINO Sidecar Coverage}{8}{subsection.7.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Metric interpretation caveats.}{8}{section*.22}\protected@file@percent }
@@ -57,27 +57,29 @@
 \newlabel{fig:supp-d5-heatmap}{{6}{8}{D5-512 metric ledger as a heatmap. LPIPS cells are color-normalized after inversion for readability, while annotations show raw values}{figure.caption.24}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces D5-512 style/content trade-off. Marker size grows with DINO-C{}. WEAVE is not the maximum-style point, but it occupies the low-LPIPS, high-content region among learned methods that clear the identity style floor.}}{8}{figure.caption.25}\protected@file@percent }
 \newlabel{fig:supp-d5-tradeoff}{{7}{8}{D5-512 style/content trade-off. Marker size grows with \dinoc {}. WEAVE is not the maximum-style point, but it occupies the low-LPIPS, high-content region among learned methods that clear the identity style floor}{figure.caption.25}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Full automatic-metric ledger used by the main paper. DINO-S, CLIP-S, and DINO-C are higher better; LPIPS is lower better. Dashes mark unavailable or withheld metadata rather than inferred values.}}{9}{table.caption.23}\protected@file@percent }
-\newlabel{tab:supp-full-main}{{3}{9}{Full automatic-metric ledger used by the main paper. DINO-S, CLIP-S, and DINO-C are higher better; LPIPS is lower better. Dashes mark unavailable or withheld metadata rather than inferred values}{table.caption.23}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Baseline Accounting}{9}{subsection.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Baseline Accounting}{8}{subsection.8.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Full comparison ledger used by the main paper. Higher DINO-S, CLIP-S, and DINO-C and lower LPIPS are better. Dashes mark unavailable or withheld metadata rather than inferred values.}}{9}{table.caption.23}\protected@file@percent }
+\newlabel{tab:supp-full-main}{{3}{9}{Full comparison ledger used by the main paper. Higher DINO-S, CLIP-S, and DINO-C and lower LPIPS are better. Dashes mark unavailable or withheld metadata rather than inferred values}{table.caption.23}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Baseline Data Inventory}{9}{subsection.8.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {9}Ablation and Mechanism Summary}{9}{section.9}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Cost accounting for learned baselines. WEAVE trains in minutes rather than hundreds of minutes and remains in the high-content region at inference.}}{10}{figure.caption.26}\protected@file@percent }
 \newlabel{fig:supp-cost-quality}{{8}{10}{Cost accounting for learned baselines. WEAVE trains in minutes rather than hundreds of minutes and remains in the high-content region at inference}{figure.caption.26}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Mechanism-probe comparison. Spatial target-HF injection raises style but collapses content, while pooled/subband target-HF routes preserve content at nearly the same style level.}}{10}{figure.caption.27}\protected@file@percent }
-\newlabel{fig:supp-probe}{{9}{10}{Mechanism-probe comparison. Spatial target-HF injection raises style but collapses content, while pooled/subband target-HF routes preserve content at nearly the same style level}{figure.caption.27}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Mechanism-probe comparison. Spatial target-HF injection raises style but substantially reduces content scores, while pooled/subband target-HF routes preserve content at nearly the same style level.}}{10}{figure.caption.27}\protected@file@percent }
+\newlabel{fig:supp-probe}{{9}{10}{Mechanism-probe comparison. Spatial target-HF injection raises style but substantially reduces content scores, while pooled/subband target-HF routes preserve content at nearly the same style level}{figure.caption.27}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {9.1}Ablation Directory Summary}{10}{subsection.9.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {10}Next Architecture Plan}{10}{section.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.2}Corrected Controls and Stability Checks}{10}{subsection.9.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.3}Frozen SD1.5 Extension}{10}{subsection.9.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {10}Next Architecture Plan}{11}{section.10}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {11}Reproduction Commands}{11}{section.11}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}{\ignorespaces Environment setup}}{11}{lstlisting.1}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}{\ignorespaces Train the D5-512 paper checkpoint}}{11}{lstlisting.2}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {3}{\ignorespaces Evaluate a trained checkpoint on D5-512}}{11}{lstlisting.3}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {4}{\ignorespaces Evaluate P2A-256 or R5 by swapping roots}}{11}{lstlisting.4}\protected@file@percent }
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {5}{\ignorespaces Generation-only timing protocol}}{11}{lstlisting.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {11.1}End-to-End Checklist}{11}{subsection.11.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}{\ignorespaces Environment setup}}{12}{lstlisting.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}{\ignorespaces Train the D5-512 paper checkpoint}}{12}{lstlisting.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {3}{\ignorespaces Evaluate a trained checkpoint on D5-512}}{12}{lstlisting.3}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4}{\ignorespaces Evaluate P2A-256 or R5 by swapping roots}}{12}{lstlisting.4}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5}{\ignorespaces Generation-only timing protocol}}{12}{lstlisting.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.1}End-to-End Checklist}{12}{subsection.11.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {12}Sanitized Artifact Ledger}{12}{section.12}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {12.1}Raw-to-Public Mapping}{12}{subsection.12.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {13}Known Limits}{12}{section.13}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Sanitized artifact ledger. All paths are logical paths under \texttt  {<REPO\_ROOT>} or \texttt  {<EXP\_ROOT>}.}}{13}{table.caption.28}\protected@file@percent }
-\newlabel{tab:supp-artifacts}{{4}{13}{Sanitized artifact ledger. All paths are logical paths under \texttt {<REPO\_ROOT>} or \texttt {<EXP\_ROOT>}}{table.caption.28}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Artifact paths required for reproduction. All entries are logical paths under \texttt  {<REPO\_ROOT>} or \texttt  {<EXP\_ROOT>}.}}{13}{table.caption.28}\protected@file@percent }
+\newlabel{tab:supp-artifacts}{{4}{13}{Artifact paths required for reproduction. All entries are logical paths under \texttt {<REPO\_ROOT>} or \texttt {<EXP\_ROOT>}}{table.caption.28}{}}
 \gdef \@abspage@last{13}

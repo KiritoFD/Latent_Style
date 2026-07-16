@@ -33,7 +33,7 @@ Use `aaai2027_v4/paper.tex`, Table 1 as source of truth.
 
 Paper claim:
 
-> WEAVE is not best on every single axis. It is the strongest balanced learned method under the shared protocol: DINO-S first tier, strong content retention, 903K trainable parameters, 3-minute training, and 95-second generation-only inference for 750 pairs.
+> WEAVE is not best on every single axis. It is a balanced learned method under the shared protocol: first-tier DINO-S, strong content retention, 1.04M trainable parameters, 1.4-minute training after latent caching, and 126-second generation-only inference for 750 pairs.
 
 Important comparisons:
 
@@ -51,24 +51,24 @@ Important comparisons:
 
 | 基准 | 含义 | CLIP-S ↑ | DINO-S ↑ | LPIPS ↓ | DINO-C ↑ |
 |------|------|----------|----------|---------|----------|
-| **Target Style** | 风格上界 + 内容下界 | 0.8737 | 1.0000 | 0.7332 | 0.1760 |
+| **Target Style** | 风格上界 + 内容下界 | 0.8629 | 1.0000 | 0.7760 | 0.2148 |
 | **IDT (Identity)** | 内容上界 + 风格下界 | 0.6532 | 0.3700 | 0.0000 | 1.0000 |
 
-> Target Style: 直接将目标风格参考图作为输出。CLIP-S=0.874 是理论风格上限（同风格图之间的 CLIP 相似度），LPIPS=0.733 是理论内容下限（和内容图完全没有关系）。
+> Target Style: 直接将目标风格参考图作为输出。这里报告与主表一致的 full-750 聚合；它是经验参照，不是理论极限。
 > IDT: 直接将内容图作为输出。LPIPS=0 是完美内容保持，DINO-S=0.370 是跨风格 DINOv2 相似度基线（即使不做迁移，不同风格图之间也有 0.37 的 DINOv2 CLS 余弦相似度）。
 
 **StyleAligned 内容崩溃量化：**
 
 | 方法 | LPIPS | DINO-C | vs Target Style LPIPS | vs IDT DINO-C |
 |------|-------|--------|----------------------|---------------|
-| Target Style (下界) | 0.7332 | 0.1760 | — | — |
+| Target Style (下界) | 0.7760 | 0.2148 | — | — |
 | **StyleAligned** | **0.869** | **0.239** | **+0.136 (更差!)** | **-0.761** |
 | Seedream 4.5 | 0.477 | 0.739 | -0.256 | -0.261 |
-| WEAVE (ours) | 0.2583 | 0.8287 | -0.475 | -0.171 |
+| WEAVE (ours) | 0.2595 | 0.8102 | -0.517 | -0.190 |
 
-**结论：StyleAligned 的 LPIPS=0.869 比 Target Style 下界（0.733）还差 0.136**，即其生成图和内容图的感知距离，比直接拿一张完全无关的目标风格图还要大。这是内容崩溃的定量证据——StyleAligned 不是"内容保留差"，而是"内容被破坏到比随机图还差"。
+**结论：StyleAligned 的 LPIPS=0.869 高于 full-750 Target Style 参照（0.776）**。前五个固定参考的 TGT LPIPS 范围为 0.752--0.783，因此该判断不依赖第一个参考样本。
 
-我们的 WEAVE 在 LPIPS 上距离下界有 0.475 的安全边际，DINO-C 距离上界仅差 0.171，是唯一同时在风格和内容上都不崩溃的 learned 方法。Seedream 4.5 虽然 DINO-S 接近我们（0.486 vs 0.486），但 LPIPS 差了近一倍（0.477 vs 0.258），内容代价远高于我们。
+WEAVE 在 D5 的 LPIPS 与 DINO-C 均位于 IDT--TGT 参照之间，并以较低内容代价超过 IDT 的 DINO-S。Seedream 4.5 的 DINO-S 接近，但其 LPIPS 更高，内容代价更大。
 
 ---
 
@@ -153,10 +153,9 @@ Current supplement wording treats CFG as unresolved, not as a proven mechanism.
 
 | Run | Wall total | Network generation | VAE decode | Notes |
 |---|---:|---:|---:|---|
-| `brk_a_ll03_10ep` | 94.63 s | 53.57 s | 39.36 s | Paper generation-only timing, 750 pairs. |
-| `target_hf_subband_ft6` | 106.25 s | 65.25 s | 39.34 s | Probe route adds modest network cost. |
+| selected WEAVE | 126.00 s | -- | -- | Current generation-only timing for 750 pairs; includes VAE decode. |
 
-Training for the main paper checkpoint is 176.9 s on one RTX 3060 12GB. This supports the paper's efficiency claim, but the user concern is valid: future architecture work should raise the learning ceiling, not merely keep training short.
+Training for the selected paper checkpoint is 82.8 s (1.4 min) on one RTX 3060 12GB after latent caching. The efficiency result should not be read as a claim about end-to-end data preparation; future work should raise the learning ceiling rather than merely shorten training.
 
 ---
 

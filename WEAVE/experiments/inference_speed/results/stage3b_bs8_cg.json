@@ -1,0 +1,13 @@
+{
+  "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "num_images": 750,
+  "batch_size": 8,
+  "scaling_factor": 0.18215,
+  "backend": "torch.compile(max-autotune,fullgraph,dynamic=False) + cudagraph=True on VAEDecodeWrapper",
+  "tiling_slicing": "disabled (fixed-shape max-throughput)",
+  "compile_first_call_sec": 10.6,
+  "decode_ms_total": 84831.0,
+  "decode_sec": 84.831,
+  "ms_per_img": 113.108,
+  "images_per_sec": 8.8
+}

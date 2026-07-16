@@ -1,0 +1,33 @@
+{
+  "seed": 123,
+  "run_dir": "runs\\submission\\robustness\\early_stop_seed123",
+  "e_internal": 3,
+  "e_oracle": 3,
+  "regret": 0.0,
+  "epoch_offset": 0,
+  "per_epoch": {
+    "1": {
+      "dino_s": 0.4835749351531267,
+      "dino_c": 0.8307389448185761,
+      "dino_structure": 0.024121180082360902,
+      "clip_s": 0.7095033121109009,
+      "lpips": 0.239529855864,
+      "checkpoint": "epoch_0001.pt"
+    },
+    "2": {
+      "dino_s": 0.4858826639999946,
+      "dino_c": 0.8000170805081726,
+      "dino_structure": 0.02517383432139953,
+      "clip_s": 0.7158348521391551,
+      "lpips": 0.2639133311146667,
+      "checkpoint": "epoch_0002.pt"
+    },
+    "3": {
+      "dino_s": 0.4861666634082794,
+      "dino_c": 0.8040098931143681,
+      "clip_s": 0.7143505181471507,
+      "lpips": 0.2552175490306666,
+      "checkpoint": "epoch_0003.pt"
+    }
+  }
+}

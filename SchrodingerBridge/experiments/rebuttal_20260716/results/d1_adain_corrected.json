@@ -1,0 +1,107 @@
+{
+  "D0_full": {
+    "dino_s": 0.4917634298652411,
+    "dino_c": 0.810150189747413,
+    "clip_s": 0.7128373090426127,
+    "lpips": 0.2594608653933333
+  },
+  "D1_adain0_corrected": {
+    "dino_s": 0.48213544695079324,
+    "dino_c": 0.845528732140859,
+    "clip_s": 0.7004731799761454,
+    "lpips": 0.22575061632399998
+  },
+  "D1_adain0_corrected_hash_check": {
+    "pairs_checked": 20,
+    "pairs_different": 20,
+    "all_different": true,
+    "details": [
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Early_Renaissance.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Impressionism.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Minimalism.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Rococo.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece_to_Ukiyo_e.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_maria-with-the-sleeping-child-1455_to_Early_Renaissance.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_maria-with-the-sleeping-child-1455_to_Impressionism.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_maria-with-the-sleeping-child-1455_to_Minimalism.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_maria-with-the-sleeping-child-1455_to_Rococo.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_maria-with-the-sleeping-child-1455_to_Ukiyo_e.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2_to_Early_Renaissance.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2_to_Impressionism.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2_to_Minimalism.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2_to_Rococo.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_scenes-from-the-life-of-st-james-1448-2_to_Ukiyo_e.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_the-circumcision-of-christ-1464_to_Early_Renaissance.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_the-circumcision-of-christ-1464_to_Impressionism.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_the-circumcision-of-christ-1464_to_Minimalism.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_the-circumcision-of-christ-1464_to_Rococo.png",
+        "same_sha256": false
+      },
+      {
+        "image": "Early_Renaissance_Early_Renaissance__andrea-mantegna_the-circumcision-of-christ-1464_to_Ukiyo_e.png",
+        "same_sha256": false
+      }
+    ]
+  },
+  "D2_no_hf_route": {
+    "dino_s": 0.4825148275593917,
+    "dino_c": 0.8124646651347478,
+    "clip_s": 0.7156507107019424,
+    "lpips": 0.2836550298973333
+  }
+}
