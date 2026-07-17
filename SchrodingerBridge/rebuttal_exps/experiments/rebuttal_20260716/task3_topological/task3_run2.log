@@ -1,0 +1,98 @@
+======================================================================
+Task 3: Rigid Topological Preservation Metrics
+  - MiDaS Depth MSE (lower = better content preservation)
+  - Canny Edge IoU (higher = better edge preservation)
+======================================================================
+Loaded 150 source images across 5 styles
+
+Loading MiDaS depth model...
+MiDaS not cached, downloading Intel/dpt-large to g:\GitHub\Latent_Style\WEAVE\exp\eval_cache\hf...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/458 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 458/458 [00:00<00:00, 8104.46it/s]
+[transformers] DPTForDepthEstimation LOAD REPORT from: Intel/dpt-large
+Key                                                            | Status  | 
+---------------------------------------------------------------+---------+-
+neck.fusion_stage.layers.0.residual_layer1.convolution2.weight | MISSING | 
+neck.fusion_stage.layers.0.residual_layer1.convolution1.weight | MISSING | 
+neck.fusion_stage.layers.0.residual_layer1.convolution2.bias   | MISSING | 
+neck.fusion_stage.layers.0.residual_layer1.convolution1.bias   | MISSING | 
+
+Notes:
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+MiDaS downloaded and loaded.
+MiDaS loaded successfully.
+
+==================================================
+Processing method: IDT
+  Directory: g:\GitHub\Latent_Style\WEAVE\results\D5-512\identity
+==================================================
+  SKIP: per-pair CSV already exists at g:\GitHub\Latent_Style\SchrodingerBridge\rebuttal_exps\experiments\rebuttal_20260716\task3_topological\task3_IDT_per_pair.csv
+
+==================================================
+Processing method: WEAVE
+  Directory: g:\GitHub\Latent_Style\WEAVE\results\D5-512\weave_oriented_e4
+==================================================
+  SKIP: per-pair CSV already exists at g:\GitHub\Latent_Style\SchrodingerBridge\rebuttal_exps\experiments\rebuttal_20260716\task3_topological\task3_WEAVE_per_pair.csv
+
+==================================================
+Processing method: SaMam
+  Directory: g:\GitHub\Latent_Style\WEAVE\results\D5-512\samam
+==================================================
+  Processed 50 pairs (13s)
+  Processed 100 pairs (27s)
+  Processed 150 pairs (37s)
+  Processed 200 pairs (50s)
+[ WARN:0@60.239] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@60.239] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\results\D5-512\samam\Impressionism__Impressionism__joaquã­n-sorolla_study-of-vineyard__to__Early_Renaissance.png'): can't open/read file: check file path/integrity
+[ WARN:0@60.397] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@60.397] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\results\D5-512\samam\Impressionism__Impressionism__joaquã­n-sorolla_study-of-vineyard__to__Impressionism.png'): can't open/read file: check file path/integrity
+[ WARN:0@60.577] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@60.577] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\results\D5-512\samam\Impressionism__Impressionism__joaquã­n-sorolla_study-of-vineyard__to__Minimalism.png'): can't open/read file: check file path/integrity
+[ WARN:0@60.759] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@60.759] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\results\D5-512\samam\Impressionism__Impressionism__joaquã­n-sorolla_study-of-vineyard__to__Rococo.png'): can't open/read file: check file path/integrity
+[ WARN:0@60.930] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@60.930] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\results\D5-512\samam\Impressionism__Impressionism__joaquã­n-sorolla_study-of-vineyard__to__Ukiyo_e.png'): can't open/read file: check file path/integrity
+  Processed 250 pairs (63s)
+  Processed 300 pairs (74s)
+  Processed 350 pairs (83s)
+  Processed 400 pairs (94s)
+  Processed 450 pairs (104s)
+  Processed 500 pairs (115s)
+  Processed 550 pairs (127s)
+  Processed 600 pairs (144s)
+  Processed 650 pairs (158s)
+  Processed 700 pairs (169s)
+  Processed 750 pairs (186s)
+
+  Total: 750 pairs, 0 missing, 186s
+
+  Depth MSE: mean=0.04062623699583734, median=0.021619766019284725
+  Edge IoU:  mean=0.15937912016249478, median=0.10697852760736197
+  Per-pair CSV: g:\GitHub\Latent_Style\SchrodingerBridge\rebuttal_exps\experiments\rebuttal_20260716\task3_topological\task3_SaMam_per_pair.csv
+
+==================================================
+Processing method: StyleAligned
+  Directory: g:\GitHub\Latent_Style\WEAVE\results\D5-512\stylealigned
+==================================================
+
+  Total: 15 pairs, 735 missing, 3s
+
+  Depth MSE: mean=0.12904098381598791, median=0.1100764200091362
+  Edge IoU:  mean=0.0040362283185894484, median=0.00414585885235089
+  Per-pair CSV: g:\GitHub\Latent_Style\SchrodingerBridge\rebuttal_exps\experiments\rebuttal_20260716\task3_topological\task3_StyleAligned_per_pair.csv
+
+======================================================================
+Summary saved: g:\GitHub\Latent_Style\SchrodingerBridge\rebuttal_exps\experiments\rebuttal_20260716\task3_topological\task3_summary.json
+
+======================================================================
+COMPARISON TABLE: Rigid Topological Preservation
+======================================================================
+  Method          Depth MSE          Edge IoU        Pairs   
+  IDT             0.000000           1.0000          750     
+  WEAVE           0.032089           0.1404          750     
+  SaMam           0.040626           0.1594          750     
+  StyleAligned    0.129041           0.0040          15      
+
+TASK3_EXIT=0

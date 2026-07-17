@@ -1,0 +1,111 @@
+======================================================================
+Task 3: Rigid Topological Preservation Metrics
+  - MiDaS Depth MSE (lower = better content preservation)
+  - Canny Edge IoU (higher = better edge preservation)
+======================================================================
+Loaded 150 source images across 5 styles
+
+Loading MiDaS depth model...
+MiDaS not cached, downloading Intel/dpt-large to g:\GitHub\Latent_Style\WEAVE\exp\eval_cache\hf...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Loading weights:   0%|          | 0/458 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 458/458 [00:00<00:00, 6797.61it/s]
+[transformers] DPTForDepthEstimation LOAD REPORT from: Intel/dpt-large
+Key                                                            | Status  | 
+---------------------------------------------------------------+---------+-
+neck.fusion_stage.layers.0.residual_layer1.convolution1.bias   | MISSING | 
+neck.fusion_stage.layers.0.residual_layer1.convolution2.weight | MISSING | 
+neck.fusion_stage.layers.0.residual_layer1.convolution1.weight | MISSING | 
+neck.fusion_stage.layers.0.residual_layer1.convolution2.bias   | MISSING | 
+
+Notes:
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+MiDaS downloaded and loaded.
+MiDaS loaded successfully.
+
+==================================================
+Processing method: IDT
+  Directory: g:\GitHub\Latent_Style\WEAVE\results\D5-512\identity
+==================================================
+  Processed 50 pairs (11s)
+  Processed 100 pairs (23s)
+  Processed 150 pairs (32s)
+  Processed 200 pairs (42s)
+[ WARN:0@49.217] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@49.218] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@49.396] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@49.396] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@49.568] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@49.568] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@49.739] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@49.739] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@49.899] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@49.899] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+  Processed 250 pairs (52s)
+  Processed 300 pairs (61s)
+  Processed 350 pairs (70s)
+  Processed 400 pairs (79s)
+  Processed 450 pairs (88s)
+  Processed 500 pairs (98s)
+  Processed 550 pairs (108s)
+  Processed 600 pairs (121s)
+  Processed 650 pairs (133s)
+  Processed 700 pairs (142s)
+  Processed 750 pairs (155s)
+
+  Total: 750 pairs, 0 missing, 155s
+
+  Depth MSE: mean=0.000000, median=0.000000
+  Edge IoU:  mean=1.0000, median=1.0000
+  Per-pair CSV: g:\GitHub\Latent_Style\SchrodingerBridge\rebuttal_exps\experiments\rebuttal_20260716\task3_topological\task3_IDT_per_pair.csv
+
+==================================================
+Processing method: WEAVE
+  Directory: g:\GitHub\Latent_Style\WEAVE\results\D5-512\weave_oriented_e4
+==================================================
+  Processed 50 pairs (10s)
+  Processed 100 pairs (21s)
+  Processed 150 pairs (31s)
+  Processed 200 pairs (41s)
+[ WARN:0@203.775] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@203.775] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\results\D5-512\weave_oriented_e4\Impressionism_Impressionism__joaquã­n-sorolla_study-of-vineyard_to_Early_Renaissance.png'): can't open/read file: check file path/integrity
+[ WARN:0@203.990] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@203.990] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\results\D5-512\weave_oriented_e4\Impressionism_Impressionism__joaquã­n-sorolla_study-of-vineyard_to_Impressionism.png'): can't open/read file: check file path/integrity
+[ WARN:0@204.194] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@204.194] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\results\D5-512\weave_oriented_e4\Impressionism_Impressionism__joaquã­n-sorolla_study-of-vineyard_to_Minimalism.png'): can't open/read file: check file path/integrity
+[ WARN:0@204.391] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@204.391] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\results\D5-512\weave_oriented_e4\Impressionism_Impressionism__joaquã­n-sorolla_study-of-vineyard_to_Rococo.png'): can't open/read file: check file path/integrity
+[ WARN:0@204.575] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\data\test\Impressionism\Impressionism__joaquã­n-sorolla_study-of-vineyard.jpg'): can't open/read file: check file path/integrity
+[ WARN:0@204.576] global loadsave.cpp:278 cv::findDecoder imread_('g:\GitHub\Latent_Style\WEAVE\results\D5-512\weave_oriented_e4\Impressionism_Impressionism__joaquã­n-sorolla_study-of-vineyard_to_Ukiyo_e.png'): can't open/read file: check file path/integrity
+  Processed 250 pairs (51s)
+  Processed 300 pairs (61s)
+  Processed 350 pairs (71s)
+  Processed 400 pairs (81s)
+  Processed 450 pairs (91s)
+  Processed 500 pairs (101s)
+  Processed 550 pairs (112s)
+  Processed 600 pairs (122s)
+  Processed 650 pairs (133s)
+  Processed 700 pairs (144s)
+  Processed 750 pairs (156s)
+
+  Total: 750 pairs, 0 missing, 156s
+
+  Depth MSE: mean=0.032089, median=0.018172
+  Edge IoU:  mean=0.1404, median=0.0594
+  Per-pair CSV: g:\GitHub\Latent_Style\SchrodingerBridge\rebuttal_exps\experiments\rebuttal_20260716\task3_topological\task3_WEAVE_per_pair.csv
+
+==================================================
+Processing method: SaMam
+  Directory: g:\GitHub\Latent_Style\WEAVE\results\D5-512\samam
+==================================================
+
+  Total: 0 pairs, 750 missing, 0s
+Traceback (most recent call last):
+  File "g:\GitHub\Latent_Style\SchrodingerBridge\rebuttal_exps\scripts\task3_topological.py", line 367, in <module>
+    main()
+  File "g:\GitHub\Latent_Style\SchrodingerBridge\rebuttal_exps\scripts\task3_topological.py", line 333, in main
+    print(f"\n  Depth MSE: mean={agg['depth_mse']['mean']:.6f}, median={agg['depth_mse']['median']:.6f}")
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to NoneType.__format__

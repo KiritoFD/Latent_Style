@@ -1,0 +1,158 @@
+[
+  {
+    "label": "baseline_sd15_1level",
+    "vae": "sd15",
+    "lowpass_levels": 1,
+    "vae_scale": 0.18215,
+    "latent_channels": 4,
+    "mean_dino_s": 0.9119765520095825,
+    "mean_lpips": 0.3007456362247467,
+    "status": "OK",
+    "crash_msg": "",
+    "pair_results": [
+      {
+        "pair": "Early_Renaissance->Impressionism",
+        "dino_s": 0.9314367771148682,
+        "lpips": 0.2627662420272827
+      },
+      {
+        "pair": "Impressionism->Minimalism",
+        "dino_s": 0.9374006986618042,
+        "lpips": 0.35800427198410034
+      },
+      {
+        "pair": "Minimalism->Rococo",
+        "dino_s": 0.7644471526145935,
+        "lpips": 0.33647042512893677
+      },
+      {
+        "pair": "Rococo->Ukiyo_e",
+        "dino_s": 0.975636899471283,
+        "lpips": 0.32452255487442017
+      },
+      {
+        "pair": "Ukiyo_e->Early_Renaissance",
+        "dino_s": 0.9509612321853638,
+        "lpips": 0.22196468710899353
+      }
+    ]
+  },
+  {
+    "label": "sd15_2level_haar",
+    "vae": "sd15",
+    "lowpass_levels": 2,
+    "vae_scale": 0.18215,
+    "latent_channels": 4,
+    "mean_dino_s": 0.8981121897697448,
+    "mean_lpips": 0.3105402857065201,
+    "status": "OK",
+    "crash_msg": "",
+    "pair_results": [
+      {
+        "pair": "Early_Renaissance->Impressionism",
+        "dino_s": 0.9262204170227051,
+        "lpips": 0.2742142379283905
+      },
+      {
+        "pair": "Impressionism->Minimalism",
+        "dino_s": 0.9445391297340393,
+        "lpips": 0.3611289858818054
+      },
+      {
+        "pair": "Minimalism->Rococo",
+        "dino_s": 0.7061331272125244,
+        "lpips": 0.35248515009880066
+      },
+      {
+        "pair": "Rococo->Ukiyo_e",
+        "dino_s": 0.9699057340621948,
+        "lpips": 0.33758726716041565
+      },
+      {
+        "pair": "Ukiyo_e->Early_Renaissance",
+        "dino_s": 0.9437625408172607,
+        "lpips": 0.22728578746318817
+      }
+    ]
+  },
+  {
+    "label": "sdxl_1level",
+    "vae": "sdxl",
+    "lowpass_levels": 1,
+    "vae_scale": 0.13025,
+    "latent_channels": 4,
+    "mean_dino_s": 0.8138256907463074,
+    "mean_lpips": 0.4877763032913208,
+    "status": "OK",
+    "crash_msg": "",
+    "pair_results": [
+      {
+        "pair": "Early_Renaissance->Impressionism",
+        "dino_s": 0.8806711435317993,
+        "lpips": 0.4043891429901123
+      },
+      {
+        "pair": "Impressionism->Minimalism",
+        "dino_s": 0.6795516014099121,
+        "lpips": 0.616178035736084
+      },
+      {
+        "pair": "Minimalism->Rococo",
+        "dino_s": 0.712834358215332,
+        "lpips": 0.43449801206588745
+      },
+      {
+        "pair": "Rococo->Ukiyo_e",
+        "dino_s": 0.8702391982078552,
+        "lpips": 0.5709496736526489
+      },
+      {
+        "pair": "Ukiyo_e->Early_Renaissance",
+        "dino_s": 0.9258321523666382,
+        "lpips": 0.41286665201187134
+      }
+    ]
+  },
+  {
+    "label": "flux_1level_chadapt",
+    "status": "VAE_LOAD_FAILED",
+    "crash_msg": "black-forest-labs/FLUX.1-schnell is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'\nIf this is a private repository, make sure to pass a token having p"
+  },
+  {
+    "label": "taesd_1level",
+    "vae": "taesd",
+    "lowpass_levels": 1,
+    "vae_scale": 1.0,
+    "latent_channels": 4,
+    "mean_dino_s": 0.5961864352226257,
+    "mean_lpips": 0.6287196516990662,
+    "status": "OK",
+    "pair_results": [
+      {
+        "pair": "Early_Renaissance->Impressionism",
+        "dino_s": 0.7117389440536499,
+        "lpips": 0.5719413757324219
+      },
+      {
+        "pair": "Impressionism->Minimalism",
+        "dino_s": 0.23614180088043213,
+        "lpips": 0.703221321105957
+      },
+      {
+        "pair": "Minimalism->Rococo",
+        "dino_s": 0.5216042399406433,
+        "lpips": 0.7915002107620239
+      },
+      {
+        "pair": "Rococo->Ukiyo_e",
+        "dino_s": 0.6773013472557068,
+        "lpips": 0.5402859449386597
+      },
+      {
+        "pair": "Ukiyo_e->Early_Renaissance",
+        "dino_s": 0.8341458439826965,
+        "lpips": 0.5366494059562683
+      }
+    ]
+  }
+]

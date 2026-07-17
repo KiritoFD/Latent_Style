@@ -1,0 +1,107 @@
+======================================================================
+Task 2: ODE Truncation Error Phase-Transition Scan
+======================================================================
+Device: cuda
+
+Loading VAE and production checkpoint...
+  Loaded in 9.1s
+  model_scale=0.182150, vae_scale=0.182150
+  Original: solver_type=euler, endpoint_adain_scale=1.0
+
+Loading DINOv2-small for DINO-S...
+
+Loading weights:   0%|          | 0/223 [00:00<?, ?it/s]
+Loading weights: 100%|██████████| 223/223 [00:00<00:00, 6935.82it/s]
+  DINOv2 loaded.
+Loading LPIPS...
+Setting up [LPIPS] perceptual loss: trunk [vgg], v[0.1], spatial [off]
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Loading model from: C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\lpips\weights\v0.1\vgg.pth
+
+Encoding source images and target style latents...
+  Early_Renaissance -> Impressionism: src=Early_Renaissance__andrea-mantegna_adoration-of-the-magi-central-panel-from-the-altarpiece.jpg, tgt_id=1
+  Impressionism -> Minimalism: src=Impressionism__claude-monet_rouen-cathedral-the-portal-at-midday.jpg, tgt_id=2
+  Minimalism -> Rococo: src=Minimalism__agnes-martin_happy-valley-1967.jpg, tgt_id=3
+  Rococo -> Ukiyo_e: src=Rococo__antoine-watteau_the-delicate-musician.jpg, tgt_id=4
+  Ukiyo_e -> Early_Renaissance: src=Ukiyo_e__katsushika-hokusai_cargo-ship-and-wave.jpg, tgt_id=0
+
+======================================================================
+Part 1: Pure-ODE truncation error (endpoint_adain_scale=0)
+======================================================================
+
+Computing pseudo-ground-truth: RK4 K=64...
+  RK4 K=64 done in 14.4s
+
+  Euler K=2...
+    K=2: mean eps=1.588536e-02 (0.1s)
+
+  Euler K=4...
+    K=4: mean eps=4.293747e-03 (0.2s)
+
+  Euler K=8...
+    K=8: mean eps=1.147850e-03 (0.4s)
+
+  Euler K=16...
+    K=16: mean eps=2.939629e-04 (0.9s)
+
+  Euler K=32...
+    K=32: mean eps=7.337602e-05 (1.8s)
+
+  Part 1 saved to: g:\GitHub\Latent_Style\WEAVE\exp\rebuttal\task2_ode_truncation\task2_pure_ode_partial.json
+
+======================================================================
+Part 2: Full pipeline convergence (endpoint_adain_scale=2.0)
+======================================================================
+
+  Euler K=2 (full pipeline)...
+    K=2: mean DINO-S=0.9440, mean LPIPS=0.2643 (1.7s)
+
+  Euler K=4 (full pipeline)...
+    K=4: mean DINO-S=0.9405, mean LPIPS=0.2624 (1.5s)
+
+  Euler K=8 (full pipeline)...
+    K=8: mean DINO-S=0.9354, mean LPIPS=0.2632 (1.8s)
+
+  Euler K=16 (full pipeline)...
+    K=16: mean DINO-S=0.9302, mean LPIPS=0.2643 (2.4s)
+
+  Euler K=32 (full pipeline)...
+    K=32: mean DINO-S=0.9274, mean LPIPS=0.2651 (3.3s)
+
+  Euler K=64 (full pipeline)...
+    K=64: mean DINO-S=0.9258, mean LPIPS=0.2657 (5.2s)
+
+======================================================================
+Saving results...
+======================================================================
+
+Saved: g:\GitHub\Latent_Style\WEAVE\exp\rebuttal\task2_ode_truncation\task2_results.json
+CSV: g:\GitHub\Latent_Style\WEAVE\exp\rebuttal\task2_ode_truncation\task2_pure_ode.csv
+CSV: g:\GitHub\Latent_Style\WEAVE\exp\rebuttal\task2_ode_truncation\task2_full_pipeline.csv
+
+======================================================================
+SUMMARY
+======================================================================
+
+Pure-ODE truncation error (normalized trajectory drift):
+  K      mean eps        std            
+  2      1.588536e-02    4.943468e-03   
+  4      4.293747e-03    1.324622e-03   
+  8      1.147850e-03    3.524480e-04   
+  16     2.939629e-04    9.007338e-05   
+  32     7.337602e-05    2.255638e-05   
+  Inflection point (2nd deriv zero): K=4
+
+Full pipeline convergence:
+  K      DINO-S       LPIPS       
+  2      0.9440       0.2643      
+  4      0.9405       0.2624      
+  8      0.9354       0.2632      
+  16     0.9302       0.2643      
+  32     0.9274       0.2651      
+  64     0.9258       0.2657      
+
+TASK2_EXIT=0

@@ -1,0 +1,110 @@
+{
+  "IDT": {
+    "method": "IDT",
+    "pair_count": 750,
+    "missing_count": 0,
+    "depth_mse": {
+      "mean": 0.0,
+      "median": 0.0
+    },
+    "edge_iou": {
+      "mean": 1.0,
+      "median": 1.0
+    }
+  },
+  "WEAVE": {
+    "method": "WEAVE",
+    "pair_count": 750,
+    "missing_count": 0,
+    "depth_mse": {
+      "mean": 0.032088648442178964,
+      "median": 0.018171912990510464
+    },
+    "edge_iou": {
+      "mean": 0.14035489800496853,
+      "median": 0.05942075451533611
+    }
+  },
+  "SaMam": {
+    "method": "SaMam",
+    "pair_count": 750,
+    "missing_count": 0,
+    "depth_mse": {
+      "mean": 0.04062623699583734,
+      "std": 0.05158851469565308,
+      "median": 0.021619766019284725,
+      "min": 0.0012835768284276128,
+      "max": 0.423496276140213
+    },
+    "edge_iou": {
+      "mean": 0.15937912016249478,
+      "std": 0.1804158542120297,
+      "median": 0.10697852760736197,
+      "min": 0.0,
+      "max": 1.0
+    },
+    "per_style": {
+      "Early_Renaissance": {
+        "depth_mse_mean": 0.03722647015315791,
+        "edge_iou_mean": 0.18160866418588809
+      },
+      "Impressionism": {
+        "depth_mse_mean": 0.03404865012969822,
+        "edge_iou_mean": 0.20501936166788776
+      },
+      "Minimalism": {
+        "depth_mse_mean": 0.05553456296057751,
+        "edge_iou_mean": 0.0563896263176806
+      },
+      "Rococo": {
+        "depth_mse_mean": 0.034559026902231074,
+        "edge_iou_mean": 0.20467309318704993
+      },
+      "Ukiyo_e": {
+        "depth_mse_mean": 0.041762474833521995,
+        "edge_iou_mean": 0.1492048554539675
+      }
+    }
+  },
+  "StyleAligned": {
+    "method": "StyleAligned",
+    "pair_count": 15,
+    "missing_count": 735,
+    "depth_mse": {
+      "mean": 0.12904098381598791,
+      "std": 0.05103066374275509,
+      "median": 0.1100764200091362,
+      "min": 0.06722338497638702,
+      "max": 0.25595009326934814
+    },
+    "edge_iou": {
+      "mean": 0.0040362283185894484,
+      "std": 0.003807312406272138,
+      "median": 0.00414585885235089,
+      "min": 0.0,
+      "max": 0.011642411642411643
+    },
+    "per_style": {
+      "Early_Renaissance": {
+        "depth_mse_mean": 0.1429173226157824,
+        "edge_iou_mean": 0.006119133262796801
+      },
+      "Impressionism": {
+        "depth_mse_mean": 0.12950153400500616,
+        "edge_iou_mean": 0.00034083162917518747
+      },
+      "Minimalism": {
+        "depth_mse_mean": 0.1390539805094401,
+        "edge_iou_mean": 0.0
+      },
+      "Rococo": {
+        "depth_mse_mean": 0.13436128944158554,
+        "edge_iou_mean": 0.007017546692181932
+      },
+      "Ukiyo_e": {
+        "depth_mse_mean": 0.0993707925081253,
+        "edge_iou_mean": 0.006703630008793325
+      }
+    }
+  }
+}
