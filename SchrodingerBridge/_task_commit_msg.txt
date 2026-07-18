@@ -1,0 +1,13 @@
+rebuttal: add Task2 ODE truncation + Task3 topological metrics
+
+Task 2 (ODE truncation error phase-transition):
+- Pure-ODE: RK4 K=64 pseudo-GT vs Euler K in {2,4,8,16,32}
+  eps(K=8)=1.15e-3, inflection point at K=4 -> K=8 past phase transition
+- Full pipeline: DINO-S/LPIPS stable across K in {2..64}
+  (DINO-S 0.926-0.944, LPIPS 0.262-0.266)
+
+Task 3 (rigid topological preservation):
+- MiDaS Depth MSE + Canny Edge IoU on 750 source-generated pairs
+- WEAVE Depth MSE=0.032 < SaMam 0.041 << StyleAligned 0.129
+- WEAVE Edge IoU=0.140 ~ SaMam 0.159 >> StyleAligned 0.004
+- IDT is upper bound (depth MSE=0, edge IoU=1)

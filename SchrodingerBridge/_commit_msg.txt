@@ -1,0 +1,15 @@
+rebuttal: add Task4 failure boundary + restore Task2 results
+
+Task 4 (failure boundary mapping, 6x5=30 grid):
+- spatial_fiber mode (production): lambda_LL is architecturally inert
+  (LL excluded from AdaIN by fiber=h-lp(h)). All 30 points give identical
+  results varying only by eta. Even at eta=2.0 (20x prod), DINO-C=0.666.
+  Model is extremely stable, no crashes across entire grid.
+- per_subband_wct mode (true 2D boundary): lambda_LL>=3.0 causes NaN/Inf
+  crashes or DINO-C<0.215 failure. lambda_LL=10.0 always crashes.
+  Production point (1.0, 0.1) deep in safe zone (DINO-C=0.694).
+- Two heatmaps generated showing 1D (spatial_fiber) and 2D (per_subband_wct)
+  failure boundaries.
+
+Task 2 (restored): re-ran to regenerate lost result files.
+  K=8 eps=1.15e-3, inflection at K=4, full pipeline stable K in {2..64}.
