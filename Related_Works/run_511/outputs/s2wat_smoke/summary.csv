@@ -1,4 +1,0 @@
-checkpoint_root,device,elapsed_sec,generated_new,images,images_dir,img_size,reference_images,repo,requested,sec_per_requested,stage,status
-G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\checkpoints\s2wat,,,,,,,750,G:\GitHub\Latent_Style\Related_Works\repos\S2WAT-main,,,check,ok
-,cuda,20.757,5,5,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\s2wat_smoke\infer_750\images,256,,,5,4.151399,infer,ok
-,,13.506,,,,,,,,,eval,ok

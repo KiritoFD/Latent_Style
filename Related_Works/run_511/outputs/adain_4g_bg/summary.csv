@@ -1,2 +1,0 @@
-batch_size,checkpoint_dir,elapsed_sec,log_path,max_iter,returncode,stage,status
-4,G:\GitHub\Latent_Style\run_511\outputs\adain_4g_bg\checkpoints\adain,6.045,G:\GitHub\Latent_Style\run_511\outputs\adain_4g_bg\logs\adain_train.log,100,0,train,ok

@@ -1,5 +1,0 @@
-avg_sec_per_img,avg_sec_per_iter,backend,batch_size,device,effective_tflops,elapsed_sec,end_to_end_img_per_sec,flops,generated_images,infer_elapsed_sec,infer_status,launcher_elapsed_sec,launcher_rc,macs,method,params,peak_reserved_mb,peak_vram_mb,preflight_error,preflight_status,profile_error,profile_status,throughput_img_per_sec,train_elapsed_sec,train_status
-0.08858516333333076,0.08858516333333076,,1,cuda,,2.657554899999923,0.171650245459851,,5,29.129,ok,42.831,0,,stytr2,,440.0,408.654296875,,ok,,ok,11.288572062989507,13.396,ok
-,,,,,,,,,,,,4.55,1,,cast,,,,,ok,ImportError: cannot import name 'util' from 'util' (G:\GitHub\Latent_Style\Related_Works\run_511\repos\StyTR-2\util\__init__.py),blocked,,4.11,failed
-,,,,,,,,,,,,4.467,1,,aesfa,,,,,ok,FileNotFoundError: [Errno 2] No such file or directory: 'G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke2\\aesfa\\checkpoints\\aesfa\\main.pth',blocked,,4.224,failed
-,,,,,,,,,,,,7.331,1,,aespa,,,,,ok,FileNotFoundError: [Errno 2] No such file or directory: './baseline_checkpoints/vgg_normalised_conv5_1.t7',blocked,,7.019,failed

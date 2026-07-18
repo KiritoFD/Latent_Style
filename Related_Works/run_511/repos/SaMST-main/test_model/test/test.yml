@@ -1,6 +1,0 @@
-content_image_dir: G:\GitHub\Latent_Style\run_511\repos\SaMST-main\content
-content_scale: null
-cuda: 1
-model: G:\GitHub\Latent_Style\run_511\outputs\samst_750_strict\checkpoints\samst\photo\epoch_30.model
-output_image_dir: G:\GitHub\Latent_Style\run_511\repos\SaMST-main\outputs/
-style_num: 2

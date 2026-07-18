@@ -1,5 +1,0 @@
-AdaIN training: max_iter=32000, batch_size=8, device=cuda, vgg=IMAGENET1K_V1
-iter 1/32000  loss_c=7.047575  loss_s=5.0167  total=57.2144  lr=0.000100  elapsed=1s  eta=29911s  1.1 it/s
-iter 320/32000  loss_c=8.324576  loss_s=0.7192  total=15.5169  lr=0.000100  elapsed=97s  eta=9596s  3.3 it/s
-iter 640/32000  loss_c=6.904927  loss_s=0.5132  total=12.0370  lr=0.000100  elapsed=192s  eta=9393s  3.3 it/s
-iter 960/32000  loss_c=6.917327  loss_s=0.5521  total=12.4386  lr=0.000100  elapsed=289s  eta=9358s  3.3 it/s

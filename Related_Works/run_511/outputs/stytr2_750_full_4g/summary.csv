@@ -1,2 +1,0 @@
-batch_size,checkpoint_dir,elapsed_sec,log_path,max_iter,returncode,stage,status
-1,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\stytr2_750_full_4g\checkpoints\stytr2,0.132,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\stytr2_750_full_4g\logs\stytr2_train.log,500,1,train,failed

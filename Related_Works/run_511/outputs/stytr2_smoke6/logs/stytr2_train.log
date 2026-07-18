@@ -1,8 +1,0 @@
-
-
-=== CMD ===
-C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe train.py --content_dir G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke6\work\stytr2\train_content --style_dir G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke6\work\stytr2\train_style --vgg G:\GitHub\Latent_Style\run_511\repos\StyTR-2\experiments\vgg_normalised.pth --save_dir G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke6\checkpoints\stytr2 --log_dir G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke6\tb_logs\stytr2 --max_iter 1 --batch_size 1 --n_threads 0 --save_model_interval 1
-G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke6\work\stytr2\train_content
-G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke6\work\stytr2\train_style
-  0%|          | 0/1 [00:00<?, ?it/s]100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 1/1 [00:50<00:00, 50.19s/it]100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 1/1 [00:50<00:00, 50.19s/it]
-221.9833 -content: 15.62488 -style: 162.77371 -l1: 0.24803248 -l2: 26.222448

@@ -1,6 +1,0 @@
-baseline,style,phase,protocol,output_root,elapsed_sec,status,error
-styleid,photo,infer,protocol_a_800,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\styleid\protocol_a_800,621.843,ok,
-styleid,monet,infer,protocol_a_800,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\styleid\protocol_a_800,615.819,ok,
-styleid,vangogh,infer,protocol_a_800,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\styleid\protocol_a_800,618.603,ok,
-styleid,cezanne,infer,protocol_a_800,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\styleid\protocol_a_800,613.676,ok,
-styleid,Hayao,infer,protocol_a_800,G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\styleid\protocol_a_800,615.346,ok,

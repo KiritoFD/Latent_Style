@@ -1,3 +1,0 @@
-batch_size,checkpoint_dir,elapsed_sec,images,images_dir,log_path,n_epochs,returncode,stage,status
-1,G:\GitHub\Latent_Style\run_511\outputs\cast_smoke3\checkpoints\run511_cast,29.366,,,G:\GitHub\Latent_Style\run_511\outputs\cast_smoke3\logs\cast_train.log,1,0,train,ok
-,,4.032,0,G:\GitHub\Latent_Style\run_511\outputs\cast_smoke3\infer_750\images,,,,infer,failed

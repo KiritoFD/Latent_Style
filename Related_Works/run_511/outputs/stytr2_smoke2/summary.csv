@@ -1,2 +1,0 @@
-batch_size,checkpoint_dir,elapsed_sec,log_path,max_iter,returncode,stage,status
-1,G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke2\checkpoints\stytr2,4.412,G:\GitHub\Latent_Style\run_511\outputs\stytr2_smoke2\logs\stytr2_train.log,1,1,train,failed
