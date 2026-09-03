@@ -21,6 +21,8 @@ Related_Works/Cycle-NCE/src/eval_cache/
 *.ckpt
 *.safetensors
 Related_Works/external/
+Related_Works/repos/
+Related_Works/run_511/repos/
 .venv/
 venv/
 env/
@@ -34,6 +36,7 @@ logs/**
 full_eval/**
 inference/**
 experiments/**
+SchrodingerBridge/exp/
 *_cache/
 eval_cache/**
 comile_cache/
@@ -138,3 +141,5 @@ _data_sync/
 */results/
 *tmp*
 /SchrodingerBridge/weave_gen
+SchrodingerBridge/archives/
+.codex_tmp_dryrun/

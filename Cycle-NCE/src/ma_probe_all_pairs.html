@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MA Probe Sweep Viewer</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #16202a;
+      --muted: #5f6b76;
+      --line: #d9dee5;
+      --accent: #17324d;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 1600px; margin: 0 auto; padding: 24px; }
+    .header { margin-bottom: 18px; }
+    .header h1 { margin: 0 0 6px 0; font-size: 24px; }
+    .header p { margin: 0; color: var(--muted); }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 18px 0 20px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+    .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-value { font-size: 26px; font-weight: 700; margin-top: 6px; }
+    .plot { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; margin-bottom: 16px; }
+    .table-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    th { position: sticky; top: 0; background: #f9fafb; z-index: 1; }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>MA Probe Sweep Viewer</h1>
+      <p>Batch overview of stage-level MA heat and hottest layers.</p>
+    </div>
+
+    <div class="stats">
+      <div class="card"><div class="stat-label">Runs</div><div class="stat-value" id="statRuns">0</div></div>
+      <div class="card"><div class="stat-label">Checkpoints</div><div class="stat-value" id="statCkpts">0</div></div>
+      <div class="card"><div class="stat-label">Peak MA</div><div class="stat-value" id="statPeak">0</div></div>
+      <div class="card"><div class="stat-label">Most Common Top Stage</div><div class="stat-value" id="statStage">-</div></div>
+    </div>
+
+    <div class="plot"><div id="stageBar" style="height: 480px;"></div></div>
+    <div class="plot"><div id="stageScatter" style="height: 480px;"></div></div>
+    <div class="plot"><div id="layerHeatmap" style="height: 720px;"></div></div>
+
+    <div class="table-wrap">
+      <table id="summaryTable">
+        <thead>
+          <tr>
+            <th>Run</th>
+            <th>Checkpoint</th>
+            <th>Top Layer</th>
+            <th>Top Stage</th>
+            <th>Peak MA</th>
+            <th>Hires</th>
+            <th>Body</th>
+            <th>Skip</th>
+            <th>Decoder</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const pageData = {"records": [{"run_name": "photo -> Hayao", "source": "photo->Hayao", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "photo", "target_style": "Hayao", "top_layer_name": "hires_body.1.norm1", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 16.843263626098633, "top_layer_mean_ma_ratio": 8.051542282104492, "num_layers": 25, "stem_max": 9.652456283569336, "stem_mean": 8.582830667495728, "hires_max": 16.843263626098633, "hires_mean": 13.484227498372396, "body_max": 14.281105995178223, "body_mean": 9.557087103525797, "skip_max": 15.612678527832031, "skip_mean": 11.186388850212097, "decoder_max": 13.461543083190918, "decoder_mean": 10.176201820373535, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "photo -> monet", "source": "photo->monet", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "photo", "target_style": "monet", "top_layer_name": "hires_body.0", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 31.009929656982422, "top_layer_mean_ma_ratio": 10.926863670349121, "num_layers": 25, "stem_max": 17.231822967529297, "stem_mean": 13.341350078582764, "hires_max": 31.009929656982422, "hires_mean": 23.672995885213215, "body_max": 10.12983226776123, "body_mean": 9.117694536844889, "skip_max": 22.123046875, "skip_mean": 15.236380815505981, "decoder_max": 14.224893569946289, "decoder_mean": 10.056780242919922, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "photo -> vangogh", "source": "photo->vangogh", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "photo", "target_style": "vangogh", "top_layer_name": "hires_body.0", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 20.25179100036621, "top_layer_mean_ma_ratio": 10.794713020324707, "num_layers": 25, "stem_max": 11.336016654968262, "stem_mean": 9.791301727294922, "hires_max": 20.25179100036621, "hires_mean": 17.968716621398926, "body_max": 9.441914558410645, "body_mean": 8.834599335988363, "skip_max": 18.48526382446289, "skip_mean": 13.755293369293213, "decoder_max": 15.453417778015137, "decoder_mean": 10.45343279838562, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "photo -> cezanne", "source": "photo->cezanne", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "photo", "target_style": "cezanne", "top_layer_name": "hires_body.0", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 16.55800437927246, "top_layer_mean_ma_ratio": 9.304768562316895, "num_layers": 25, "stem_max": 10.304705619812012, "stem_mean": 9.245934963226318, "hires_max": 16.55800437927246, "hires_mean": 13.540175120035807, "body_max": 10.252496719360352, "body_mean": 8.400302569071451, "skip_max": 15.308221817016602, "skip_mean": 11.462453842163086, "decoder_max": 12.767410278320312, "decoder_mean": 9.271829843521118, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "Hayao -> photo", "source": "Hayao->photo", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "Hayao", "target_style": "photo", "top_layer_name": "hires_body.0", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 21.13880157470703, "top_layer_mean_ma_ratio": 9.560895919799805, "num_layers": 25, "stem_max": 9.774640083312988, "stem_mean": 9.271665573120117, "hires_max": 21.13880157470703, "hires_mean": 14.958803017934164, "body_max": 10.277385711669922, "body_mean": 9.243315060933432, "skip_max": 15.757603645324707, "skip_mean": 11.507349252700806, "decoder_max": 15.959859848022461, "decoder_mean": 10.276018714904785, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "Hayao -> monet", "source": "Hayao->monet", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "Hayao", "target_style": "monet", "top_layer_name": "hires_body.0", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 19.584070205688477, "top_layer_mean_ma_ratio": 9.642830848693848, "num_layers": 25, "stem_max": 8.748044967651367, "stem_mean": 7.928545236587524, "hires_max": 19.584070205688477, "hires_mean": 15.007986068725586, "body_max": 13.894922256469727, "body_mean": 9.40002997716268, "skip_max": 16.508758544921875, "skip_mean": 11.76392650604248, "decoder_max": 14.877199172973633, "decoder_mean": 10.244342517852782, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "Hayao -> vangogh", "source": "Hayao->vangogh", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "Hayao", "target_style": "vangogh", "top_layer_name": "hires_body.0", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 21.406131744384766, "top_layer_mean_ma_ratio": 10.068605422973633, "num_layers": 25, "stem_max": 9.931199073791504, "stem_mean": 8.96689224243164, "hires_max": 21.406131744384766, "hires_mean": 16.929554144541424, "body_max": 14.445306777954102, "body_mean": 10.019922574361166, "skip_max": 17.86912727355957, "skip_mean": 13.778345584869385, "decoder_max": 15.102518081665039, "decoder_mean": 9.930406713485718, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "Hayao -> cezanne", "source": "Hayao->cezanne", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "Hayao", "target_style": "cezanne", "top_layer_name": "hires_body.0", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 22.7044734954834, "top_layer_mean_ma_ratio": 10.344645500183105, "num_layers": 25, "stem_max": 10.97783088684082, "stem_mean": 9.626681804656982, "hires_max": 22.7044734954834, "hires_mean": 17.986509164174397, "body_max": 11.32922077178955, "body_mean": 9.152357578277588, "skip_max": 16.649982452392578, "skip_mean": 12.90517783164978, "decoder_max": 13.096467018127441, "decoder_mean": 9.355538654327393, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "monet -> photo", "source": "monet->photo", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "monet", "target_style": "photo", "top_layer_name": "hires_body.0", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 19.466571807861328, "top_layer_mean_ma_ratio": 9.99696159362793, "num_layers": 25, "stem_max": 12.142843246459961, "stem_mean": 10.943595886230469, "hires_max": 19.466571807861328, "hires_mean": 16.294850826263428, "body_max": 9.763984680175781, "body_mean": 9.45415178934733, "skip_max": 16.87485694885254, "skip_mean": 13.655351638793945, "decoder_max": 15.01599407196045, "decoder_mean": 10.296815776824952, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "monet -> Hayao", "source": "monet->Hayao", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "monet", "target_style": "Hayao", "top_layer_name": "hires_body.0.norm1", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 22.667739868164062, "top_layer_mean_ma_ratio": 11.044831275939941, "num_layers": 25, "stem_max": 13.665339469909668, "stem_mean": 11.33491563796997, "hires_max": 22.667739868164062, "hires_mean": 18.64925543467204, "body_max": 11.367752075195312, "body_mean": 9.799837748209635, "skip_max": 19.549123764038086, "skip_mean": 14.358789920806885, "decoder_max": 12.37777328491211, "decoder_mean": 9.435440397262573, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "monet -> vangogh", "source": "monet->vangogh", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "monet", "target_style": "vangogh", "top_layer_name": "hires_body.1.norm1", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 24.679033279418945, "top_layer_mean_ma_ratio": 10.201278686523438, "num_layers": 25, "stem_max": 14.190260887145996, "stem_mean": 13.590468883514404, "hires_max": 24.679033279418945, "hires_mean": 20.68627134958903, "body_max": 17.62938117980957, "body_mean": 13.912335077921549, "skip_max": 18.917205810546875, "skip_mean": 14.03457760810852, "decoder_max": 16.26101303100586, "decoder_mean": 9.89640016555786, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "monet -> cezanne", "source": "monet->cezanne", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "monet", "target_style": "cezanne", "top_layer_name": "hires_body.0.norm1", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 17.860483169555664, "top_layer_mean_ma_ratio": 9.147071838378906, "num_layers": 25, "stem_max": 9.86402702331543, "stem_mean": 8.507022619247437, "hires_max": 17.860483169555664, "hires_mean": 14.444310347239176, "body_max": 9.614724159240723, "body_mean": 7.7469204266866045, "skip_max": 14.060704231262207, "skip_mean": 10.817556023597717, "decoder_max": 12.46204662322998, "decoder_mean": 9.090404224395751, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "vangogh -> photo", "source": "vangogh->photo", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "vangogh", "target_style": "photo", "top_layer_name": "hires_body.1.norm1", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 14.746675491333008, "top_layer_mean_ma_ratio": 7.89488410949707, "num_layers": 25, "stem_max": 7.254693031311035, "stem_mean": 6.979245901107788, "hires_max": 14.746675491333008, "hires_mean": 11.462552547454834, "body_max": 8.083491325378418, "body_mean": 6.958528359731038, "skip_max": 12.01182746887207, "skip_mean": 9.594952702522278, "decoder_max": 13.14814281463623, "decoder_mean": 9.064026021957398, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "vangogh -> Hayao", "source": "vangogh->Hayao", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "vangogh", "target_style": "Hayao", "top_layer_name": "skip_fusion", "top_layer_stage": "skip", "top_layer_max_ma_ratio": 13.182636260986328, "top_layer_mean_ma_ratio": 7.138731002807617, "num_layers": 25, "stem_max": 7.326783180236816, "stem_mean": 7.116105794906616, "hires_max": 12.515430450439453, "hires_mean": 10.725813706715902, "body_max": 10.645496368408203, "body_mean": 8.212631066640219, "skip_max": 13.182636260986328, "skip_mean": 9.699833869934082, "decoder_max": 12.477117538452148, "decoder_mean": 9.523685264587403, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "vangogh -> monet", "source": "vangogh->monet", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "vangogh", "target_style": "monet", "top_layer_name": "skip_fusion", "top_layer_stage": "skip", "top_layer_max_ma_ratio": 17.974502563476562, "top_layer_mean_ma_ratio": 6.898052215576172, "num_layers": 25, "stem_max": 9.810311317443848, "stem_mean": 8.662201642990112, "hires_max": 14.22791862487793, "hires_mean": 11.861380894978842, "body_max": 7.219814300537109, "body_mean": 7.070761521657308, "skip_max": 17.974502563476562, "skip_mean": 11.210638403892517, "decoder_max": 13.021084785461426, "decoder_mean": 9.838405561447143, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "vangogh -> cezanne", "source": "vangogh->cezanne", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "vangogh", "target_style": "cezanne", "top_layer_name": "hires_body.0", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 14.189913749694824, "top_layer_mean_ma_ratio": 9.077025413513184, "num_layers": 25, "stem_max": 8.62814998626709, "stem_mean": 8.50155258178711, "hires_max": 14.189913749694824, "hires_mean": 11.937198638916016, "body_max": 9.74162769317627, "body_mean": 8.410983562469482, "skip_max": 12.762524604797363, "skip_mean": 10.645766973495483, "decoder_max": 12.369683265686035, "decoder_mean": 9.033431005477905, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "cezanne -> photo", "source": "cezanne->photo", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "cezanne", "target_style": "photo", "top_layer_name": "hires_body.0.norm1", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 16.223377227783203, "top_layer_mean_ma_ratio": 8.623448371887207, "num_layers": 25, "stem_max": 9.979537010192871, "stem_mean": 8.561910390853882, "hires_max": 16.223377227783203, "hires_mean": 12.92700449625651, "body_max": 7.675906181335449, "body_mean": 7.18780533472697, "skip_max": 11.929384231567383, "skip_mean": 10.656346797943115, "decoder_max": 15.015199661254883, "decoder_mean": 9.420156097412109, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "cezanne -> Hayao", "source": "cezanne->Hayao", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "cezanne", "target_style": "Hayao", "top_layer_name": "hires_body.1.norm1", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 24.692140579223633, "top_layer_mean_ma_ratio": 9.157809257507324, "num_layers": 25, "stem_max": 15.048161506652832, "stem_mean": 12.154473304748535, "hires_max": 24.692140579223633, "hires_mean": 19.962380409240723, "body_max": 8.609305381774902, "body_mean": 7.874944527943929, "skip_max": 22.756935119628906, "skip_mean": 14.047471761703491, "decoder_max": 11.767791748046875, "decoder_mean": 8.708134603500366, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "cezanne -> monet", "source": "cezanne->monet", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "cezanne", "target_style": "monet", "top_layer_name": "skip_fusion", "top_layer_stage": "skip", "top_layer_max_ma_ratio": 17.33964729309082, "top_layer_mean_ma_ratio": 6.946590423583984, "num_layers": 25, "stem_max": 8.99563217163086, "stem_mean": 7.982378005981445, "hires_max": 14.998167991638184, "hires_mean": 13.483985900878906, "body_max": 7.038431644439697, "body_mean": 6.828417936960856, "skip_max": 17.33964729309082, "skip_mean": 11.504037380218506, "decoder_max": 14.64506721496582, "decoder_mean": 9.706654596328736, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}, {"run_name": "cezanne -> vangogh", "source": "cezanne->vangogh", "checkpoint": "G:\\GitHub\\Latent_Style\\Cycle-NCE\\epoch_0060.pt", "source_style": "cezanne", "target_style": "vangogh", "top_layer_name": "hires_body.1.norm1", "top_layer_stage": "hires", "top_layer_max_ma_ratio": 18.197729110717773, "top_layer_mean_ma_ratio": 8.761553764343262, "num_layers": 25, "stem_max": 11.705147743225098, "stem_mean": 10.854514598846436, "hires_max": 18.197729110717773, "hires_mean": 14.873873392740885, "body_max": 11.899314880371094, "body_mean": 10.471770604451498, "skip_max": 14.875923156738281, "skip_mean": 11.929125547409058, "decoder_max": 15.469202041625977, "decoder_mean": 10.101594066619873, "output_max": null, "output_mean": null, "other_max": null, "other_mean": null}], "layer_names": ["hires_body.0", "hires_body.1.norm1", "hires_body.0.norm1", "hires_body.1", "skip_router", "hires_body.0.norm2", "skip_fusion", "body.0.attn", "enc_in", "skip_src_proj", "dec_mod", "hires_body.1.norm2", "decoder_blocks.0.norm1", "dec_post", "down", "decoder_blocks.0", "body.0.norm1", "decoder_blocks.1.norm1", "body.0", "dec_up", "decoder_blocks.1", "skip_up_proj", "decoder_blocks.0.norm2", "decoder_blocks.1.norm2"], "layer_matrix": [[16.76906394958496, 16.843263626098633, 13.941635131835938, 12.192475318908691, 13.016454696655273, 12.688664436340332, 15.612678527832031, 14.281105995178223, 9.652456283569336, 8.497734069824219, 12.033835411071777, 8.47026252746582, 13.461543083190918, 12.180328369140625, 7.513205051422119, 12.977242469787598, 7.38021993637085, 12.415306091308594, 7.00993537902832, 7.00993537902832, 8.153345108032227, 7.618688106536865, 9.148177146911621, 8.472021102905273], [31.009929656982422, 30.46846580505371, 22.61444854736328, 22.9752140045166, 22.123046875, 20.09696388244629, 17.787065505981445, 8.706659317016602, 17.231822967529297, 12.309078216552734, 14.224893569946289, 14.872953414916992, 12.969653129577637, 13.807761192321777, 9.45087718963623, 10.792201042175293, 10.12983226776123, 9.776464462280273, 8.516592025756836, 8.516592025756836, 9.236244201660156, 8.726332664489746, 8.264779090881348, 7.165282249450684], [20.25179100036621, 19.95374298095703, 17.642683029174805, 18.386371612548828, 18.48526382446289, 15.637248039245605, 16.89484977722168, 9.441914558410645, 11.336016654968262, 12.465259552001953, 14.512273788452148, 15.940463066101074, 15.453417778015137, 13.119367599487305, 8.246586799621582, 11.93045425415039, 9.355164527893066, 11.30949878692627, 7.706718921661377, 7.706718921661377, 9.467889785766602, 7.175800323486328, 7.955528259277344, 7.513318061828613], [16.55800437927246, 14.323719024658203, 15.4918212890625, 14.027313232421875, 14.073570251464844, 11.674188613891602, 15.308221817016602, 10.252496719360352, 10.304705619812012, 9.380941390991211, 12.567387580871582, 9.166004180908203, 12.767410278320312, 12.378835678100586, 8.187164306640625, 9.696898460388184, 7.576158046722412, 9.262528419494629, 7.372252941131592, 7.372252941131592, 7.765188217163086, 7.0870819091796875, 8.165959358215332, 7.070129871368408], [21.13880157470703, 17.938417434692383, 15.182902336120605, 15.162520408630371, 15.757603645324707, 10.399738311767578, 13.415461540222168, 10.277385711669922, 9.774640083312988, 9.686586380004883, 15.959859848022461, 9.930438041687012, 10.08702278137207, 13.6747465133667, 8.768691062927246, 10.431198120117188, 8.807361602783203, 10.806144714355469, 8.645197868347168, 8.645197868347168, 9.38341236114502, 7.169745445251465, 9.048060417175293, 8.049076080322266], [19.584070205688477, 19.22494125366211, 14.68268871307373, 14.459515571594238, 14.251310348510742, 13.01347827911377, 16.508758544921875, 13.894922256469727, 8.748044967651367, 8.392067909240723, 14.877199172973633, 9.083222389221191, 12.181840896606445, 13.558541297912598, 7.109045505523682, 10.769566535949707, 7.072309494018555, 11.208982467651367, 7.232858180999756, 7.232858180999756, 10.168747901916504, 7.903569221496582, 8.229642868041992, 8.160222053527832], [21.406131744384766, 20.432964324951172, 16.693260192871094, 18.154434204101562, 17.731576919555664, 13.581197738647461, 17.86912727355957, 14.445306777954102, 9.931199073791504, 12.64633560180664, 15.102518081665039, 11.30933666229248, 11.019781112670898, 13.811933517456055, 8.002585411071777, 10.800419807434082, 7.783876419067383, 10.449681282043457, 7.830584526062012, 7.830584526062012, 8.53104305267334, 6.866342544555664, 7.835886478424072, 8.303851127624512], [22.7044734954834, 21.995441436767578, 18.24193000793457, 16.698205947875977, 16.649982452392578, 12.456201553344727, 14.944890975952148, 11.32922077178955, 10.97783088684082, 11.781111717224121, 13.096467018127441, 15.822802543640137, 10.290581703186035, 12.533430099487305, 8.275532722473145, 10.26150894165039, 8.311767578125, 9.745807647705078, 7.816084384918213, 7.816084384918213, 8.166940689086914, 8.244726181030273, 7.464419364929199, 8.110579490661621], [19.466571807861328, 17.552398681640625, 18.109859466552734, 15.906862258911133, 15.837326049804688, 14.539942741394043, 13.843942642211914, 9.763984680175781, 12.142843246459961, 16.87485694885254, 15.01599407196045, 12.193470001220703, 12.87057113647461, 12.881025314331055, 9.744348526000977, 9.813729286193848, 9.178657531738281, 10.264472007751465, 9.41981315612793, 9.41981315612793, 7.876060485839844, 8.06528091430664, 9.4977445602417, 8.982406616210938], [20.904579162597656, 21.022876739501953, 22.667739868164062, 18.474403381347656, 19.549123764038086, 15.207884788513184, 13.62987995147705, 11.367752075195312, 13.665339469909668, 14.346762657165527, 12.37777328491211, 13.618048667907715, 11.323792457580566, 10.955032348632812, 9.004491806030273, 9.827187538146973, 9.02350902557373, 10.479156494140625, 9.008252143859863, 9.008252143859863, 8.374337196350098, 9.909393310546875, 8.76910400390625, 7.8228278160095215], [23.418886184692383, 24.679033279418945, 23.73223304748535, 19.243196487426758, 18.917205810546875, 20.368227005004883, 15.024399757385254, 17.62938117980957, 14.190260887145996, 13.609148979187012, 16.26101303100586, 12.67605209350586, 12.221463203430176, 14.695525169372559, 12.990676879882812, 8.280627250671387, 12.810020446777344, 8.154377937316895, 11.297603607177734, 11.297603607177734, 7.656621932983398, 8.587555885314941, 7.773001670837402, 7.4441423416137695], [15.121366500854492, 17.805679321289062, 17.860483169555664, 14.0901460647583, 14.060704231262207, 12.135952949523926, 13.421238899230957, 9.614724159240723, 9.86402702331543, 9.430774688720703, 12.46204662322998, 9.652234077453613, 10.440215110778809, 12.389579772949219, 7.150018215179443, 10.451995849609375, 6.980171203613281, 8.557432174682617, 6.6458659172058105, 6.6458659172058105, 8.828822135925293, 6.357506275177002, 7.67262601852417, 8.185553550720215], [12.27496337890625, 14.746675491333008, 11.533321380615234, 10.23475170135498, 10.371623039245605, 11.488332748413086, 12.01182746887207, 8.083491325378418, 7.254693031311035, 9.43834114074707, 13.032322883605957, 8.497270584106445, 10.328049659729004, 13.14814281463623, 6.703798770904541, 9.27840805053711, 6.496865272521973, 9.889229774475098, 6.295228481292725, 6.295228481292725, 7.918715000152588, 6.558019161224365, 7.622688293457031, 7.311927318572998], [12.515430450439453, 12.392766952514648, 11.14699649810791, 10.441343307495117, 10.470961570739746, 9.593567848205566, 13.182636260986328, 10.645496368408203, 7.326783180236816, 8.714132308959961, 12.477117538452148, 8.264777183532715, 12.069438934326172, 11.121977806091309, 6.905428409576416, 11.650158882141113, 7.067245006561279, 10.936186790466309, 6.925151824951172, 6.925151824951172, 7.540693759918213, 6.431605339050293, 8.481344223022461, 8.236241340637207], [14.22791862487793, 13.992770195007324, 13.145923614501953, 11.545095443725586, 11.553068161010742, 9.82079792022705, 17.974502563476562, 6.964280128479004, 9.810311317443848, 8.37131404876709, 13.021084785461426, 8.435779571533203, 12.724509239196777, 11.851036071777344, 7.514091968536377, 11.100369453430176, 7.219814300537109, 11.71347713470459, 7.0281901359558105, 7.0281901359558105, 10.829154014587402, 6.943668842315674, 6.881897449493408, 7.410929203033447], [14.189913749694824, 13.586503028869629, 12.79184341430664, 12.348362922668457, 12.306042671203613, 10.485849380493164, 12.762524604797363, 9.74162769317627, 8.374955177307129, 9.251331329345703, 12.369683265686035, 8.220719337463379, 12.327553749084473, 11.957136154174805, 8.62814998626709, 9.293838500976562, 7.742719650268555, 8.6427583694458, 7.748603343963623, 7.748603343963623, 8.029291152954102, 8.263169288635254, 7.114487648010254, 6.637691020965576], [14.969436645507812, 14.556180953979492, 16.223377227783203, 12.054963111877441, 11.929384231567383, 10.809117317199707, 10.88858699798584, 7.675906181335449, 9.979537010192871, 11.658305168151855, 15.015199661254883, 8.948951721191406, 9.834454536437988, 13.152738571166992, 7.144283771514893, 8.488072395324707, 6.798675537109375, 9.668152809143066, 7.088834285736084, 7.088834285736084, 7.656992435455322, 8.149110794067383, 9.300065040588379, 7.898671627044678], [24.244905471801758, 24.692140579223633, 20.738615036010742, 22.274093627929688, 22.756935119628906, 15.350395202636719, 13.055655479431152, 6.554886341094971, 15.048161506652832, 11.276894569396973, 11.767791748046875, 12.474132537841797, 9.747354507446289, 10.3538179397583, 9.260785102844238, 9.64261245727539, 8.609305381774902, 9.295431137084961, 8.460641860961914, 8.460641860961914, 7.226957321166992, 9.100401878356934, 8.194380760192871, 6.92212438583374], [14.998167991638184, 14.870675086975098, 14.895415306091309, 12.960953712463379, 12.797945976257324, 12.70245361328125, 17.33964729309082, 7.038431644439697, 8.99563217163086, 8.715597152709961, 14.013078689575195, 10.476249694824219, 13.851677894592285, 14.64506721496582, 6.969123840332031, 9.695022583007812, 6.7305684089660645, 9.348201751708984, 6.716253757476807, 6.716253757476807, 8.240842819213867, 7.162959098815918, 7.808476448059082, 7.285775661468506], [16.672130584716797, 18.197729110717773, 15.698515892028809, 13.106778144836426, 13.249089241027832, 14.620583534240723, 14.875923156738281, 11.899314880371094, 11.705147743225098, 10.977153778076172, 13.575634002685547, 10.947503089904785, 15.469202041625977, 12.293041229248047, 10.003881454467773, 10.267264366149902, 10.04287338256836, 10.40235424041748, 9.473123550415039, 9.473123550415039, 8.099661827087402, 8.614336013793945, 8.043478012084961, 8.156881332397461]]};
+    const records = pageData.records || [];
+
+    function fmt(v) {
+      return (v === null || v === undefined || Number.isNaN(v)) ? '-' : Number(v).toFixed(2);
+    }
+
+    function buildStats() {
+      document.getElementById('statRuns').textContent = String(records.length);
+      document.getElementById('statCkpts').textContent = String(new Set(records.map(r => r.checkpoint).filter(Boolean)).size);
+      const peak = Math.max(...records.map(r => Number(r.top_layer_max_ma_ratio || 0)), 0);
+      document.getElementById('statPeak').textContent = peak.toFixed(2);
+      const counts = new Map();
+      for (const r of records) {
+        const k = r.top_layer_stage || 'n/a';
+        counts.set(k, (counts.get(k) || 0) + 1);
+      }
+      let bestStage = '-';
+      let bestCount = -1;
+      for (const [k, v] of counts.entries()) {
+        if (v > bestCount) { bestCount = v; bestStage = k; }
+      }
+      document.getElementById('statStage').textContent = bestStage;
+    }
+
+    function renderStageBar() {
+      const runNames = records.map(r => r.run_name);
+      const stages = ['stem_max', 'hires_max', 'body_max', 'skip_max', 'decoder_max', 'output_max'];
+      const labels = {
+        stem_max: 'stem',
+        hires_max: 'hires',
+        body_max: 'body',
+        skip_max: 'skip',
+        decoder_max: 'decoder',
+        output_max: 'output'
+      };
+      const colors = ['#9aa5b1', '#d94841', '#f59f00', '#2b8a3e', '#1971c2', '#5f3dc4'];
+      const traces = stages.map((stageKey, idx) => {
+        return {
+          type: 'bar',
+          name: labels[stageKey],
+          x: runNames,
+          y: records.map(r => r[stageKey]),
+          marker: { color: colors[idx] }
+        };
+      });
+      Plotly.newPlot('stageBar', traces, {
+        barmode: 'group',
+        title: 'Stage Peak MA Ratio by Run',
+        paper_bgcolor: '#ffffff',
+        plot_bgcolor: '#ffffff',
+        xaxis: { tickangle: -35 },
+        yaxis: { title: 'max MA ratio' },
+        margin: { l: 60, r: 20, t: 50, b: 140 }
+      }, { responsive: true, displaylogo: false });
+    }
+
+    function renderStageScatter() {
+      Plotly.newPlot('stageScatter', [{
+        type: 'scatter',
+        mode: 'markers+text',
+        x: records.map(r => r.hires_max),
+        y: records.map(r => r.decoder_max),
+        text: records.map(r => r.run_name),
+        textposition: 'top center',
+        customdata: records.map(r => [r.top_layer_name, r.top_layer_max_ma_ratio, r.skip_max]),
+        marker: {
+          size: records.map(r => 10 + Number(r.top_layer_max_ma_ratio || 0)),
+          color: records.map(r => r.skip_max),
+          colorscale: 'YlOrRd',
+          showscale: true,
+          colorbar: { title: 'skip max' },
+          line: { color: '#17324d', width: 1 }
+        },
+        hovertemplate: '<b>%{text}</b><br>hires=%{x:.2f}<br>decoder=%{y:.2f}<br>top=%{customdata[0]}<br>top ratio=%{customdata[1]:.2f}<br>skip=%{customdata[2]:.2f}<extra></extra>'
+      }], {
+        title: 'Hires vs Decoder MA',
+        xaxis: { title: 'hires max MA ratio' },
+        yaxis: { title: 'decoder max MA ratio' },
+        paper_bgcolor: '#ffffff',
+        plot_bgcolor: '#ffffff',
+        margin: { l: 60, r: 20, t: 50, b: 60 }
+      }, { responsive: true, displaylogo: false });
+    }
+
+    function renderLayerHeatmap() {
+      Plotly.newPlot('layerHeatmap', [{
+        type: 'heatmap',
+        x: pageData.layer_names,
+        y: records.map(r => r.run_name),
+        z: pageData.layer_matrix,
+        colorscale: 'YlOrRd',
+        colorbar: { title: 'max MA ratio' },
+        hovertemplate: 'run=%{y}<br>layer=%{x}<br>ratio=%{z:.2f}<extra></extra>'
+      }], {
+        title: 'Top Layer Heatmap',
+        paper_bgcolor: '#ffffff',
+        plot_bgcolor: '#ffffff',
+        xaxis: { tickangle: -40 },
+        margin: { l: 140, r: 20, t: 50, b: 180 }
+      }, { responsive: true, displaylogo: false });
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector('#summaryTable tbody');
+      tbody.innerHTML = records.map(r => `
+        <tr>
+          <td>${r.run_name}</td>
+          <td class="muted">${r.checkpoint ? r.checkpoint.split(/[\\/]/).slice(-1)[0] : '-'}</td>
+          <td>${r.top_layer_name || '-'}</td>
+          <td>${r.top_layer_stage || '-'}</td>
+          <td>${fmt(r.top_layer_max_ma_ratio)}</td>
+          <td>${fmt(r.hires_max)}</td>
+          <td>${fmt(r.body_max)}</td>
+          <td>${fmt(r.skip_max)}</td>
+          <td>${fmt(r.decoder_max)}</td>
+        </tr>
+      `).join('');
+    }
+
+    buildStats();
+    renderStageBar();
+    renderStageScatter();
+    renderLayerHeatmap();
+    renderTable();
+  </script>
+</body>
+</html>

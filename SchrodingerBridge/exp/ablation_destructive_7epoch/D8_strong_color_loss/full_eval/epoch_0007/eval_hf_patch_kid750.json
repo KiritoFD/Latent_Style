@@ -1,0 +1,34 @@
+{
+  "results": [
+    {
+      "target": "photo",
+      "images": 150,
+      "hf_patch_kid": 4.383682
+    },
+    {
+      "target": "monet",
+      "images": 150,
+      "hf_patch_kid": 4.591091
+    },
+    {
+      "target": "vangogh",
+      "images": 150,
+      "hf_patch_kid": 4.034264
+    },
+    {
+      "target": "cezanne",
+      "images": 150,
+      "hf_patch_kid": 3.380322
+    },
+    {
+      "target": "Hayao",
+      "images": 150,
+      "hf_patch_kid": 12.007214
+    },
+    {
+      "target": "ALL",
+      "images": 750,
+      "hf_patch_kid": 5.679315
+    }
+  ]
+}

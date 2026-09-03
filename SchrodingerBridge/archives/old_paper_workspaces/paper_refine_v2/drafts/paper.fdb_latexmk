@@ -1,0 +1,15 @@
+# Fdb version 4
+["pdflatex"] 1778750342.35451 "paper.tex" "paper.pdf" "paper" 1778750342.86791 2
+  "aaai2026.sty" 0 -1 0 ""
+  "c:/texlive/2026/texmf-dist/tex/latex/base/article.cls" 1775847505 20144 b966087dda3b194755eb460d32e2ef75 ""
+  "c:/texlive/2026/texmf-dist/tex/latex/base/size10.clo" 1775847505 8448 686612a86f0e04f41ea577f5ec7e83d8 ""
+  "c:/texlive/2026/texmf-dist/web2c/texmf.cnf" 1775846353 43630 e9fa012910491fe5ae08a72c3c2997a7 ""
+  "c:/texlive/2026/texmf-var/web2c/pdftex/pdflatex.fmt" 1775849342 3636406 34e2b4bb6da69ff2bca321e49648e0af ""
+  "c:/texlive/2026/texmf.cnf" 1775849151 713 e69b156964470283e0530f5060668171 ""
+  "paper.aux" 1778750334 32 3985256e7290058c681f74d7a3565a19 "pdflatex"
+  "paper.tex" 1778748730 36199 8d64be5774a5346823fe6b7cbe149f37 ""
+  (generated)
+  "paper.aux"
+  "paper.log"
+  "paper.pdf"
+  (rewritten before read)

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash('C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe' -c ' *)",
+      "Bash(powershell -Command \"Test-Path 'C:\\\\Users\\\\xy\\\\.cache\\\\torch\\\\hub'; Get-ChildItem 'C:\\\\Users\\\\xy\\\\.cache\\\\torch\\\\hub' -ErrorAction SilentlyContinue | Select-Object Name\")",
+      "Bash(powershell -Command \"Get-ChildItem 'C:\\\\Users\\\\xy\\\\.cache\\\\torch\\\\hub\\\\checkpoints' -ErrorAction SilentlyContinue | Select-Object Name\")",
+      "Bash(\"C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m pip install cmmd)",
+      "Bash(powershell -Command \"Get-ChildItem -Path 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\results' -Directory | Select-Object Name\")",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\g--GitHub-Latent-Style\\\\db393858-aa6e-4030-9cb2-e3fc55d4b7bb\\\\tasks\\\\bipn0iaix.output'\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path 'g:\\\\GitHub\\\\Latent_Style\\\\SchrodingerBridge' -File | Select-Object Name\")",
+      "Bash(powershell.exe -NoProfile -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\results\\\\s2wat' -Directory | Select-Object -ExpandProperty Name\")",
+      "Bash(powershell.exe -NoProfile -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\results\\\\samst' -Directory | Select-Object -ExpandProperty Name\")",
+      "Bash(powershell.exe -NoProfile -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\results\\\\styleid' -Directory | Select-Object -ExpandProperty Name\")",
+      "Bash(powershell.exe -NoProfile -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\results\\\\style_aligned' -Directory | Select-Object -ExpandProperty Name\")",
+      "Bash(powershell.exe -NoProfile -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\results\\\\cyclegan_turbo' -Directory | Select-Object -ExpandProperty Name\")",
+      "Bash(curl -sL https://raw.githubusercontent.com/xunhuang1995/AdaIN-style/master/lib/StyleINLossModule.lua)",
+      "Bash(powershell -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\SchrodingerBridge' -Depth 0 | Select-Object Name, Mode | Format-Table -AutoSize\")"
+    ]
+  }
+}

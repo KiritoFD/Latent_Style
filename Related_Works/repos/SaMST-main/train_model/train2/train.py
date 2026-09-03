@@ -23,14 +23,12 @@ from networks.transfer_net import TransformerNet
 from loss.vgg import Vgg16
 from train_model import utils
 
-
 def _save_named_model(transformer, device, save_dir, filename):
     transformer.eval().cpu()
     save_model_path = os.path.join(save_dir, filename)
     torch.save(transformer.state_dict(), save_model_path)
     print("\ntrained model saved at", save_model_path)
     transformer.to(device).train()
-
 def check_paths(opt):
     try:
         if not os.path.exists(opt['save_model_dir']):
@@ -229,7 +227,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 

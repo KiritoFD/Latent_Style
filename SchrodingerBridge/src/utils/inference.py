@@ -1,0 +1,501 @@
+"""
+Inference utilities for Latent AdaCUT.
+
+Compatibility note:
+This file keeps the historical `LGTInference` API so existing evaluation scripts
+(`run_evaluation.py`) can be reused directly.
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import zipfile
+from pathlib import Path
+from urllib.request import urlretrieve
+import sys
+from typing import Optional
+
+import numpy as np
+import torch
+from PIL import Image
+import yaml
+
+from config_schema import ExperimentConfig, resolve_inference_section
+from model import build_model_from_config
+
+logger = logging.getLogger(__name__)
+
+# Optional ModelScope support.
+try:
+    from modelscope.hub import snapshot_download as ms_snapshot_download  # type: ignore
+
+    MODELSCOPE_AVAILABLE = True
+except Exception:
+    try:
+        import modelscope.hub as ms_hub  # type: ignore
+
+        ms_snapshot_download = getattr(ms_hub, "snapshot_download", ms_hub)
+        MODELSCOPE_AVAILABLE = True
+    except Exception:
+        ms_snapshot_download = None
+        MODELSCOPE_AVAILABLE = False
+
+
+def _call_modelscope_snapshot(repo_id: str, dest: str):
+    if not MODELSCOPE_AVAILABLE or ms_snapshot_download is None:
+        raise RuntimeError("ModelScope snapshot downloader not available")
+
+    if callable(ms_snapshot_download):
+        last_exc = None
+        for attempt in (
+            lambda: ms_snapshot_download(repo_id, cache_dir=dest),
+            lambda: ms_snapshot_download(repo_id, dest),
+            lambda: ms_snapshot_download(repo_id=repo_id, cache_dir=dest),
+        ):
+            try:
+                return attempt()
+            except TypeError as e:
+                last_exc = e
+        raise last_exc or RuntimeError("Callable ms_snapshot_download failed")
+
+    func = getattr(ms_snapshot_download, "snapshot_download", None) or getattr(
+        ms_snapshot_download, "download", None
+    )
+    if callable(func):
+        return func(repo_id, cache_dir=dest)
+    raise RuntimeError("No callable snapshot_download available in ModelScope")
+
+
+def _find_hf_repo_root(dest: str) -> Optional[str]:
+    if not os.path.exists(dest):
+        return None
+    for root, _, files in os.walk(dest):
+        if "config.json" in files or "model_index.json" in files or "pytorch_model.bin" in files:
+            return root
+    return None
+
+
+class LGTInference:
+    """
+    Backward-compatible inference class for evaluation scripts.
+    """
+
+    def __init__(
+        self,
+        model_path,
+        device="cuda",
+        num_steps=1,
+        step_size=None,
+        style_strength=None,
+        style_adapter_path=None,
+        residual_scale=1.0,
+        force_integrate=False,
+    ):
+        self.device = device
+        self.num_steps = int(num_steps)
+        self.force_integrate = bool(force_integrate)
+
+        checkpoint = torch.load(model_path, map_location=device, weights_only=False)
+        config = ExperimentConfig.from_mapping(checkpoint["config"])
+        bridge_cfg = config.bridge
+        infer_cfg = resolve_inference_section(config)
+        self.objective_mode = str(bridge_cfg.objective_mode).strip().lower()
+        state_dict = checkpoint["model_state_dict"]
+        if any(k.startswith("_orig_mod.") for k in state_dict.keys()):
+            state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
+
+        self.model = build_model_from_config(config.model, use_checkpointing=False).to(device)
+        try:
+            self.model.load_state_dict(state_dict, strict=True)
+        except RuntimeError as exc:
+            logger.warning("Checkpoint/model key mismatch, falling back to non-strict load: %s", exc)
+            self.model.load_state_dict(state_dict, strict=False)
+        if style_adapter_path:
+            self._load_style_adapter(style_adapter_path)
+        self.model.eval()
+
+        cfg_step = float(infer_cfg.get("step_size", 1.0))
+        self.step_size = float(step_size if step_size is not None else cfg_step)
+        cfg_strength = infer_cfg.get("style_strength")
+        if style_strength is None and cfg_strength is None:
+            self.style_strength = None
+        else:
+            self.style_strength = float(style_strength if style_strength is not None else cfg_strength)
+        self.residual_scale = max(0.0, float(residual_scale))
+
+    def _load_style_adapter(self, style_adapter_path) -> None:
+        adapter_path = os.path.expanduser(str(style_adapter_path))
+        adapter = torch.load(adapter_path, map_location=self.device, weights_only=False)
+        if not isinstance(adapter, dict):
+            raise ValueError(f"Unsupported style adapter format: {adapter_path}")
+        with torch.no_grad():
+            style_spatial = adapter.get("style_spatial_id_16")
+            if style_spatial is not None and hasattr(self.model, "style_spatial_id_16"):
+                self.model.style_spatial_id_16.copy_(
+                    style_spatial.to(
+                        device=self.model.style_spatial_id_16.device,
+                        dtype=self.model.style_spatial_id_16.dtype,
+                    )
+                )
+            style_memory = adapter.get("style_memory_bank_16")
+            if style_memory is not None and hasattr(self.model, "style_memory_bank_16"):
+                self.model.style_memory_bank_16 = style_memory.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=self.model.style_spatial_id_16.dtype,
+                ).contiguous()
+            style_memory_logits = adapter.get("style_memory_bank_logits")
+            if style_memory_logits is not None and hasattr(self.model, "style_memory_bank_logits"):
+                self.model.style_memory_bank_logits = style_memory_logits.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=self.model.style_spatial_id_16.dtype,
+                ).contiguous()
+            style_memory_type_ids = adapter.get("style_memory_bank_type_ids")
+            if style_memory_type_ids is not None and hasattr(self.model, "style_memory_bank_type_ids"):
+                self.model.style_memory_bank_type_ids = style_memory_type_ids.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=torch.long,
+                ).contiguous()
+            style_memory_type_logits = adapter.get("style_memory_bank_type_logits")
+            if style_memory_type_logits is not None and hasattr(self.model, "style_memory_bank_type_logits"):
+                self.model.style_memory_bank_type_logits = style_memory_type_logits.to(
+                    device=self.model.style_spatial_id_16.device,
+                    dtype=self.model.style_spatial_id_16.dtype,
+                ).contiguous()
+            for key in [
+                "style_memory_bank_blend",
+                "style_memory_bank_route_strength",
+                "style_memory_bank_route_temperature",
+                "style_memory_bank_type_gate_gamma",
+                "style_memory_bank_type_gate_temperature",
+                "style_memory_bank_residual_strength",
+                "style_memory_bank_residual_tanh_scale",
+                "style_memory_bank_residual_highpass_kernel",
+                "style_memory_bank_residual_center_base",
+                "style_memory_bank_residual_center_content",
+                "style_memory_bank_residual_gate_gamma",
+                "style_memory_bank_residual_gate_floor",
+                "style_memory_bank_residual_gate_kernel",
+            ]:
+                value = adapter.get(key)
+                if value is not None and hasattr(self.model, key):
+                    setattr(
+                        self.model,
+                        key,
+                        torch.as_tensor(
+                            value,
+                            device=self.model.style_spatial_id_16.device,
+                            dtype=self.model.style_spatial_id_16.dtype,
+                        ).reshape(()),
+                    )
+            tokenizer = getattr(self.model, "style_tokenizer", None)
+            if tokenizer is not None:
+                grammar = adapter.get("style_tokenizer.grammar_vocab.weight")
+                if grammar is not None:
+                    tokenizer.grammar_vocab.weight.copy_(
+                        grammar.to(device=tokenizer.grammar_vocab.weight.device, dtype=tokenizer.grammar_vocab.weight.dtype)
+                    )
+                band = adapter.get("style_tokenizer.band_vocab.weight")
+                if band is not None:
+                    tokenizer.band_vocab.weight.copy_(
+                        band.to(device=tokenizer.band_vocab.weight.device, dtype=tokenizer.band_vocab.weight.dtype)
+                    )
+                identity = adapter.get("style_tokenizer.identity_vocab")
+                if identity is not None:
+                    target = getattr(tokenizer, "identity_vocab", None)
+                    if torch.is_tensor(target) and target.shape == identity.shape:
+                        target.copy_(identity.to(device=target.device, dtype=target.dtype))
+        logger.info("Loaded style adapter: %s", adapter_path)
+
+    @torch.no_grad()
+    def inversion(self, x1):
+        # AdaCUT is direct mapping; inversion is identity for compatibility.
+        return x1.clone()
+
+    @torch.no_grad()
+    def generation(
+        self,
+        x0,
+        target_style_id,
+        num_steps=None,
+        *,
+        target_style_latent=None,
+        override_palette=None,
+    ):
+        if num_steps is None:
+            num_steps = self.num_steps
+        b = x0.shape[0]
+        if isinstance(target_style_id, int):
+            target_style_id = torch.full((b,), target_style_id, dtype=torch.long, device=x0.device)
+        if self.objective_mode == "omf" and (not self.force_integrate):
+            endpoint = self.model.endpoint_map(
+                x0,
+                style_id=target_style_id,
+                step_size=self.step_size,
+                style_strength=self.style_strength,
+                target_style_latent=target_style_latent,
+                override_palette=override_palette,
+            )
+            if abs(self.residual_scale - 1.0) > 1e-6:
+                return x0 + (endpoint - x0) * self.residual_scale
+            return endpoint
+        return self.model.integrate(
+            x0,
+            style_id=target_style_id,
+            num_steps=max(1, int(num_steps)),
+            step_size=self.step_size,
+            style_strength=self.style_strength,
+            target_style_latent=target_style_latent,
+            override_palette=override_palette,
+        )
+
+    @torch.no_grad()
+    def transfer_style(
+        self,
+        x_source,
+        target_style_id,
+        num_steps=None,
+        return_intermediate=False,
+        target_style_latent=None,
+        override_palette=None,
+    ):
+        x0 = self.inversion(x_source)
+        x_target = self.generation(
+            x0,
+            target_style_id,
+            num_steps,
+            target_style_latent=target_style_latent,
+            override_palette=override_palette,
+        )
+        if return_intermediate:
+            return x_target, x0
+        return x_target
+
+    @torch.no_grad()
+    def interpolate_styles(self, x_source, style_ids, num_steps=None):
+        if num_steps is None:
+            num_steps = self.num_steps
+        x0 = self.inversion(x_source)
+        return [self.generation(x0, sid, num_steps) for sid in style_ids]
+
+
+def download_vae_with_fallback(model_id, device="cuda", cache_dir=None):
+    from diffusers import AutoencoderKL
+
+    force_dtype = torch.float16
+    model_key = str(model_id).strip().lower()
+    if str(model_id).lower() in {"sdxl-fp32", "sdxl-float32"}:
+        model_id = "stabilityai/sdxl-vae"
+        force_dtype = torch.float32
+    elif str(model_id).lower() in {"sdxl-fp16-fix", "sdxl-fix"}:
+        model_id = "madebyollin/sdxl-vae-fp16-fix"
+        force_dtype = torch.float16
+    elif model_key in {"kl-f4", "compvis-kl-f4", "compvis/kl-f4"}:
+        return _load_compvis_kl_f4_vae(device=device, cache_dir=cache_dir, torch_dtype=force_dtype)
+
+    vae_presets = {
+        "sd15": "stabilityai/sd-vae-ft-mse",
+        "sdxl": "stabilityai/sdxl-vae",
+        "mse": "stabilityai/sd-vae-ft-mse",
+        "ema": "stabilityai/sd-vae-ft-ema",
+        "flux1": "black-forest-labs/FLUX.1-schnell",
+        "flux1-dev": "black-forest-labs/FLUX.1-dev",
+        "flux1-schnell": "black-forest-labs/FLUX.1-schnell",
+        "flux2": "black-forest-labs/FLUX.2-klein-4B",
+        "flux2-klein": "black-forest-labs/FLUX.2-klein-4B",
+    }
+    if model_id in vae_presets:
+        model_id = vae_presets[model_id]
+    use_subfolder = str(model_id).lower().startswith("black-forest-labs/flux")
+
+    if cache_dir is None:
+        cache_dir = os.path.expanduser("~/.cache/huggingface/hub")
+    os.makedirs(cache_dir, exist_ok=True)
+
+    try:
+        vae = AutoencoderKL.from_pretrained(
+            model_id,
+            subfolder=("vae" if use_subfolder else None),
+            torch_dtype=force_dtype,
+            cache_dir=cache_dir,
+            local_files_only=True,
+        ).to(device)
+        vae.eval()
+        return vae
+    except Exception:
+        pass
+
+    ms_dest = os.path.join(cache_dir, "modelscope", model_id.replace("/", "_"))
+    if os.path.exists(ms_dest):
+        found = _find_hf_repo_root(ms_dest)
+        if found:
+            try:
+                vae = AutoencoderKL.from_pretrained(found, torch_dtype=force_dtype, local_files_only=True).to(
+                    device
+                )
+                vae.eval()
+                return vae
+            except Exception:
+                pass
+
+    if MODELSCOPE_AVAILABLE:
+        try:
+            dest = os.path.join(cache_dir, "modelscope", model_id.replace("/", "_"))
+            os.makedirs(dest, exist_ok=True)
+            ret = _call_modelscope_snapshot(model_id, dest)
+            if isinstance(ret, str) and os.path.exists(ret):
+                root = ret
+            else:
+                root = _find_hf_repo_root(dest)
+            if root:
+                vae = AutoencoderKL.from_pretrained(root, subfolder=("vae" if use_subfolder else None), torch_dtype=force_dtype).to(device)
+                vae.eval()
+                return vae
+        except Exception as exc:
+            logger.warning("ModelScope VAE load failed: %s", exc)
+
+    vae = AutoencoderKL.from_pretrained(
+        model_id,
+        subfolder=("vae" if use_subfolder else None),
+        torch_dtype=force_dtype,
+        cache_dir=cache_dir,
+    ).to(device)
+    vae.eval()
+    return vae
+
+
+def _load_compvis_kl_f4_vae(device="cuda", cache_dir=None, torch_dtype=torch.float16):
+    from diffusers import AutoencoderKL
+
+    if cache_dir is None:
+        cache_dir = os.path.expanduser("~/.cache/huggingface/hub")
+    root = Path(cache_dir) / "compvis_kl_f4"
+    root.mkdir(parents=True, exist_ok=True)
+    ckpt = root / "model.ckpt"
+    config = root / "autoencoder_kl_64x64x3.yaml"
+    if not ckpt.exists():
+        zip_path = root / "kl-f4.zip"
+        if not zip_path.exists():
+            urlretrieve("https://ommer-lab.com/files/latent-diffusion/kl-f4.zip", zip_path)
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            for member in zf.namelist():
+                name = Path(member).name
+                if name == "model.ckpt":
+                    with zf.open(member) as src, ckpt.open("wb") as dst:
+                        dst.write(src.read())
+                elif name in {"config.yaml", "project.yaml"} and not config.exists():
+                    with zf.open(member) as src, config.open("wb") as dst:
+                        dst.write(src.read())
+    if not config.exists():
+        urlretrieve(
+            "https://raw.githubusercontent.com/CompVis/latent-diffusion/main/configs/autoencoder/autoencoder_kl_64x64x3.yaml",
+            config,
+        )
+    checkpoint_payload = torch.load(str(ckpt), map_location="cpu", weights_only=False)
+    checkpoint = checkpoint_payload.get("state_dict", checkpoint_payload) if isinstance(checkpoint_payload, dict) else checkpoint_payload
+    autoencoder_config = yaml.safe_load(config.read_text(encoding="utf-8"))
+    original_config = {
+        "model": {
+            "params": {
+                "scale_factor": 1.0,
+                "first_stage_config": {
+                    "params": {
+                        "ddconfig": autoencoder_config["model"]["params"]["ddconfig"],
+                        "embed_dim": autoencoder_config["model"]["params"].get("embed_dim", 3),
+                    }
+                },
+            }
+        }
+    }
+    vae = AutoencoderKL.from_single_file(
+        checkpoint,
+        original_config=original_config,
+        scaling_factor=1.0,
+        torch_dtype=torch_dtype,
+        local_files_only=True,
+    ).to(device)
+    vae.eval()
+    # The standalone LDM first-stage autoencoder is not an SD latent with 0.18215 scaling.
+    vae.config.scaling_factor = 1.0
+    vae.config.shift_factor = 0.0
+    return vae
+
+
+def load_vae(device="cuda", model_id="sd15", cache_dir=None):
+    if device == "cuda" and not torch.cuda.is_available():
+        logger.warning("CUDA not available, fallback to CPU for VAE.")
+        device = "cpu"
+    return download_vae_with_fallback(model_id, device=device, cache_dir=cache_dir)
+
+
+@torch.no_grad()
+def encode_image(vae, image_tensor, device="cuda", latent_mode: str = "sample"):
+    vae_dtype = next(vae.parameters()).dtype
+    image_tensor = image_tensor.to(device, dtype=vae_dtype)
+    latent_dist = vae.encode(image_tensor).latent_dist
+    mode = str(latent_mode).strip().lower()
+    if mode in {"mode", "mean", "deterministic"}:
+        latent = latent_dist.mode()
+    else:
+        latent = latent_dist.sample()
+    shift = float(getattr(vae.config, "shift_factor", 0.0) or 0.0)
+    latent = (latent - shift) * vae.config.scaling_factor
+    return latent
+
+
+@torch.no_grad()
+def decode_latent(vae, latent, device="cuda", scaling_factor=None):
+    vae_dtype = next(vae.parameters()).dtype
+    latent = latent.to(device, dtype=vae_dtype)
+    scale = float(vae.config.scaling_factor if scaling_factor is None else scaling_factor)
+    shift = float(getattr(vae.config, "shift_factor", 0.0) or 0.0)
+    latent = (latent / max(scale, 1e-8)) + shift
+    image = vae.decode(latent).sample
+    image = (image + 1.0) / 2.0
+    return torch.clamp(image, 0.0, 1.0)
+
+
+def tensor_to_pil(tensor):
+    if tensor.ndim == 4:
+        tensor = tensor.squeeze(0)
+    tensor = tensor.cpu().float()
+    tensor = (tensor * 255).clamp(0, 255).to(torch.uint8)
+    array = tensor.permute(1, 2, 0).numpy()
+    return Image.fromarray(array)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 4:
+        print("Usage: python utils/inference.py <checkpoint> <source_img> <output_path> [target_style_id] [style_adapter_path]")
+        raise SystemExit(1)
+
+    checkpoint_path = sys.argv[1]
+    source_image_path = sys.argv[2]
+    output_path = sys.argv[3]
+    target_style_id = int(sys.argv[4]) if len(sys.argv) > 4 else 1
+    style_adapter_path = sys.argv[5] if len(sys.argv) > 5 else None
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    vae = load_vae(device=str(device))
+    inf = LGTInference(checkpoint_path, device=str(device), num_steps=1, style_adapter_path=style_adapter_path)
+    model_scale = float(getattr(inf.model, "latent_scale_factor", 0.18215))
+    vae_scale = float(getattr(getattr(vae, "config", None), "scaling_factor", model_scale))
+    scale_in = model_scale / max(vae_scale, 1e-8)
+    scale_out = vae_scale / max(model_scale, 1e-8)
+    if abs(scale_in - 1.0) > 1e-4:
+        print(f"WARNING: latent scale mismatch (model={model_scale:.6f}, vae={vae_scale:.6f}). Applying rescale.")
+
+    image = Image.open(source_image_path).convert("RGB").resize((256, 256))
+    image_tensor = torch.from_numpy(np.array(image)).float() / 255.0
+    image_tensor = image_tensor.permute(2, 0, 1).unsqueeze(0)
+    image_tensor = image_tensor * 2.0 - 1.0
+
+    z = encode_image(vae, image_tensor, device=str(device))
+    if abs(scale_in - 1.0) > 1e-4:
+        z = z * scale_in
+    z_out = inf.transfer_style(z, target_style_id=target_style_id, num_steps=1)
+    if abs(scale_out - 1.0) > 1e-4:
+        z_out = z_out * scale_out
+    out = decode_latent(vae, z_out, device=str(device))
+    tensor_to_pil(out).save(output_path)
+    print(f"Saved: {output_path}")

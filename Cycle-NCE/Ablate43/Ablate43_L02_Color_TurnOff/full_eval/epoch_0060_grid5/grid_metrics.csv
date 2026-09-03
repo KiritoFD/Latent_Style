@@ -1,0 +1,26 @@
+src_style,tgt_style,src_image,gen_image,clip_style,content_lpips,reused
+photo,photo,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_photo.jpg,0.7240315675735474,0.3540606,True
+photo,Hayao,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_Hayao.jpg,0.6423769593238831,0.36143646,True
+photo,monet,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_monet.jpg,0.5166937708854675,0.34144574,True
+photo,vangogh,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_vangogh.jpg,0.5338095426559448,0.35197112,True
+photo,cezanne,2013-11-08 16_45_24.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\photo_2013-11-08 16_45_24_to_cezanne.jpg,0.5031290054321289,0.35799336,True
+Hayao,photo,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\Hayao_0_to_photo.jpg,0.5490952730178833,0.24757618,True
+Hayao,Hayao,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\Hayao_0_to_Hayao.jpg,0.8360267877578735,0.23793802,True
+Hayao,monet,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\Hayao_0_to_monet.jpg,0.4478520452976227,0.24642192,True
+Hayao,vangogh,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\Hayao_0_to_vangogh.jpg,0.5152627229690552,0.24009037,True
+Hayao,cezanne,0.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\Hayao_0_to_cezanne.jpg,0.47469455003738403,0.24256937,True
+monet,photo,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\monet_00018_to_photo.jpg,0.7066851854324341,0.4103325,True
+monet,Hayao,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\monet_00018_to_Hayao.jpg,0.5723634958267212,0.4307481,True
+monet,monet,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\monet_00018_to_monet.jpg,0.8272765874862671,0.40961704,True
+monet,vangogh,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\monet_00018_to_vangogh.jpg,0.7628116607666016,0.41153812,True
+monet,cezanne,00018.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\monet_00018_to_cezanne.jpg,0.7916333079338074,0.41220677,True
+vangogh,photo,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\vangogh_00090_to_photo.jpg,0.5840412974357605,0.32261175,True
+vangogh,Hayao,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\vangogh_00090_to_Hayao.jpg,0.6064873337745667,0.3176018,True
+vangogh,monet,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\vangogh_00090_to_monet.jpg,0.5821428894996643,0.31456926,True
+vangogh,vangogh,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\vangogh_00090_to_vangogh.jpg,0.676715075969696,0.30297107,True
+vangogh,cezanne,00090.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\vangogh_00090_to_cezanne.jpg,0.6739268898963928,0.31118402,True
+cezanne,photo,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\cezanne_00057_to_photo.jpg,0.6410826444625854,0.33683285,True
+cezanne,Hayao,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\cezanne_00057_to_Hayao.jpg,0.6644765138626099,0.3329182,True
+cezanne,monet,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\cezanne_00057_to_monet.jpg,0.6714592576026917,0.33547586,True
+cezanne,vangogh,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\cezanne_00057_to_vangogh.jpg,0.7234240770339966,0.33357638,True
+cezanne,cezanne,00057.jpg,G:\GitHub\Latent_Style\Cycle-NCE\Ablate43\Ablate43_L02_Color_TurnOff\full_eval\epoch_0060\images\cezanne_00057_to_cezanne.jpg,0.7585715651512146,0.33308917,True

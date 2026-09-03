@@ -1,0 +1,982 @@
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import os
+import subprocess
+import sys
+from dataclasses import asdict, dataclass, replace
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_BASE_CONFIG = ROOT / "S-add__K-1_C-0_W-20_Col-0" / "config.json"
+DEFAULT_BASELINE_SUMMARY = (
+    ROOT / "S-add__K-1_C-0_W-20_Col-0" / "full_eval" / "epoch_0008" / "summary.json"
+)
+DEFAULT_OUTPUT_ROOT = ROOT / "exp" / "decision_tree_clip_style"
+DEFAULT_CONFIG_ROOT = ROOT / "configs" / "decision_tree_clip_style"
+
+
+@dataclass(frozen=True)
+class Candidate:
+    name: str
+    stage: str
+    hypothesis: str
+    reason: str
+    w_kinetic: float
+    terminal_swd_weight: float
+    w_variance_penalty: float
+    objective_mode: str = "omf"
+    w_content_anchor: float = 0.0
+    w_edge_anchor: float = 0.0
+    w_style_energy_floor: float = 0.0
+    w_lowfreq_velocity: float = 0.0
+    w_style_contrastive: float = 0.0
+    style_contrastive_temperature: float = 0.08
+    w_residual_style_direction: float = 0.0
+    w_semantic_entropy: float = 0.0
+    semantic_entropy_target: float = 2.2
+    w_spectral_amplitude: float = 0.0
+    w_divergence: float = 0.0
+    w_feature_riemannian: float = 0.0
+    w_kantorovich: float = 0.0
+    w_nonlocal_structure: float = 0.0
+    nonlocal_structure_pool: int = 8
+    sb_noise_epsilon: float = 0.0
+    retinex_target_blend: float = 0.0
+    retinex_kernel_size: int = 15
+    w_anisotropic_kinetic: float = 0.0
+    anisotropic_normal_weight: float = 25.0
+    anisotropic_tangent_weight: float = 0.25
+    w_stokes_viscous: float = 0.0
+    w_phase_separation: float = 0.0
+    phase_gradient_weight: float = 0.05
+    style_energy_floor_ratio: float = 0.6
+    residual_gain: float = 1.0
+    pre_integrate_moment_match: bool = False
+    pre_integrate_moment_blend: float = 1.0
+    semantic_attn_temperature: float = 0.04
+    semantic_swd_num_projections: int = 32
+    swd_num_projections: int = 32
+    swd_micro_weight: float = 1.0
+    swd_macro_weight: float = 1.0
+    swd_scale_invariant_patches: bool = False
+    swd_adaptive_highpass: bool = False
+    swd_use_dilated_projections: bool = False
+    swd_projection_dilation: int = 2
+    routing_mode: str = "softmax"
+    sinkhorn_iters: int = 3
+    seed: int = 42
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _append_jsonl(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
+def _relpath(path: Path, start: Path) -> str:
+    return Path(path).resolve().relative_to(Path(start).resolve()).as_posix()
+
+
+def _metric_float(value: Any) -> float | None:
+    try:
+        if value is None or value == "":
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _summary_metrics(summary_path: Path) -> dict[str, float | bool | None]:
+    if not summary_path.exists():
+        return {
+            "summary_exists": False,
+            "clip_style_all": None,
+            "clip_content_all": None,
+            "content_lpips_all": None,
+            "clip_dir_all": None,
+        }
+    payload = _load_json(summary_path)
+    all_pairs = ((payload.get("analysis") or {}).get("all_pairs_overview") or {})
+    return {
+        "summary_exists": True,
+        "clip_style_all": _metric_float(all_pairs.get("clip_style")),
+        "clip_content_all": _metric_float(all_pairs.get("clip_content")),
+        "content_lpips_all": _metric_float(all_pairs.get("content_lpips")),
+        "clip_dir_all": _metric_float(all_pairs.get("clip_dir")),
+    }
+
+
+def _baseline_metrics(path: Path) -> dict[str, float]:
+    metrics = _summary_metrics(path)
+    required = ["clip_style_all", "content_lpips_all", "clip_content_all"]
+    if any(metrics.get(key) is None for key in required):
+        raise FileNotFoundError(f"Baseline summary is missing required metrics: {path}")
+    return {key: float(metrics[key]) for key in required}  # type: ignore[arg-type]
+
+
+def _run(cmd: list[str], *, cwd: Path, dry_run: bool) -> int:
+    print(" ".join(str(part) for part in cmd), flush=True)
+    if dry_run:
+        return 0
+    return int(subprocess.run(cmd, cwd=cwd).returncode)
+
+
+def _config_payload(candidate: Candidate, *, base_config: Path, output_root: Path) -> dict[str, Any]:
+    base_ref = Path("..") / ".." / _relpath(base_config, ROOT)
+    save_dir = "./" + _relpath(output_root / candidate.name, ROOT)
+    batch_size = int(os.environ.get("LANCET_BATCH_SIZE", "64"))
+    eval_batch_size = int(os.environ.get("LANCET_EVAL_BATCH_SIZE", "6"))
+    return {
+        "_base": base_ref.as_posix(),
+        "model": {
+            "residual_gain": candidate.residual_gain,
+            "semantic_attn_temperature": candidate.semantic_attn_temperature,
+            "semantic_attn_routing_mode": candidate.routing_mode,
+            "semantic_sinkhorn_iters": candidate.sinkhorn_iters,
+            "pre_integrate_moment_match": candidate.pre_integrate_moment_match,
+            "pre_integrate_moment_blend": candidate.pre_integrate_moment_blend,
+        },
+        "bridge": {
+            "objective_mode": candidate.objective_mode,
+            "w_kinetic": candidate.w_kinetic,
+            "terminal_swd_weight": candidate.terminal_swd_weight,
+            "w_variance_penalty": candidate.w_variance_penalty,
+            "w_content_anchor": candidate.w_content_anchor,
+            "w_edge_anchor": candidate.w_edge_anchor,
+            "w_style_energy_floor": candidate.w_style_energy_floor,
+            "w_lowfreq_velocity": candidate.w_lowfreq_velocity,
+            "w_style_contrastive": candidate.w_style_contrastive,
+            "style_contrastive_temperature": candidate.style_contrastive_temperature,
+            "w_residual_style_direction": candidate.w_residual_style_direction,
+            "w_semantic_entropy": candidate.w_semantic_entropy,
+            "semantic_entropy_target": candidate.semantic_entropy_target,
+            "w_spectral_amplitude": candidate.w_spectral_amplitude,
+            "w_divergence": candidate.w_divergence,
+            "w_feature_riemannian": candidate.w_feature_riemannian,
+            "w_kantorovich": candidate.w_kantorovich,
+            "w_nonlocal_structure": candidate.w_nonlocal_structure,
+            "nonlocal_structure_pool": candidate.nonlocal_structure_pool,
+            "sb_noise_epsilon": candidate.sb_noise_epsilon,
+            "retinex_target_blend": candidate.retinex_target_blend,
+            "retinex_kernel_size": candidate.retinex_kernel_size,
+            "w_anisotropic_kinetic": candidate.w_anisotropic_kinetic,
+            "anisotropic_normal_weight": candidate.anisotropic_normal_weight,
+            "anisotropic_tangent_weight": candidate.anisotropic_tangent_weight,
+            "w_stokes_viscous": candidate.w_stokes_viscous,
+            "w_phase_separation": candidate.w_phase_separation,
+            "phase_gradient_weight": candidate.phase_gradient_weight,
+            "style_energy_floor_ratio": candidate.style_energy_floor_ratio,
+            "semantic_swd_num_projections": candidate.semantic_swd_num_projections,
+            "swd_num_projections": candidate.swd_num_projections,
+            "swd_micro_weight": candidate.swd_micro_weight,
+            "swd_macro_weight": candidate.swd_macro_weight,
+            "swd_scale_invariant_patches": candidate.swd_scale_invariant_patches,
+            "swd_adaptive_highpass": candidate.swd_adaptive_highpass,
+            "swd_use_dilated_projections": candidate.swd_use_dilated_projections,
+            "swd_projection_dilation": candidate.swd_projection_dilation,
+            "swd_distance_mode": "sort",
+        },
+        "training": {
+            "seed": candidate.seed,
+            "batch_size": batch_size,
+            "accumulation_steps": 1,
+            "num_workers": 2,
+            "persistent_workers": True,
+            "num_epochs": 8,
+            "save_interval": 1,
+            "use_amp": True,
+            "use_gradient_checkpointing": True,
+            "channels_last": True,
+            "full_eval_batch_size": eval_batch_size,
+        },
+        "checkpoint": {
+            "save_dir": save_dir,
+        },
+        "ablation": {
+            "name": candidate.name,
+            "axis": "sequential_clip_style_decision_tree",
+            "stage": candidate.stage,
+            "hypothesis": candidate.hypothesis,
+            "reason": candidate.reason,
+        },
+    }
+
+
+def _write_config(candidate: Candidate, *, config_root: Path, base_config: Path, output_root: Path) -> Path:
+    path = config_root / f"{candidate.name}.json"
+    _write_json(path, _config_payload(candidate, base_config=base_config, output_root=output_root))
+    return path
+
+
+def _latest_training_log(run_dir: Path) -> Path | None:
+    logs = sorted((run_dir / "logs").glob("training_*.csv"), key=lambda p: p.stat().st_mtime)
+    return logs[-1] if logs else None
+
+
+def _latest_checkpoint(run_dir: Path) -> Path | None:
+    checkpoints = sorted(run_dir.glob("epoch_*.pt"))
+    if not checkpoints:
+        return None
+    return checkpoints[-1]
+
+
+def _training_metrics(run_dir: Path, epoch: int) -> dict[str, float | None]:
+    log_path = _latest_training_log(run_dir)
+    out = {
+        "epoch_time_sec": None,
+        "samples_per_sec": None,
+        "terminal_swd_train": None,
+        "kinetic_energy_train": None,
+        "anisotropic_kinetic_train": None,
+        "stokes_viscous_train": None,
+        "phase_separation_train": None,
+    }
+    if log_path is None:
+        return out
+    with log_path.open("r", newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if int(float(row.get("epoch", 0))) != epoch:
+                continue
+            out["epoch_time_sec"] = _metric_float(row.get("epoch_time_sec"))
+            out["samples_per_sec"] = _metric_float(row.get("samples_per_sec"))
+            out["terminal_swd_train"] = _metric_float(row.get("terminal_swd"))
+            out["kinetic_energy_train"] = _metric_float(row.get("kinetic_energy"))
+            out["anisotropic_kinetic_train"] = _metric_float(row.get("anisotropic_kinetic"))
+            out["stokes_viscous_train"] = _metric_float(row.get("stokes_viscous"))
+            out["phase_separation_train"] = _metric_float(row.get("phase_separation"))
+            return out
+    return out
+
+
+def _score(row: dict[str, Any], baseline: dict[str, float]) -> float:
+    style = row.get("clip_style_all")
+    lpips = row.get("content_lpips_all")
+    content = row.get("clip_content_all")
+    epoch_time = row.get("epoch_time_sec")
+    if style is None or lpips is None or content is None:
+        return -9999.0
+    collapse_penalty = 4.0 if float(lpips) >= 0.50 or float(content) <= 0.76 else 0.0
+    return (
+        65.0 * (float(style) - baseline["clip_style_all"])
+        - 55.0 * max(0.0, float(lpips) - baseline["content_lpips_all"])
+        + 20.0 * max(0.0, baseline["content_lpips_all"] - float(lpips))
+        + 10.0 * max(0.0, float(content) - baseline["clip_content_all"])
+        - 1.0 * max(0.0, float(epoch_time or 0.0) - 70.0) / 10.0
+        - collapse_penalty
+    )
+
+
+def _decision_label(row: dict[str, Any], baseline: dict[str, float]) -> str:
+    style = row.get("clip_style_all")
+    lpips = row.get("content_lpips_all")
+    content = row.get("clip_content_all")
+    if style is None or lpips is None or content is None:
+        return "missing"
+    style_f = float(style)
+    lpips_f = float(lpips)
+    content_f = float(content)
+    if lpips_f >= 0.50 or content_f <= 0.76:
+        return "collapse"
+    if style_f >= 0.72 and lpips_f <= 0.48:
+        return "win"
+    if style_f >= 0.718 and lpips_f <= 0.48:
+        return "high_style_borderline"
+    if style_f >= baseline["clip_style_all"] and lpips_f <= baseline["content_lpips_all"] + 0.01:
+        return "target"
+    if style_f >= 0.718 and lpips_f <= 0.48:
+        return "promising"
+    return "weak"
+
+
+def _collect_candidate_rows(
+    candidate: Candidate,
+    *,
+    epochs: list[int],
+    output_root: Path,
+    eval_root: Path,
+    baseline: dict[str, float],
+) -> list[dict[str, Any]]:
+    run_dir = output_root / candidate.name
+    rows: list[dict[str, Any]] = []
+    for epoch in epochs:
+        summary_path = eval_root / candidate.name / f"epoch_{epoch:04d}" / "summary.json"
+        row: dict[str, Any] = {
+            **asdict(candidate),
+            "epoch": epoch,
+            "checkpoint": str(run_dir / f"epoch_{epoch:04d}.pt"),
+            "summary": str(summary_path),
+        }
+        row.update(_training_metrics(run_dir, epoch))
+        row.update(_summary_metrics(summary_path))
+        row["delta_style_vs_baseline"] = (
+            None if row["clip_style_all"] is None else float(row["clip_style_all"]) - baseline["clip_style_all"]
+        )
+        row["delta_lpips_vs_baseline"] = (
+            None if row["content_lpips_all"] is None else float(row["content_lpips_all"]) - baseline["content_lpips_all"]
+        )
+        row["decision"] = _decision_label(row, baseline)
+        row["score"] = _score(row, baseline)
+        rows.append(row)
+    return rows
+
+
+def _best_epoch(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    return max(rows, key=lambda row: float(row.get("score") or -9999.0))
+
+
+def _write_tables(rows: list[dict[str, Any]], best_rows: list[dict[str, Any]], *, output_root: Path) -> None:
+    output_root.mkdir(parents=True, exist_ok=True)
+    _write_json(output_root / "decision_tree_results.json", {"rows": rows, "best_by_experiment": best_rows})
+
+    fields = [
+        "name",
+        "stage",
+        "hypothesis",
+        "reason",
+        "epoch",
+        "objective_mode",
+        "w_kinetic",
+        "terminal_swd_weight",
+        "w_variance_penalty",
+        "w_content_anchor",
+        "w_edge_anchor",
+        "w_style_energy_floor",
+        "w_lowfreq_velocity",
+        "w_style_contrastive",
+        "style_contrastive_temperature",
+        "w_residual_style_direction",
+        "w_semantic_entropy",
+        "semantic_entropy_target",
+        "w_spectral_amplitude",
+        "w_divergence",
+        "w_feature_riemannian",
+        "w_kantorovich",
+        "w_nonlocal_structure",
+        "nonlocal_structure_pool",
+        "sb_noise_epsilon",
+        "retinex_target_blend",
+        "retinex_kernel_size",
+        "w_anisotropic_kinetic",
+        "anisotropic_normal_weight",
+        "anisotropic_tangent_weight",
+        "w_stokes_viscous",
+        "w_phase_separation",
+        "phase_gradient_weight",
+        "style_energy_floor_ratio",
+        "residual_gain",
+        "pre_integrate_moment_match",
+        "pre_integrate_moment_blend",
+        "semantic_attn_temperature",
+        "semantic_swd_num_projections",
+        "swd_num_projections",
+        "swd_micro_weight",
+        "swd_macro_weight",
+        "swd_scale_invariant_patches",
+        "swd_adaptive_highpass",
+        "swd_use_dilated_projections",
+        "swd_projection_dilation",
+        "routing_mode",
+        "sinkhorn_iters",
+        "seed",
+        "clip_style_all",
+        "content_lpips_all",
+        "clip_content_all",
+        "clip_dir_all",
+        "delta_style_vs_baseline",
+        "delta_lpips_vs_baseline",
+        "epoch_time_sec",
+        "samples_per_sec",
+        "terminal_swd_train",
+        "kinetic_energy_train",
+        "anisotropic_kinetic_train",
+        "stokes_viscous_train",
+        "phase_separation_train",
+        "score",
+        "decision",
+        "checkpoint",
+        "summary",
+    ]
+    for filename, table in [("decision_tree_results.csv", rows), ("decision_tree_best.csv", best_rows)]:
+        with (output_root / filename).open("w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fields)
+            writer.writeheader()
+            for row in table:
+                writer.writerow({key: row.get(key) for key in fields})
+
+
+def _base_candidate() -> Candidate:
+    return Candidate(
+        name="s00_root_sort32_temp004",
+        stage="root",
+        hypothesis="batch64_sort_swd_reference",
+        reason="Confirm the K1/W20 lineage with fast sort SWD, projection=32, and temp=0.04 before variance experiments.",
+        w_kinetic=1.0,
+        terminal_swd_weight=20.0,
+        w_variance_penalty=0.0,
+        residual_gain=1.0,
+    )
+
+
+def _legacy_a_candidates(until: str = "") -> list[Candidate]:
+    out: list[Candidate] = []
+    stop = until.strip()
+    for kin in [1.00, 0.85, 0.70, 0.55, 0.40]:
+        for swd in [20.0, 24.0, 28.0, 32.0]:
+            name = f"A_kin{kin:g}_swd{swd:g}"
+            out.append(
+                Candidate(
+                    name=name,
+                    stage="legacy_motion_grid",
+                    hypothesis="legacy_motion_budget_x_endpoint_pressure",
+                    reason="Imported from the earlier batch-grid runner; evaluated before sequential branching resumes.",
+                    w_kinetic=kin,
+                    terminal_swd_weight=swd,
+                    w_variance_penalty=0.0,
+                    residual_gain=1.0,
+                    semantic_attn_temperature=0.12,
+                    semantic_swd_num_projections=64,
+                    swd_num_projections=64,
+                )
+            )
+            if stop and name == stop:
+                return out
+    return out
+
+
+def _variance_candidate(value: float) -> Candidate:
+    tag = str(value).replace(".", "p")
+    return Candidate(
+        name=f"s01_var{tag}_res115_kin125_swd25",
+        stage="variance_breakthrough",
+        hypothesis="anti_grayness_variance_alignment",
+        reason=f"Test whether variance penalty {value:g} raises contrast/style without structural collapse.",
+        w_kinetic=1.25,
+        terminal_swd_weight=25.0,
+        w_variance_penalty=value,
+        residual_gain=1.15,
+    )
+
+
+def _candidate_name(prefix: str, **values: Any) -> str:
+    parts = [prefix]
+    for key, value in values.items():
+        text = str(value).replace(".", "p")
+        parts.append(f"{key}{text}")
+    return "_".join(parts)
+
+
+def _best_config_candidate(best: dict[str, Any], *, prefix: str, stage: str, hypothesis: str, reason: str, **updates: Any) -> Candidate:
+    base = Candidate(
+        name=prefix,
+        stage=stage,
+        hypothesis=hypothesis,
+        reason=reason,
+        w_kinetic=float(best["w_kinetic"]),
+        terminal_swd_weight=float(best["terminal_swd_weight"]),
+        w_variance_penalty=float(best["w_variance_penalty"]),
+        w_content_anchor=float(best.get("w_content_anchor") or 0.0),
+        w_edge_anchor=float(best.get("w_edge_anchor") or 0.0),
+        w_style_energy_floor=float(best.get("w_style_energy_floor") or 0.0),
+        w_lowfreq_velocity=float(best.get("w_lowfreq_velocity") or 0.0),
+        w_style_contrastive=float(best.get("w_style_contrastive") or 0.0),
+        style_contrastive_temperature=float(best.get("style_contrastive_temperature") or 0.08),
+        w_residual_style_direction=float(best.get("w_residual_style_direction") or 0.0),
+        w_semantic_entropy=float(best.get("w_semantic_entropy") or 0.0),
+        semantic_entropy_target=float(best.get("semantic_entropy_target") or 2.2),
+        w_spectral_amplitude=float(best.get("w_spectral_amplitude") or 0.0),
+        w_divergence=float(best.get("w_divergence") or 0.0),
+        w_feature_riemannian=float(best.get("w_feature_riemannian") or 0.0),
+        w_kantorovich=float(best.get("w_kantorovich") or 0.0),
+        style_energy_floor_ratio=float(best.get("style_energy_floor_ratio") or 0.6),
+        residual_gain=float(best["residual_gain"]),
+        semantic_attn_temperature=float(best["semantic_attn_temperature"]),
+        semantic_swd_num_projections=int(best["semantic_swd_num_projections"]),
+        swd_num_projections=int(best["swd_num_projections"]),
+        swd_micro_weight=float(best.get("swd_micro_weight") or 1.0),
+        swd_macro_weight=float(best.get("swd_macro_weight") or 1.0),
+        swd_scale_invariant_patches=str(best.get("swd_scale_invariant_patches") or "False").lower() == "true",
+        swd_adaptive_highpass=str(best.get("swd_adaptive_highpass") or "False").lower() == "true",
+        swd_use_dilated_projections=str(best.get("swd_use_dilated_projections") or "False").lower() == "true",
+        swd_projection_dilation=int(float(best.get("swd_projection_dilation") or 2)),
+        routing_mode=str(best["routing_mode"]),
+        sinkhorn_iters=int(best["sinkhorn_iters"]),
+        seed=int(best["seed"]),
+    )
+    return replace(base, **updates)
+
+
+def _style_push_candidates(best: dict[str, Any] | None) -> list[Candidate]:
+    seeds = [_variance_candidate(3.0), _variance_candidate(5.0), _variance_candidate(7.5)]
+    if best is None:
+        return seeds
+    var = float(best.get("w_variance_penalty") or 5.0)
+    return [
+        *seeds,
+        Candidate(
+            name="s02_var5_res120_kin125_swd25",
+            stage="variance_breakthrough",
+            hypothesis="anti_grayness_residual_amplitude",
+            reason="If variance helps but style is short of 0.72, test a slightly larger delivered residual.",
+            w_kinetic=1.25,
+            terminal_swd_weight=25.0,
+            w_variance_penalty=5.0,
+            residual_gain=1.20,
+        ),
+        Candidate(
+            name="s03_var5_res115_kin100_swd30",
+            stage="endpoint_pressure",
+            hypothesis="endpoint_pressure_after_variance",
+            reason="Lower kinetic and raise terminal pressure if variance alone does not cross 0.72.",
+            w_kinetic=1.0,
+            terminal_swd_weight=30.0,
+            w_variance_penalty=5.0,
+            residual_gain=1.15,
+        ),
+        Candidate(
+            name="s04_var7p5_res115_kin100_swd35",
+            stage="endpoint_pressure",
+            hypothesis="strong_endpoint_pressure_after_variance",
+            reason="A stronger style push after the anti-grayness protocol, still inside the 16-run budget.",
+            w_kinetic=1.0,
+            terminal_swd_weight=35.0,
+            w_variance_penalty=max(7.5, var),
+            residual_gain=1.15,
+        ),
+    ]
+
+
+def _content_guard_candidates(best: dict[str, Any] | None = None) -> list[Candidate]:
+    """Mechanism-first candidates after the variance branch was falsified.
+
+    These runs keep variance matching off. They test whether high-frequency
+    style energy can be raised while explicit low-frequency/edge anchors keep
+    LPIPS in the useful range.
+    """
+
+    return [
+        Candidate(
+            name="g00_anchor_only_swd22",
+            stage="content_guard",
+            hypothesis="low_frequency_anchor_prevents_lpips_regression",
+            reason="Add a low-frequency content anchor before asking for extra style.",
+            w_kinetic=0.85,
+            terminal_swd_weight=22.0,
+            w_variance_penalty=0.0,
+            w_content_anchor=2.0,
+            w_edge_anchor=0.5,
+            residual_gain=1.02,
+            semantic_attn_temperature=0.04,
+            semantic_swd_num_projections=32,
+            swd_num_projections=32,
+        ),
+        Candidate(
+            name="g01_soft_floor_anchor_swd24",
+            stage="content_guard_style_floor",
+            hypothesis="one_sided_high_frequency_floor_adds_style_without_full_variance_collapse",
+            reason="Use a one-sided HF energy floor instead of matching full variance.",
+            w_kinetic=0.85,
+            terminal_swd_weight=24.0,
+            w_variance_penalty=0.0,
+            w_content_anchor=2.5,
+            w_edge_anchor=0.7,
+            w_style_energy_floor=0.25,
+            style_energy_floor_ratio=0.55,
+            residual_gain=1.04,
+            semantic_attn_temperature=0.04,
+            semantic_swd_num_projections=32,
+            swd_num_projections=32,
+        ),
+        Candidate(
+            name="g02_mid_floor_strong_guard",
+            stage="content_guard_style_floor",
+            hypothesis="stronger_guard_allows_slightly_more_style_pressure",
+            reason="Raise both guard and style floor to test the Pareto bend.",
+            w_kinetic=0.85,
+            terminal_swd_weight=24.0,
+            w_variance_penalty=0.0,
+            w_content_anchor=3.5,
+            w_edge_anchor=1.0,
+            w_style_energy_floor=0.45,
+            style_energy_floor_ratio=0.60,
+            residual_gain=1.05,
+            semantic_attn_temperature=0.04,
+            semantic_swd_num_projections=32,
+            swd_num_projections=32,
+        ),
+        Candidate(
+            name="g03_micro_style_macro_guard",
+            stage="content_guard_texture_bias",
+            hypothesis="micro_swd_bias_moves_texture_more_than_layout",
+            reason="Bias SWD toward micro/high-frequency patches while anchors guard macro geometry.",
+            w_kinetic=0.85,
+            terminal_swd_weight=22.0,
+            w_variance_penalty=0.0,
+            w_content_anchor=3.0,
+            w_edge_anchor=1.0,
+            w_style_energy_floor=0.35,
+            style_energy_floor_ratio=0.60,
+            residual_gain=1.04,
+            semantic_attn_temperature=0.04,
+            semantic_swd_num_projections=32,
+            swd_num_projections=32,
+            swd_micro_weight=1.5,
+            swd_macro_weight=0.5,
+        ),
+        Candidate(
+            name="g04_soft_route_floor_proj64",
+            stage="content_guard_routing",
+            hypothesis="softer_routing_and_more_axes_reduce_content_tearing",
+            reason="Combine the guarded style floor with softer routing and a more stable SWD estimator.",
+            w_kinetic=0.85,
+            terminal_swd_weight=24.0,
+            w_variance_penalty=0.0,
+            w_content_anchor=3.0,
+            w_edge_anchor=0.8,
+            w_style_energy_floor=0.35,
+            style_energy_floor_ratio=0.58,
+            residual_gain=1.04,
+            semantic_attn_temperature=0.05,
+            semantic_swd_num_projections=64,
+            swd_num_projections=64,
+        ),
+    ]
+
+
+def _compensation_candidates(best: dict[str, Any]) -> list[Candidate]:
+    var = float(best["w_variance_penalty"])
+    return [
+        Candidate(
+            name=_candidate_name("s10_comp", var=var, kin=1.5, swd=35),
+            stage="kinetic_compensation",
+            hypothesis="kinetic_armor_after_high_style",
+            reason="Style reached the target but LPIPS is high; raise kinetic while keeping variance pressure.",
+            w_kinetic=1.5,
+            terminal_swd_weight=35.0,
+            w_variance_penalty=var,
+            residual_gain=float(best["residual_gain"]),
+        ),
+        Candidate(
+            name=_candidate_name("s11_comp", var=var, kin=1.75, swd=40),
+            stage="kinetic_compensation",
+            hypothesis="stronger_kinetic_armor",
+            reason="Test stronger physical pullback after variance-style breakthrough.",
+            w_kinetic=1.75,
+            terminal_swd_weight=40.0,
+            w_variance_penalty=var,
+            residual_gain=max(1.0, float(best["residual_gain"]) - 0.05),
+        ),
+        Candidate(
+            name=_candidate_name("s12_comp", var=var, kin=2.0, swd=40),
+            stage="kinetic_compensation",
+            hypothesis="max_kinetic_armor",
+            reason="Upper kinetic compensation point before switching to routing/temperature repair.",
+            w_kinetic=2.0,
+            terminal_swd_weight=40.0,
+            w_variance_penalty=var,
+            residual_gain=1.05,
+        ),
+    ]
+
+
+def _temperature_candidates(best: dict[str, Any]) -> list[Candidate]:
+    var = float(best["w_variance_penalty"])
+    return [
+        Candidate(
+            name=_candidate_name("s20_temp", var=var, temp=0.06),
+            stage="routing_temperature_repair",
+            hypothesis="fixed_temperature_proxy_for_annealing",
+            reason="If compensation is insufficient, test a softer fixed routing temperature as an annealing proxy.",
+            w_kinetic=max(1.25, float(best["w_kinetic"])),
+            terminal_swd_weight=float(best["terminal_swd_weight"]),
+            w_variance_penalty=var,
+            residual_gain=float(best["residual_gain"]),
+            semantic_attn_temperature=0.06,
+        ),
+        Candidate(
+            name=_candidate_name("s21_temp", var=var, temp=0.03),
+            stage="routing_temperature_repair",
+            hypothesis="sharper_temperature_proxy_for_annealing",
+            reason="Test a sharper fixed routing temperature if softer routing loses too much style.",
+            w_kinetic=max(1.25, float(best["w_kinetic"])),
+            terminal_swd_weight=float(best["terminal_swd_weight"]),
+            w_variance_penalty=var,
+            residual_gain=float(best["residual_gain"]),
+            semantic_attn_temperature=0.03,
+        ),
+    ]
+
+
+def _confirmation_candidates(best: dict[str, Any]) -> list[Candidate]:
+    return [
+        _best_config_candidate(
+            best,
+            prefix=f"s30_confirm_seed43_{best['name']}",
+            stage="confirmation",
+            hypothesis="seed_robustness_after_win",
+            reason="A win needs a second seed before being trusted.",
+            seed=43,
+        ),
+        _best_config_candidate(
+            best,
+            prefix=f"s31_confirm_proj64_{best['name']}",
+            stage="confirmation",
+            hypothesis="projection_robustness_after_win",
+            reason="Check whether the winning region survives a more expensive SWD estimator.",
+            semantic_swd_num_projections=64,
+            swd_num_projections=64,
+        ),
+    ]
+
+
+def choose_next(best_rows: list[dict[str, Any]], tried: set[str]) -> Candidate | None:
+    valid = [row for row in best_rows if row.get("clip_style_all") is not None]
+    best = max(valid, key=lambda row: float(row.get("score") or -9999.0), default=None)
+    queue = _content_guard_candidates(best)
+
+    if best is not None:
+        queue.extend(_confirmation_candidates(best))
+
+    for candidate in queue:
+        if candidate.name not in tried:
+            return candidate
+    return None
+
+
+def train_and_eval(
+    candidate: Candidate,
+    *,
+    epochs: list[int],
+    config_root: Path,
+    output_root: Path,
+    eval_root: Path,
+    base_config: Path,
+    baseline: dict[str, float],
+    dry_run: bool,
+    force_train: bool,
+    force_eval: bool,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    config_path = _write_config(candidate, config_root=config_root, base_config=base_config, output_root=output_root)
+    run_dir = output_root / candidate.name
+    final_ckpt = run_dir / "epoch_0008.pt"
+    if final_ckpt.exists() and not force_train:
+        print(f"[train skip] {candidate.name}: {final_ckpt}")
+    else:
+        cmd = [sys.executable, "src/run.py", "--config", str(config_path)]
+        resume_ckpt = _latest_checkpoint(run_dir)
+        if resume_ckpt is not None and not force_train:
+            cmd.extend(["--resume", str(resume_ckpt)])
+            print(f"[train resume] {candidate.name}: {resume_ckpt}")
+        rc = _run(cmd, cwd=ROOT, dry_run=dry_run)
+        if rc != 0:
+            raise RuntimeError(f"Training failed for {candidate.name}: return code {rc}")
+
+    for epoch in epochs:
+        ckpt = run_dir / f"epoch_{epoch:04d}.pt"
+        out_dir = eval_root / candidate.name / f"epoch_{epoch:04d}"
+        summary = out_dir / "summary.json"
+        if summary.exists() and not force_eval:
+            print(f"[eval skip] {candidate.name} epoch {epoch}: {summary}")
+            continue
+        if not ckpt.exists() and not dry_run:
+            print(f"[eval missing] {candidate.name} epoch {epoch}: {ckpt}")
+            continue
+        rc = _run([sys.executable, "run_evaluation.py", str(ckpt), "--output", str(out_dir)], cwd=ROOT, dry_run=dry_run)
+        if rc != 0:
+            raise RuntimeError(f"Eval failed for {candidate.name} epoch {epoch}: return code {rc}")
+
+    rows = _collect_candidate_rows(candidate, epochs=epochs, output_root=output_root, eval_root=eval_root, baseline=baseline)
+    return rows, _best_epoch(rows)
+
+
+def import_existing_candidates(
+    candidates: list[Candidate],
+    *,
+    epochs: list[int],
+    config_root: Path,
+    output_root: Path,
+    eval_root: Path,
+    base_config: Path,
+    baseline: dict[str, float],
+    dry_run: bool,
+    force_eval: bool,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    all_rows: list[dict[str, Any]] = []
+    best_rows: list[dict[str, Any]] = []
+    for candidate in candidates:
+        _write_config(candidate, config_root=config_root, base_config=base_config, output_root=output_root)
+        run_dir = output_root / candidate.name
+        available_epochs = [epoch for epoch in epochs if (run_dir / f"epoch_{epoch:04d}.pt").exists()]
+        if not available_epochs:
+            print(f"[legacy missing] {candidate.name}: no checkpoint under {run_dir}")
+            continue
+        for epoch in available_epochs:
+            ckpt = run_dir / f"epoch_{epoch:04d}.pt"
+            out_dir = eval_root / candidate.name / f"epoch_{epoch:04d}"
+            summary = out_dir / "summary.json"
+            if summary.exists() and not force_eval:
+                print(f"[legacy eval skip] {candidate.name} epoch {epoch}: {summary}")
+                continue
+            rc = _run([sys.executable, "run_evaluation.py", str(ckpt), "--output", str(out_dir)], cwd=ROOT, dry_run=dry_run)
+            if rc != 0:
+                raise RuntimeError(f"Legacy eval failed for {candidate.name} epoch {epoch}: return code {rc}")
+        rows = _collect_candidate_rows(
+            candidate,
+            epochs=available_epochs,
+            output_root=output_root,
+            eval_root=eval_root,
+            baseline=baseline,
+        )
+        if rows:
+            all_rows.extend(rows)
+            best_rows.append(_best_epoch(rows))
+    return all_rows, best_rows
+
+
+def _load_existing_best(output_root: Path) -> list[dict[str, Any]]:
+    path = output_root / "decision_tree_best.csv"
+    if not path.exists():
+        return []
+    with path.open("r", newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def _load_existing_rows(output_root: Path) -> list[dict[str, Any]]:
+    path = output_root / "decision_tree_results.csv"
+    if not path.exists():
+        return []
+    with path.open("r", newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def _parse_epochs(raw: str) -> list[int]:
+    return sorted({int(item.strip()) for item in raw.split(",") if item.strip()})
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Sequential clip_style decision-tree runner.")
+    parser.add_argument("--base-config", type=Path, default=DEFAULT_BASE_CONFIG)
+    parser.add_argument("--baseline-summary", type=Path, default=DEFAULT_BASELINE_SUMMARY)
+    parser.add_argument("--config-root", type=Path, default=DEFAULT_CONFIG_ROOT)
+    parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    parser.add_argument("--eval-root", type=Path, default=None)
+    parser.add_argument("--eval-epochs", type=str, default="4,6,8")
+    parser.add_argument("--max-experiments", type=int, default=16)
+    parser.add_argument(
+        "--import-legacy-a-until",
+        type=str,
+        default="",
+        help="Import/evaluate old A_kin*_swd* batch-grid runs through this candidate name.",
+    )
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--force-train", action="store_true")
+    parser.add_argument("--force-eval", action="store_true")
+    args = parser.parse_args()
+    if args.eval_root is None:
+        args.eval_root = args.output_root / "full_eval"
+
+    baseline = _baseline_metrics(args.baseline_summary)
+    eval_epochs = _parse_epochs(args.eval_epochs)
+    all_rows: list[dict[str, Any]] = _load_existing_rows(args.output_root)
+    best_rows = _load_existing_best(args.output_root)
+    tried = {str(row.get("name")) for row in best_rows}
+    ledger_path = args.output_root / "decision_tree_ledger.jsonl"
+
+    print(
+        f"[baseline] style={baseline['clip_style_all']:.6f} "
+        f"lpips={baseline['content_lpips_all']:.6f} content={baseline['clip_content_all']:.6f}"
+    )
+    print(f"[budget] max_experiments={args.max_experiments} eval_epochs={eval_epochs}")
+
+    if args.import_legacy_a_until:
+        legacy = _legacy_a_candidates(args.import_legacy_a_until)
+        print(f"[legacy] importing {len(legacy)} A-grid candidates through {args.import_legacy_a_until}")
+        legacy_rows, legacy_best = import_existing_candidates(
+            legacy,
+            epochs=eval_epochs,
+            config_root=args.config_root,
+            output_root=args.output_root,
+            eval_root=args.eval_root,
+            base_config=args.base_config,
+            baseline=baseline,
+            dry_run=args.dry_run,
+            force_eval=args.force_eval,
+        )
+        all_rows.extend(legacy_rows)
+        by_name = {str(row.get("name")): row for row in best_rows}
+        for row in legacy_best:
+            by_name[str(row.get("name"))] = row
+        best_rows = sorted(by_name.values(), key=lambda row: float(row.get("score") or -9999.0), reverse=True)
+        tried.update(str(row.get("name")) for row in legacy_best)
+        _write_tables(all_rows, best_rows, output_root=args.output_root)
+
+    while len(best_rows) < args.max_experiments:
+        candidate = choose_next(best_rows, tried)
+        if candidate is None:
+            print("[stop] decision tree has no untried candidate left")
+            break
+        tried.add(candidate.name)
+        print(f"\n=== Experiment {len(best_rows) + 1}/{args.max_experiments}: {candidate.name} ===")
+        print(f"[stage] {candidate.stage}")
+        print(f"[reason] {candidate.reason}")
+
+        rows, best = train_and_eval(
+            candidate,
+            epochs=eval_epochs,
+            config_root=args.config_root,
+            output_root=args.output_root,
+            eval_root=args.eval_root,
+            base_config=args.base_config,
+            baseline=baseline,
+            dry_run=args.dry_run,
+            force_train=args.force_train,
+            force_eval=args.force_eval,
+        )
+        all_rows.extend(rows)
+        best_rows.append(best)
+        best_rows.sort(key=lambda row: float(row.get("score") or -9999.0), reverse=True)
+        _write_tables(all_rows, best_rows, output_root=args.output_root)
+        _append_jsonl(
+            ledger_path,
+            {
+                "experiment_index": len(best_rows),
+                "candidate": asdict(candidate),
+                "best_epoch": best,
+                "current_best": best_rows[0] if best_rows else None,
+            },
+        )
+        print(
+            f"[best epoch] e{best.get('epoch')} decision={best.get('decision')} "
+            f"style={best.get('clip_style_all')} lpips={best.get('content_lpips_all')} "
+            f"score={best.get('score')}"
+        )
+        if best_rows:
+            top = best_rows[0]
+            print(
+                f"[global best] {top.get('name')} e{top.get('epoch')} "
+                f"style={top.get('clip_style_all')} lpips={top.get('content_lpips_all')} "
+                f"decision={top.get('decision')}"
+            )
+
+    _write_tables(all_rows, best_rows, output_root=args.output_root)
+    print(f"\n[done] best summary: {args.output_root / 'decision_tree_best.csv'}")
+    print(f"[done] full summary: {args.output_root / 'decision_tree_results.csv'}")
+    print(f"[done] ledger: {ledger_path}")
+
+
+if __name__ == "__main__":
+    main()

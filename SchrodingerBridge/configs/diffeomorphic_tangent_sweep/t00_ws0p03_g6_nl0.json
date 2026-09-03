@@ -1,0 +1,29 @@
+{
+  "_base": "../../configs/diffeomorphic_stroke_tangent_local.json",
+  "model": {
+    "use_diffeomorphic_stroke": true,
+    "diffeomorphic_color_strength": 0.85,
+    "diffeomorphic_warp_strength": 0.03,
+    "diffeomorphic_texture_gate_strength": 6.0,
+    "diffeomorphic_normal_leak": 0.0
+  },
+  "training": {
+    "seed": 42,
+    "batch_size": 160,
+    "full_eval_batch_size": 16,
+    "num_epochs": 8,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "save_interval": 1,
+    "resume_checkpoint": ""
+  },
+  "checkpoint": {
+    "save_dir": "./exp/diffeomorphic_tangent_sweep/t00_ws0p03_g6_nl0"
+  },
+  "ablation": {
+    "name": "t00_ws0p03_g6_nl0",
+    "stage": "diffeomorphic_tangent_sweep",
+    "axis": "texture_tangent_warp_grid",
+    "notes": "Sweep warp strength, texture gate, and normal leak around the best tangent-warp branch."
+  }
+}

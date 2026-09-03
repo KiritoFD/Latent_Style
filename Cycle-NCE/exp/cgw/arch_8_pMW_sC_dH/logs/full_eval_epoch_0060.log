@@ -1,0 +1,98 @@
+I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\huggingface_hub\utils\_validators.py:202: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+HF cache dir: I:\Github\Latent_Style\Cycle-NCE\eval_cache\hf
+HF hub cache dir: I:\Github\Latent_Style\Cycle-NCE\eval_cache\hf\hub
+
+Phase 1: Reuse generated images from I:\Github\Latent_Style\Cycle-NCE\arch_8_pMW_sC_dH\full_eval\epoch_0060\images
+  Reused 0 generated images
+
+Phase 1: Generation (Batch Size 4)
+  Generating Batch 1/38
+  Generating Batch 2/38
+  Generating Batch 3/38
+  Generating Batch 4/38
+  Generating Batch 5/38
+  Generating Batch 6/38
+  Generating Batch 7/38
+  Generating Batch 8/38
+  Generating Batch 9/38
+  Generating Batch 10/38
+  Generating Batch 11/38
+  Generating Batch 12/38
+  Generating Batch 13/38
+  Generating Batch 14/38
+  Generating Batch 15/38
+  Generating Batch 16/38
+  Generating Batch 17/38
+  Generating Batch 18/38
+  Generating Batch 19/38
+  Generating Batch 20/38
+  Generating Batch 21/38
+  Generating Batch 22/38
+  Generating Batch 23/38
+  Generating Batch 24/38
+  Generating Batch 25/38
+  Generating Batch 26/38
+  Generating Batch 27/38
+  Generating Batch 28/38
+  Generating Batch 29/38
+  Generating Batch 30/38
+  Generating Batch 31/38
+  Generating Batch 32/38
+  Generating Batch 33/38
+  Generating Batch 34/38
+  Generating Batch 35/38
+  Generating Batch 36/38
+  Generating Batch 37/38
+  Generating Batch 38/38
+  Generation models unloaded
+
+棣冩�?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found. Tried:
+    - ./eval_cache/eval_style_image_classifier.pt
+    - ./eval_cache/eval_style_image_classifier.pt
+    - I:\Github\Latent_Style\Cycle-NCE\src\eval_cache\eval_style_image_classifier.pt
+    - I:\Github\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+  LPIPS Loaded
+Traceback (most recent call last):
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\transformers\utils\hub.py", line 419, in cached_files
+    hf_hub_download(
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\huggingface_hub\utils\_validators.py", line 89, in _inner_fn
+    return fn(*args, **kwargs)
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\huggingface_hub\file_download.py", line 1032, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\huggingface_hub\file_download.py", line 1183, in _hf_hub_download_to_cache_dir
+    _raise_on_head_call_error(head_call_error, force_download, local_files_only)
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\huggingface_hub\file_download.py", line 1803, in _raise_on_head_call_error
+    raise LocalEntryNotFoundError(
+huggingface_hub.errors.LocalEntryNotFoundError: Cannot find the requested files in the disk cache and outgoing traffic has been disabled. To enable hf.co look-ups and downloads online, set 'local_files_only' to False.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "I:\Github\Latent_Style\Cycle-NCE\src\utils\run_evaluation.py", line 2242, in <module>
+    main()
+  File "I:\Github\Latent_Style\Cycle-NCE\src\utils\run_evaluation.py", line 1537, in main
+    raise last_err
+  File "I:\Github\Latent_Style\Cycle-NCE\src\utils\run_evaluation.py", line 1520, in main
+    clip_model, clip_processor = _load_clip_from_source(
+  File "I:\Github\Latent_Style\Cycle-NCE\src\utils\run_evaluation.py", line 92, in _load_clip_from_source
+    model = CLIPModel.from_pretrained(src, **model_kwargs).to(device)
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\transformers\modeling_utils.py", line 3946, in from_pretrained
+    config, model_kwargs = cls.config_class.from_pretrained(
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\transformers\configuration_utils.py", line 531, in from_pretrained
+    config_dict, kwargs = cls.get_config_dict(pretrained_model_name_or_path, **kwargs)
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\transformers\configuration_utils.py", line 572, in get_config_dict
+    config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\transformers\configuration_utils.py", line 627, in _get_config_dict
+    resolved_config_file = cached_file(
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\transformers\utils\hub.py", line 276, in cached_file
+    file = cached_files(path_or_repo_id=path_or_repo_id, filenames=[filename], **kwargs)
+  File "I:\Github\Latent_Style\Cycle-NCE\.venv\lib\site-packages\transformers\utils\hub.py", line 493, in cached_files
+    raise OSError(
+OSError: We couldn't connect to 'https://huggingface.co' to load the files, and couldn't find them in the cached files.
+Check your internet connection or see how to run the library in offline mode at 'https://huggingface.co/docs/transformers/installation#offline-mode'.

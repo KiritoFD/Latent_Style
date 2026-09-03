@@ -1,0 +1,30 @@
+{
+  "_base": "../../../ablation_destructive_7epoch/configs/D0_full_correct_7ep.json",
+  "checkpoint": {
+    "save_dir": "./exp/phase1_diagnostic_probes/runs/p3_terminal_swd_30/checkpoints"
+  },
+  "phase1_probe": {
+    "phase": "phase1_diagnostic_probes",
+    "probe_group": "terminal_measure_pressure",
+    "probe_axis": "terminal_swd_weight",
+    "rationale": "Measure the marginal style return and artifact threshold of stronger terminal distribution matching.",
+    "supported": true
+  },
+  "ablation": {
+    "name": "p3_terminal_swd_30",
+    "axis": "terminal_swd_weight",
+    "notes": "Measure the marginal style return and artifact threshold of stronger terminal distribution matching."
+  },
+  "training": {
+    "resume_checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\S-add__K-1_C-0_W-20_Col-0\\epoch_0007.pt",
+    "num_epochs": 12,
+    "save_interval": 1,
+    "log_interval": 20,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "prefetch_factor": 2
+  },
+  "bridge": {
+    "terminal_swd_weight": 30
+  }
+}

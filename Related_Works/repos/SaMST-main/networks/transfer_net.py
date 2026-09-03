@@ -346,5 +346,3 @@ class Style_bank(nn.Module):
             self.style_para_list.append(params_layer)
 
 
-
-

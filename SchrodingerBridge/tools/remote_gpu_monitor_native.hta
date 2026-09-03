@@ -1,0 +1,326 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Remote GPU Monitor</title>
+  <hta:application
+    id="GpuMonitor"
+    applicationname="Remote GPU Monitor"
+    border="thin"
+    caption="yes"
+    maximizebutton="yes"
+    minimizebutton="yes"
+    scroll="no"
+    singleinstance="yes"
+    sysmenu="yes"
+    windowstate="normal"
+  />
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #0b0f16;
+      color: #e9eef8;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 13px;
+    }
+    .app {
+      box-sizing: border-box;
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 10px;
+      padding: 12px;
+    }
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #26344b;
+      background: #121926;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 650;
+    }
+    .sub {
+      color: #95a2b8;
+      margin-top: 3px;
+      font-size: 12px;
+    }
+    .buttons {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      color: #e9eef8;
+      background: #182235;
+      border: 1px solid #31415c;
+      border-radius: 6px;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+    button:hover {
+      border-color: #5a78aa;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .stat, .gpu, .log {
+      border: 1px solid #26344b;
+      background: #111824;
+      border-radius: 8px;
+    }
+    .stat {
+      padding: 10px;
+    }
+    .label {
+      color: #95a2b8;
+      font-size: 12px;
+    }
+    .value {
+      margin-top: 4px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .main {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 10px;
+    }
+    .gpu-list {
+      min-height: 0;
+      overflow: auto;
+      display: grid;
+      align-content: start;
+      gap: 10px;
+    }
+    .gpu {
+      padding: 10px;
+    }
+    .gpu-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+    .gpu-name {
+      font-size: 15px;
+      font-weight: 650;
+    }
+    .gpu-meta {
+      color: #95a2b8;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 92px 1fr 80px;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .bar {
+      height: 12px;
+      background: #090d14;
+      border: 1px solid #223149;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .fill {
+      height: 100%;
+      width: 0;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #60a5fa, #22d3ee);
+    }
+    .fill.warn {
+      background: linear-gradient(90deg, #fbbf24, #f97316);
+    }
+    .fill.bad {
+      background: linear-gradient(90deg, #fb7185, #ef4444);
+    }
+    .log {
+      min-height: 0;
+      overflow: auto;
+      padding: 10px;
+      white-space: pre-wrap;
+      color: #cbd5e1;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+    }
+    .footer {
+      color: #95a2b8;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top">
+      <div>
+        <h1>Remote GPU Monitor</h1>
+        <div class="sub" id="subtitle">administrator@100.115.18.62:2222 · nvidia-smi · 1s refresh</div>
+      </div>
+      <div class="buttons">
+        <button onclick="refreshNow()">Refresh</button>
+        <button id="pauseBtn" onclick="togglePause()">Pause</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="label">GPUs</div><div class="value" id="gpuCount">-</div></div>
+      <div class="stat"><div class="label">GPU Util</div><div class="value" id="gpuUtil">-</div></div>
+      <div class="stat"><div class="label">Mem Used</div><div class="value" id="memUsed">-</div></div>
+      <div class="stat"><div class="label">Power</div><div class="value" id="power">-</div></div>
+    </div>
+
+    <div class="main">
+      <div class="gpu-list" id="gpuList"></div>
+      <div class="log" id="log">Starting...</div>
+    </div>
+
+    <div class="footer">
+      <div id="status">idle</div>
+      <div>Native HTA, no JSON bridge</div>
+    </div>
+  </div>
+
+  <script language="javascript">
+    var shell = new ActiveXObject("WScript.Shell");
+    var running = false;
+    var paused = false;
+    var lastRows = [];
+    var intervalMs = 1000;
+    var query = 'ssh -p 2222 -o LogLevel=ERROR administrator@100.115.18.62 "nvidia-smi --query-gpu=index,name,memory.used,memory.total,power.draw,utilization.gpu,utilization.memory --format=csv,noheader,nounits"';
+
+    function clamp(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
+
+    function pct(v) {
+      return clamp(Number(v) || 0, 0, 100);
+    }
+
+    function fillClass(v) {
+      v = pct(v);
+      if (v >= 90) return "fill bad";
+      if (v >= 70) return "fill warn";
+      return "fill";
+    }
+
+    function number(x) {
+      var v = parseFloat(String(x).replace(/[^\d.\-]/g, ""));
+      return isNaN(v) ? 0 : v;
+    }
+
+    function parseRows(text) {
+      var lines = text.replace(/\r/g, "").split("\n");
+      var rows = [];
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (!line || !line.replace(/\s/g, "")) continue;
+        var parts = line.split(",");
+        if (parts.length < 7) continue;
+        for (var j = 0; j < parts.length; j++) parts[j] = parts[j].replace(/^\s+|\s+$/g, "");
+        rows.push({
+          index: parts[0],
+          name: parts[1],
+          memUsed: number(parts[2]),
+          memTotal: number(parts[3]),
+          power: number(parts[4]),
+          gpuUtil: number(parts[5]),
+          memUtil: number(parts[6])
+        });
+      }
+      return rows;
+    }
+
+    function render(rows, raw, errorText) {
+      lastRows = rows;
+      var gpuCount = rows.length;
+      var utilSum = 0, memUsed = 0, memTotal = 0, power = 0;
+      for (var i = 0; i < rows.length; i++) {
+        utilSum += rows[i].gpuUtil;
+        memUsed += rows[i].memUsed;
+        memTotal += rows[i].memTotal;
+        power += rows[i].power;
+      }
+      document.getElementById("gpuCount").innerText = gpuCount;
+      document.getElementById("gpuUtil").innerText = gpuCount ? (utilSum / gpuCount).toFixed(0) + "%" : "-";
+      document.getElementById("memUsed").innerText = memUsed.toFixed(0) + "M";
+      document.getElementById("power").innerText = power.toFixed(0) + "W";
+
+      var html = "";
+      for (var k = 0; k < rows.length; k++) {
+        var r = rows[k];
+        var memPct = r.memTotal > 0 ? (r.memUsed / r.memTotal) * 100 : r.memUtil;
+        html += ''
+          + '<div class="gpu">'
+          + '  <div class="gpu-head">'
+          + '    <div class="gpu-name">GPU ' + r.index + ': ' + r.name + '</div>'
+          + '    <div class="gpu-meta">' + r.memUsed.toFixed(0) + ' / ' + r.memTotal.toFixed(0) + ' MiB · ' + r.power.toFixed(1) + ' W</div>'
+          + '  </div>'
+          + '  <div class="bar-row"><div>GPU util</div><div class="bar"><div class="' + fillClass(r.gpuUtil) + '" style="width:' + pct(r.gpuUtil) + '%"></div></div><div>' + r.gpuUtil.toFixed(1) + '%</div></div>'
+          + '  <div class="bar-row"><div>VRAM</div><div class="bar"><div class="' + fillClass(memPct) + '" style="width:' + pct(memPct) + '%"></div></div><div>' + memPct.toFixed(1) + '%</div></div>'
+          + '  <div class="bar-row"><div>Mem util</div><div class="bar"><div class="' + fillClass(r.memUtil) + '" style="width:' + pct(r.memUtil) + '%"></div></div><div>' + r.memUtil.toFixed(1) + '%</div></div>'
+          + '  <div class="bar-row"><div>Power</div><div class="bar"><div class="fill" style="width:' + clamp((r.power / 200) * 100, 0, 100) + '%"></div></div><div>' + r.power.toFixed(1) + ' W</div></div>'
+          + '</div>';
+      }
+      document.getElementById("gpuList").innerHTML = html || '<div class="gpu">No GPU rows parsed.</div>';
+      document.getElementById("log").innerText = (errorText ? ("ERROR:\n" + errorText + "\n\n") : "") + "Raw nvidia-smi:\n" + raw + "\n\nCommand:\n" + query;
+      document.getElementById("status").innerText = "updated " + new Date().toLocaleTimeString();
+    }
+
+    function poll() {
+      if (paused || running) return;
+      running = true;
+      document.getElementById("status").innerText = "polling...";
+      try {
+        var exec = shell.Exec("cmd /c " + query);
+        var started = new Date().getTime();
+        var timer = window.setInterval(function() {
+          if (exec.Status === 0 && (new Date().getTime() - started) < 8000) return;
+          window.clearInterval(timer);
+          var out = "";
+          var err = "";
+          try { out = exec.StdOut.ReadAll(); } catch(e) {}
+          try { err = exec.StdErr.ReadAll(); } catch(e) {}
+          var rows = parseRows(out);
+          render(rows, out, err);
+          running = false;
+        }, 100);
+      } catch (e) {
+        running = false;
+        render(lastRows, "", e.message || String(e));
+      }
+    }
+
+    function refreshNow() {
+      running = false;
+      poll();
+    }
+
+    function togglePause() {
+      paused = !paused;
+      document.getElementById("pauseBtn").innerText = paused ? "Resume" : "Pause";
+      document.getElementById("status").innerText = paused ? "paused" : "resumed";
+      if (!paused) poll();
+    }
+
+    window.resizeTo(1040, 720);
+    poll();
+    window.setInterval(poll, intervalMs);
+  </script>
+</body>
+</html>

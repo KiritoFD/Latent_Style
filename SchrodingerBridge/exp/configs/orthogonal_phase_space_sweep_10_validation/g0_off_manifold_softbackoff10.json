@@ -1,0 +1,25 @@
+{
+  "_base": "../config.json",
+  "bridge": {
+    "w_kinetic": 0.15,
+    "w_low_freq": 0.0,
+    "w_cycle": 0.0,
+    "terminal_swd_weight": 20.0,
+    "low_freq_kernel_size": 5,
+    "swd_use_high_freq": false
+  },
+  "training": {
+    "num_epochs": 10,
+    "save_interval": 10,
+    "log_interval": 10,
+    "full_eval_batch_size": 2
+  },
+  "checkpoint": {
+    "save_dir": "./o10_soft"
+  },
+  "ablation": {
+    "name": "g0_off_manifold_softbackoff10",
+    "axis": "destructive_fullband_softbackoff",
+    "notes": "10-epoch softer full-band SWD validation with reduced tension and slightly stronger kinetic damping."
+  }
+}

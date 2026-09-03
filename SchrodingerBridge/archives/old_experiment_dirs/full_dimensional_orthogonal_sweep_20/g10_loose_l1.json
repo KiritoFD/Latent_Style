@@ -1,0 +1,14 @@
+{
+  "_base": "./_suite_base.json",
+  "checkpoint": {
+    "save_dir": "./exp/runs/fd20_g10_loose_l1"
+  },
+  "ablation": {
+    "name": "g10_loose_l1",
+    "axis": "low_freq_kernel",
+    "notes": "Expand the low-frequency kernel to 7 and let more mid-scale structure flow through SWD."
+  },
+  "bridge": {
+    "low_freq_kernel_size": 7
+  }
+}

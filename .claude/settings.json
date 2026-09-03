@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git clone *)",
+      "Bash(python -c \"import diffusers; print\\('diffusers', diffusers.__version__\\)\")",
+      "Bash(python -c \"import controlnet_aux; print\\('controlnet_aux OK'\\)\")",
+      "Bash(python -c \"import lpips; print\\('lpips OK'\\)\")",
+      "Bash(python -c \"import open_clip; print\\('open_clip OK'\\)\")",
+      "Bash(python -c \"import peft; print\\('peft OK'\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python scripts/run_style_aligned.py --style monet --max_images 1)",
+      "Bash(pip install *)",
+      "Bash(git ls-remote *)",
+      "Bash(powershell -Command \"Test-Path 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\cyclegan_turbo\\\\img2img-turbo\\\\src\\\\train_cyclegan_turbo.py'\")",
+      "Bash(powershell -Command \"& 'C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe' 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\cyclegan_turbo\\\\img2img-turbo\\\\src\\\\train_cyclegan_turbo.py' --help 2>&1 | Select-Object -First 60\")",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\Lib\\\\site-packages\\\\vision_aided_loss\\\\CLIP\\\\clip\\\\clip.py' | Select-Object -First 15\")",
+      "Bash(powershell -Command \"& 'C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe' -c 'import packaging; print\\(packaging.__version__\\)' 2>&1\")",
+      "Read(//c/Users/xy/AppData/Local/Programs/Python/Python312/Lib/site-packages/vision_aided_loss/CLIP/clip/**)",
+      "Bash(powershell -Command \"\\(Get-Content 'C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\Lib\\\\site-packages\\\\vision_aided_loss\\\\CLIP\\\\clip\\\\clip.py'\\) -replace 'from pkg_resources import packaging', 'import packaging' | Set-Content 'C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\Lib\\\\site-packages\\\\vision_aided_loss\\\\CLIP\\\\clip\\\\clip.py'\")",
+      "Read(//c/Users/xy/AppData/Local/Programs/Python/Python312/Lib/site-packages/vision_aided_loss/**)",
+      "Bash(powershell -Command \"& 'C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe' -c 'import vision_aided_loss; print\\(\\\\\"OK\\\\\"\\)' 2>&1\")",
+      "Bash(powershell -Command \"& 'C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe' -c 'import vision_aided_loss; print\\(\\\\\"vision_aided_loss OK\\\\\"\\)'\")",
+      "Bash(\"C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -c \"import vision_aided_loss; print\\('OK'\\)\")",
+      "Bash(\"C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" scripts/run_cyclegan_turbo.py --style monet --mode smoke)",
+      "Bash(\"C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -c \"import tensorboard; print\\('OK'\\)\")",
+      "Bash(powershell -Command \"Test-Path 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\blora\\\\B-LoRA\\\\train_dreambooth_b-lora_sdxl.py'\")",
+      "Bash(\"C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\blora\\\\B-LoRA\\\\train_dreambooth_b-lora_sdxl.py\" --help)",
+      "Bash(PYTHONIOENCODING=utf-8 \"C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" \"g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\blora\\\\B-LoRA\\\\train_dreambooth_b-lora_sdxl.py\" --help)",
+      "Bash(powershell -Command \"Remove-Item 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\scripts\\\\run_cyclegan_turbo.py' -Force\")",
+      "Bash(powershell -Command \"Remove-Item 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\scripts\\\\run_blora.py' -Force\")",
+      "Bash(\"C:\\\\Users\\\\xy\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -c \"import ast; ast.parse\\(open\\(r'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\baseline_pipeline\\\\launch_all.py'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
+      "Bash(powershell -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\runs' -Directory | Select-Object Name\")",
+      "Bash(powershell -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\runs\\\\s2wat_bs1_safe_e2000_5x5' -Recurse | Select-Object FullName, Length | Format-Table -AutoSize\")",
+      "Bash(powershell -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\runs\\\\cut_5x5' -Recurse -Directory | Select-Object FullName\")",
+      "Bash(powershell -Command \"Get-ChildItem 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works' -Directory | Select-Object Name\")",
+      "Bash(powershell -Command \"if \\(Test-Path 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\SaMST'\\) { Write-Output 'EXISTS' } else { git clone --depth 1 https://github.com/SYSU-SAIL/SaMST.git 'g:\\\\GitHub\\\\Latent_Style\\\\Related_Works\\\\SaMST' 2>&1 }\")",
+      "Bash(gh repo *)"
+    ]
+  }
+}

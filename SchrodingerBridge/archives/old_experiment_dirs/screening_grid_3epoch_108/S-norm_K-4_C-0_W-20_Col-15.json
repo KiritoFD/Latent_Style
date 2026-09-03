@@ -1,0 +1,20 @@
+{
+  "_base": "./_suite_base.json",
+  "model": {
+    "skip_routing_mode": "normalized"
+  },
+  "bridge": {
+    "w_kinetic": 4.0,
+    "w_cycle": 0.0,
+    "terminal_swd_weight": 20.0,
+    "w_color": 15.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/grid_search_3epoch/S-norm_K-4_C-0_W-20_Col-15"
+  },
+  "ablation": {
+    "name": "S-norm_K-4_C-0_W-20_Col-15",
+    "axis": "3epoch_screening",
+    "notes": "Grid 100/108 | skip=normalized kin=4.0 cyc=0.0 swd=20.0 color=15.0"
+  }
+}

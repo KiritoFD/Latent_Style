@@ -1,0 +1,41 @@
+{
+  "_base": "../../configs/diffeomorphic_stroke_tangent_local.json",
+  "model": {
+    "use_diffeomorphic_stroke": true,
+    "diffeomorphic_warp_strength": 0.03,
+    "diffeomorphic_texture_gate_strength": 6.0,
+    "diffeomorphic_normal_leak": 0.0,
+    "diffeomorphic_color_strength": 0.85
+  },
+  "bridge": {
+    "w_gradient_anchored_style": 0.15,
+    "gradient_style_gamma": 4.0,
+    "gradient_style_edge_weight": 0.15,
+    "w_self_similarity_content": 0.08,
+    "self_similarity_pool_size": 8
+  },
+  "training": {
+    "seed": 42,
+    "batch_size": 192,
+    "full_eval_batch_size": 20,
+    "num_epochs": 8,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "save_interval": 1,
+    "resume_checkpoint": ""
+  },
+  "checkpoint": {
+    "save_dir": "./exp/physical_loss_tree/p2_04_t00_grad_low__ssm_low"
+  },
+  "ablation": {
+    "name": "p2_04_t00_grad_low__ssm_low",
+    "stage": "physical_loss_tree",
+    "phase": "p2",
+    "axis": "loss_principle_exploration",
+    "families": [
+      "gradient_style",
+      "self_similarity"
+    ],
+    "notes": "weak low-gradient style energy with edge preservation; weak latent self-similarity content topology guard"
+  }
+}

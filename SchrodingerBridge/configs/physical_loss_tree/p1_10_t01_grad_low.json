@@ -1,0 +1,38 @@
+{
+  "_base": "../../configs/diffeomorphic_stroke_tangent_local.json",
+  "model": {
+    "use_diffeomorphic_stroke": true,
+    "diffeomorphic_warp_strength": 0.03,
+    "diffeomorphic_texture_gate_strength": 6.0,
+    "diffeomorphic_normal_leak": 0.05,
+    "diffeomorphic_color_strength": 0.85
+  },
+  "bridge": {
+    "w_gradient_anchored_style": 0.15,
+    "gradient_style_gamma": 4.0,
+    "gradient_style_edge_weight": 0.15
+  },
+  "training": {
+    "seed": 42,
+    "batch_size": 192,
+    "full_eval_batch_size": 20,
+    "num_epochs": 8,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "save_interval": 1,
+    "resume_checkpoint": ""
+  },
+  "checkpoint": {
+    "save_dir": "./exp/physical_loss_tree/p1_10_t01_grad_low"
+  },
+  "ablation": {
+    "name": "p1_10_t01_grad_low",
+    "stage": "physical_loss_tree",
+    "phase": "p1",
+    "axis": "loss_principle_exploration",
+    "families": [
+      "gradient_style"
+    ],
+    "notes": "weak low-gradient style energy with edge preservation"
+  }
+}

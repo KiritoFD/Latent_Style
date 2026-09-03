@@ -1,0 +1,47 @@
+{
+    "weaknesses":  [
+                       {
+                           "issue":  "Training times for StyTr2 (143s), CAST (1760s), AesFA (6608s), AesPA-Net (366s) are all from smoke runs with \u0027skipped_existing\u0027 status. These are NOT reliable full-training times.",
+                           "location":  "Table 3 (Runtime table)",
+                           "severity":  "high"
+                       },
+                       {
+                           "issue":  "Ours training time is marked \u0027--\u0027 (empty). Must be filled.",
+                           "location":  "Table 3 (Runtime table)",
+                           "severity":  "high"
+                       },
+                       {
+                           "issue":  "SaMST and S2WAT are key baselines in main comparison but missing from efficiency table.",
+                           "location":  "Table 3 (Runtime table)",
+                           "severity":  "medium"
+                       },
+                       {
+                           "issue":  "StyleID is training-free; this should be noted in the efficiency comparison.",
+                           "location":  "Table 3 (Runtime table)",
+                           "severity":  "medium"
+                       }
+                   ],
+    "timestamp":  "2026-05-14 17:05:45",
+    "sub_scores":  {
+                       "formatting":  7,
+                       "clarity":  7.5,
+                       "reproducibility":  7,
+                       "methodology":  7,
+                       "experiments":  7.5
+                   },
+    "actionable_recommendations":  [
+                                       "Replace unreliable training times with verified measurements: Ours=309.9s, SaMST=6768.7s (100ep extrapolated), S2WAT=10600s (2000it extrapolated)",
+                                       "Remove StyTr2, CAST, AesFA, AesPA-Net from runtime table (unreliable timings)",
+                                       "Add StyleID with training-free=0",
+                                       "Mark extrapolated timings with dagger symbol and footnote"
+                                   ],
+    "strengths":  [
+                      "Comprehensive strict-750 evaluation protocol",
+                      "Artifact-sensitive diagnostics clearly expose SaMST grain issue",
+                      "Clean ablation story confirms terminal SWD = style driver, kinetic = content preserver",
+                      "Exhaustive 40-run weight sweep demonstrates smooth trade-off surface"
+                  ],
+    "overall_score":  7.25,
+    "reviewer":  "PaperOrchestra Content Refinement Agent",
+    "iteration":  1
+}

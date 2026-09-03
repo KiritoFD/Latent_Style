@@ -1,0 +1,206 @@
+{
+  "suite": "full_dimensional_orthogonal_sweep_20",
+  "experiments": [
+    {
+      "name": "g0_golden_pedestal",
+      "title": "G0 Golden Pedestal",
+      "axis": "center",
+      "notes": "Universe center: damped M2-style base with AdaIN low-frequency anchor and multi-scale [3,5,7,15] SWD pyramid.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g0_golden_pedestal.json",
+      "run_dir": "./exp/runs/fd20_g0_golden_pedestal",
+      "eval_dir": "./exp/runs/fd20_g0_golden_pedestal/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g0_golden_pedestal/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g0_golden_pedestal/epoch_0020.pt",
+      "patch_overrides": {}
+    },
+    {
+      "name": "g1_micro_only",
+      "title": "G1 Micro-Only",
+      "axis": "patch_scales",
+      "notes": "Micro-only patch bank to probe the lower bound of SWD receptive field.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g1_micro_only.json",
+      "run_dir": "./exp/runs/fd20_g1_micro_only",
+      "eval_dir": "./exp/runs/fd20_g1_micro_only/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g1_micro_only/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g1_micro_only/epoch_0020.pt",
+      "patch_overrides": {
+        "bridge": {
+          "swd_patch_sizes": [
+            1,
+            3,
+            5
+          ]
+        }
+      }
+    },
+    {
+      "name": "g2_macro_only",
+      "title": "G2 Macro-Only",
+      "axis": "patch_scales",
+      "notes": "Macro-only patch bank to probe the upper bound of SWD receptive field.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g2_macro_only.json",
+      "run_dir": "./exp/runs/fd20_g2_macro_only",
+      "eval_dir": "./exp/runs/fd20_g2_macro_only/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g2_macro_only/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g2_macro_only/epoch_0020.pt",
+      "patch_overrides": {
+        "bridge": {
+          "swd_patch_sizes": [
+            9,
+            15,
+            21
+          ]
+        }
+      }
+    },
+    {
+      "name": "g3_bimodal_split",
+      "title": "G3 Bimodal Split",
+      "axis": "patch_scales",
+      "notes": "Bimodal patch bank with a hollowed-out mid band to test scale discontinuity.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g3_bimodal_split.json",
+      "run_dir": "./exp/runs/fd20_g3_bimodal_split",
+      "eval_dir": "./exp/runs/fd20_g3_bimodal_split/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g3_bimodal_split/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g3_bimodal_split/epoch_0020.pt",
+      "patch_overrides": {
+        "bridge": {
+          "swd_patch_sizes": [
+            3,
+            25
+          ]
+        }
+      }
+    },
+    {
+      "name": "g4_high_tension",
+      "title": "G4 High Tension",
+      "axis": "dynamics",
+      "notes": "Raise SWD tension and kinetic damping together to test the high-pressure operating ceiling.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g4_high_tension.json",
+      "run_dir": "./exp/runs/fd20_g4_high_tension",
+      "eval_dir": "./exp/runs/fd20_g4_high_tension/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g4_high_tension/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g4_high_tension/epoch_0020.pt",
+      "patch_overrides": {
+        "bridge": {
+          "terminal_swd_weight": 15.0,
+          "w_kinetic": 0.6
+        }
+      }
+    },
+    {
+      "name": "g5_low_tension",
+      "title": "G5 Low Tension",
+      "axis": "dynamics",
+      "notes": "Relax both pull and damping to probe a gentler drift regime.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g5_low_tension.json",
+      "run_dir": "./exp/runs/fd20_g5_low_tension",
+      "eval_dir": "./exp/runs/fd20_g5_low_tension/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g5_low_tension/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g5_low_tension/epoch_0020.pt",
+      "patch_overrides": {
+        "bridge": {
+          "terminal_swd_weight": 6.0,
+          "w_kinetic": 0.3
+        }
+      }
+    },
+    {
+      "name": "g6_zero_friction",
+      "title": "G6 Zero Friction",
+      "axis": "dynamics",
+      "notes": "Keep G0 SWD pressure but collapse kinetic damping toward zero.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g6_zero_friction.json",
+      "run_dir": "./exp/runs/fd20_g6_zero_friction",
+      "eval_dir": "./exp/runs/fd20_g6_zero_friction/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g6_zero_friction/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g6_zero_friction/epoch_0020.pt",
+      "patch_overrides": {
+        "bridge": {
+          "w_kinetic": 0.1
+        }
+      }
+    },
+    {
+      "name": "g7_sharp_ot",
+      "title": "G7 Sharp OT",
+      "axis": "temperature",
+      "notes": "Lower semantic attention temperature to 0.08 and test the sharp-routing edge.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g7_sharp_ot.json",
+      "run_dir": "./exp/runs/fd20_g7_sharp_ot",
+      "eval_dir": "./exp/runs/fd20_g7_sharp_ot/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g7_sharp_ot/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g7_sharp_ot/epoch_0020.pt",
+      "patch_overrides": {
+        "model": {
+          "semantic_attn_temperature": 0.08
+        }
+      }
+    },
+    {
+      "name": "g8_soft_ot",
+      "title": "G8 Soft OT",
+      "axis": "temperature",
+      "notes": "Raise semantic attention temperature to 0.16 and test the over-smoothing edge.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g8_soft_ot.json",
+      "run_dir": "./exp/runs/fd20_g8_soft_ot",
+      "eval_dir": "./exp/runs/fd20_g8_soft_ot/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g8_soft_ot/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g8_soft_ot/epoch_0020.pt",
+      "patch_overrides": {
+        "model": {
+          "semantic_attn_temperature": 0.16
+        }
+      }
+    },
+    {
+      "name": "g9_strict_l1",
+      "title": "G9 Strict L1",
+      "axis": "low_freq_kernel",
+      "notes": "Shrink the low-frequency kernel to 3 and lock more of the mid band to the AdaIN anchor.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g9_strict_l1.json",
+      "run_dir": "./exp/runs/fd20_g9_strict_l1",
+      "eval_dir": "./exp/runs/fd20_g9_strict_l1/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g9_strict_l1/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g9_strict_l1/epoch_0020.pt",
+      "patch_overrides": {
+        "bridge": {
+          "low_freq_kernel_size": 3
+        }
+      }
+    },
+    {
+      "name": "g10_loose_l1",
+      "title": "G10 Loose L1",
+      "axis": "low_freq_kernel",
+      "notes": "Expand the low-frequency kernel to 7 and let more mid-scale structure flow through SWD.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g10_loose_l1.json",
+      "run_dir": "./exp/runs/fd20_g10_loose_l1",
+      "eval_dir": "./exp/runs/fd20_g10_loose_l1/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g10_loose_l1/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g10_loose_l1/epoch_0020.pt",
+      "patch_overrides": {
+        "bridge": {
+          "low_freq_kernel_size": 7
+        }
+      }
+    },
+    {
+      "name": "g11_cycle_drop",
+      "title": "G11 Cycle Drop",
+      "axis": "cycle",
+      "notes": "Remove the cycle penalty and measure whether forward-only damping plus AdaIN is enough.",
+      "config_path": "full_dimensional_orthogonal_sweep_20/g11_cycle_drop.json",
+      "run_dir": "./exp/runs/fd20_g11_cycle_drop",
+      "eval_dir": "./exp/runs/fd20_g11_cycle_drop/full_eval",
+      "checkpoint_epoch_10": "./exp/runs/fd20_g11_cycle_drop/epoch_0010.pt",
+      "checkpoint_epoch_20": "./exp/runs/fd20_g11_cycle_drop/epoch_0020.pt",
+      "patch_overrides": {
+        "bridge": {
+          "w_cycle": 0.0
+        }
+      }
+    }
+  ]
+}

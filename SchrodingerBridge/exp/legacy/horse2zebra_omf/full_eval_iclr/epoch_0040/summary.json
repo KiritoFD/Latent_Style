@@ -1,0 +1,226 @@
+{
+  "checkpoint": "F:\\GitHub\\Latent_Style\\SchrodingerBridge\\horse2zebra_omf\\artifacts_iclr\\epoch_0040.pt",
+  "timestamp": "2026-05-08 03:25:07",
+  "metrics_note": {
+    "clip_dir": "cos( CLIP(gen)-CLIP(src), CLIP(target_style_proto)-CLIP(src) ) - Measures edit direction.",
+    "clip_style": "cos( CLIP(gen), CLIP(target_style_proto) ) - Measures absolute style similarity.",
+    "clip_content": "cos( CLIP(gen), CLIP(src) ) - Measures semantic/content preservation.",
+    "fid_baseline": "FID between source-domain images and target-style references.",
+    "fid": "FID between generated images and target-style real references (Inception features).",
+    "delta_fid": "fid_baseline - fid (higher is better).",
+    "delta_fid_ratio": "delta_fid / fid_baseline (relative improvement ratio).",
+    "art_fid_fid": "Academic ArtFID style term: FID computed with the official art-domain Inception checkpoint.",
+    "art_fid_content_lpips": "Academic ArtFID content term: mean LPIPS-Alex between generated and source content images.",
+    "art_fid": "Academic ArtFID: (1 + art_fid_fid) * (1 + art_fid_content_lpips).",
+    "kid_baseline": "KID between source-domain images and target-style references (torchmetrics).",
+    "kid": "KID between generated images and target-style references (torchmetrics).",
+    "delta_kid": "kid_baseline - kid (higher is better).",
+    "delta_kid_ratio": "delta_kid / kid_baseline (relative improvement ratio)."
+  },
+  "matrix_breakdown": {
+    "horse": {
+      "horse": {
+        "count": 30,
+        "clip_dir": 0.4774422248204549,
+        "clip_style": 0.650332756837209,
+        "content_lpips": 0.6871041239999999,
+        "clip_content": 0.549613683,
+        "fid_style": null,
+        "art_fid_fid": null,
+        "art_fid_content_lpips": null,
+        "art_fid": null,
+        "fid_baseline": null,
+        "delta_fid": null,
+        "delta_fid_ratio": null,
+        "kid_style": null,
+        "kid_style_std": null,
+        "kid_baseline": null,
+        "kid_baseline_std": null,
+        "delta_kid": null,
+        "delta_kid_ratio": null,
+        "classifier_acc": 0.8
+      },
+      "zebra": {
+        "count": 30,
+        "clip_dir": 0.48726485470930736,
+        "clip_style": 0.6474801898002625,
+        "content_lpips": 0.6679063373333333,
+        "clip_content": 0.5862520896666666,
+        "fid_style": null,
+        "art_fid_fid": null,
+        "art_fid_content_lpips": null,
+        "art_fid": null,
+        "fid_baseline": null,
+        "delta_fid": null,
+        "delta_fid_ratio": null,
+        "kid_style": null,
+        "kid_style_std": null,
+        "kid_baseline": null,
+        "kid_baseline_std": null,
+        "delta_kid": null,
+        "delta_kid_ratio": null,
+        "classifier_acc": 0.1
+      }
+    },
+    "zebra": {
+      "horse": {
+        "count": 30,
+        "clip_dir": 0.46647443373998004,
+        "clip_style": 0.6423961877822876,
+        "content_lpips": 0.686255796,
+        "clip_content": 0.5923260673333334,
+        "fid_style": null,
+        "art_fid_fid": null,
+        "art_fid_content_lpips": null,
+        "art_fid": null,
+        "fid_baseline": null,
+        "delta_fid": null,
+        "delta_fid_ratio": null,
+        "kid_style": null,
+        "kid_style_std": null,
+        "kid_baseline": null,
+        "kid_baseline_std": null,
+        "delta_kid": null,
+        "delta_kid_ratio": null,
+        "classifier_acc": 0.5333333333333333
+      },
+      "zebra": {
+        "count": 30,
+        "clip_dir": 0.37435120940208433,
+        "clip_style": 0.662253181139628,
+        "content_lpips": 0.633701665,
+        "clip_content": 0.6285548173333334,
+        "fid_style": null,
+        "art_fid_fid": null,
+        "art_fid_content_lpips": null,
+        "art_fid": null,
+        "fid_baseline": null,
+        "delta_fid": null,
+        "delta_fid_ratio": null,
+        "kid_style": null,
+        "kid_style_std": null,
+        "kid_baseline": null,
+        "kid_baseline_std": null,
+        "delta_kid": null,
+        "delta_kid_ratio": null,
+        "classifier_acc": 0.9333333333333333
+      }
+    }
+  },
+  "analysis": {
+    "all_pairs_overview": {
+      "clip_dir": 0.4513831806679567,
+      "clip_style": 0.6506155788898468,
+      "clip_content": 0.5891866643333333,
+      "content_lpips": 0.6687419805833332,
+      "art_fid_content_lpips": null,
+      "fid_baseline": null,
+      "fid": null,
+      "delta_fid": null,
+      "delta_fid_ratio": null,
+      "art_fid_fid": null,
+      "art_fid": null,
+      "kid_baseline": null,
+      "kid": null,
+      "delta_kid": null,
+      "delta_kid_ratio": null,
+      "classifier_acc": 0.5916666666666667
+    },
+    "style_transfer_ability": {
+      "clip_dir": 0.47686964422464373,
+      "clip_style": 0.6449381887912751,
+      "clip_content": 0.5892890785,
+      "content_lpips": 0.6770810666666667,
+      "art_fid_content_lpips": null,
+      "fid_baseline": null,
+      "fid": null,
+      "delta_fid": null,
+      "delta_fid_ratio": null,
+      "art_fid_fid": null,
+      "art_fid": null,
+      "kid_baseline": null,
+      "kid": null,
+      "delta_kid": null,
+      "delta_kid_ratio": null,
+      "classifier_acc": 0.31666666666666665
+    },
+    "identity_reconstruction": {
+      "clip_dir": 0.42589671711126964,
+      "clip_style": 0.6562929689884185,
+      "clip_content": 0.5890842501666667,
+      "content_lpips": 0.6604028945,
+      "art_fid_content_lpips": null,
+      "fid_baseline": null,
+      "fid": null,
+      "delta_fid": null,
+      "delta_fid_ratio": null,
+      "art_fid_fid": null,
+      "art_fid": null,
+      "kid_baseline": null,
+      "kid": null,
+      "delta_kid": null,
+      "delta_kid_ratio": null,
+      "classifier_acc": 0.8666666666666667
+    },
+    "photo_to_art_performance": {
+      "clip_dir": 0.0,
+      "clip_style": 0.0,
+      "clip_content": 0.0,
+      "content_lpips": 0.0,
+      "art_fid_content_lpips": null,
+      "fid_baseline": null,
+      "fid": null,
+      "delta_fid": null,
+      "delta_fid_ratio": null,
+      "art_fid_fid": null,
+      "art_fid": null,
+      "kid_baseline": null,
+      "kid": null,
+      "delta_kid": null,
+      "delta_kid_ratio": null,
+      "classifier_acc": 0.0,
+      "valid": false
+    }
+  },
+  "classification_report": {
+    "horse": {
+      "precision": 0.5797101449275363,
+      "recall": 0.6666666666666666,
+      "f1-score": 0.6201550387596899,
+      "support": 60.0
+    },
+    "zebra": {
+      "precision": 0.6078431372549019,
+      "recall": 0.5166666666666667,
+      "f1-score": 0.5585585585585585,
+      "support": 60.0
+    },
+    "accuracy": 0.5916666666666667,
+    "macro avg": {
+      "precision": 0.5937766410912191,
+      "recall": 0.5916666666666667,
+      "f1-score": 0.5893567986591242,
+      "support": 120.0
+    },
+    "weighted avg": {
+      "precision": 0.5937766410912191,
+      "recall": 0.5916666666666667,
+      "f1-score": 0.5893567986591243,
+      "support": 120.0
+    }
+  },
+  "detailed_style_metrics": {
+    "horse": {
+      "precision": 0.5797101449275363,
+      "recall": 0.6666666666666666,
+      "f1_score": 0.6201550387596899,
+      "support": 60
+    },
+    "zebra": {
+      "precision": 0.6078431372549019,
+      "recall": 0.5166666666666667,
+      "f1_score": 0.5585585585585585,
+      "support": 60
+    }
+  }
+}

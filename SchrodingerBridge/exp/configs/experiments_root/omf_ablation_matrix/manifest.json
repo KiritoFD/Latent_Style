@@ -1,0 +1,60 @@
+{
+  "experiments": [
+    {
+      "name": "01_strict_anchor",
+      "notes": "strong kinetic anchor, no skip routing",
+      "config_path": "experiments/omf_ablation_matrix/configs/01_strict_anchor.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/01_strict_anchor/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/01_strict_anchor"
+    },
+    {
+      "name": "02_balanced_omf",
+      "notes": "balanced omf baseline",
+      "config_path": "experiments/omf_ablation_matrix/configs/02_balanced_omf.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/02_balanced_omf/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/02_balanced_omf"
+    },
+    {
+      "name": "03_aggressive_style",
+      "notes": "maximize swd texture pressure",
+      "config_path": "experiments/omf_ablation_matrix/configs/03_aggressive_style.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/03_aggressive_style/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/03_aggressive_style"
+    },
+    {
+      "name": "04_arch_skip",
+      "notes": "balanced omf with normalized skip routing and add_proj fusion",
+      "config_path": "experiments/omf_ablation_matrix/configs/04_arch_skip.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/04_arch_skip/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/04_arch_skip"
+    },
+    {
+      "name": "05_color_05",
+      "notes": "no contextual color branch",
+      "config_path": "experiments/omf_ablation_matrix/configs/05_color_05.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/05_color_05/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/05_color_05"
+    },
+    {
+      "name": "06_high_color",
+      "notes": "strong contextual color branch",
+      "config_path": "experiments/omf_ablation_matrix/configs/06_high_color.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/06_high_color/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/06_high_color"
+    },
+    {
+      "name": "07_pure_physics",
+      "notes": "pure kinetic plus swd without color or repulsive",
+      "config_path": "experiments/omf_ablation_matrix/configs/07_pure_physics.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/07_pure_physics/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/07_pure_physics"
+    },
+    {
+      "name": "08_heavy_repulsive",
+      "notes": "balanced omf with heavier repulsive force",
+      "config_path": "experiments/omf_ablation_matrix/configs/08_heavy_repulsive.json",
+      "checkpoint_path": "experiments/omf_ablation_matrix/artifacts/08_heavy_repulsive/epoch_0100.pt",
+      "eval_output": "experiments/omf_ablation_matrix/full_eval/08_heavy_repulsive"
+    }
+  ]
+}

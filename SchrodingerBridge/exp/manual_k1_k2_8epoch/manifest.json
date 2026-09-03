@@ -1,0 +1,9 @@
+{
+  "base_config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\S-add__K-1_C-0_W-20_Col-0\\config.json",
+  "configs": [
+    "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\manual_k1_k2_8epoch\\K1_style_8ep_repro.json",
+    "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\manual_k1_k2_8epoch\\K2_content_8ep_repro.json",
+    "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\manual_k1_k2_8epoch\\K1_manual_weighted_8ep.json",
+    "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\manual_k1_k2_8epoch\\K2_manual_weighted_8ep.json"
+  ]
+}

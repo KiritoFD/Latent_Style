@@ -1,0 +1,823 @@
+{
+  "base_config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\S-add__K-1_C-0_W-20_Col-0\\config.json",
+  "style_order": [
+    "photo",
+    "Hayao",
+    "monet",
+    "vangogh",
+    "cezanne"
+  ],
+  "num_experiments": 40,
+  "recipes": [
+    {
+      "recipe_id": "R00_balanced_default",
+      "description": "Original balanced target sampler from base config.",
+      "content_weights": null,
+      "target_weights": null,
+      "balance_target_styles_per_batch": true
+    },
+    {
+      "recipe_id": "R01_uniform_unbalanced",
+      "description": "Uniform content and target weights, unbalanced sampler.",
+      "content_weights": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "target_weights": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R02_prev_manual",
+      "description": "Previous manual recipe: more photo/Hayao content and Hayao/art target.",
+      "content_weights": [
+        1.35,
+        1.25,
+        0.85,
+        0.85,
+        0.85
+      ],
+      "target_weights": [
+        0.8,
+        1.35,
+        1.05,
+        1.05,
+        1.05
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R03_hayao_strong",
+      "description": "Strong Hayao target pressure.",
+      "content_weights": [
+        1.3,
+        1.4,
+        0.85,
+        0.85,
+        0.85
+      ],
+      "target_weights": [
+        0.75,
+        1.7,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R04_cezanne_strong",
+      "description": "Repair Cezanne style drop by target emphasis.",
+      "content_weights": [
+        1.35,
+        1.05,
+        0.85,
+        0.85,
+        1.25
+      ],
+      "target_weights": [
+        0.75,
+        1.1,
+        1.0,
+        1.0,
+        1.6
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R05_vangogh_strong",
+      "description": "Van Gogh target emphasis.",
+      "content_weights": [
+        1.35,
+        1.05,
+        0.85,
+        1.25,
+        0.85
+      ],
+      "target_weights": [
+        0.75,
+        1.1,
+        1.0,
+        1.6,
+        1.0
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R06_monet_strong",
+      "description": "Monet target emphasis.",
+      "content_weights": [
+        1.35,
+        1.05,
+        1.25,
+        0.85,
+        0.85
+      ],
+      "target_weights": [
+        0.75,
+        1.1,
+        1.6,
+        1.0,
+        1.0
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R07_art_balanced",
+      "description": "All art targets boosted equally, photo target suppressed.",
+      "content_weights": [
+        1.4,
+        1.0,
+        0.9,
+        0.9,
+        0.9
+      ],
+      "target_weights": [
+        0.7,
+        1.2,
+        1.2,
+        1.2,
+        1.2
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R08_photo_content_high",
+      "description": "Content-heavy recipe: frequent photo content, moderate art target.",
+      "content_weights": [
+        1.8,
+        1.1,
+        0.75,
+        0.75,
+        0.75
+      ],
+      "target_weights": [
+        0.7,
+        1.2,
+        1.2,
+        1.2,
+        1.2
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R09_photo_content_low",
+      "description": "Less photo as content; stress art-to-art content retention.",
+      "content_weights": [
+        0.9,
+        1.2,
+        1.1,
+        1.1,
+        1.1
+      ],
+      "target_weights": [
+        0.7,
+        1.25,
+        1.25,
+        1.25,
+        1.25
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R10_no_photo_target",
+      "description": "Nearly remove photo target to focus transfer style.",
+      "content_weights": [
+        1.5,
+        1.1,
+        0.9,
+        0.9,
+        0.9
+      ],
+      "target_weights": [
+        0.3,
+        1.35,
+        1.35,
+        1.35,
+        1.35
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R11_photo_target_some",
+      "description": "Keep more photo target for identity/content stability.",
+      "content_weights": [
+        1.5,
+        1.1,
+        0.9,
+        0.9,
+        0.9
+      ],
+      "target_weights": [
+        1.0,
+        1.2,
+        1.2,
+        1.2,
+        1.2
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R12_hayao_cezanne",
+      "description": "Joint Hayao plus Cezanne target repair.",
+      "content_weights": [
+        1.35,
+        1.25,
+        0.8,
+        0.8,
+        1.1
+      ],
+      "target_weights": [
+        0.65,
+        1.45,
+        1.0,
+        1.0,
+        1.45
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R13_monet_vangogh",
+      "description": "Joint Monet plus Van Gogh target pressure.",
+      "content_weights": [
+        1.35,
+        1.05,
+        1.1,
+        1.1,
+        0.8
+      ],
+      "target_weights": [
+        0.65,
+        1.1,
+        1.45,
+        1.45,
+        1.0
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R14_soft_art",
+      "description": "Soft version of art target emphasis.",
+      "content_weights": [
+        1.25,
+        1.1,
+        0.95,
+        0.95,
+        0.95
+      ],
+      "target_weights": [
+        0.85,
+        1.15,
+        1.15,
+        1.15,
+        1.15
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R15_hard_art",
+      "description": "Hard version of art target emphasis.",
+      "content_weights": [
+        1.6,
+        1.1,
+        0.75,
+        0.75,
+        0.75
+      ],
+      "target_weights": [
+        0.45,
+        1.45,
+        1.45,
+        1.45,
+        1.45
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R16_photo_hayao_content_art_target",
+      "description": "Photo/Hayao content anchors with uniform art target pressure.",
+      "content_weights": [
+        1.55,
+        1.35,
+        0.75,
+        0.75,
+        0.75
+      ],
+      "target_weights": [
+        0.6,
+        1.25,
+        1.25,
+        1.25,
+        1.25
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R17_art_content_art_target",
+      "description": "More art content and more art target; less photo dominance.",
+      "content_weights": [
+        0.85,
+        1.15,
+        1.15,
+        1.15,
+        1.15
+      ],
+      "target_weights": [
+        0.55,
+        1.3,
+        1.3,
+        1.3,
+        1.3
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R18_cezanne_fix_prev",
+      "description": "Previous manual recipe plus extra Cezanne target.",
+      "content_weights": [
+        1.35,
+        1.25,
+        0.85,
+        0.85,
+        0.95
+      ],
+      "target_weights": [
+        0.75,
+        1.3,
+        1.05,
+        1.05,
+        1.45
+      ],
+      "balance_target_styles_per_batch": false
+    },
+    {
+      "recipe_id": "R19_hayao_fix_prev",
+      "description": "Previous manual recipe plus extra Hayao target.",
+      "content_weights": [
+        1.35,
+        1.35,
+        0.8,
+        0.8,
+        0.8
+      ],
+      "target_weights": [
+        0.75,
+        1.6,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "balance_target_styles_per_batch": false
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "K1_r00_balanced_default",
+      "k_value": 1.0,
+      "recipe_id": "R00_balanced_default",
+      "description": "Original balanced target sampler from base config.",
+      "balance_target_styles_per_batch": true,
+      "content_weights": "",
+      "target_weights": "",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r00_balanced_default.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r00_balanced_default"
+    },
+    {
+      "experiment_id": "K1_r01_uniform_unbalanced",
+      "k_value": 1.0,
+      "recipe_id": "R01_uniform_unbalanced",
+      "description": "Uniform content and target weights, unbalanced sampler.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1,1,1,1,1",
+      "target_weights": "1,1,1,1,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r01_uniform_unbalanced.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r01_uniform_unbalanced"
+    },
+    {
+      "experiment_id": "K1_r02_prev_manual",
+      "k_value": 1.0,
+      "recipe_id": "R02_prev_manual",
+      "description": "Previous manual recipe: more photo/Hayao content and Hayao/art target.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.25,0.85,0.85,0.85",
+      "target_weights": "0.8,1.35,1.05,1.05,1.05",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r02_prev_manual.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r02_prev_manual"
+    },
+    {
+      "experiment_id": "K1_r03_hayao_strong",
+      "k_value": 1.0,
+      "recipe_id": "R03_hayao_strong",
+      "description": "Strong Hayao target pressure.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.3,1.4,0.85,0.85,0.85",
+      "target_weights": "0.75,1.7,1,1,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r03_hayao_strong.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r03_hayao_strong"
+    },
+    {
+      "experiment_id": "K1_r04_cezanne_strong",
+      "k_value": 1.0,
+      "recipe_id": "R04_cezanne_strong",
+      "description": "Repair Cezanne style drop by target emphasis.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.05,0.85,0.85,1.25",
+      "target_weights": "0.75,1.1,1,1,1.6",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r04_cezanne_strong.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r04_cezanne_strong"
+    },
+    {
+      "experiment_id": "K1_r05_vangogh_strong",
+      "k_value": 1.0,
+      "recipe_id": "R05_vangogh_strong",
+      "description": "Van Gogh target emphasis.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.05,0.85,1.25,0.85",
+      "target_weights": "0.75,1.1,1,1.6,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r05_vangogh_strong.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r05_vangogh_strong"
+    },
+    {
+      "experiment_id": "K1_r06_monet_strong",
+      "k_value": 1.0,
+      "recipe_id": "R06_monet_strong",
+      "description": "Monet target emphasis.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.05,1.25,0.85,0.85",
+      "target_weights": "0.75,1.1,1.6,1,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r06_monet_strong.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r06_monet_strong"
+    },
+    {
+      "experiment_id": "K1_r07_art_balanced",
+      "k_value": 1.0,
+      "recipe_id": "R07_art_balanced",
+      "description": "All art targets boosted equally, photo target suppressed.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.4,1,0.9,0.9,0.9",
+      "target_weights": "0.7,1.2,1.2,1.2,1.2",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r07_art_balanced.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r07_art_balanced"
+    },
+    {
+      "experiment_id": "K1_r08_photo_content_high",
+      "k_value": 1.0,
+      "recipe_id": "R08_photo_content_high",
+      "description": "Content-heavy recipe: frequent photo content, moderate art target.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.8,1.1,0.75,0.75,0.75",
+      "target_weights": "0.7,1.2,1.2,1.2,1.2",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r08_photo_content_high.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r08_photo_content_high"
+    },
+    {
+      "experiment_id": "K1_r09_photo_content_low",
+      "k_value": 1.0,
+      "recipe_id": "R09_photo_content_low",
+      "description": "Less photo as content; stress art-to-art content retention.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "0.9,1.2,1.1,1.1,1.1",
+      "target_weights": "0.7,1.25,1.25,1.25,1.25",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r09_photo_content_low.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r09_photo_content_low"
+    },
+    {
+      "experiment_id": "K1_r10_no_photo_target",
+      "k_value": 1.0,
+      "recipe_id": "R10_no_photo_target",
+      "description": "Nearly remove photo target to focus transfer style.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.5,1.1,0.9,0.9,0.9",
+      "target_weights": "0.3,1.35,1.35,1.35,1.35",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r10_no_photo_target.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r10_no_photo_target"
+    },
+    {
+      "experiment_id": "K1_r11_photo_target_some",
+      "k_value": 1.0,
+      "recipe_id": "R11_photo_target_some",
+      "description": "Keep more photo target for identity/content stability.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.5,1.1,0.9,0.9,0.9",
+      "target_weights": "1,1.2,1.2,1.2,1.2",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r11_photo_target_some.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r11_photo_target_some"
+    },
+    {
+      "experiment_id": "K1_r12_hayao_cezanne",
+      "k_value": 1.0,
+      "recipe_id": "R12_hayao_cezanne",
+      "description": "Joint Hayao plus Cezanne target repair.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.25,0.8,0.8,1.1",
+      "target_weights": "0.65,1.45,1,1,1.45",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r12_hayao_cezanne.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r12_hayao_cezanne"
+    },
+    {
+      "experiment_id": "K1_r13_monet_vangogh",
+      "k_value": 1.0,
+      "recipe_id": "R13_monet_vangogh",
+      "description": "Joint Monet plus Van Gogh target pressure.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.05,1.1,1.1,0.8",
+      "target_weights": "0.65,1.1,1.45,1.45,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r13_monet_vangogh.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r13_monet_vangogh"
+    },
+    {
+      "experiment_id": "K1_r14_soft_art",
+      "k_value": 1.0,
+      "recipe_id": "R14_soft_art",
+      "description": "Soft version of art target emphasis.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.25,1.1,0.95,0.95,0.95",
+      "target_weights": "0.85,1.15,1.15,1.15,1.15",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r14_soft_art.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r14_soft_art"
+    },
+    {
+      "experiment_id": "K1_r15_hard_art",
+      "k_value": 1.0,
+      "recipe_id": "R15_hard_art",
+      "description": "Hard version of art target emphasis.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.6,1.1,0.75,0.75,0.75",
+      "target_weights": "0.45,1.45,1.45,1.45,1.45",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r15_hard_art.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r15_hard_art"
+    },
+    {
+      "experiment_id": "K1_r16_photo_hayao_content_art_target",
+      "k_value": 1.0,
+      "recipe_id": "R16_photo_hayao_content_art_target",
+      "description": "Photo/Hayao content anchors with uniform art target pressure.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.55,1.35,0.75,0.75,0.75",
+      "target_weights": "0.6,1.25,1.25,1.25,1.25",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r16_photo_hayao_content_art_target.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r16_photo_hayao_content_art_target"
+    },
+    {
+      "experiment_id": "K1_r17_art_content_art_target",
+      "k_value": 1.0,
+      "recipe_id": "R17_art_content_art_target",
+      "description": "More art content and more art target; less photo dominance.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "0.85,1.15,1.15,1.15,1.15",
+      "target_weights": "0.55,1.3,1.3,1.3,1.3",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r17_art_content_art_target.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r17_art_content_art_target"
+    },
+    {
+      "experiment_id": "K1_r18_cezanne_fix_prev",
+      "k_value": 1.0,
+      "recipe_id": "R18_cezanne_fix_prev",
+      "description": "Previous manual recipe plus extra Cezanne target.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.25,0.85,0.85,0.95",
+      "target_weights": "0.75,1.3,1.05,1.05,1.45",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r18_cezanne_fix_prev.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r18_cezanne_fix_prev"
+    },
+    {
+      "experiment_id": "K1_r19_hayao_fix_prev",
+      "k_value": 1.0,
+      "recipe_id": "R19_hayao_fix_prev",
+      "description": "Previous manual recipe plus extra Hayao target.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.35,0.8,0.8,0.8",
+      "target_weights": "0.75,1.6,1,1,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K1_r19_hayao_fix_prev.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K1_r19_hayao_fix_prev"
+    },
+    {
+      "experiment_id": "K2_r00_balanced_default",
+      "k_value": 2.0,
+      "recipe_id": "R00_balanced_default",
+      "description": "Original balanced target sampler from base config.",
+      "balance_target_styles_per_batch": true,
+      "content_weights": "",
+      "target_weights": "",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r00_balanced_default.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r00_balanced_default"
+    },
+    {
+      "experiment_id": "K2_r01_uniform_unbalanced",
+      "k_value": 2.0,
+      "recipe_id": "R01_uniform_unbalanced",
+      "description": "Uniform content and target weights, unbalanced sampler.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1,1,1,1,1",
+      "target_weights": "1,1,1,1,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r01_uniform_unbalanced.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r01_uniform_unbalanced"
+    },
+    {
+      "experiment_id": "K2_r02_prev_manual",
+      "k_value": 2.0,
+      "recipe_id": "R02_prev_manual",
+      "description": "Previous manual recipe: more photo/Hayao content and Hayao/art target.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.25,0.85,0.85,0.85",
+      "target_weights": "0.8,1.35,1.05,1.05,1.05",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r02_prev_manual.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r02_prev_manual"
+    },
+    {
+      "experiment_id": "K2_r03_hayao_strong",
+      "k_value": 2.0,
+      "recipe_id": "R03_hayao_strong",
+      "description": "Strong Hayao target pressure.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.3,1.4,0.85,0.85,0.85",
+      "target_weights": "0.75,1.7,1,1,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r03_hayao_strong.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r03_hayao_strong"
+    },
+    {
+      "experiment_id": "K2_r04_cezanne_strong",
+      "k_value": 2.0,
+      "recipe_id": "R04_cezanne_strong",
+      "description": "Repair Cezanne style drop by target emphasis.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.05,0.85,0.85,1.25",
+      "target_weights": "0.75,1.1,1,1,1.6",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r04_cezanne_strong.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r04_cezanne_strong"
+    },
+    {
+      "experiment_id": "K2_r05_vangogh_strong",
+      "k_value": 2.0,
+      "recipe_id": "R05_vangogh_strong",
+      "description": "Van Gogh target emphasis.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.05,0.85,1.25,0.85",
+      "target_weights": "0.75,1.1,1,1.6,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r05_vangogh_strong.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r05_vangogh_strong"
+    },
+    {
+      "experiment_id": "K2_r06_monet_strong",
+      "k_value": 2.0,
+      "recipe_id": "R06_monet_strong",
+      "description": "Monet target emphasis.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.05,1.25,0.85,0.85",
+      "target_weights": "0.75,1.1,1.6,1,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r06_monet_strong.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r06_monet_strong"
+    },
+    {
+      "experiment_id": "K2_r07_art_balanced",
+      "k_value": 2.0,
+      "recipe_id": "R07_art_balanced",
+      "description": "All art targets boosted equally, photo target suppressed.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.4,1,0.9,0.9,0.9",
+      "target_weights": "0.7,1.2,1.2,1.2,1.2",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r07_art_balanced.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r07_art_balanced"
+    },
+    {
+      "experiment_id": "K2_r08_photo_content_high",
+      "k_value": 2.0,
+      "recipe_id": "R08_photo_content_high",
+      "description": "Content-heavy recipe: frequent photo content, moderate art target.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.8,1.1,0.75,0.75,0.75",
+      "target_weights": "0.7,1.2,1.2,1.2,1.2",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r08_photo_content_high.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r08_photo_content_high"
+    },
+    {
+      "experiment_id": "K2_r09_photo_content_low",
+      "k_value": 2.0,
+      "recipe_id": "R09_photo_content_low",
+      "description": "Less photo as content; stress art-to-art content retention.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "0.9,1.2,1.1,1.1,1.1",
+      "target_weights": "0.7,1.25,1.25,1.25,1.25",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r09_photo_content_low.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r09_photo_content_low"
+    },
+    {
+      "experiment_id": "K2_r10_no_photo_target",
+      "k_value": 2.0,
+      "recipe_id": "R10_no_photo_target",
+      "description": "Nearly remove photo target to focus transfer style.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.5,1.1,0.9,0.9,0.9",
+      "target_weights": "0.3,1.35,1.35,1.35,1.35",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r10_no_photo_target.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r10_no_photo_target"
+    },
+    {
+      "experiment_id": "K2_r11_photo_target_some",
+      "k_value": 2.0,
+      "recipe_id": "R11_photo_target_some",
+      "description": "Keep more photo target for identity/content stability.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.5,1.1,0.9,0.9,0.9",
+      "target_weights": "1,1.2,1.2,1.2,1.2",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r11_photo_target_some.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r11_photo_target_some"
+    },
+    {
+      "experiment_id": "K2_r12_hayao_cezanne",
+      "k_value": 2.0,
+      "recipe_id": "R12_hayao_cezanne",
+      "description": "Joint Hayao plus Cezanne target repair.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.25,0.8,0.8,1.1",
+      "target_weights": "0.65,1.45,1,1,1.45",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r12_hayao_cezanne.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r12_hayao_cezanne"
+    },
+    {
+      "experiment_id": "K2_r13_monet_vangogh",
+      "k_value": 2.0,
+      "recipe_id": "R13_monet_vangogh",
+      "description": "Joint Monet plus Van Gogh target pressure.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.05,1.1,1.1,0.8",
+      "target_weights": "0.65,1.1,1.45,1.45,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r13_monet_vangogh.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r13_monet_vangogh"
+    },
+    {
+      "experiment_id": "K2_r14_soft_art",
+      "k_value": 2.0,
+      "recipe_id": "R14_soft_art",
+      "description": "Soft version of art target emphasis.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.25,1.1,0.95,0.95,0.95",
+      "target_weights": "0.85,1.15,1.15,1.15,1.15",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r14_soft_art.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r14_soft_art"
+    },
+    {
+      "experiment_id": "K2_r15_hard_art",
+      "k_value": 2.0,
+      "recipe_id": "R15_hard_art",
+      "description": "Hard version of art target emphasis.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.6,1.1,0.75,0.75,0.75",
+      "target_weights": "0.45,1.45,1.45,1.45,1.45",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r15_hard_art.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r15_hard_art"
+    },
+    {
+      "experiment_id": "K2_r16_photo_hayao_content_art_target",
+      "k_value": 2.0,
+      "recipe_id": "R16_photo_hayao_content_art_target",
+      "description": "Photo/Hayao content anchors with uniform art target pressure.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.55,1.35,0.75,0.75,0.75",
+      "target_weights": "0.6,1.25,1.25,1.25,1.25",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r16_photo_hayao_content_art_target.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r16_photo_hayao_content_art_target"
+    },
+    {
+      "experiment_id": "K2_r17_art_content_art_target",
+      "k_value": 2.0,
+      "recipe_id": "R17_art_content_art_target",
+      "description": "More art content and more art target; less photo dominance.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "0.85,1.15,1.15,1.15,1.15",
+      "target_weights": "0.55,1.3,1.3,1.3,1.3",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r17_art_content_art_target.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r17_art_content_art_target"
+    },
+    {
+      "experiment_id": "K2_r18_cezanne_fix_prev",
+      "k_value": 2.0,
+      "recipe_id": "R18_cezanne_fix_prev",
+      "description": "Previous manual recipe plus extra Cezanne target.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.25,0.85,0.85,0.95",
+      "target_weights": "0.75,1.3,1.05,1.05,1.45",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r18_cezanne_fix_prev.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r18_cezanne_fix_prev"
+    },
+    {
+      "experiment_id": "K2_r19_hayao_fix_prev",
+      "k_value": 2.0,
+      "recipe_id": "R19_hayao_fix_prev",
+      "description": "Previous manual recipe plus extra Hayao target.",
+      "balance_target_styles_per_batch": false,
+      "content_weights": "1.35,1.35,0.8,0.8,0.8",
+      "target_weights": "0.75,1.6,1,1,1",
+      "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\configs\\K2_r19_hayao_fix_prev.json",
+      "run_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\weight_sweep_40\\K2_r19_hayao_fix_prev"
+    }
+  ]
+}

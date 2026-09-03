@@ -1,0 +1,234 @@
+{
+  "config": "D0_full_correct_7ep",
+  "num_batches": 10,
+  "batch_size": 64,
+  "results": [
+    {
+      "ot": {
+        "mean_displacement_sq": 4814.5078125,
+        "std_displacement_sq": 1168.2720947265625,
+        "cv_displacement": 0.24265660345554352,
+        "mean_cos_sim": 0.1493036448955536,
+        "std_cos_sim": 0.10632500797510147,
+        "cost": 0.11917541921138763
+      },
+      "random": {
+        "mean_displacement_sq": 5152.78125,
+        "std_displacement_sq": 1190.837646484375,
+        "cv_displacement": 0.23110580444335938,
+        "mean_cos_sim": 0.12051933258771896,
+        "std_cos_sim": 0.10512463003396988,
+        "cost": 0.12586748600006104
+      },
+      "ratio_ot_to_random": {
+        "displacement_var": 0.962460458278656,
+        "cost": 0.9468324425843371
+      }
+    },
+    {
+      "ot": {
+        "mean_displacement_sq": 5100.79638671875,
+        "std_displacement_sq": 1239.3365478515625,
+        "cv_displacement": 0.24296922981739044,
+        "mean_cos_sim": 0.13438257575035095,
+        "std_cos_sim": 0.07603548467159271,
+        "cost": 0.11775824427604675
+      },
+      "random": {
+        "mean_displacement_sq": 5149.41796875,
+        "std_displacement_sq": 1000.5504760742188,
+        "cv_displacement": 0.19430360198020935,
+        "mean_cos_sim": 0.10925377160310745,
+        "std_cos_sim": 0.07585375010967255,
+        "cost": 0.11999332904815674
+      },
+      "ratio_ot_to_random": {
+        "displacement_var": 1.5342655181884766,
+        "cost": 0.9813732580815974
+      }
+    },
+    {
+      "ot": {
+        "mean_displacement_sq": 5111.49755859375,
+        "std_displacement_sq": 1069.6558837890625,
+        "cv_displacement": 0.20926468074321747,
+        "mean_cos_sim": 0.14624743163585663,
+        "std_cos_sim": 0.10307535529136658,
+        "cost": 0.11919156461954117
+      },
+      "random": {
+        "mean_displacement_sq": 5128.7275390625,
+        "std_displacement_sq": 1087.6197509765625,
+        "cv_displacement": 0.2120642513036728,
+        "mean_cos_sim": 0.11015579104423523,
+        "std_cos_sim": 0.06581775844097137,
+        "cost": 0.12479715049266815
+      },
+      "ratio_ot_to_random": {
+        "displacement_var": 0.9672393202781677,
+        "cost": 0.955082420944729
+      }
+    },
+    {
+      "ot": {
+        "mean_displacement_sq": 4965.86328125,
+        "std_displacement_sq": 1199.834228515625,
+        "cv_displacement": 0.24161644279956818,
+        "mean_cos_sim": 0.1525612771511078,
+        "std_cos_sim": 0.17365899682044983,
+        "cost": 0.11406689137220383
+      },
+      "random": {
+        "mean_displacement_sq": 5056.736328125,
+        "std_displacement_sq": 981.7578735351562,
+        "cv_displacement": 0.19414852559566498,
+        "mean_cos_sim": 0.13819098472595215,
+        "std_cos_sim": 0.12648998200893402,
+        "cost": 0.11957389861345291
+      },
+      "ratio_ot_to_random": {
+        "displacement_var": 1.4935979843139648,
+        "cost": 0.953944737897594
+      }
+    },
+    {
+      "ot": {
+        "mean_displacement_sq": 5296.1953125,
+        "std_displacement_sq": 1221.1961669921875,
+        "cv_displacement": 0.2305798977613449,
+        "mean_cos_sim": 0.15609332919120789,
+        "std_cos_sim": 0.11838491261005402,
+        "cost": 0.11979658901691437
+      },
+      "random": {
+        "mean_displacement_sq": 5041.99755859375,
+        "std_displacement_sq": 995.7959594726562,
+        "cv_displacement": 0.1975002884864807,
+        "mean_cos_sim": 0.12362290918827057,
+        "std_cos_sim": 0.08937428146600723,
+        "cost": 0.12396133691072464
+      },
+      "ratio_ot_to_random": {
+        "displacement_var": 1.5039387941360474,
+        "cost": 0.9664028478749817
+      }
+    },
+    {
+      "ot": {
+        "mean_displacement_sq": 5001.9873046875,
+        "std_displacement_sq": 940.8681640625,
+        "cv_displacement": 0.18809887766838074,
+        "mean_cos_sim": 0.14937621355056763,
+        "std_cos_sim": 0.11883307993412018,
+        "cost": 0.11951974034309387
+      },
+      "random": {
+        "mean_displacement_sq": 5224.5546875,
+        "std_displacement_sq": 1178.302490234375,
+        "cv_displacement": 0.2255316525697708,
+        "mean_cos_sim": 0.11444806307554245,
+        "std_cos_sim": 0.07702226936817169,
+        "cost": 0.12830890715122223
+      },
+      "ratio_ot_to_random": {
+        "displacement_var": 0.6375935673713684,
+        "cost": 0.9314999480295657
+      }
+    },
+    {
+      "ot": {
+        "mean_displacement_sq": 4834.4814453125,
+        "std_displacement_sq": 924.7666015625,
+        "cv_displacement": 0.19128558039665222,
+        "mean_cos_sim": 0.1381402313709259,
+        "std_cos_sim": 0.08929119259119034,
+        "cost": 0.119118332862854
+      },
+      "random": {
+        "mean_displacement_sq": 5000.056640625,
+        "std_displacement_sq": 1110.294921875,
+        "cv_displacement": 0.22205646336078644,
+        "mean_cos_sim": 0.13846078515052795,
+        "std_cos_sim": 0.16645509004592896,
+        "cost": 0.12337595224380493
+      },
+      "ratio_ot_to_random": {
+        "displacement_var": 0.6937253475189209,
+        "cost": 0.9654906867706489
+      }
+    },
+    {
+      "ot": {
+        "mean_displacement_sq": 5209.33251953125,
+        "std_displacement_sq": 1285.2113037109375,
+        "cv_displacement": 0.24671323597431183,
+        "mean_cos_sim": 0.14916539192199707,
+        "std_cos_sim": 0.1285339593887329,
+        "cost": 0.11458352208137512
+      },
+      "random": {
+        "mean_displacement_sq": 4931.6826171875,
+        "std_displacement_sq": 1000.5416259765625,
+        "cv_displacement": 0.2028803825378418,
+        "mean_cos_sim": 0.13639770448207855,
+        "std_cos_sim": 0.18437965214252472,
+        "cost": 0.11962888389825821
+      },
+      "ratio_ot_to_random": {
+        "displacement_var": 1.6499805450439453,
+        "cost": 0.9578248859934692
+      }
+    },
+    {
+      "ot": {
+        "mean_displacement_sq": 5089.021484375,
+        "std_displacement_sq": 1761.908935546875,
+        "cv_displacement": 0.34621763229370117,
+        "mean_cos_sim": 0.15346381068229675,
+        "std_cos_sim": 0.10732173174619675,
+        "cost": 0.1254604458808899
+      },
+      "random": {
+        "mean_displacement_sq": 5025.0595703125,
+        "std_displacement_sq": 1129.8487548828125,
+        "cv_displacement": 0.2248428612947464,
+        "mean_cos_sim": 0.13289999961853027,
+        "std_cos_sim": 0.10113567113876343,
+        "cost": 0.1318865269422531
+      },
+      "ratio_ot_to_random": {
+        "displacement_var": 2.431791067123413,
+        "cost": 0.9512756821310724
+      }
+    },
+    {
+      "ot": {
+        "mean_displacement_sq": 5273.67578125,
+        "std_displacement_sq": 1225.970947265625,
+        "cv_displacement": 0.23246991634368896,
+        "mean_cos_sim": 0.17098698019981384,
+        "std_cos_sim": 0.20836004614830017,
+        "cost": 0.11675809323787689
+      },
+      "random": {
+        "mean_displacement_sq": 5380.404296875,
+        "std_displacement_sq": 1102.3499755859375,
+        "cv_displacement": 0.20488236844539642,
+        "mean_cos_sim": 0.120334193110466,
+        "std_cos_sim": 0.11253853142261505,
+        "cost": 0.12089840322732925
+      },
+      "ratio_ot_to_random": {
+        "displacement_var": 1.2368625402450562,
+        "cost": 0.9657538075034192
+      }
+    }
+  ],
+  "summary": {
+    "ot_cost_mean": 0.11854288429021835,
+    "random_cost_mean": 0.12382918745279312,
+    "cost_ratio_mean": 0.9575480717811414,
+    "ot_cv_mean": 0.23718720972537993,
+    "random_cv_mean": 0.2109316200017929
+  }
+}

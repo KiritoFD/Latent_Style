@@ -1,0 +1,33 @@
+{
+  "_base": "../config.json",
+  "bridge": {
+    "w_kinetic": 0.30,
+    "w_low_freq": 1.0,
+    "w_cycle": 1.5,
+    "w_repulsive": 0.0,
+    "w_nce": 0.0,
+    "terminal_swd_weight": 10.0,
+    "terminal_swd_mode": "patch",
+    "low_freq_kernel_size": 5,
+    "swd_use_high_freq": true,
+    "swd_patch_sizes": [3, 5, 9],
+    "swd_micro_patch_max": 3,
+    "swd_macro_patch_min": 5,
+    "swd_micro_weight": 0.8,
+    "swd_macro_weight": 1.0
+  },
+  "training": {
+    "num_epochs": 20,
+    "save_interval": 10,
+    "log_interval": 10,
+    "full_eval_batch_size": 2
+  },
+  "checkpoint": {
+    "save_dir": "./o20_k5_p359"
+  },
+  "ablation": {
+    "name": "g0_kernel5_patch359_hf20",
+    "axis": "kernel_patch_tune",
+    "notes": "Medium low-frequency kernel with broader SWD patch bank to test more coherent brush-structure coupling."
+  }
+}

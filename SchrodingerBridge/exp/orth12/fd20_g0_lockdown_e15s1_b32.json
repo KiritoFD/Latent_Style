@@ -1,0 +1,25 @@
+{
+  "_base": "./fd20_g0_golden_pedestal_e15s1_b32/config.json",
+  "model": {
+    "skip_routing_mode": "normalized"
+  },
+  "bridge": {
+    "w_kinetic": 2.0,
+    "w_cycle": 4.0,
+    "w_low_freq": 15.0,
+    "terminal_swd_weight": 15.0
+  },
+  "training": {
+    "learning_rate": 0.0001,
+    "num_epochs": 15,
+    "resume_checkpoint": ""
+  },
+  "checkpoint": {
+    "save_dir": "./exp/orth12/fd20_g0_lockdown_e15s1_b32"
+  },
+  "ablation": {
+    "name": "g0_lockdown_e15s1_b32",
+    "axis": "lockdown",
+    "notes": "Normalized skip routing with heavy kinetic/cycle/low-frequency anchoring and lower LR."
+  }
+}

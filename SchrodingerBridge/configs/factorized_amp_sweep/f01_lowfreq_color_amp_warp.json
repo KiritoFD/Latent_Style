@@ -1,0 +1,36 @@
+{
+  "_base": "../../configs/diffeomorphic_stroke_tangent_local.json",
+  "model": {
+    "use_diffeomorphic_stroke": true,
+    "diffeomorphic_head_mode": "factorized_amp",
+    "diffeomorphic_color_strength": 0.85,
+    "diffeomorphic_warp_strength": 0.03,
+    "diffeomorphic_texture_gate_strength": 6.0,
+    "diffeomorphic_normal_leak": 0.0,
+    "diffeomorphic_color_lowpass_kernel": 5,
+    "diffeomorphic_color_edge_gamma": 0.0,
+    "diffeomorphic_amp_strength": 0.5,
+    "diffeomorphic_factorized_enable_color": true,
+    "diffeomorphic_factorized_enable_amp": true,
+    "semantic_self_topology_gate": false
+  },
+  "training": {
+    "seed": 42,
+    "batch_size": 192,
+    "full_eval_batch_size": 20,
+    "num_epochs": 8,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "save_interval": 1,
+    "resume_checkpoint": ""
+  },
+  "checkpoint": {
+    "save_dir": "./exp/factorized_amp_sweep/f01_lowfreq_color_amp_warp"
+  },
+  "ablation": {
+    "name": "f01_lowfreq_color_amp_warp",
+    "stage": "factorized_amp_sweep",
+    "axis": "lowfreq_color_texture_amplitude_tangent_warp",
+    "notes": "Replace additive high-frequency color residual with a multiplicative high-frequency amplitude sink."
+  }
+}

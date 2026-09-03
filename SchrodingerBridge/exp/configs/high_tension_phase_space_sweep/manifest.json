@@ -1,0 +1,68 @@
+{
+  "experiments": [
+    {
+      "name": "g1_high_tension_base",
+      "notes": "G1 [High-Tension Base]: kinetic 2.0 vs terminal SWD 5.0 with full priors.",
+      "config_path": "high_tension_phase_space_sweep/g1_high_tension_base.json",
+      "checkpoint_dir": "high_tension_phase_space_sweep/g1_high_tension_base",
+      "checkpoint_path": "high_tension_phase_space_sweep/g1_high_tension_base/epoch_0080.pt",
+      "eval_output": "high_tension_phase_space_sweep/full_eval/g1_high_tension_base"
+    },
+    {
+      "name": "g2_swd_nuke",
+      "notes": "G2 [SWD Nuke]: kinetic 2.0 vs terminal SWD 12.0 with full priors.",
+      "config_path": "high_tension_phase_space_sweep/g2_swd_nuke.json",
+      "checkpoint_dir": "high_tension_phase_space_sweep/g2_swd_nuke",
+      "checkpoint_path": "high_tension_phase_space_sweep/g2_swd_nuke/epoch_0080.pt",
+      "eval_output": "high_tension_phase_space_sweep/full_eval/g2_swd_nuke"
+    },
+    {
+      "name": "g3_kinetic_vise",
+      "notes": "G3 [Kinetic Vise]: kinetic 5.0 vs terminal SWD 5.0 with full priors.",
+      "config_path": "high_tension_phase_space_sweep/g3_kinetic_vise.json",
+      "checkpoint_dir": "high_tension_phase_space_sweep/g3_kinetic_vise",
+      "checkpoint_path": "high_tension_phase_space_sweep/g3_kinetic_vise/epoch_0080.pt",
+      "eval_output": "high_tension_phase_space_sweep/full_eval/g3_kinetic_vise"
+    },
+    {
+      "name": "g4_brittle_flow",
+      "notes": "G4 [Brittle Flow]: kinetic 0.5 vs terminal SWD 8.0 with full priors.",
+      "config_path": "high_tension_phase_space_sweep/g4_brittle_flow.json",
+      "checkpoint_dir": "high_tension_phase_space_sweep/g4_brittle_flow",
+      "checkpoint_path": "high_tension_phase_space_sweep/g4_brittle_flow/epoch_0080.pt",
+      "eval_output": "high_tension_phase_space_sweep/full_eval/g4_brittle_flow"
+    },
+    {
+      "name": "g5_the_singularity",
+      "notes": "G5 [The Singularity]: kinetic 3.0 vs terminal SWD 15.0 with full priors.",
+      "config_path": "high_tension_phase_space_sweep/g5_the_singularity.json",
+      "checkpoint_dir": "high_tension_phase_space_sweep/g5_the_singularity",
+      "checkpoint_path": "high_tension_phase_space_sweep/g5_the_singularity/epoch_0080.pt",
+      "eval_output": "high_tension_phase_space_sweep/full_eval/g5_the_singularity"
+    },
+    {
+      "name": "g6_cycle_ablation",
+      "notes": "G6 [Cycle Ablation]: cycle prior removed under kinetic 2.0 and terminal SWD 8.0.",
+      "config_path": "high_tension_phase_space_sweep/g6_cycle_ablation.json",
+      "checkpoint_dir": "high_tension_phase_space_sweep/g6_cycle_ablation",
+      "checkpoint_path": "high_tension_phase_space_sweep/g6_cycle_ablation/epoch_0080.pt",
+      "eval_output": "high_tension_phase_space_sweep/full_eval/g6_cycle_ablation"
+    },
+    {
+      "name": "g7_freq_ablation",
+      "notes": "G7 [Freq Ablation]: low-frequency prior removed under kinetic 2.0 and terminal SWD 8.0.",
+      "config_path": "high_tension_phase_space_sweep/g7_freq_ablation.json",
+      "checkpoint_dir": "high_tension_phase_space_sweep/g7_freq_ablation",
+      "checkpoint_path": "high_tension_phase_space_sweep/g7_freq_ablation/epoch_0080.pt",
+      "eval_output": "high_tension_phase_space_sweep/full_eval/g7_freq_ablation"
+    },
+    {
+      "name": "g8_sweet_spot",
+      "notes": "G8 [Sweet Spot]: kinetic 1.5 vs terminal SWD 8.0 with full priors.",
+      "config_path": "high_tension_phase_space_sweep/g8_sweet_spot.json",
+      "checkpoint_dir": "high_tension_phase_space_sweep/g8_sweet_spot",
+      "checkpoint_path": "high_tension_phase_space_sweep/g8_sweet_spot/epoch_0080.pt",
+      "eval_output": "high_tension_phase_space_sweep/full_eval/g8_sweet_spot"
+    }
+  ]
+}

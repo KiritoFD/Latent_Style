@@ -1,0 +1,114 @@
+{
+  "num_rounds": 1,
+  "latest": {
+    "epoch": 60,
+    "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\src\\style_oa\\optuna_hpo\\trial_0012\\experiment\\full_eval\\epoch_0060\\summary.json",
+    "transfer_clip_style": 0.7084907392263412,
+    "transfer_content_lpips": 0.43837477871333325,
+    "transfer_fid": null,
+    "transfer_art_fid": null,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6612595578034719,
+    "photo_to_art_fid": null,
+    "photo_to_art_art_fid": null,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "mean": {
+    "transfer_clip_style": 0.7084907392263412,
+    "transfer_content_lpips": 0.43837477871333325,
+    "transfer_fid": null,
+    "transfer_art_fid": null,
+    "transfer_classifier_acc": 0.0,
+    "photo_to_art_clip_style": 0.6612595578034719,
+    "photo_to_art_fid": null,
+    "photo_to_art_art_fid": null,
+    "photo_to_art_classifier_acc": 0.0
+  },
+  "best": {
+    "best_transfer_classifier_acc": {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\src\\style_oa\\optuna_hpo\\trial_0012\\experiment\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.7084907392263412,
+      "transfer_content_lpips": 0.43837477871333325,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6612595578034719,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_clip_style": {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\src\\style_oa\\optuna_hpo\\trial_0012\\experiment\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.7084907392263412,
+      "transfer_content_lpips": 0.43837477871333325,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6612595578034719,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_transfer_fid": null,
+    "best_transfer_art_fid": null,
+    "best_photo_to_art_classifier_acc": {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\src\\style_oa\\optuna_hpo\\trial_0012\\experiment\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.7084907392263412,
+      "transfer_content_lpips": 0.43837477871333325,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6612595578034719,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_clip_style": {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\src\\style_oa\\optuna_hpo\\trial_0012\\experiment\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.7084907392263412,
+      "transfer_content_lpips": 0.43837477871333325,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6612595578034719,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    },
+    "best_photo_to_art_fid": null,
+    "best_photo_to_art_art_fid": null,
+    "best_transfer_content_lpips": {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\src\\style_oa\\optuna_hpo\\trial_0012\\experiment\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.7084907392263412,
+      "transfer_content_lpips": 0.43837477871333325,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6612595578034719,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  },
+  "rounds": [
+    {
+      "epoch": 60,
+      "summary_path": "I:\\Github\\Latent_Style\\Cycle-NCE\\src\\style_oa\\optuna_hpo\\trial_0012\\experiment\\full_eval\\epoch_0060\\summary.json",
+      "transfer_clip_style": 0.7084907392263412,
+      "transfer_content_lpips": 0.43837477871333325,
+      "transfer_fid": null,
+      "transfer_art_fid": null,
+      "transfer_classifier_acc": 0.0,
+      "photo_to_art_clip_style": 0.6612595578034719,
+      "photo_to_art_fid": null,
+      "photo_to_art_art_fid": null,
+      "photo_to_art_classifier_acc": 0.0
+    }
+  ],
+  "updated_at": "2026-03-24 16:01:41"
+}

@@ -1,0 +1,25 @@
+{
+  "_base": "../S-add__K-1_C-0_W-20_Col-0/config.json",
+  "model": {
+    "use_diffeomorphic_stroke": true,
+    "diffeomorphic_color_strength": 0.85,
+    "diffeomorphic_warp_strength": 0.05,
+    "diffeomorphic_texture_gate_strength": 8.0,
+    "diffeomorphic_normal_leak": 0.0
+  },
+  "training": {
+    "batch_size": 64,
+    "num_epochs": 8,
+    "save_interval": 1,
+    "full_eval_batch_size": 6,
+    "resume_checkpoint": ""
+  },
+  "checkpoint": {
+    "save_dir": "./exp/diffeomorphic_stroke_tangent_local"
+  },
+  "ablation": {
+    "name": "diffeomorphic_stroke_tangent_local",
+    "axis": "five_channel_texture_tangent_warp",
+    "notes": "Constrain 5-channel coordinate warp to content texture tangents and suppress normal diffusion."
+  }
+}

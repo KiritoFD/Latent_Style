@@ -1,0 +1,360 @@
+
+
+$ C:\Users\xy\AppData\Local\Programs\Python\Python312\python.exe run_evaluation.py G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne --output G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval --batch_size 20 --max_src_samples 30 --max_ref_compare 50 --max_ref_cache 256 --ref_feature_batch_size 64 --num_steps 12 --step_size 1.0
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\utils\_validators.py:205: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+HF cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+
+Phase 1: Generation (Batch Size 20)
+  Generating Batch 1/8
+  Generating Batch 2/8
+  Generating Batch 3/8
+  Generating Batch 4/8
+  Generating Batch 5/8
+  Generating Batch 6/8
+  Generating Batch 7/8
+  Generating Batch 8/8
+  Generation models unloaded
+
+æ££å†©ç•?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found. Tried:
+    - ..\..\eval_cache\eval_style_image_classifier.pt
+    - ../Cycle-NCE/eval_cache/eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\SchrodingerBridge\eval_cache\eval_style_image_classifier.pt
+  LPIPS Loaded
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 398/398 [00:00<00:00, 44194.99it/s]
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\ref_feats_fa2d56e3a1_m80.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+æ££å†©æƒ?Generating Summary...
+é–?Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0001\summary.json
+Summary grid saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0001\summary_grid.png
+Summary grid source selection (max transfer clip_style mean):
+  photo: 2013-11-17 16_40_10
+  Hayao: 1019
+  monet: 00812
+  vangogh: 00098
+  cezanne: 00212
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\utils\_validators.py:205: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+HF cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+
+Phase 1: Generation (Batch Size 20)
+  Generating Batch 1/8
+  Generating Batch 2/8
+  Generating Batch 3/8
+  Generating Batch 4/8
+  Generating Batch 5/8
+  Generating Batch 6/8
+  Generating Batch 7/8
+  Generating Batch 8/8
+  Generation models unloaded
+
+æ££å†©ç•?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found. Tried:
+    - ..\..\eval_cache\eval_style_image_classifier.pt
+    - ../Cycle-NCE/eval_cache/eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\SchrodingerBridge\eval_cache\eval_style_image_classifier.pt
+  LPIPS Loaded
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 398/398 [00:00<00:00, 66335.51it/s]
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\ref_feats_fa2d56e3a1_m80.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+æ££å†©æƒ?Generating Summary...
+é–?Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0002\summary.json
+Summary grid saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0002\summary_grid.png
+Summary grid source selection (max transfer clip_style mean):
+  photo: 2013-11-18 02_42_31
+  Hayao: 1019
+  monet: 00812
+  vangogh: 00098
+  cezanne: 00576
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\utils\_validators.py:205: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+HF cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+
+Phase 1: Generation (Batch Size 20)
+  Generating Batch 1/8
+  Generating Batch 2/8
+  Generating Batch 3/8
+  Generating Batch 4/8
+  Generating Batch 5/8
+  Generating Batch 6/8
+  Generating Batch 7/8
+  Generating Batch 8/8
+  Generation models unloaded
+
+æ££å†©ç•?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found. Tried:
+    - ..\..\eval_cache\eval_style_image_classifier.pt
+    - ../Cycle-NCE/eval_cache/eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\SchrodingerBridge\eval_cache\eval_style_image_classifier.pt
+  LPIPS Loaded
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 398/398 [00:00<00:00, 66335.51it/s]
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\ref_feats_fa2d56e3a1_m80.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+æ££å†©æƒ?Generating Summary...
+é–?Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0003\summary.json
+Summary grid saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0003\summary_grid.png
+Summary grid source selection (max transfer clip_style mean):
+  photo: 2013-11-18 02_42_31
+  Hayao: 1019
+  monet: 00789
+  vangogh: 00098
+  cezanne: 00212
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\utils\_validators.py:205: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+HF cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+
+Phase 1: Generation (Batch Size 20)
+  Generating Batch 1/8
+  Generating Batch 2/8
+  Generating Batch 3/8
+  Generating Batch 4/8
+  Generating Batch 5/8
+  Generating Batch 6/8
+  Generating Batch 7/8
+  Generating Batch 8/8
+  Generation models unloaded
+
+æ££å†©ç•?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found. Tried:
+    - ..\..\eval_cache\eval_style_image_classifier.pt
+    - ../Cycle-NCE/eval_cache/eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\SchrodingerBridge\eval_cache\eval_style_image_classifier.pt
+  LPIPS Loaded
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 398/398 [00:00<00:00, 66293.36it/s]
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\ref_feats_fa2d56e3a1_m80.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+æ££å†©æƒ?Generating Summary...
+é–?Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0004\summary.json
+Summary grid saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0004\summary_grid.png
+Summary grid source selection (max transfer clip_style mean):
+  photo: 2013-11-18 02_42_31
+  Hayao: 1019
+  monet: 00789
+  vangogh: 00098
+  cezanne: 00576
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\utils\_validators.py:205: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+HF cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+
+Phase 1: Generation (Batch Size 20)
+  Generating Batch 1/8
+  Generating Batch 2/8
+  Generating Batch 3/8
+  Generating Batch 4/8
+  Generating Batch 5/8
+  Generating Batch 6/8
+  Generating Batch 7/8
+  Generating Batch 8/8
+  Generation models unloaded
+
+æ££å†©ç•?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found. Tried:
+    - ..\..\eval_cache\eval_style_image_classifier.pt
+    - ../Cycle-NCE/eval_cache/eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\SchrodingerBridge\eval_cache\eval_style_image_classifier.pt
+  LPIPS Loaded
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 398/398 [00:00<00:00, 56861.26it/s]
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\ref_feats_fa2d56e3a1_m80.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+æ££å†©æƒ?Generating Summary...
+é–?Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0005\summary.json
+Summary grid saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0005\summary_grid.png
+Summary grid source selection (max transfer clip_style mean):
+  photo: 2013-11-18 02_42_31
+  Hayao: 1019
+  monet: 00789
+  vangogh: 00098
+  cezanne: 00271
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\utils\_validators.py:205: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+HF cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+
+Phase 1: Generation (Batch Size 20)
+  Generating Batch 1/8
+  Generating Batch 2/8
+  Generating Batch 3/8
+  Generating Batch 4/8
+  Generating Batch 5/8
+  Generating Batch 6/8
+  Generating Batch 7/8
+  Generating Batch 8/8
+  Generation models unloaded
+
+æ££å†©ç•?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found. Tried:
+    - ..\..\eval_cache\eval_style_image_classifier.pt
+    - ../Cycle-NCE/eval_cache/eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\SchrodingerBridge\eval_cache\eval_style_image_classifier.pt
+  LPIPS Loaded
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 398/398 [00:00<00:00, 63521.04it/s]
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\ref_feats_fa2d56e3a1_m80.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+æ££å†©æƒ?Generating Summary...
+é–?Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0006\summary.json
+Summary grid saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0006\summary_grid.png
+Summary grid source selection (max transfer clip_style mean):
+  photo: 2013-11-18 02_42_31
+  Hayao: 1019
+  monet: 00695
+  vangogh: 00098
+  cezanne: 00271
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\utils\_validators.py:205: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+HF cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+
+Phase 1: Generation (Batch Size 20)
+  Generating Batch 1/8
+  Generating Batch 2/8
+  Generating Batch 3/8
+  Generating Batch 4/8
+  Generating Batch 5/8
+  Generating Batch 6/8
+  Generating Batch 7/8
+  Generating Batch 8/8
+  Generation models unloaded
+
+æ££å†©ç•?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found. Tried:
+    - ..\..\eval_cache\eval_style_image_classifier.pt
+    - ../Cycle-NCE/eval_cache/eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\SchrodingerBridge\eval_cache\eval_style_image_classifier.pt
+  LPIPS Loaded
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 398/398 [00:00<00:00, 66332.87it/s]
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\ref_feats_fa2d56e3a1_m80.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+æ££å†©æƒ?Generating Summary...
+é–?Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0007\summary.json
+Summary grid saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0007\summary_grid.png
+Summary grid source selection (max transfer clip_style mean):
+  photo: 2013-11-17 16_40_10
+  Hayao: 1019
+  monet: 00789
+  vangogh: 00098
+  cezanne: 00271
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\utils\_validators.py:205: UserWarning: The `local_dir_use_symlinks` argument is deprecated and ignored in `hf_hub_download`. Downloading to a local directory does not use symlinks anymore.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+HF cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+HF hub cache dir: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\hf
+
+Phase 1: Generation (Batch Size 20)
+  Generating Batch 1/8
+  Generating Batch 2/8
+  Generating Batch 3/8
+  Generating Batch 4/8
+  Generating Batch 5/8
+  Generating Batch 6/8
+  Generating Batch 7/8
+  Generating Batch 8/8
+  Generation models unloaded
+
+æ££å†©ç•?Phase 2: Evaluation
+  WARNING: image style classifier checkpoint not found. Tried:
+    - ..\..\eval_cache\eval_style_image_classifier.pt
+    - ../Cycle-NCE/eval_cache/eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\eval_style_image_classifier.pt
+    - G:\GitHub\Latent_Style\SchrodingerBridge\eval_cache\eval_style_image_classifier.pt
+  LPIPS Loaded
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights: 100%|¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€| 398/398 [00:00<00:00, 66343.41it/s]
+  CLIP Loaded (HF) from: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\manual_clip\openai-clip-vit-base-patch32
+Found global reference cache: G:\GitHub\Latent_Style\Cycle-NCE\eval_cache\ref_feats_fa2d56e3a1_m80.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+
+æ££å†©æƒ?Generating Summary...
+é–?Summary saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0008\summary.json
+Summary grid saved: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0008\summary_grid.png
+Summary grid source selection (max transfer clip_style mean):
+  photo: 2013-11-17 16_40_10
+  Hayao: 1019
+  monet: 00789
+  vangogh: 00098
+  cezanne: 00271
+Batch eval | ckpt dir: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne
+Batch eval | output root: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval
+Batch eval | checkpoints: 8
+
+[epoch_0001] eval -> G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0001
+
+[epoch_0002] eval -> G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0002
+
+[epoch_0003] eval -> G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0003
+
+[epoch_0004] eval -> G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0004
+
+[epoch_0005] eval -> G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0005
+
+[epoch_0006] eval -> G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0006
+
+[epoch_0007] eval -> G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0007
+
+[epoch_0008] eval -> G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\epoch_0008
+
+Batch eval finished | failures: 0 | summary: G:\GitHub\Latent_Style\SchrodingerBridge\weight_sweep_40\K1_r12_hayao_cezanne\full_eval\batch_summary.csv
