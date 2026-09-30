@@ -17,72 +17,81 @@
 
 \begin{document}
 
-\title{WEAVE: Wavelet-Decoupled Velocity Matching\\for Lightweight Latent Style Transfer}
+\title{WEAVE: Escaping the Identity Shortcut in\\Lightweight Style Transfer with Wavelets}
 \author{Anonymous ICME submission}
 \maketitle
 
 \begin{abstract}
-Diffusion-based style transfer produces strong stylization but exceeds the memory budget of
-consumer GPUs, while many lightweight alternatives drift toward an identity mapping that
-scores well on content metrics yet adds little style. We trace this failure to frequency
-dominance: in a shared latent objective, large low-frequency structural residuals overwhelm
-the high-frequency style signal. We propose WEAVE, a wavelet-decoupled velocity-matching
-framework in the latent space of a frozen VAE. A one-level Haar transform separates structure
-from oriented texture, a compact velocity network learns source-aligned transport with a
-down-weighted low-frequency loss, and a stepwise statistical alignment injects target style
-into the high-frequency bands at every integration step. We also report identity and target-style
-references that expose style suppression and content collapse. With 1.04M
-trainable parameters and 1.4 minutes of training on one RTX 3060, WEAVE exceeds the identity
-reference on three benchmarks while preserving more content than diffusion editors.
+Lightweight style transfer suits consumer devices, yet many compact models return an image
+closer to the unchanged input than to the requested style, and standard metrics reward this
+identity shortcut. We make the failure measurable with two trivial references, the
+unchanged source and an unrelated target-style image, which bracket valid transfer. On three
+benchmarks, eight of thirteen recent methods leave this bracket at least once. We trace the
+shortcut to frequency dominance: coarse structure carries most of the training gradient but
+little style information. WEAVE resolves it in the latent space of a frozen autoencoder. A Haar
+transform separates structure from texture, a compact velocity network learns source-anchored
+transport, and stepwise statistical alignment injects high-frequency style. With 1.04M trainable parameters and 1.4 minutes of
+training on one consumer GPU, WEAVE stays inside the bracket on all benchmarks and preserves the
+most content among methods that do.
 \end{abstract}
 
 \begin{IEEEkeywords}
-style transfer, flow matching, wavelet decomposition, latent space, efficient generation
+style transfer, flow matching, wavelet decomposition, evaluation protocol, efficient generation
 \end{IEEEkeywords}
 
 \section{Introduction}
 \label{sec:intro}
 
-Image foundation models such as Qwen-Image and FLUX.2 provide strong editing priors but can
-require more than 60\,GB of GPU memory~\cite{wu2025qwenimagetechnicalreport,blackforestlabs2025flux2}.
-Lightweight style-transfer models avoid this cost, yet some preserve the source so strongly
-that their style affinity falls \emph{below the unchanged input}. Standard protocols hide this
-no-op behavior: LPIPS rewards source reconstruction~\cite{zhang2018unreasonable}, the content
-factor of ArtFID can favor a near-copy~\cite{wright2022artfid}, and the identity mapping is
-rarely reported as a baseline.
+Artistic style transfer has moved from research demos to camera apps, creative tools, and
+on-device media pipelines, where memory and latency budgets are tight. The strongest current
+results come from diffusion editors and image foundation models, which reuse a billion-parameter
+denoiser at every call and can require more than 60\,GB of GPU
+memory~\cite{wu2025qwenimagetechnicalreport,blackforestlabs2025flux2}. Compact feed-forward and
+state-space models~\cite{liu2024samst,liu2024samam,park2020cut} fit these budgets, but they raise a
+question that current benchmarks rarely ask: \emph{did the output actually change style?}
 
-Fig.~\ref{fig:page1} makes the missing comparison explicit with two trivial outputs. Identity
-(IDT) returns the source; Target Style (TGT) returns an unrelated image of the requested style.
-A useful transfer should move beyond IDT in style without moving as far from the source as TGT
-in content. Methods below IDT have not acquired the target style; methods beyond TGT have
-discarded as much content as a source-independent style image. We call this bracket the
-IDT--TGT sandwich and report it alongside DINO, CLIP, and LPIPS scores.
+\noindent\textbf{A hidden failure mode.} Content metrics such as LPIPS~\cite{zhang2018unreasonable}
+and the content factor of ArtFID~\cite{wright2022artfid} are maximized by copying the input, so a
+model that barely edits the source can look excellent. We therefore report two trivial outputs with
+every metric (Fig.~\ref{fig:page1}): Identity (IDT) returns the source, and Target Style (TGT)
+returns an unrelated image of the requested style. Valid transfer must beat IDT on style and stay
+closer to the source than TGT on content. This \emph{IDT--TGT sandwich} is simple, uses raw metric
+units, and is revealing: across three benchmarks, eight of thirteen recent methods fall outside it
+at least once (Table~\ref{tab:main}). Some are indistinguishable from a copy in style, which we
+call the \emph{identity shortcut}; others discard as much content as an unrelated painting.
 
-Why do compact models enter the identity regime? Networks fit low frequencies
-first~\cite{rahaman2019spectral,xu2022frequency}, and natural images concentrate energy in
-layout rather than brushstroke. A velocity field trained on the full latent must explain both
-with one output, so the larger low-frequency residuals dominate the gradient and weaken
-style-conditioned high-frequency motion. Our subband probes (Fig.~\ref{fig:probes}) measure this
-imbalance directly; widening the network does not remove it because both signals still share
-one basis and one objective.
+\noindent\textbf{Why compact models take the shortcut.} We find the cause in the training signal
+rather than in model size. When a velocity field is regressed on the full latent, the
+low-frequency (LL) Haar band carries 69.5\% of the gradient energy across 5{,}000 cross-style
+pairs, yet it is the \emph{least} style-discriminative band: its between-/within-style variance
+ratio is 0.12, against 0.56 for the finest band HH (Fig.~\ref{fig:probes}). The objective is thus
+dominated by structure that should change little, while the texture that defines style receives a
+weak, easily ignored gradient. Networks that fit low frequencies first~\cite{rahaman2019spectral,xu2022frequency}
+converge toward the source, and widening them does not help because both signals still share one
+basis and one loss.
 
-We therefore change the representation and the target before adding capacity. WEAVE caches
-latents of a frozen SD1.5 VAE~\cite{rombach2022high} and splits them with a one-level Haar
-transform into structure (LL) and oriented texture (LH/HL/HH). A 1.04M-parameter velocity network
-learns source-aligned transport under a down-weighted LL loss; pooled target codes modulate only
-the LH/HL heads; and an AdaIN update aligns the high-frequency residual after every Euler step.
-Training takes 82.8\,s on one RTX~3060 and stops at an internal gradient transition without any
-image evaluation.
+\noindent\textbf{Our approach.} WEAVE decides \emph{where} each signal lives before deciding how much
+capacity to spend. Working on cached latents of a frozen SD1.5 VAE~\cite{rombach2022high}, a one-level
+Haar transform separates structure (LL) from oriented texture (LH/HL/HH). A 1.04M-parameter
+velocity network learns transport toward a source-anchored target under a down-weighted LL loss;
+pooled, coordinate-free target codes steer only the LH/HL heads; and an AdaIN update aligns the
+high-frequency residual after every Euler step. Training takes 82.8\,s on one RTX~3060 and stops
+at an internal gradient transition, without any image evaluation.
+
+WEAVE is the only learned model under 10M parameters that stays inside the sandwich on all three
+benchmarks, and among the five methods that do, it preserves the most content, with the highest \dinoc{} on every benchmark, 11--34$\times$ fewer trainable parameters than the
+other learned ones, and 11--18$\times$ faster inference than the others with a reported runtime.
 
 \noindent\textbf{Contributions.}
-(1)~An evaluation guideline that reports IDT and TGT references with every metric, exposing
-style suppression and content collapse in raw metric units.
-(2)~A measurement of low-frequency gradient dominance in latent velocity matching and a
-wavelet-decoupled transport that assigns structure, learned texture motion, and trajectory-level
-statistics to explicit subbands.
-(3)~A 1.04M-parameter model trained in 1.4 minutes that clears IDT on three benchmarks, with
-matched ablations, seed and reference-pool checks, and a training-free plug-in for a frozen SD1.5
-editor.
+(1)~\emph{Evaluation.} The IDT--TGT sandwich, a metric-agnostic protocol that exposes the identity
+shortcut and content collapse, and an audit of thirteen methods under it.
+(2)~\emph{Diagnosis.} A subband measurement showing that low-frequency gradient dominance, not
+capacity, drives compact latent models toward identity.
+(3)~\emph{Method.} Wavelet-decoupled velocity matching that assigns structure, learned texture
+motion, and trajectory-level statistics to explicit subbands, with metric-free early stopping.
+(4)~\emph{Evidence.} The best content preservation among valid methods at 1.04M parameters and
+1.4 training minutes, supported by matched ablations, three seeds, reference-pool resampling,
+zero-shot transfer, and a training-free plug-in that improves a frozen SD1.5 editor.
 
 \begin{figure*}[t]
 \centering
@@ -244,7 +253,8 @@ caching. Inference time covers the 8-step ODE and VAE decoding for 750 images.
 the best entry per column is \textbf{bold} and the second \underline{underlined}. $\dagger$: style
 not above IDT; $\ddagger$: content beyond TGT. Params in millions with frozen parameters as
 superscript; Params and Train rank trained methods. WEAVE uses its selected D5 checkpoint on D5 and
-dataset-specific checkpoints on P2A/R5; cost refers to the D5 model. Times on one RTX~3060; $\ast$: author report on
+dataset-specific checkpoints on P2A/R5; cost refers to the D5 model. Valid: number of benchmarks
+without $\dagger$ or $\ddagger$. Times on one RTX~3060; $\ast$: author report on
 four GPUs~\cite{deng2022stytr2}; $\sim$3\,h: Z-STAR estimated from step-scaled runs (full 512\,px runs exceed 12\,GB).}
 \label{tab:main}
 \scriptsize
@@ -254,22 +264,26 @@ four GPUs~\cite{deng2022stytr2}; $\sim$3\,h: Z-STAR estimated from step-scaled r
 \end{table*}
 
 \subsection{Main Results}
-Table~\ref{tab:main} shows that the sandwich separates methods that single metrics conflate.
-SD-Turbo attains the best LPIPS (0.003) on D5 because it barely edits the input, and its \clips{}
-does not exceed IDT. StyleAligned has the highest \dinos{} on every board but crosses the TGT LPIPS
-reference on D5 and R5, i.e., it replaces rather than stylizes the content. SaMST on D5 and
-Latent-WCT on all boards stay below IDT in style; the latter shows that wavelet statistics alone
-do not replace learned transport.
+\noindent\textbf{Auditing the field.} The last column of Table~\ref{tab:main} counts the benchmarks on
+which a method stays inside the sandwich; only five of thirteen reach 3/3. The failures are
+instructive. SD-Turbo attains the best D5 LPIPS (0.003) precisely because it barely edits the input:
+its \clips{} equals that of IDT. SaMam, the strongest compact baseline on content, has \clips{} below
+IDT on two benchmarks, so its low LPIPS partly reflects the identity shortcut. At the other extreme,
+StyleAligned has the highest \dinos{} everywhere but moves farther from the source than an unrelated
+target painting on D5 and R5. Latent-WCT never clears IDT, showing that wavelet statistics alone do
+not produce transfer; the learned transport is necessary.
 
-On D5, WEAVE clears IDT on both style measures (\dinos{} 0.4918 vs.\ 0.419, \clips{} 0.7128
-vs.\ 0.693) while keeping LPIPS at 0.260. Among trained methods that clear IDT on both style
-metrics, it has the lowest LPIPS; SaMam's lower LPIPS (0.243) comes with \clips{} below IDT.
-Compared with Seedream~4.5, WEAVE reaches higher \dinos{} at roughly half the LPIPS. On P2A, WEAVE
-stays inside the bracket with the second-best \dinoc{}; on R5 it improves \dinos{} over IDT, CUT,
-and SaMam with the second-best LPIPS. The stronger D5-512 profile is consistent with native
-high-frequency coefficients preserving detail that is compressed at 256\,px, although P2A also
-differs in data. WEAVE has the fewest trainable parameters and the shortest training of all
-learned methods (1.4\,min vs.\ 39.5--1440\,min) and needs 168\,ms per image at inference.
+\noindent\textbf{Comparison among valid methods.} Restricted to the five methods that pass everywhere
+(Z-STAR, StyTR-2, AesPA-Net, Seedream~4.5, and WEAVE), WEAVE has the highest \dinoc{} on all three
+benchmarks (0.810/0.861/0.772) and the lowest LPIPS on D5 and R5, while its \dinos{} lies within the
+range of the others. On D5 it reaches higher \dinos{} than the commercial Seedream~4.5 at about half
+the LPIPS (0.260 vs.\ 0.477). The stronger D5-512 profile is consistent with native high-frequency
+coefficients preserving detail that is compressed at 256\,px.
+
+\noindent\textbf{Cost.} WEAVE has the fewest trainable parameters and the shortest training of all
+learned methods (1.4\,min vs.\ 39.5--1440\,min, 28--1000$\times$ less) and needs 168\,ms per 512\,px
+image including VAE decoding. Among the valid methods, the next cheapest learned model (AesPA-Net)
+has 11$\times$ more trainable parameters and 11$\times$ longer inference.
 
 \begin{figure*}[t]
 \centering
@@ -366,13 +380,16 @@ rule is validated on one architecture and three seeds, and IDT/TGT are board-spe
 measured with imperfect perceptual proxies. Baselines use their recommended operating points
 rather than a compute-matched search.
 
-The IDT--TGT sandwich gives style and content metrics an explicit direction: IDT flags methods
-stuck at the source, TGT flags those that abandon it. WEAVE resolves the underlying conflict in
-frequency coordinates: a source-aligned target limits structural motion, band-weighted flow
-learns organized transport, and stepwise AdaIN supplies high-frequency statistics along the
-trajectory, with 1.04M trainable parameters and 1.4 minutes of training. Code, checkpoints, and
-the 750-request protocol will be released; the supplementary material details the protocol,
-per-epoch curves, and additional controls.
+The identity shortcut is easy to miss because the metrics that should catch it reward it. Two
+trivial references, IDT and TGT, make it visible in raw metric units, and under them most of the
+field fails somewhere. The shortcut has a spectral cause: coarse structure dominates the gradient
+while carrying little style. WEAVE addresses that cause directly, anchoring structure at the
+source, learning texture transport in explicit subbands, and injecting high-frequency statistics
+along the trajectory. The result is the most content-preserving valid transfer we measured, from
+a 1.04M-parameter model trained in 1.4 minutes on a consumer GPU, which makes style transfer
+practical for resource-constrained multimedia applications. Code, checkpoints, and the
+750-request protocol will be released; the supplement details the protocol, per-epoch curves,
+and additional controls.
 
 \bibliographystyle{IEEEbib}
 \bibliography{refs}
