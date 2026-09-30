@@ -1,0 +1,5 @@
+[loaded] NVIDIA GeForce RTX 4070 Laptop GPU, params=873,680
+[gen] 750 latents in 2.806 s (3.741 ms/img, 267.3 img/s)
+[gen] latent tensor: (750, 4, 64, 64) torch.float32
+[saved] experiments\inference_speed\results\latents_750.pt
+[done] stage 1 complete, GPU released on exit.

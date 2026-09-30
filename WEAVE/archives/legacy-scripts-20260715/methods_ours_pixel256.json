@@ -1,0 +1,7 @@
+{
+    "ours_pixel256_e5": {
+        "gen_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/pixel256_photo2art/pixel256_b1_e5_softmax/full_eval/epoch_0005/images",
+        "ref_dir": "/mnt/i/legacy256_overfit50/test",
+        "src_dir": "/mnt/i/legacy256_overfit50/test"
+    }
+}

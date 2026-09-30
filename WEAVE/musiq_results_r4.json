@@ -1,0 +1,112 @@
+{
+  "r4_spec_swd9_15ep": {
+    "status": "ok",
+    "epoch": "epoch_0015",
+    "n_images": 750,
+    "musiq": 45.313516756693524,
+    "dino_content": 0.7501454639236133,
+    "dino_style": 0.48637422976394495,
+    "dino_structure": 0.025853773467242717,
+    "n_content": 750,
+    "n_style": 750
+  },
+  "r4_baseline_15ep": {
+    "status": "ok",
+    "musiq": 51.84,
+    "dino_content": 0.6642485596934954,
+    "dino_style": 0.47023556516071163,
+    "dino_structure": 0.028947550846884648,
+    "n_content": 750,
+    "n_style": 750
+  },
+  "r4_baseline_10ep": {
+    "status": "ok",
+    "musiq": 53.11,
+    "dino_content": 0.683109531879425,
+    "dino_style": 0.4663287150959174,
+    "dino_structure": 0.02820539397125443,
+    "n_content": 750,
+    "n_style": 750
+  },
+  "r4_region_swd9_15ep": {
+    "status": "ok",
+    "musiq": 51.96,
+    "dino_content": 0.712908414443334,
+    "dino_style": 0.466061887294054,
+    "dino_structure": 0.0272552298742036,
+    "n_content": 750,
+    "n_style": 750
+  },
+  "R1_baseline": {
+    "status": "ok"
+  },
+  "R1_spectral_5ep": {
+    "status": "ok"
+  },
+  "R1_soft_mask": {
+    "status": "ok"
+  },
+  "R1_no_swd_loss": {
+    "status": "ok"
+  },
+  "R2_spec_noswd": {
+    "status": "ok"
+  },
+  "R2_spec_llw1_5ep": {
+    "status": "ok"
+  },
+  "R2_spec_swd6_5ep": {
+    "status": "ok"
+  },
+  "R2_spectral_10ep": {
+    "status": "ok"
+  },
+  "R3_swd6_llw1_5ep": {
+    "status": "ok"
+  },
+  "R3_swd6_llw1_10ep": {
+    "status": "ok"
+  },
+  "R3_swd9_llw1_10ep": {
+    "status": "ok"
+  },
+  "R3_llw05_10ep": {
+    "status": "ok"
+  },
+  "R3_llw2_10ep": {
+    "status": "ok"
+  },
+  "R3_spectral_15ep": {
+    "status": "ok"
+  },
+  "abl_baseline": {
+    "status": "ok",
+    "epoch": "epoch_0005",
+    "n_images": 750,
+    "dino_content": 0.7070224239428838,
+    "dino_style": 0.45841495667646326,
+    "dino_structure": 0.027128595195710658,
+    "n_content": 750,
+    "n_style": 750
+  },
+  "r3_spectral_15ep": {
+    "status": "ok",
+    "epoch": "epoch_0015",
+    "n_images": 750,
+    "dino_content": 0.7305668688813846,
+    "dino_style": 0.4853085254629453,
+    "dino_structure": 0.02645744639262557,
+    "n_content": 750,
+    "n_style": 750
+  },
+  "r3_swd9_llw1_10ep": {
+    "status": "ok",
+    "epoch": "epoch_0010",
+    "n_images": 750,
+    "dino_content": 0.7615167696078619,
+    "dino_style": 0.4853677101333936,
+    "dino_structure": 0.02553718610604604,
+    "n_content": 750,
+    "n_style": 750
+  }
+}

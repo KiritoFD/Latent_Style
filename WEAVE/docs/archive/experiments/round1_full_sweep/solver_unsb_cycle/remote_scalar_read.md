@@ -1,0 +1,59 @@
+# solver_unsb_cycle Remote Scalar Read
+
+Updated: `2026-06-11T19:42:13.133984`
+
+- Run name: `aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
+- Remote run dir: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_unsb_cycle_seed42_b8a2`
+- Retained checkpoints: `30`
+- Latest checkpoint: `epoch_0030.pt`
+- Remote eval files currently visible: `62`
+- Eval files:
+  - `full_eval_fast_snapshot/clip_lpips_curve.csv`
+  - `full_eval_fast_snapshot/epoch_0001/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0001/summary.json`
+  - `full_eval_fast_snapshot/epoch_0002/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0002/summary.json`
+  - `full_eval_fast_snapshot/epoch_0003/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0003/summary.json`
+  - `full_eval_fast_snapshot/epoch_0004/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0004/summary.json`
+  - `full_eval_fast_snapshot/epoch_0005/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0005/summary.json`
+  - `full_eval_fast_snapshot/epoch_0006/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0006/summary.json`
+  - `full_eval_fast_snapshot/epoch_0007/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0007/summary.json`
+  - `full_eval_fast_snapshot/epoch_0008/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0008/summary.json`
+  - `full_eval_fast_snapshot/epoch_0009/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0009/summary.json`
+  - `full_eval_fast_snapshot/epoch_0010/metrics.csv`
+- Pulled remote logs:
+  - [training_20260611_110534.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_110534.csv)
+  - [training_20260611_110714.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_110714.csv)
+  - [training_20260611_112533.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_112533.csv)
+  - [training_20260611_154512.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_154512.csv)
+  - [training_20260611_155201.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_155201.csv)
+  - [training_20260611_155617.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_155617.csv)
+  - [training_20260611_161804.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_161804.csv)
+  - [training_20260611_164609.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_164609.csv)
+  - [training_20260611_171036.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_171036.csv)
+  - [training_20260611_174345.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_174345.csv)
+  - [training_20260611_181141.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_181141.csv)
+  - [training_20260611_184036.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_184036.csv)
+  - [training_20260611_184530.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_184530.csv)
+  - [training_20260611_191053.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_191053.csv)
+  - [training_20260611_193633.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_20260611_193633.csv)
+- Latest remote training CSV row:
+  - `waiting for first completed training row`
+- Latest runtime watcher sample:
+  - `epoch=31/32`
+  - `step=411/590`
+  - `loss=7.8286`
+  - `tswd=5.1875`
+  - `VRAM=9159/12288 MiB`
+  - `band_status=under_band`
+- Training curve: [training_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/training_curve.png)
+- Runtime curve: [runtime_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/runtime_curve.png)
+- Runtime CSV: [runtime_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/runtime_curve.csv)
+- Summary JSON: [summary.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_unsb_cycle_remote_scalars/summary.json)

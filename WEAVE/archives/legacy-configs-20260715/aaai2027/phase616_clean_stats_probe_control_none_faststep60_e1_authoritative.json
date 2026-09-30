@@ -1,0 +1,12 @@
+{
+  "_base": "./phase616_clean_stats_probe_control_none_faststep60_e1.json",
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_stats_probe_control_none_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_stats_probe_control_none_faststep60_e1_authoritative",
+    "axis": "phase616_stats_probe_fast_authoritative",
+    "stage": "clean_stats_control_none_authoritative",
+    "notes": "Authoritative rerun for the 616 stats-track control after the transport_stats CSV writer bug was fixed. Keep retained self_affinity_gw mixed OT, unbalanced Sinkhorn, and pure_vertical_flow fixed, with a fresh save root so the closure evidence stays separate from the earlier non-authoritative run."
+  }
+}

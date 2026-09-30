@@ -1,0 +1,15 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_mix_faststep60_e1.json",
+  "bridge": {
+    "coupling_structure_cost_mode": "encoder_hybrid_affinity_gw"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_encoder_hybridaffgw_mix_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_encoder_hybridaffgw_mix_faststep60_e1",
+    "axis": "phase616_ot_probe_featuremap_hybrid_fast",
+    "stage": "clean_ot_encoder_hybrid_affinity_gw_fast_candidate",
+    "notes": "Round-6 OT candidate. Keep the retained mixed appearance-plus-structure composition and pure_vertical_flow fixed, but replace the raw latent proxy with a hybrid encoder-feature descriptor that combines internal low/edge/high statistics and self-affinity geometry."
+  }
+}

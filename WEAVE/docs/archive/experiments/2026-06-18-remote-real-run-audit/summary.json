@@ -1,0 +1,322 @@
+{
+  "remote_worktree": "/mnt/i/Github/Latent_Style/SchrodingerBridge",
+  "stage_roots": [
+    {
+      "stage_root": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto",
+      "exists": true,
+      "stage_summary_present": true,
+      "stage_manifest_present": true,
+      "backfill": {
+        "stage_root": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto",
+        "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto/stage_summary.json",
+        "manifest_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto/stage_manifest.json",
+        "run_count": 2,
+        "close_result_diagnosis": {
+          "status": "separated",
+          "best": {
+            "name": "h0_vertical_fm",
+            "style": 0.6620107294122377,
+            "lpips": 0.3341379833333334,
+            "gap": 0.11212725392109568,
+            "best_epoch": "epoch_0002",
+            "best_epoch_int": 2,
+            "validity_audit": {
+              "artifact_status": "valid",
+              "effect_contract": "training_real_eval_inert",
+              "suite": "stage1_h0_h6_repaired_lowrank",
+              "scientific_reading": "old OT family is still training-real on the repaired base, but pairwise plain eval remains inert across h0-h6",
+              "trust_level": "medium",
+              "recommended_action": "use only post-repair, post-multiblock evidence",
+              "issue_codes": [],
+              "issue_count": 0,
+              "repaired_lowrank_base": true,
+              "audit_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto/_preflight_validity_audit/audits/h0_vertical_fm.json"
+            }
+          },
+          "close_peer_count": 0,
+          "style_eps": 0.005,
+          "lpips_eps": 0.018
+        }
+      },
+      "close_result_diagnosis": {
+        "status": "separated",
+        "best": {
+          "name": "h0_vertical_fm",
+          "style": 0.6620107294122377,
+          "lpips": 0.3341379833333334,
+          "gap": 0.11212725392109568,
+          "best_epoch": "epoch_0002",
+          "best_epoch_int": 2,
+          "validity_audit": {
+            "artifact_status": "valid",
+            "effect_contract": "training_real_eval_inert",
+            "suite": "stage1_h0_h6_repaired_lowrank",
+            "scientific_reading": "old OT family is still training-real on the repaired base, but pairwise plain eval remains inert across h0-h6",
+            "trust_level": "medium",
+            "recommended_action": "use only post-repair, post-multiblock evidence",
+            "issue_codes": [],
+            "issue_count": 0,
+            "repaired_lowrank_base": true,
+            "audit_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto/_preflight_validity_audit/audits/h0_vertical_fm.json"
+          }
+        },
+        "close_peer_count": 0,
+        "style_eps": 0.005,
+        "lpips_eps": 0.018
+      },
+      "best": {
+        "name": "h0_vertical_fm",
+        "logical_run_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto/h0_vertical_fm",
+        "run_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto/h0_vertical_fm",
+        "style": 0.6620107294122377,
+        "lpips": 0.3341379833333334,
+        "gap": 0.11212725392109568,
+        "best_epoch": "epoch_0002",
+        "best_epoch_int": 2,
+        "validity_audit": {
+          "artifact_status": "valid",
+          "effect_contract": "training_real_eval_inert",
+          "suite": "stage1_h0_h6_repaired_lowrank",
+          "scientific_reading": "old OT family is still training-real on the repaired base, but pairwise plain eval remains inert across h0-h6",
+          "trust_level": "medium",
+          "recommended_action": "use only post-repair, post-multiblock evidence",
+          "issue_codes": [],
+          "issue_count": 0,
+          "repaired_lowrank_base": true,
+          "audit_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto/_preflight_validity_audit/audits/h0_vertical_fm.json"
+        }
+      },
+      "runs": [
+        {
+          "name": "h0_vertical_fm",
+          "run_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto/h0_vertical_fm",
+          "best_epoch": "epoch_0002",
+          "best_epoch_int": 2,
+          "style": 0.6620107294122377,
+          "lpips": 0.3341379833333334,
+          "gap": 0.11212725392109568,
+          "validity_audit": {
+            "artifact_status": "valid",
+            "effect_contract": "training_real_eval_inert",
+            "suite": "stage1_h0_h6_repaired_lowrank",
+            "scientific_reading": "old OT family is still training-real on the repaired base, but pairwise plain eval remains inert across h0-h6",
+            "trust_level": "medium",
+            "recommended_action": "use only post-repair, post-multiblock evidence",
+            "issue_codes": [],
+            "issue_count": 0,
+            "repaired_lowrank_base": true,
+            "audit_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto/_preflight_validity_audit/audits/h0_vertical_fm.json"
+          }
+        },
+        {
+          "name": "h1_linear_fm",
+          "run_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_ot_rerun_lowrank_auto/h1_linear_fm",
+          "best_epoch": "epoch_0001",
+          "best_epoch_int": 1,
+          "style": 0.6526460257669291,
+          "lpips": 0.33696081576666664,
+          "gap": 0.12431478999973755,
+          "validity_audit": {
+            "artifact_status": "valid",
+            "effect_contract": "unknown",
+            "suite": "stage1_h0_h6_repaired_lowrank",
+            "scientific_reading": "old OT family is still training-real on the repaired base, but pairwise plain eval remains inert across h0-h6",
+            "trust_level": "medium",
+            "recommended_action": "use only post-repair, post-multiblock evidence",
+            "issue_codes": [],
+            "issue_count": 0,
+            "repaired_lowrank_base": true,
+            "audit_path": "."
+          }
+        }
+      ],
+      "child_dirs": [
+        "_preflight_validity_audit",
+        "h0_vertical_fm",
+        "h1_linear_fm"
+      ]
+    },
+    {
+      "stage_root": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_plain_path_distill_auto",
+      "exists": false,
+      "stage_summary_present": false,
+      "stage_manifest_present": false,
+      "backfill": {},
+      "close_result_diagnosis": {},
+      "best": {},
+      "runs": [],
+      "child_dirs": []
+    },
+    {
+      "stage_root": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_stage3_style_auto",
+      "exists": false,
+      "stage_summary_present": false,
+      "stage_manifest_present": false,
+      "backfill": {},
+      "close_result_diagnosis": {},
+      "best": {},
+      "runs": [],
+      "child_dirs": []
+    },
+    {
+      "stage_root": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_vertical_auto",
+      "exists": true,
+      "stage_summary_present": true,
+      "stage_manifest_present": true,
+      "backfill": {
+        "stage_root": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_vertical_auto",
+        "summary_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_vertical_auto/stage_summary.json",
+        "manifest_path": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_vertical_auto/stage_manifest.json",
+        "run_count": 2,
+        "close_result_diagnosis": {
+          "status": "close_cluster",
+          "best": {
+            "name": "",
+            "style": 0.0,
+            "lpips": 1.0,
+            "gap": 1.44,
+            "best_epoch": "",
+            "best_epoch_int": 0,
+            "validity_audit": {}
+          },
+          "close_peers": [
+            {
+              "name": "h0_vertical_fm",
+              "style": 0.0,
+              "lpips": 1.0,
+              "gap": 1.44,
+              "best_epoch": "",
+              "best_epoch_int": 0,
+              "validity_audit": {
+                "artifact_status": "valid",
+                "effect_contract": "training_real_eval_inert",
+                "suite": "stage1_h0_h6_old_base",
+                "scientific_reading": "close results are expected because the family is training-real but plain no-reference eval-inert",
+                "trust_level": "limited",
+                "recommended_action": "do not reuse as evidence about no-reference style actuation",
+                "issue_codes": [],
+                "issue_count": 0,
+                "repaired_lowrank_base": false,
+                "audit_path": "."
+              }
+            }
+          ],
+          "close_peer_count": 1,
+          "artifact_statuses": [
+            "",
+            "valid"
+          ],
+          "effect_contracts": [
+            "",
+            "training_real_eval_inert"
+          ],
+          "interpretation": "train_eval_contract_gap",
+          "recommendation": "close metrics here are expected from an eval-path-inert family; judge it with training-aware or full-training evidence",
+          "style_eps": 0.005,
+          "lpips_eps": 0.018
+        }
+      },
+      "close_result_diagnosis": {
+        "status": "close_cluster",
+        "best": {
+          "name": "",
+          "style": 0.0,
+          "lpips": 1.0,
+          "gap": 1.44,
+          "best_epoch": "",
+          "best_epoch_int": 0,
+          "validity_audit": {}
+        },
+        "close_peers": [
+          {
+            "name": "h0_vertical_fm",
+            "style": 0.0,
+            "lpips": 1.0,
+            "gap": 1.44,
+            "best_epoch": "",
+            "best_epoch_int": 0,
+            "validity_audit": {
+              "artifact_status": "valid",
+              "effect_contract": "training_real_eval_inert",
+              "suite": "stage1_h0_h6_old_base",
+              "scientific_reading": "close results are expected because the family is training-real but plain no-reference eval-inert",
+              "trust_level": "limited",
+              "recommended_action": "do not reuse as evidence about no-reference style actuation",
+              "issue_codes": [],
+              "issue_count": 0,
+              "repaired_lowrank_base": false,
+              "audit_path": "."
+            }
+          }
+        ],
+        "close_peer_count": 1,
+        "artifact_statuses": [
+          "",
+          "valid"
+        ],
+        "effect_contracts": [
+          "",
+          "training_real_eval_inert"
+        ],
+        "interpretation": "train_eval_contract_gap",
+        "recommendation": "close metrics here are expected from an eval-path-inert family; judge it with training-aware or full-training evidence",
+        "style_eps": 0.005,
+        "lpips_eps": 0.018
+      },
+      "best": {},
+      "runs": [
+        {
+          "name": "h0_vertical_fm",
+          "run_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_vertical_auto/h0_vertical_fm",
+          "best_epoch": "",
+          "best_epoch_int": 0,
+          "style": 0.0,
+          "lpips": 1.0,
+          "gap": 1.44,
+          "validity_audit": {
+            "artifact_status": "valid",
+            "effect_contract": "training_real_eval_inert",
+            "suite": "stage1_h0_h6_old_base",
+            "scientific_reading": "close results are expected because the family is training-real but plain no-reference eval-inert",
+            "trust_level": "limited",
+            "recommended_action": "do not reuse as evidence about no-reference style actuation",
+            "issue_codes": [],
+            "issue_count": 0,
+            "repaired_lowrank_base": false,
+            "audit_path": "."
+          }
+        },
+        {
+          "name": "h1_linear_fm",
+          "run_dir": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/20250618_lite_ot_vertical_auto/h1_linear_fm",
+          "best_epoch": "epoch_0001",
+          "best_epoch_int": 1,
+          "style": 0.661886894305547,
+          "lpips": 0.3671752426666667,
+          "gap": 0.14528834836111965,
+          "validity_audit": {
+            "artifact_status": "valid",
+            "effect_contract": "unknown",
+            "suite": "stage1_h0_h6_old_base",
+            "scientific_reading": "close results are expected because the family is training-real but plain no-reference eval-inert",
+            "trust_level": "limited",
+            "recommended_action": "do not reuse as evidence about no-reference style actuation",
+            "issue_codes": [
+              "convergence_stop_contract_split"
+            ],
+            "issue_count": 1,
+            "repaired_lowrank_base": false,
+            "audit_path": "."
+          }
+        }
+      ],
+      "child_dirs": [
+        "_preflight_config_effect",
+        "_preflight_training_effect",
+        "_preflight_validity_audit",
+        "h0_vertical_fm",
+        "h1_linear_fm"
+      ]
+    }
+  ]
+}

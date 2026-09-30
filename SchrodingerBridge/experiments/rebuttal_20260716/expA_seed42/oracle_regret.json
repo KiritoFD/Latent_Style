@@ -1,0 +1,42 @@
+{
+  "seed": 42,
+  "run_dir": "runs\\submission\\hf_oriented_internal_early_stop",
+  "e_internal": 4,
+  "e_oracle": 4,
+  "regret": 0.0,
+  "epoch_offset": 0,
+  "per_epoch": {
+    "1": {
+      "dino_s": 0.48572115039328734,
+      "dino_c": 0.8230259062374632,
+      "dino_structure": 0.024401114964236817,
+      "clip_s": 0.7118902014891306,
+      "lpips": 0.24090139306266667,
+      "checkpoint": "epoch_0001.pt"
+    },
+    "2": {
+      "dino_s": 0.4887235566303134,
+      "dino_c": 0.7978249119073153,
+      "dino_structure": 0.025306025573362905,
+      "clip_s": 0.7158160087267558,
+      "lpips": 0.26254758960133334,
+      "checkpoint": "epoch_0002.pt"
+    },
+    "3": {
+      "dino_s": 0.4912522354622682,
+      "dino_c": 0.7853437117487192,
+      "dino_structure": 0.026138693310320378,
+      "clip_s": 0.717570492664973,
+      "lpips": 0.26451046152,
+      "checkpoint": "epoch_0003.pt"
+    },
+    "4": {
+      "dino_s": 0.4917414606188734,
+      "dino_c": 0.8103758537669976,
+      "dino_structure": 0.025113118863354128,
+      "clip_s": 0.712688330690066,
+      "lpips": 0.25946189581066664,
+      "checkpoint": "epoch_0004.pt"
+    }
+  }
+}

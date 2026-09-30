@@ -1,0 +1,22 @@
+{
+  "_base": "distinct5_512_ema_variant_e_latent_prototype_ot_queue.json",
+  "training": {
+    "num_epochs": 3
+  },
+  "data": {
+    "pairing_cache_sample_mode": "rank_biased",
+    "pairing_cache_rank_schedule": "easy_to_hard",
+    "pairing_cache_min_topk": 2,
+    "pairing_cache_curriculum_epochs": 3,
+    "pairing_cache_rank_power": 1.5
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3",
+    "axis": "distinct5_512_representation_speed",
+    "stage": "variant_f",
+    "notes": "Variant E plus internal VAE-latent queue curriculum: rank-biased sampling expands from top-2 to top-8 across three epochs. No DINO, CLIP supervision, classifier, or external semantic features."
+  }
+}

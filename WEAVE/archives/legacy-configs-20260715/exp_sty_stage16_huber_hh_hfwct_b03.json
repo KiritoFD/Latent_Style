@@ -1,0 +1,35 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "style_delta_head_enabled": true,
+    "style_delta_init_std": 0.1,
+    "style_delta_gate_init": 0.0,
+    "style_cross_attn_gate_init": 0.5,
+    "cross_attn_dwt_route": true,
+    "dwt_route_train_prob": 0.5,
+    "enable_hh_head": true
+  },
+  "bridge": {
+    "structure_aligned_target": true,
+    "loss_type": "huber",
+    "spectral_w_hh": 1.0,
+    "hf_wct_enabled": true,
+    "hf_wct_beta": 0.3
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/stage16_huber_hh_hfwct_b03"
+  },
+  "ablation": {
+    "name": "stage16_huber_hh_hfwct_b03",
+    "axis": "loss_and_subband",
+    "stage": "712_sty_inject_stage16_hfwct_b03",
+    "notes": "Huber + HH + 高频子带 WCT (beta=0.3). 更保守的协方差插值, 70% content + 30% style. 验证 beta sweep: 0.3 vs 0.5 的结构保持-风格迁移 trade-off."
+  }
+}

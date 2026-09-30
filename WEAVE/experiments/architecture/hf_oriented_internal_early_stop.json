@@ -1,0 +1,15 @@
+{
+  "_base": "hf_oriented_internal_probe.json",
+  "training": {
+    "internal_early_stop_enabled": true
+  },
+  "checkpoint": {
+    "save_dir": "runs/submission/hf_oriented_internal_early_stop"
+  },
+  "ablation": {
+    "name": "hf_oriented_internal_early_stop",
+    "axis": "training_dynamics",
+    "stage": "submission_internal_early_stop",
+    "notes": "Use the canonical 15-epoch cosine schedule, but stop when target-HF gate expansion coincides with the first shared LL/HF gradient-ratio crossing below one. No image generation or external metric is used online."
+  }
+}

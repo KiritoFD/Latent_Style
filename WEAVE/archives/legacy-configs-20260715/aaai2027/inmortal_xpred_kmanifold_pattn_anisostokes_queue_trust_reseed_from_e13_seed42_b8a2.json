@@ -1,0 +1,17 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_anisostokes_queue_trust_from_e13_seed42_b8a2.json",
+  "training": {
+    "num_epochs": 16,
+    "resume_optimizer": false,
+    "resume_training_state": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_trust_reseed_from_e13_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_trust_reseed_from_e13_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_AnisoStokesQueueTrustReseed",
+    "notes": "Reseed test for the e13 basin hypothesis. Keep the same trust-region family and the same e13 model weights, but do not inherit optimizer state or training-state momentum from the parent continuation."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_faststep60_e1.json",
+  "bridge": {
+    "coupling_cost_composition": "appearance_plus_structure",
+    "coupling_target_mode": "barycentric_topk",
+    "coupling_barycentric_topk": 4
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_selfaffgw_mix_barytopk4_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_selfaffgw_mix_barytopk4_faststep60_e1_authoritative",
+    "axis": "phase616_ot_probe_clean_2x2",
+    "stage": "clean_ot_selfaffgw_mix_barytopk4_authoritative_candidate",
+    "notes": "Authoritative 616 OT 2x2 row C. Keep the retained mixed OT composition but replace stochastic sampled targets with deterministic barycentric_topk=4 targets to reduce supervision noise without collapsing into full-plan averaging."
+  }
+}

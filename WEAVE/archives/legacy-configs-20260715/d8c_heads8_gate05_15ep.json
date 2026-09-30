@@ -1,0 +1,22 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "model": {
+    "style_attn_num_heads": 8,
+    "style_cross_attn_gate_init": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/d8c_heads8_gate05_15ep",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 96,
+    "grad_clip_norm": 1.0,
+    "learning_rate": 2e-4
+  },
+  "ablation": {
+    "name": "d8c_heads8_gate05_15ep",
+    "axis": "M2_width_scaling_heads_plus_gate",
+    "stage": "M2_architectural_additive_D8c",
+    "notes": "D8c: Combined width scaling + stronger style gate. style_attn_num_heads 4->8, style_cross_attn_gate_init 0.3->0.5. Theory: D8a only adds heads but keeps gate=0.3 (conservative style injection). D8c tests if stronger gate + more heads together can break the 0.476 ceiling. The gate controls how much cross-attention style delta is applied; 0.5 vs 0.3 = 67% stronger style signal. If D8a shows micro-gain, D8c tests scaling. If D8a fails, D8c tests if gate strength is the bottleneck. bs=96."
+  }
+}

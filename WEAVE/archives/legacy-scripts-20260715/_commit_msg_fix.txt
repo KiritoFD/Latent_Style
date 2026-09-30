@@ -1,0 +1,8 @@
+fix: run.py recursion bug + ASG config propagation in SpectralODEBridge620
+
+- run.py: replace importlib.import_module('run') (self-import recursion)
+  with runpy.run_path pointing to src/run.py
+- spectral_bridge620.py: pass adaptive_style_gate to SpatialBridgeBlock620
+  (was only propagated in SpatialBridge620, not the active SpectralODEBridge620
+  contract family, so ASG was silently disabled in all prior t1_asg runs)
+- add retrain launch scripts for verifying ASG activation on remote

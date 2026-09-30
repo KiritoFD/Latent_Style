@@ -1,0 +1,17 @@
+{
+  "protocol": "paper_canonical_dinov2_small",
+  "dino_s_definition": "max cosine CLS(gen), CLS(target-style reference)",
+  "dino_c_definition": "cosine CLS(gen), CLS(source)",
+  "dino_structure_definition": "penultimate patch self-similarity MSE",
+  "exclude_source_from_style_refs": false,
+  "n_all": 750,
+  "n_off_diagonal": 600,
+  "all_dino_s": 0.4865108373761177,
+  "all_dino_c": 0.7933204148610433,
+  "all_dino_structure": 0.02453803376853466,
+  "off_dino_s": 0.4024379635602236,
+  "off_dino_c": 0.7862727063894271,
+  "off_dino_structure": 0.024789380400131147,
+  "all_clip_s": 0.7194480082988739,
+  "all_lpips": 0.2978490800693333
+}

@@ -1,0 +1,19 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "swd_replace_with_mse": true
+  },
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 24
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/abl_swd_to_mse"
+  },
+  "ablation": {
+    "name": "abl_swd_to_mse",
+    "axis": "loss_function",
+    "stage": "destructive_ablation",
+    "notes": "Replace Sliced Wasserstein Distance with pointwise MSE on z_hat1 vs projected_target. Tests the paper's claim that SWD reduces style entanglement."
+  }
+}

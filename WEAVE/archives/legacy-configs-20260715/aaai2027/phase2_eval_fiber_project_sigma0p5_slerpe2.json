@@ -1,0 +1,10 @@
+{
+  "_base": "./phase2_eval_fiber_project_sigma0p0_slerpe2.json",
+  "_comment": "Diagnostic eval-only Orthogonal Fiber-SDE projection on latent-slerp e2, sigma=0.5.",
+  "model": {
+    "bridge_sigma": 0.5
+  },
+  "bridge": {
+    "bridge_sigma": 0.5
+  }
+}

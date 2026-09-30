@@ -1,0 +1,9 @@
+Initial Win CP for (console input, console output, system): (CP65001, CP65001, CP936)
+I changed them all to CP936
+Rc files read:
+  NONE
+Latexmk: This is Latexmk, John Collins, 15 June 2025. Version 4.87.
+Latexmk: Nothing to do for 'paper.tex'.
+Latexmk: All targets (paper.pdf) are up-to-date
+
+Reverting Windows console CPs to (in,out) = (65001,65001)

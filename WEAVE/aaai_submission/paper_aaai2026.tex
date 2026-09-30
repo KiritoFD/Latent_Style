@@ -1,0 +1,562 @@
+\documentclass[letterpaper]{article}
+\usepackage[submission]{aaai2026}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage[hyphens]{url}
+\usepackage{graphicx}
+\urlstyle{rm}
+\def\UrlFont{\rm}
+\usepackage{natbib}
+\usepackage{caption}
+\usepackage{cuted}
+\frenchspacing
+\setlength{\pdfpagewidth}{8.5in}
+\setlength{\pdfpageheight}{11in}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{placeins}
+\usepackage{dblfloatfix}
+\usetikzlibrary{arrows.meta,positioning,calc,fit}
+\pdfinfo{
+/TemplateVersion (2026.1)
+}
+\setcounter{secnumdepth}{0}
+\input{snippets/timing_tables_leibniz}
+
+\title{Latent Bridge Matching: IDT-Calibrated Latent Transport for Domain-Level Artistic Transfer}
+\author{Anonymous Submission}
+\affiliations{}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Domain-level artistic transfer has a blunt evaluation failure: when the source is already art, doing nothing can score as target style. We expose this effect on the CLIP-separated WikiArt Distinct5 stress split through an identical-image transfer (IDT) floor and introduce \emph{Latent Bridge Matching} (LBM), a 3.9M-parameter endpoint-supervised Style-ID latent renderer in VAE space, designed through a transport lens rather than claimed as a full bridge solver. In the active Distinct5 setting, LBM combines training-side endpoint pairing, a style-conditioned residual field, and terminal distribution matching, keeping style-specific customization in a small-model learning regime instead of adapting a large generative prior. The reproduced LBM-F/K operating points exceed the transfer-only IDT floor by +0.0244/+0.0312 CLIP-S at the first trusted RTX 3060 checkpoint (1.2 minutes), whereas reproduced SaMST exceeds the same floor only in a much higher-displacement, higher-targetwise-ArtFID region. Under a matched two-minute rerun, LBM remains +0.0230 above IDT, while same-cost SaMST is far more damaging and same-cost SaMAM stays below IDT. On the historical strict-750 reference surface, LBM also reaches 114\,ms/image. The practical reading is therefore not only metric-side caution but also accessibility: on this stress split, checking the unchanged-image floor prevents false stylization claims, and the measured minute-scale consumer-GPU path shows that customized style modeling can remain a lightweight learning problem.
+\end{abstract}
+
+\begin{strip}
+\centering
+\vspace{-4mm}
+\includegraphics[width=0.965\textwidth]{figures/fig_distinct5_page1_summary.pdf}
+\captionof{figure}{IDT-calibrated Distinct5-512 summary under the shared full $5\times5$ / 750-output packet. In (a), bubble area is cumulative training wall time with evaluation excluded. LBM reaches positive transfer-only gain above IDT at minute-scale cost, whereas the trusted SaMAM-2250 checkpoint remains below IDT and SaMST exceeds IDT only in a much higher-displacement regime. In (b), targetwise ArtFID shows that SaMST's stronger raw style is accompanied by a severe artifact penalty.}
+\label{fig:distinct5_page1}
+\vspace{-5mm}
+\end{strip}
+
+\section{Introduction}
+Domain-level artistic transfer asks for a stylized image from a source image and a target style identifier. This is not only an image-generation problem but also a customization problem: the model should not need a reference style image or per-image optimization at inference, and the adaptation path should remain feasible without maintaining a large generative backbone. In practice, three pressures appear together. First, evaluation can fail badly when both source and target domains are artworks: an unchanged source can already obtain a strong target-style score. A method can therefore appear competitive by preserving an art-domain prior, or by making visible but misdirected edits, without moving toward the requested target domain. The first question should be signed target-style movement over the unchanged-image baseline, not raw target-style affinity.
+
+Second, many visually strong stylization pipelines now rely on exemplar-conditioned correspondence or adaptation/steering of large pretrained generators. Those systems can be compelling, but they are awkward if the goal is to build a lightweight style-id model that a small lab, researcher, or creator can retrain and deploy at low cost. For the style-id setting studied here, the practical question is therefore not only \emph{whether} target-style movement happens, but also \emph{who can afford to customize the model and under what adaptation budget}. A useful regime should shift customized stylization from a resource-intensive adaptation routine toward minute-scale learning on consumer GPUs rather than multi-hour tuning on specialized setups. Our scope is correspondingly narrower than claiming the absolute visual ceiling of diffusion stylizers: the paper asks whether a compact style-id model can achieve genuine target-style movement under explicit IDT calibration and low adaptation cost.
+
+This failure is not the familiar style/content trade-off. Classical neural style transfer introduced feature reconstruction and Gram statistics \cite{gatys2016image}; feed-forward and attention-based arbitrary style transfer improved efficiency and local correspondence \cite{huang2017adain,park2019sanet,deng2022stytr2,zheng2024puffnet}. Recent systems now span reference-guided stylization \cite{hong2023aespa,huang2024aesfa,zhang2025hsi,shang2025scsa}, compact multi-style models selected by style identity \cite{liu2024samst}, and diffusion-prior stylizers ranging from trainable prompt-bank adaptation to training-free attention control \cite{zhang2024artbank,chung2024styleid,deng2024zstar,jiang2025sms,xu2025stylessp}. Across these regimes, automatic metrics can conflate three different events: preserving a source that is already artistic, producing plausible art-domain texture, and moving toward the requested target style. In the style-id setting, the distinction is decisive because inference receives only a domain label.
+
+The representation problem is geometric as well as statistical. VAE latents are compressed feature coordinates with nontrivial local curvature, not RGB pixels. Treating target style as pointwise Euclidean endpoint reconstruction can encourage mean solutions, suppress semantically valid local rearrangements, and blur the line between preserving content and doing nothing. We instead model stylization as controlled latent transport: target-domain examples select where supervision should pull, a style-conditioned vector field decides how to move, and terminal distribution matching checks whether the integrated endpoint has target-style patch statistics.
+
+We propose \emph{Latent Bridge Matching} (LBM), a compact latent renderer built around that evaluation requirement. The broader LBM family also contains parent flow/OT variants, but the current Distinct5 mainline uses (i) training-side endpoint pairing instantiated through a prototype-aware pairing cache and endpoint-mode OMF training; (ii) a style-conditioned latent residual field that executes the requested transfer; and (iii) SA-SWD with kinetic regularization, which pulls the Euler-integrated endpoint toward target-style patch statistics while limiting unnecessary displacement. A learnable style spatial prior and semantic cross-attention provide domain-level conditioning without per-image optimization or diffusion sampling. This keeps customization in a lightweight style-id regime: the reported model has 3.91M parameters, clears the Distinct5 IDT floor after 1.2 minutes of checkpoint training on an RTX 3060, and avoids adapting a large pretrained generator. In this paper, the identical-image floor is used as a split-local reporting check for the Distinct5 stress benchmark: style gain is read against that reference rather than from raw target-style affinity alone.
+
+Our contributions are:
+\begin{itemize}
+    \item \textbf{We formulate domain-level artistic transfer as endpoint-supervised Style-ID latent rendering under a transport-design lens}, separating style specification from training-side endpoint selection, few-step latent execution, and terminal distribution matching.
+    \item \textbf{We use the Identical-Image Transfer (IDT) floor as a split-local diagnostic on Distinct5-512}, where a reproduced baseline can visibly edit images yet still score below IDT in transfer-only CLIP-S, and we report $\Delta_{\mathrm{idt}}$ as a companion metric that measures style movement beyond that floor.
+    \item \textbf{We demonstrate a lightweight adaptation regime for customized style models}: in the reviewed setup, LBM clears the Distinct5-512 IDT floor after 1.2 minutes of checkpoint training on an RTX 3060, remains above IDT in a matched two-minute rerun, and the historical strict-750 model remains 3.91M with 114\,ms/image inference. This lowers the barrier for researchers and creators to build customized style models without adapting a large generative prior.
+\end{itemize}
+
+\section{Related Work}
+\paragraph{Classical and arbitrary neural style transfer.}
+Neural style transfer began with optimization-based feature reconstruction and Gram-matrix style losses \cite{gatys2016image}. AdaIN later enabled real-time arbitrary transfer by aligning channel-wise feature statistics \cite{huang2017adain}. Attention- and flow-based arbitrary style transfer then pushed local correspondence further: SANet improved style-aware matching, ArtFlow used reversible flows to reduce biased transfer, AdaAttN revisited local attentive normalization, StyTr2 introduced transformer-based content-style interaction, and S2WAT strengthened transformer locality with strip-window attention \cite{park2019sanet,an2021artflow,liu2021adaattn,deng2022stytr2,xia2024s2wat}. More recent reference-guided arbitrary stylization continues to refine the injection path itself: AesPA-Net and AesFA add aesthetic-aware control, Puff-Net emphasizes cleaner content/style feature separation, HSI replaces point-wise attention with a holistic injector, and SCSA focuses on semantic-region consistency in arbitrary semantic style transfer \cite{hong2023aespa,huang2024aesfa,zheng2024puffnet,zhang2025hsi,shang2025scsa}. These works mainly ask how a style exemplar should be fused at inference time. Our problem is different: the main protocol in this paper does not provide a target style image at inference, so the central question is how a domain-level style control should be executed without exemplar-conditioned correspondence.
+
+\paragraph{Efficient multi-style transfer and compact style representations.}
+Multi-style transfer amortizes many styles into one compact model rather than solving a fresh arbitrary-style problem for every target image. SaMST is the closest recent representative: it separates style modeling from style transfer through pluggable style representations and a style-aware transfer network, explicitly targeting the quality-efficiency trade-off for many-style deployment \cite{liu2024samst}. This line is the most relevant tokenizer-side baseline for our work. Throughout this paper, ``style tokenizer'' means a style-id-conditioned control map rather than an image tokenizer, a target-image encoder, or a diffusion-token controller. Our contribution is not another pluggable codebook alone. Instead, we ask whether a compact style representation remains executable after it passes through a latent transport field, so that style-side distinctions survive downstream rendering strongly enough to produce real style movement beyond the unchanged-image baseline.
+
+\paragraph{State-space and Mamba-based style transfer.}
+Recent work also revisits style transfer through state-space backbones. Mamba-ST and SaMam argue that linear-complexity state-space operators can recover global receptive fields more efficiently than quadratic attention, improving the efficiency-quality frontier of arbitrary or many-style transfer \cite{botti2025mambast,liu2025samam}. These papers are important because they shift the architectural question within compact feed-forward arbitrary and multi-style stylizers from ``CNN or transformer'' to ``which global-mixing primitive is most efficient.'' Our comparisons to SaMam take this line seriously. The distinction is that LBM does not claim a new global-mixing backbone; its main contribution is training-side and objective-side: endpoint pairing, transport-field execution, and semantic-aligned terminal distribution matching under a compact style-id interface.
+
+\paragraph{Training-free and diffusion methods.}
+Training-free and diffusion-based approaches provide a different route to flexible style transfer. CAST uses VQ autoencoders for content-adaptive training-free stylization \cite{gim2024cast}. Diffusion-prior stylization spans both trainable prompt-bank adaptation and training-free control: ArtBank learns an implicit style prompt bank on top of a pretrained diffusion model \cite{zhang2024artbank}, whereas StyleID and Z* manipulate diffusion attention at inference time without retraining \cite{chung2024styleid,deng2024zstar}. SMS and StyleSSP further refine this large-prior stylization line through style-matching objectives and improved sampling initialization \cite{jiang2025sms,xu2025stylessp}. These methods can be visually strong, but they generally assume a style reference image and often inherit the inference cost or calibration issues of large generative priors. Our work instead targets compact retrainable latent integration with style-id conditioning rather than iterative diffusion sampling, prompt engineering, or per-style inference-time optimization.
+
+\paragraph{Distribution matching and perceptual evaluation.}
+Our objective is motivated by optimal transport and distribution matching. Sinkhorn distances and computational optimal transport provide efficient tools for approximate transport problems \cite{cuturi2013sinkhorn,peyre2019computational}, while the Schrodinger problem connects entropic transport to stochastic path measures \cite{leonard2014survey}. We use SWD as a lightweight terminal distribution objective and instantiate the reported Distinct5 headline rows as pairing-cache / terminal-SWD / kinetic OMF with adaptive projection routing through SA-SWD. Earlier exploratory variants in this line also studied OT/Sinkhorn endpoint assignment as a parent objective, and the formal analysis below refers to that machinery only where it is the actual object of study rather than the literal active Distinct5 training loop. Accordingly, transport language in this paper is a design vocabulary rather than a claim that the Distinct5 headline rows train a full stochastic bridge solver. Evaluation itself remains unsettled in arbitrary style transfer: prior studies report inconsistent protocols across papers and show that commonly used automatic metrics are style-dependent and require calibration to human preference \cite{zhou2024comprehensiveeval,yeh2020calibrated,wright2022artfid}. Our metric claim is therefore focused rather than universal. For separated art-to-art stress splits of this type, we make the unchanged-image prior explicit through an `idt' reference and report $\Delta_{\mathrm{idt}}$ so that target-style movement can be separated from preserved art-domain priors. In the Distinct5 results, the paper-facing ArtFID column is targetwise ArtFID; aggregate ArtFID is retained only as an auxiliary art-domain/identity diagnostic outside the main comparison table. We therefore combine perceptual and distributional measures including LPIPS \cite{zhang2018lpips}, FID \cite{heusel2017fid}, KID \cite{binkowski2018kid}, DISTS \cite{ding2020dists}, MUSIQ \cite{ke2021musiq}, MANIQA \cite{yang2022maniqa}, and ArtFID \cite{wright2022artfid}. This broader metric set is important because raw CLIP-style and structural scores may fail to penalize grain-like artifacts or may partially reflect art-domain priors already present before stylization.
+
+\section{Method}
+\subsection{Overview}
+LBM is a compact Style-ID latent renderer in VAE space for domain-level artistic transfer, interpreted through a transport-design lens. Let $z_0$ denote the VAE latent of a content image and let $s$ denote a target style domain identifier. The paper reports two packet families and keeps them non-interchangeable: the main Distinct5-512 packet uses a frozen SD-VAE-FT-EMA backend with $512\!\rightarrow\!4\times64\times64$ latents, whereas the historical strict-750 packet uses $256\!\rightarrow\!4\times32\times32$ latents. The Distinct5-512 rows are trained and evaluated entirely in the corresponding $4\times64\times64$ latent space; the $4\times32\times32$ packet is retained only as a separate historical reference and is never mixed into the Distinct5 tables or figures. LBM comprises four coupled components: (i) training-side endpoint pairing that selects candidate target latents without paired supervision; (ii) a time-conditioned transport field $v_\theta(z_t,t,s)$ that realizes the corresponding style-conditioned transport; (iii) kinetic regularization that discourages unnecessary latent displacement; and (iv) SA-SWD terminal matching at the integrated endpoint. At inference, the learned vector field is integrated with a fixed-step solver and decoded by the VAE decoder. In this decomposition, the tokenizer specifies the target region of style space, and the backbone is the executor that realizes the corresponding transport field. Earlier exploratory variants in the broader LBM line included OT-coupled parent objectives, but the reproduced Distinct5 headline rows use pairing-cache / terminal-SWD / kinetic OMF rather than active online Sinkhorn updates.
+
+In the reproduced Distinct5 setting, the active headline rows use endpoint-mode OMF training rather than the historical random-time flow residual. Writing
+\begin{equation}
+    \hat v = v_\theta(z_0,1,s), \qquad \hat z_1 = z_0 + \hat v,
+\end{equation}
+the active Distinct5 objective is
+\begin{equation}
+    \mathcal{L}_{\mathrm{active}} = \lambda_{\mathrm{term}}\mathcal{L}_{\mathrm{term}}(\hat z_1) + \lambda_{\mathrm{kin}}\|\hat v\|_2^2,
+    \label{eq:active_distinct5_loss}
+\end{equation}
+where paired target latents for $\mathcal{L}_{\mathrm{term}}$ are selected by the pairing cache and the optional parent flow residual is disabled in the headline rows ($w_{\mathrm{flow}}=0$). In the active Distinct5 packet, multi-step Euler execution should therefore be read as a practical endpoint-refinement heuristic rather than as evidence of a learned time-continuous bridge law. We therefore analyze LBM at the transport-design level and name objective-family differences only when they matter empirically.
+
+\paragraph{Active Distinct5 configuration summary.}
+The headline F/H/K rows share one active paper setting: SD-VAE-FT-EMA latents, batch size $80$, three training epochs, endpoint-mode OMF with $w_{\mathrm{flow}}=0$, $\lambda_{\mathrm{term}}=20.0$, $\lambda_{\mathrm{kin}}=1.0$, four terminal integration steps, and SA-SWD with $64$ projections over patch sizes $\{3,5,7,15\}$. The pairing cache is a frozen prototype-aware top-8 queue built from latent prototype features with eight prototypes per style and pooling size four. Variant F uses an easy-to-hard top-2$\rightarrow$top-8 curriculum; variants H/K use fixed top-2 plus $15\%$ exploration into top-8, with K changing only tokenizer-side content-adaptive routing. We state these values here because they define the active paper setting; other flow/OT variants are family background only.
+
+\begin{figure*}[t!]
+    \centering
+    \includegraphics[width=0.98\textwidth]{framework_lbm_main_v5.png}
+    \caption{Overview of Latent Bridge Matching. The top band shows style-side control, where the style tokenizer maps the target style identifier into a compact style code. The middle band is the active inference path: content is encoded into a latent, passed through the LBM time-conditioned residual field with semantic routing, integrated by $K$-step Euler updates, and decoded into the stylized output. The bottom band summarizes training-only constraints: in the current Distinct5 mainline, target-domain latents enter through pairing-cache endpoint selection with endpoint-mode OMF training, while the broader bridge lineage also includes OT/Sinkhorn and flow-style parent variants. In the headline rows the parent flow residual is disabled ($w_{\mathrm{flow}}=0$); the active losses are terminal SA-SWD and endpoint kinetic regularization. The SA-SWD inset makes explicit how semantic bins define terminal within-bin SWD matching. Target-domain latents are therefore training-side supervision only, not inference-time conditioning inputs.}
+    \label{fig:framework}
+\end{figure*}
+
+\subsection{Unpaired latent-domain sampling and endpoint pairing}
+We train directly on precomputed VAE latents without paired supervision. Each minibatch samples content latents $\{z_c\}$ from all source domains and target-style latents $\{z_s\}$ from the requested target domain. Identity pairs are naturally included through uniform target-domain sampling, which stabilizes the learned transport around same-domain mappings.
+
+In the reproduced Distinct5 mainline, candidate target endpoints are assigned by a prototype-aware pairing cache and selector schedule rather than by online Sinkhorn optimization at every training step. The cache is materialized once offline as a top-8 candidate list per $(z_0,s)$ query using latent prototype features with eight prototypes, pooling size four, and cross-style-only matching. Variant F anneals the active subset from top-2 to top-8 across three epochs; variant H fixes top-2 sampling with a 15\% exploration branch into the stored top-8; variant K inherits that queue and changes only tokenizer-side routing. Concretely, for each content latent $z_0$ and target style $s$, the cache exposes a selector-restricted candidate set $\mathcal{C}(z_0,s)\subset\{z_s\}$, and the terminal target $\tilde z_1$ used by $\mathcal{L}_{\mathrm{term}}$ is drawn from that scheduled set. The cache is a training-side heuristic and does not receive gradient updates. For completeness, the broader bridge family also includes an OT-style mini-batch assignment diagnostic over sliced-Wasserstein costs. For a batch of content latents $\{z_c^{(i)}\}$ and target-style latents $\{z_s^{(j)}\}$, the SWD cost matrix is
+\begin{equation}
+    C_{ij} = \mathrm{SWD}\bigl(z_c^{(i)}, z_s^{(j)}\bigr) .
+\end{equation}
+An entropic optimal-transport plan is then obtained via the Sinkhorn algorithm:
+\begin{equation}
+    \pi^\star = \arg\min_\pi \sum_{ij} C_{ij}\pi_{ij} + \epsilon H(\pi),
+\end{equation}
+where $H(\pi)$ is the entropy regularizer. Each content latent is matched to its coupled target $\tilde{z}_1 \sim \pi^\star(z_s|z_c)$. This historical parent objective motivates directional-coherent endpoint assignment without requiring spatially aligned targets, but it is not the literal active training loop for the Distinct5 F/H/K headline rows.
+
+\subsection{Time-conditioned latent field family}
+The core backbone family parameterizes a time-conditioned velocity field $v_\theta(z_t,t,s)$ for style-conditioned latent motion between selected training endpoints. The broader bridge lineage also studies a random-time flow-style parent objective, which we retain here only as family background because the active Distinct5 headline rows disable the corresponding flow residual. At a randomly sampled time $t\sim\mathcal{U}(0,1)$, the interpolated state is
+\begin{equation}
+    z_t = (1-t)z_0 + t\tilde{z}_1 + \sigma\sqrt{t(1-t)}\,\epsilon,
+    \quad \epsilon\sim\mathcal{N}(0,I),
+\end{equation}
+and the target velocity is the derivative of the transport:
+\begin{equation}
+    u_t = \tilde{z}_1 - z_0 + \sigma\frac{1-2t}{2\sqrt{t(1-t)}}\,\epsilon .
+\end{equation}
+The parent transport objective supervises the network to predict this velocity:
+\begin{equation}
+    \mathcal{L}_{\mathrm{FM}} = \mathbb{E}_{z_0,\tilde{z}_1,t,\epsilon}\,
+    \rho\!\bigl(v_\theta(z_t,t,s), u_t\bigr) .
+\end{equation}
+Here $\rho$ is the pointwise velocity penalty. The implementation supports MSE, Huber, and $L_1$ variants in direct velocity-regression branches. The displayed flow objective above defines the historical parent transport objective; in the reproduced Distinct5 setting, training instead resolves to endpoint-mode OMF with terminal matching and kinetic regularization and keeps $w_{\mathrm{flow}}=0$. In other words, the flow objective above is design-family background rather than the literal active headline loss for the Distinct5 rows.
+
+\paragraph{Architecture.}
+The time-conditioned backbone uses sinusoidal time embeddings added to the style code. The implementation is a U-Net-like latent trunk with four semantic cross-attention body blocks at $16\times16$ resolution. The target style is represented by a learnable spatial prior $P_s\in\mathbb{R}^{128\times16\times16}$. Semantic cross-attention injects the style prior into content features, while skip connections preserve spatial structure.
+
+\subsection{Style tokenizer as executable control}
+The style-side interface is deliberately separated from the latent renderer. In the main domain-level protocol, the tokenizer receives only a target style identifier and learned style parameters available at inference:
+\begin{equation}
+    c_s = T_\phi(s), \qquad v_\theta = F_\theta(z_t,t,c_s).
+\end{equation}
+It does not read a target image or target latent from the current evaluation batch. Target-domain latents remain on the loss side of the graph through training-side endpoint pairing and SA-SWD, but they are not conditioning evidence for $T_\phi$. This boundary is important: otherwise training would solve a reference-guided problem while evaluation reports a style-id problem. In this sense, $T_\phi$ names where transport should go, while $F_\theta$ decides how much latent motion is actually needed to get there.
+Throughout this paper, ``style tokenizer'' means a style-id-conditioned control map, not an image-token or diffusion tokenizer and not a target-image encoder.
+
+The simplest tokenizer is a per-style code table. Our current implementation generalizes this interface without changing the renderer input contract:
+\begin{equation}
+    c_s = p_s + \gamma \sum_{k=1}^{K}\alpha_{s,k} a_k,
+    \qquad
+    \alpha_s=\operatorname{softmax}(\ell_s/\tau),
+\end{equation}
+where $p_s$ is an optional direct prototype, $\{a_k\}$ are shared style atoms, and $\gamma$ controls the residual atom contribution. In the current mainline, this interface is paired with a prototype-aware latent target queue so that the renderer receives a stable style carrier without changing its single-code input contract. The tokenizer therefore exposes an executable style vocabulary while preserving the compact interface required by the existing renderer.
+
+For execution, the backbone may also use style spatial priors and content-conditioned routing. These modules modulate where a target-style control is applied, not what target style is requested. This distinction matches the empirical diagnosis: the key question is not raw tokenizer capacity in isolation, but whether the style carrier remains executable after it passes through a content-conditioned renderer. Prototype-aware target queues and content-guided routing improve that executed style-content frontier, which is why we phrase tokenizer evidence at the level of \emph{executable representation}: code geometry matters only insofar as generated latent residuals remain distinguishable after the renderer consumes the code.
+
+\paragraph{Complementary roles.}
+The components address distinct subproblems. Training-side endpoint pairing provides candidate target endpoints for unpaired supervision, but not transport dynamics; the broader OT diagnostic explains one historical route to such assignments. Transport supervision learns how to move toward those endpoints, but by itself does not guarantee that the integrated endpoint matches target-domain texture statistics. SA-SWD regularizes this endpoint mismatch, while semantic cross-attention provides local routing for where style is written and supplies a routing-derived heuristic for projection selection. The destructive ablations directly verify the roles of terminal distribution matching and kinetic regularization. On the current Distinct5 packet, the dominant gain comes from distributional terminal matching itself, which avoids pointwise latent collapse, while semantic routing remains a tested axis-selection heuristic rather than a separately proven primary driver.
+
+\subsection{Adaptive-projection terminal distribution matching}
+In addition to transport supervision, a terminal loss regularizes the Euler-integrated endpoint toward the target style distribution. Let $\Phi_\theta(z_0,s)$ denote the endpoint obtained by integrating $v_\theta$ from $z_0$ with style $s$. The terminal loss is
+\begin{equation}
+    \mathcal{L}_{\mathrm{term}} = \mathrm{SWD}_1\bigl(\Phi_\theta(z_0,s),\,\tilde{z}_1\bigr),
+\end{equation}
+where the SWD compares generated endpoint patches with coupled target patches. We use semantic cues to choose SA-SWD projection directions. Let $K_s$ denote the keys produced by semantic cross-attention for target style $s$. We rank spatial target positions by the average magnitude of $K_s$ and use the corresponding target latent patch vectors as normalized projection directions. This defines the SA-SWD instantiation used in the current mainline: terminal distribution matching is still computed by sorted one-dimensional projections, but the projection axes are adaptively chosen from the same routing signal that injects style into the backbone. In the Distinct5 headline packet, the active setting uses 64 projections, patch sizes $\{3,5,7,15\}$, four semantic bins, and semantic axis selection. The implementation also supports random axis selection, but current evidence supports only the narrower statement that semantic axes are a practical routing-aligned heuristic in this packet rather than the sole proven source of the gain.
+
+Across the broader LBM family, the training objective can be written as
+\begin{equation}
+    \mathcal{L} = \mathcal{L}_{\mathrm{transport}} + \lambda_{\mathrm{term}}\mathcal{L}_{\mathrm{term}} + \lambda_{\mathrm{kin}}\mathcal{L}_{\mathrm{kin}},
+\end{equation}
+where $\mathcal{L}_{\mathrm{transport}}$ denotes the optional parent transport residual retained only for family-level completeness. In the current Distinct5 headline rows this term is disabled ($\mathcal{L}_{\mathrm{transport}}=0$, $w_{\mathrm{flow}}=0$), so the active loss reduces to Eq.~\eqref{eq:active_distinct5_loss}. The kinetic loss $\mathcal{L}_{\mathrm{kin}} = \mathbb{E}\|v_\theta\|_2^2$ penalizes excessive latent displacement. The primary configuration uses $\lambda_{\mathrm{term}}=20.0$ and $\lambda_{\mathrm{kin}}=1.0$. Color, cycle, NCE, and repulsive losses are disabled in the main setting. This decomposition separates family-level template terms from the losses that are actually active in the Distinct5 headline regime.
+
+\paragraph{Metric choice in latent space.}
+The training objective does not treat all latent discrepancies as Euclidean reconstruction errors. The kinetic term uses an $L_2$ penalty on velocity because it represents path energy, while terminal endpoint matching uses Wasserstein-1 style discrepancies over sorted projections. This separation is deliberate in compressed VAE latents: pointwise endpoint MSE would reward mean solutions and over-penalize semantically valid local rearrangements, whereas SA-SWD preserves distributional supervision without requiring paired spatial correspondence. The current reproduced Distinct5 checkpoints therefore place style pressure on training-side endpoint pairing plus $W_1$-style terminal matching rather than on latent endpoint MSE. In the measured Distinct5 regime, this design is consistent with repaired endpoint-only controls underperforming the current mainline, without claiming a universal theorem against pointwise endpoint losses.
+
+\paragraph{Theoretical grounding of latent transport.}
+Section~\ref{sec:formal} provides bounded design-grounding results. Theorem~1 connects the training kinetic loss to the inference-time path action, and Theorem~2 bounds Euler discretization error at $O(1/K)$ for the active few-step field/solver regime used in the current Distinct5 mainline. Theorem~3 concerns a historical OT-style endpoint-assignment variant from the broader LBM family and is included only as family-level background.
+
+More concretely, let $\mathcal{P}_r(\hat{z}_1)$ be the set of latent patches of size $r$ extracted from the generated endpoint, and let $\mathcal{P}_r(z_s)$ be the corresponding patch set from target-style samples. For projection directions $\{\theta_m\}_{m=1}^M$, the empirical terminal objective is
+\begin{align}
+    \mathcal{L}_{\mathrm{swd}} &=
+    \sum_{r\in\mathcal{R}} \frac{1}{M} \sum_{m=1}^{M}
+    \Bigl\|
+    \operatorname{sort}\!\bigl(\mathcal{P}_r(\hat{z}_1)\theta_m\bigr) \notag \\
+    &\qquad - \operatorname{sort}\!\bigl(\mathcal{P}_r(z_s)\theta_m\bigr)
+    \Bigr\|_1 .
+\end{align}
+Here $\mathcal{R}=\{3,5,7,15\}$ in the primary configuration. The loss therefore asks whether the generated endpoint has target-style patch statistics along semantic routing directions, not whether it matches any particular artwork spatially.
+
+\subsection{Formal analysis}
+\label{sec:formal}
+We provide bounded design-grounding results rather than a single
+unified theorem for every training variant. Theorem~1 and
+Theorem~2 analyze the active few-step field/kinetic regime used in
+the current Distinct5 mainline, while Theorem~3 is retained only as
+historical parent-background completeness for an OT-style
+endpoint-assignment variant from the broader LBM family. Full proofs
+appear in the supplement.
+For brevity we state the results and their empirical support.
+
+\paragraph{Notation.}
+Recall the OMF training regime: $\hat v = v_\theta(z_0,1,s)$,
+$\hat z_1 = z_0 + \hat v$.
+At inference, integration follows $dz/dt=v_\theta(z,t,s)$ with
+$K$-step Euler: $z_{k+1}=z_k+\Delta t\,v_\theta(z_k,t_k,s)$
+where $\Delta t=1/K$, $t_k=(k+0.5)\Delta t$.
+Define the path action
+$\mathcal{A}(v)=\int_0^1\mathbb{E}\|v_\theta(z(t),t,s)\|^2\,dt$
+and the training kinetic loss
+$\mathcal{L}_{\mathrm{kin}}=\mathbb{E}\|v_\theta(z_0,1,s)\|^2$.
+
+\paragraph{Design interpretation.}
+Under bounded temporal drift and Lipschitz continuity, endpoint kinetic regularization acts as a tractable proxy for inference-time path action. Theorem~1 formalizes why a lightweight endpoint penalty can act as a practical proxy for trajectory straightness in the operating regime studied here, without requiring expensive multi-step supervision.
+
+\paragraph{Theorem 1 (Kinetic regularization as a path-energy proxy).}
+Assume that for a fixed content $z_0$ the velocity norm varies
+at most $\delta$ with $t$, i.e.,
+$\sup_t\bigl|\|v_\theta(z_0,t,s)\|-\|v_\theta(z_0,1,s)\|\bigr|\leq\delta$,
+and that $v_\theta$ is $L$-Lipschitz in $z$.
+Let $M$ bound $\|v_\theta\|$ along the trajectory.
+Then the path action decomposes as
+\begin{equation}
+\mathcal{A}(v) = \mathcal{L}_{\mathrm{kin}}
++ \varepsilon_t + \varepsilon_z,
+\label{eq:action_decomp}
+\end{equation}
+where $|\varepsilon_t|\leq 2\delta\sqrt{\mathcal{L}_{\mathrm{kin}}}+\delta^2$
+and $|\varepsilon_z|\leq L M$.
+If $\delta$ and $L M$ are small, the training kinetic loss
+provides a tight proxy for the inference-time path energy.
+
+\emph{Empirical support.}
+On a historical D0 probe consistent with the current few-step regime (128-step integration):
+$\mathcal{L}_{\mathrm{kin}}\approx 1017$, $\mathcal{A}(v)\approx 698$,
+yielding $|\varepsilon_t+\varepsilon_z|\approx 319$.
+Removing $\mathcal{L}_{\mathrm{kin}}$ (D2) reduces the path length
+ratio from 0.98 to 0.94, confirming the kinetic term controls
+path regularity.
+
+\paragraph{Theorem 2 (Euler discretization bound).}
+Under the $L$-Lipschitz condition on $v_\theta$,
+the $K$-step Euler integration error satisfies
+\begin{equation}
+\|z(1)-z^{(K)}\|\leq \frac{C}{K},\qquad
+C=\frac{1}{2}(M L_t+M^2 L)\,\frac{e^L-1}{L},
+\label{eq:euler_bound}
+\end{equation}
+where $L_t$ bounds the $t$-derivative of $v_\theta$.
+
+\emph{Empirical support.}
+Measured over 160 content latents (D0 model, 256-step reference):
+$\|z^{(K)} - z^{(256)}\| = \{10.7, 3.80, 1.74, 0.84, 0.40, 0.19, 0.084, 0.027\}$
+for $K=1,2,4,8,16,32,64,128$; the error halves when $K$ doubles,
+confirming the $O(1/K)$ scaling.
+Because VAE latents exhibit non-trivial local curvature, few-step solvers can otherwise accumulate visible drift. Here the measured $O(1/K)$ decay is consistent with the expected solver trend on this historical D0 probe. At $K=12$ in that probe, the error is $<0.6$ relative to the 256-step reference.
+
+\paragraph{Historical parent theorem (Theorem 3).}
+This result concerns the historical OT-style parent variant rather than the literal active Distinct5 headline loop.
+Let the SWD cost $c(\cdot,\cdot)$ be $L_c$-Lipschitz and let
+$\pi^\star$ be the $\varepsilon$-Sinkhorn plan on a batch of size $B$.
+Let $D$ denote the diameter of the target latent set.
+Then, for any two content latents $z_0,z_0'$, the expected
+matched targets satisfy
+\begin{equation}
+\bigl\|\mathbb{E}_{\pi^\star}[\,\tilde z_1\mid z_0\,]
+-\mathbb{E}_{\pi^\star}[\,\tilde z_1\mid z_0'\,]\bigr\|
+\leq \frac{D\cdot L_c}{\varepsilon}\,\|z_0-z_0'\| + O(\varepsilon).
+\label{eq:ot_lipschitz}
+\end{equation}
+Thus the OT assignment map is $(D L_c/\varepsilon)$-Lipschitz:
+nearby content latents receive nearby matched targets.
+Random uniform coupling provides no such guarantee.
+The Lipschitz property implies smoother supervision gradients
+and more directionally coherent displacement vectors across the batch.
+
+\emph{Empirical support.}
+Compared over 640 content latents:
+OT coupling yields mean cosine similarity to the batch-mean
+direction of $0.150$, vs.\ $0.124$ for random coupling,
+a $21\%$ improvement.
+The transport cost is also reduced by $4.2\%$ ($0.119$ vs.\ $0.124$).
+
+\section{Experiments}
+\subsection{Protocol hierarchy and metrics}
+We report two non-interchangeable result families: Distinct5-512 as the main stress benchmark, and the historical strict-750 packet as contextual support. They are separated because dataset, resolution, and protocol changes can alter the meaning of the CLIP-style / LPIPS trade-off.
+
+\paragraph{Historical strict-750.}
+The legacy packet uses photo, Hayao, Monet, Van Gogh, and Cezanne, with all $5\times5$ source-target directions and 30 source images per source domain, for 750 outputs. It is used for comparisons to SaMST, S2WAT, StyleID, AdaIN, StyTr2, CAST, AesFA, and AesPA-Net.
+
+\paragraph{Distinct5-512 stress split.}
+The stress split uses Early Renaissance, Impressionism, Minimalism, Rococo, and Ukiyo-e, with 1000 training images and 30 held-out test images per class. These classes were selected by CLIP-style separation over WikiArt categories rather than hand-picked for LBM. Evaluation again uses all $5\times5$ directions over 750 images.
+
+We report CLIP-style (CLIP-S), CLIP-content (CLIP-C), LPIPS, and
+\begin{equation}
+    \mathrm{EC} = \mathrm{CLIP\mbox{-}style}\cdot(1-\mathrm{LPIPS}).
+\end{equation}
+For Distinct5-512 we additionally report style gain over the unchanged-image reference,
+\begin{equation}
+    \Delta_{\mathrm{idt}} = \mathrm{CLIP\mbox{-}S}(\text{method}) - \mathrm{CLIP\mbox{-}S}(\text{idt}),
+\end{equation}
+under both the full 5$\times$5 protocol and the transfer-only off-diagonal subset. On this split, raw CLIP-S is not treated as sufficient evidence of successful transfer: a method must exceed the unchanged-image reference without moving into a clearly damaged LPIPS / artifact regime. We therefore interpret CLIP-S as target-style affinity, LPIPS as content displacement, and targetwise ArtFID as a target-domain plausibility / artifact diagnostic rather than as a direct style-gain score. Concretely, for each requested target domain we compute ArtFID against that domain's 30 held-out reference images and report the mean of the five per-target values; aggregate mixed-target ArtFID is retained only as an auxiliary art-domain / identity diagnostic outside the main table. Lower targetwise ArtFID alone does not certify useful stylization on separated art-to-art transfer, because it can reward source preservation and remaining inside a plausible target-art manifold even when the requested target-style movement is still below the unchanged-image baseline. EC is used only as a compact summary. For artifact-sensitive analysis we also report MUSIQ, MANIQA, DISTS-content, high-frequency patch KID, FFT slope error, shallow Gram micro statistics, and KID where available. All baselines use the same source images, target domains, preprocessing, and identity directions. Arbitrary-style baselines receive one reference image per target domain, whereas LBM receives only the target domain identifier. SaMAM and SaMST are therefore reported as reproduced operating points under this shared packet, not as exhaustive upper bounds of the original papers under all possible tuning budgets. The `idt' control is introduced here as a split-specific diagnostic baseline rather than as a universal replacement for prior metrics.
+
+\paragraph{Baseline-fairness boundary.}
+SaMAM and SaMST are retrained on the same Distinct5 split with shared preprocessing and evaluated under the same full $5\times5$ / 750-output contract. The manuscript keeps only reproduced checkpoints with retained logs and closed evaluator packets: SaMAM at the last trusted 2250-step checkpoint for the main table, SaMST at its retained shared-packet checkpoint, and separate two-minute rows for the matched-budget comparison. We therefore report reproduced operating points, not exhaustive upper bounds under full retuning, alternative conditioning interfaces, or different evaluation protocols.
+
+\subsection{Distinct5-512 stress benchmark}
+Distinct5-512 is designed so that unchanged output is not a plausible success proxy: the \emph{idt} baseline already reaches CLIP-S 0.6801. Signed gain over idt is therefore the first sanity check. LBM-F reaches 0.6969 / 0.3186 after 1.2 minutes of training, and LBM-K reaches 0.7010 / 0.3623 while staying in the same low-damage region. SaMST-512 pushes raw style to 0.7247, but only at LPIPS 0.6255 and targetwise ArtFID 395.7. SaMAM-2250 stays below the idt floor despite lower ArtFID. This is the failure mode exposed by Distinct5: lower targetwise ArtFID can still coexist with zero or negative target-style gain when a method preserves source structure and remains inside a plausible target-art manifold without moving enough toward the requested domain. Table~\ref{tab:distinct5pairs} shows the same pattern on representative directions. Under this shared packet, useful transfer must exceed idt rather than merely lower ArtFID or raise absolute CLIP-S, and the reproduced rows are compared as operating points rather than as exhaustive ceilings of the original baselines. The paired bootstrap confirms that the sign of transfer-only $\Delta_{\mathrm{idt}}$ is stable on this split, but it does not replace a human study or a rubric-based VLM preference test; we therefore treat positive $\Delta_{\mathrm{idt}}$ as calibrated evidence of target-style movement rather than as a completed perceptual validation.
+
+\begin{table*}[t]
+\centering
+\begin{minipage}[t]{0.485\textwidth}
+\captionof{table}{Distinct5-512 all-pairs packet. `idt' is the unchanged-image control and `tw-ArtFID' is targetwise ArtFID. Rows are reproduced operating points under the shared contract.}
+\label{tab:distinct5}
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Method & CLIP-S$\uparrow$ & LPIPS$\downarrow$ & EC$\uparrow$ & tw-ArtFID$\downarrow$ & $\Delta_{\mathrm{idt}}\uparrow$ & $\Delta_{\mathrm{idt,tr}}\uparrow$ \\
+\midrule
+idt (no-op) & 0.6801 & 0.0000 & 0.6801 & 216.5 & 0.0000 & 0.0000 \\
+SaMAM 2250 & 0.5811 & 0.3538 & 0.3755 & 146.1 & -0.0990 & -0.0877 \\
+SaMST-512 e15 & \textbf{0.7247} & 0.6255 & 0.2714 & 395.7 & \textbf{+0.0446} & \textbf{+0.0558} \\
+LBM-F e1 & 0.6969 & \textbf{0.3186} & \textbf{0.4748} & \textbf{122.6} & +0.0168 & +0.0244 \\
+LBM-K e1 & 0.7010 & 0.3623 & 0.4470 & 157.2 & +0.0209 & +0.0312 \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{4pt}
+\captionof{table}{Representative Distinct5 transfer pairs (CLIP-S / LPIPS). ER = Early Renaissance, Imp = Impressionism, Min = Minimalism, Roc = Rococo, Ukiyo = Ukiyo-e.}
+\label{tab:distinct5pairs}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Pair & No-op & SaMAM-2250 & SaMST e15 & LBM-F e1 \\
+\midrule
+ER$\rightarrow$Min & 0.607 & 0.566 / 0.387 & 0.863 / 0.644 & 0.710 / 0.498 \\
+ER$\rightarrow$Ukiyo & 0.663 & 0.571 / 0.321 & 0.748 / 0.195 & 0.724 / 0.396 \\
+Imp$\rightarrow$Min & 0.602 & 0.623 / 0.585 & 0.892 / 0.731 & 0.823 / 0.483 \\
+Roc$\rightarrow$Ukiyo & 0.515 & 0.539 / 0.542 & 0.582 / 0.604 & 0.599 / 0.295 \\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+\parbox{0.98\linewidth}{\raggedright\footnotesize A paired bootstrap over the 600 transfer rows gives 95\% intervals of $[0.0210, 0.0280]$ for LBM-F and $[0.0273, 0.0352]$ for LBM-K. SaMST also stays above IDT, but only in the same high-LPIPS regime.}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.485\textwidth}
+\captionof{table}{Distinct5-512 matched same-cost records. Train time excludes evaluation; inference is pure 750-image generation wall time.}
+\label{tab:cost_distinct5}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Method & Point & Train & Infer. (750) & ms/img \\
+\midrule
+LBM & step 350 & \textbf{1.9 min} & \textbf{84.4 s} & \textbf{113} \\
+SaMAM & step 16 & 2.2 min & 109.2 s & 146 \\
+SaMST & 40-step/style & 2.0 min & 345.7 s & 461 \\
+\bottomrule
+\end{tabular}
+
+\vspace{1pt}
+\parbox{0.98\linewidth}{\raggedright\footnotesize\textit{Note.} All three methods were retrained to about the same two-minute budget before evaluation. This is not the best retained LBM frontier point; the stronger LBM frontier still appears earlier near 1.2 minutes on page~1. Peak local GPU memory is about 5.0/6.1/7.5\,GB for LBM/SaMST/SaMAM.}
+
+\vspace{3pt}
+\includegraphics[width=0.66\linewidth]{figures/fig_distinct5_same_cost_performance.png}
+\captionof{figure}{Matched same-cost Distinct5-512: transfer CLIP-S vs.\ $1-\mathrm{LPIPS}$ with the transfer-only IDT floor.}
+\label{fig:samecostperf}
+\end{minipage}
+\end{table*}
+
+\paragraph{Adaptation cost and accessibility.}
+Table~\ref{tab:cost_distinct5} and Figure~\ref{fig:samecostperf} summarize the matched same-cost rerun. At about two minutes, LBM step-350 reaches CLIP-S 0.6629 at LPIPS 0.3377 and stays +0.0230 above the Distinct5 IDT floor; same-cost SaMST reaches only +0.0166 with far higher damage (LPIPS 0.7487, 461\,ms/image), while same-cost SaMAM remains below IDT at $-0.1383$ after 2.2 minutes. This matched-budget row is weaker than the page-1 LBM-F/K e1 frontier, but it isolates the practical point: useful positive transfer is reachable within the same minute-scale budget without large-prior adaptation.
+
+\subsection{Historical strict-750 comparison}
+\begin{table*}[t]
+\centering
+\caption{Historical strict-750 comparison in grouped family format. Higher is better for CLIP-S, CLIP-C, and EC; lower is better for LPIPS. Artifact-sensitive metrics are reported separately in Table~\ref{tab:artifact}.}
+\label{tab:main}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccccccc}
+\toprule
+\multirow{2}{*}{Metric} & \multicolumn{3}{c}{CNN-based} & \multicolumn{3}{c}{Transformer-based} & \multicolumn{2}{c}{Training-free} & \multicolumn{1}{c}{Latent transport} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-9} \cmidrule(l){10-10}
+& AesPA & AesFA & AdaIN & StyTr2 & S2WAT & SaMST & CAST & StyleID & LBM \\
+\midrule
+CLIP-S $\uparrow$ & 0.5976 & 0.6496 & 0.7130 & 0.6374 & 0.7139 & 0.7194 & 0.6652 & \textbf{0.7597} & 0.7161 \\
+CLIP-C $\uparrow$ & 0.5009 & 0.5497 & 0.6990 & 0.6001 & 0.7465 & \textbf{0.8193} & 0.5562 & 0.5519 & 0.8086 \\
+LPIPS $\downarrow$ & 0.8215 & 0.7392 & 0.6298 & 0.6345 & 0.5263 & 0.4664 & 0.7263 & 0.7497 & \textbf{0.4514} \\
+EC $\uparrow$ & 0.1067 & 0.1694 & 0.2639 & 0.2330 & 0.3382 & 0.3839 & 0.1821 & 0.1902 & \textbf{0.3928} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+We use the historical strict-750 packet as contextual support. Table~\ref{tab:main} places LBM in a favorable low-damage region: StyleID has the highest raw CLIP-S but collapses content, and SaMST is slightly higher on CLIP-S / CLIP-C while LBM is better on LPIPS, EC, and the artifact metrics below. We treat this as bounded historical support rather than a universal same-interface ranking.
+
+\HistoricalTimingTableLeibniz
+
+Historical cost evidence is intentionally conservative. The only closed row we retain is LBM: 5.2 minutes to train and 114\,ms/image on strict-750. Other baselines are omitted because their train/infer logs are mixed-protocol or incomplete.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.98\textwidth]{figures/fig_qual_grid_ours_vs_samst.png}
+\caption{Historical 256-resolution LBM vs. SaMST grids. SaMST often pushes more texture but adds muddy grain, color spill, and broken edges; LBM stays cleaner.}
+\label{fig:qual_grid}
+\end{figure*}
+
+\subsection{Artifact-sensitive diagnosis}
+The artifact difference is clearest on the historical 256-resolution packet, where SaMST is the closest recovered efficient baseline. Figure~\ref{fig:qual_grid} shows the whole-image contrast; Table~\ref{tab:artifact} then pairs matched crops with artifact-sensitive metrics on the same packet.
+
+\begin{table}[t]
+\centering
+\caption{Artifact-sensitive diagnosis on the historical strict-750 packet. Top: metrics. Bottom: matched texture crops from the same rows as Figure~\ref{fig:qual_grid}.}
+\label{tab:artifact}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Metric & Ours e7 & SaMST & S2WAT \\
+\midrule
+MUSIQ $\uparrow$ & 49.2059 & 36.0950 & 36.5256 \\
+MANIQA $\uparrow$ & 0.4057 & 0.3139 & 0.1754 \\
+DISTS-content $\downarrow$ & 0.2477 & 0.2943 & 0.2942 \\
+HF-Patch-KID $\downarrow$ & 4.1694 & 6.7598 & 12.6623 \\
+FFT slope error $\downarrow$ & 0.5473 & 1.0536 & 0.7017 \\
+Gram micro $\downarrow$ & 0.0798 & 0.0947 & 0.1085 \\
+\bottomrule
+\end{tabular}
+\includegraphics[width=0.94\linewidth]{figures/fig_zoom_ours_vs_samst.png}
+\end{table}
+
+Table~\ref{tab:artifact} shows that LBM is not winning by doing less. Relative to SaMST, it improves MUSIQ (36.10 $\rightarrow$ 49.21), MANIQA (0.314 $\rightarrow$ 0.406), DISTS-content (0.294 $\rightarrow$ 0.248), HF-Patch-KID (6.76 $\rightarrow$ 4.17), and FFT slope error (1.054 $\rightarrow$ 0.547). A paired bootstrap over the 750 per-image scores gives 95\% intervals of $[0.4467,0.4563]$ for LPIPS and $[0.7091,0.7234]$ for CLIP-S.
+
+\subsection{Tokenizer and representation ablations}
+\begin{table*}[t]
+\centering
+\caption{Distinct5-512 tokenizer ablations. Control quality depends more on target selection and routing than on raw code capacity.}
+\label{tab:tokenizer}
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lrrrl@{}}
+\toprule
+Variant & Best epoch & CLIP-S & LPIPS & Interpretation \\
+\midrule
+Direct atom residual baseline & 8/1 & 0.6876 & 0.4468 & weak baseline; simple residual atoms do not solve representation \\
+Class-local prototypes & 8/1 & 0.6849 & 0.4464 & more per-class capacity, no better style geometry \\
+Global VQ atoms & 8 & 0.6873 & 0.4446 & small LPIPS gain, no style breakthrough \\
+Content-guided spatial routing & 2 & 0.6907 & 0.4226 & first simultaneous style and LPIPS gain \\
+VQ + content-guided routing & 1 & 0.6898 & 0.4156 & stronger content preservation, style still limited \\
+Prototype-aware latent target queue & 1/3 & 0.6973 & 0.3331 & major jump from better internal target distribution \\
+Annealed prototype queue (F) & 1 & 0.6969 & \textbf{0.3186} & current LPIPS reference point \\
+Hard-explore prototype queue (H) & 2/1 & 0.6994 & 0.3213 & current balanced point \\
+Content-adaptive VQ atom routing (K) & 1 & \textbf{0.7010} & 0.3623 & style boost, but larger endpoint movement \\
+\bottomrule
+\end{tabular}
+}
+\end{table*}
+
+These ablations point to control, not capacity. More codebook capacity alone does little, content-guided routing helps, the prototype-aware queue gives the largest gain, and content-adaptive routing buys more style at the cost of larger motion. The next interface should therefore separate target-style carrying from content-risk control.
+
+Non-training probes support the same boundary. Tokenizer codes remain nearly full-rank, but executed residuals are much more aligned and strongly source dominated. On matched Distinct5 probes, executor-side refresh helps more than style-side refresh alone. The bottleneck is therefore execution, not simple code separability.
+
+\subsection{Mechanism ablations}
+\begin{table}[t]
+\centering
+\caption{Destructive ablations under the historical strict-750 protocol.}
+\label{tab:ablation}
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Variant & CLIP-S & CLIP-C & LPIPS & EC \\
+\midrule
+D0 full & 0.7014 & 0.8022 & 0.4593 & 0.3791 \\
+D1 w/o SA-SWD & 0.6708 & 0.8989 & 0.3490 & 0.4368 \\
+D2 w/o kinetic & 0.7159 & 0.6624 & 0.6375 & 0.2596 \\
+D8 strong color loss & 0.6923 & 0.6629 & 0.5675 & 0.2994 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+Destructive ablations show the intended trade-off. Removing SA-SWD preserves content but weakens style; removing kinetic regularization preserves style but collapses content; strong color loss hurts the balance. Path metrics give the same reading: the full model has PLR 0.98, w/o SA-SWD rises to 0.9995, and w/o kinetic drops to 0.94 with content collapse. A matched same-family Distinct5 H packet supports the same bounded claim: weaker kinetic regularization increases endpoint/path/peak motion and worsens CLIP-S / LPIPS.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.82\linewidth]{fig_ablation_pareto.png}
+    \caption{Destructive ablations: w/o SA-SWD weakens style; w/o kinetic collapses content.}
+    \label{fig:ablation}
+\end{figure}
+
+\subsection{Sensitivity and low-cost adaptation}
+The category-weight sweep did not beat balanced sampling consistently. The best EC point is K2 balanced default at epoch 3; the best raw-style point is K1 balanced default at epoch 8. We therefore keep this sweep as supporting sensitivity rather than main evidence.
+
+Step-count sensitivity is also stable. Moving from 1 to 16 integration steps changes all-pairs CLIP-S only from 0.7159 to 0.7162, while LPIPS stays near 0.4514. Four steps already recover near-identical quality, with strict-750 throughput rising from 8.43 to 9.54 images/s. A $3\times3$ sweep over $\lambda_{\mathrm{kin}}$ and $\lambda_{\mathrm{swd}}$ shows the expected smooth trade-off: stronger kinetic weight improves content, while stronger terminal pressure increases style at the cost of LPIPS.
+
+All reported evaluations use fixed seeds, stored resolved configurations, source snapshots, checkpoints, and per-epoch logs. Historical timings were measured on an RTX 4070 Laptop GPU unless otherwise noted. Distinct5 same-cost evidence is summarized by Table~\ref{tab:cost_distinct5} and Figure~\ref{fig:samecostperf}; historical cost is reported in Table~\ref{tab:cost}. Across both packets, the takeaway is practical: meaningful style-id customization can remain in a minute-to-hour consumer-GPU regime without adapting a large pretrained generator.
+
+
+
+\section{Discussion and Limitations}
+The main lesson is that style transfer quality cannot be inferred from raw CLIP-style alone. On the historical strict-750 protocol, StyleID has the highest raw style but collapses content, SaMST is slightly stronger than LBM on CLIP-S and CLIP-C but shows grain-like local artifacts, and LBM occupies a cleaner LPIPS/artifact-sensitive operating point. Distinct5-512 sharpens the same lesson further because its no-op baseline is measured explicitly: higher raw style is achievable, but only by moving into a severe LPIPS and targetwise ArtFID failure region, and some baselines fail even to exceed the identical-image prior. This exposes a community-relevant blind spot in art-to-art evaluation: preserved art-domain priors can masquerade as target-style success unless the unchanged-image floor is reported. Earlier AST evaluation work already notes that protocols are inconsistent across papers and that automatic scores can be style-dependent or misaligned with human judgment \cite{zhou2024comprehensiveeval,yeh2020calibrated,wright2022artfid}. Our claim is therefore concrete but local: on Distinct5-512, the unchanged-image reference and $\Delta_{\mathrm{idt}}$ act as useful diagnostics because they agree with the representative-direction sanity check in Table~\ref{tab:distinct5pairs} and with the observed failure of sub-IDT baselines to move consistently toward the requested target style. The practical implication is separate from that metric point: the same experiments show that meaningful style-id customization can be trained and deployed in a lightweight small-model regime, lowering the barrier for researchers and creators who want customized stylization without maintaining a large generative backbone. We therefore treat adaptation cost as community-relevant evidence rather than an appendix-side detail and encourage future domain-style papers to report it alongside quality metrics. Across both protocols, the conclusion is consistent: on Distinct5-512 and within the currently reproduced positive-$\Delta_{\mathrm{idt}}$ operating points, LBM occupies a favorable measured CLIP-S / LPIPS region, while the remaining open mechanism question is how faithfully style-side distinctions survive execution rather than whether code-space changes can be induced at all.
+
+The tokenizer experiments narrow the design question. Within the tested Distinct5 design space, raw code capacity alone is not the bottleneck. The sharper issue is whether target-style information survives execution through a content-conditioned vector field strongly enough to yield real style gain beyond the unchanged-image reference. The current evidence therefore favors target-style carriers, prototype-aware target queues, and content-aware routing over undifferentiated token expansion. Matched successor probes reinforce the same point: tokenizer code separation maps only moderately into executed separation, while style gain over the unchanged-image reference tracks executed movement more closely than raw code geometry. This keeps executed style survival as the sharper mechanism question in the current successor family, and it suggests that the next representation stage should factor target representation from execution budget rather than simply adding parameters.
+
+The study has several limitations. First, the main protocol is domain-level rather than reference-image-specific, so it does not attempt to reproduce a unique style image. Second, the Distinct5 headline rows are endpoint-mode OMF with $w_{\mathrm{flow}}=0$, so the paper does not claim that the reported frontier requires a full time-continuous bridge objective or solves a general Schrodinger-bridge problem. Third, Euler integration is deliberately simple; although the step sweep is stable in the reported regime, more aggressive paths or higher resolutions may need better solvers or stronger constraints. Fourth, SA-SWD is an adaptive-projection distribution loss; current controls show that most of its benefit comes from the distributional term rather than from the specific semantic projection rule. Fifth, the positive Distinct5 gains are statistically stable but still numerically modest ($\Delta_{\mathrm{idt,tr}}\approx +0.02\sim+0.03$ CLIP-S), and we do not yet back them with a human study or rubric-based VLM preference test. Sixth, reproduced SaMAM/SaMST rows remain shared-packet operating points rather than definitive upper bounds of the original methods under exhaustive retuning. Seventh, we do not yet provide an identically calibrated Distinct5 comparison to text-conditioned or diffusion-prior stylizers under the same IDT-aware contract. Finally, Distinct5-512 is a five-domain stress split rather than a universal art benchmark, so broader domain coverage remains future work even though the current cross-method comparison is already informative on this split; we therefore do not claim universal adoption of IDT-style diagnostics without broader validation.
+
+\section{Conclusion}
+We presented Latent Bridge Matching, a compact endpoint-supervised Style-ID latent renderer for domain-level artistic transfer, framed by a transport-design viewpoint. The active Distinct5 rows separate training-side endpoint selection, few-step latent execution, adaptive-projection terminal distribution matching, and style-tokenized control, without claiming a learned continuous bridge law. Under the reproduced historical strict-750 protocol, LBM delivers a favorable reproduced balance of style strength, content fidelity, artifact control, and practical footprint within the mixed-family comparison packet considered here. The Distinct5-512 stress benchmark sharpens the paper's main evaluation point: once the identical-image prior is made explicit, LBM stays above the no-op floor and occupies a favorable positive-$\Delta_{\mathrm{idt}}$ CLIP-S / LPIPS region among the reproduced compact operating points, while lower ArtFID alone does not guarantee useful target-style movement. On this split, reporting the IDT floor together with $\Delta_{\mathrm{idt}}$ is a useful diagnostic rather than an optional extra statistic. The matched same-cost rerun makes the practical point explicit: under roughly two-minute training budgets, LBM reaches CLIP-S 0.6629 at LPIPS 0.3377 and remains +0.0230 above IDT, whereas same-cost SaMST reaches only +0.0166 at LPIPS 0.7487 and same-cost SaMAM remains below IDT. More broadly, the reproduced minute-scale RTX 3060 adaptation path and the 3.91M / 114\,ms historical operating point show that customized stylization can remain a small-model learning problem rather than a large-prior adaptation problem, lowering the barrier for researchers and creators who want low-cost style-specific models on consumer GPUs. The tokenizer study then isolates the remaining mechanism question. Within the tested Distinct5 tokenizer variants, matched localization controls show that executor-side refresh recovers more than style-side refresh alone on the current local surface, while the same-family H path-stability packet supports the bounded claim that kinetic regularization acts as a practical stabilizer in the current OMF / field regime. The next representation target is therefore to preserve target-style separation through execution itself, via explicit target carriers and tighter content-risk control.
+
+\bibliography{refs}
+
+\small
+\setlength{\itemsep}{1pt}
+\setlength{\parskip}{2pt}
+\section*{Reproducibility Checklist}
+\noindent\textbf{This paper}
+\begin{itemize}
+\item Includes a conceptual outline and/or pseudocode description of AI methods introduced: \textbf{Yes}.
+\item Clearly delineates statements that are opinions, hypothesis, and speculation from objective facts and results: \textbf{Yes}.
+\item Provides well marked pedagogical references for less-familiar readers to gain background necessary to replicate the paper: \textbf{Yes}.
+\end{itemize}
+
+\noindent\textbf{Does this paper make theoretical contributions?} \textbf{Yes (design-grounding)}. The paper provides bounded formal analysis with proofs and empirical checks: Theorem~1 and Theorem~2 analyze the active field/solver regime through a path-action decomposition for kinetic regularization and an $O(1/K)$ Euler discretization bound, while Theorem~3 analyzes a historical OT-style assignment variant as family-level background. Full proofs are in the supplement. These results justify the three-part design without claiming equivalence to a full Schr\"odinger Bridge solver.
+
+\noindent\textbf{Does this paper rely on one or more datasets?} \textbf{Yes}.
+\begin{itemize}
+\item A motivation is given for why the experiments are conducted on the selected datasets: \textbf{Yes}.
+\item All novel datasets introduced in this paper are included in a data appendix: \textbf{NA}.
+\item All novel datasets introduced in this paper will be made publicly available upon publication of the paper with a license that allows free usage for research purposes: \textbf{NA}.
+\item All datasets drawn from the existing literature are accompanied by appropriate citations: \textbf{Yes}.
+\item All datasets drawn from the existing literature are publicly available: \textbf{Yes}.
+\item All datasets that are not publicly available are described in detail, with explanation why publicly available alternatives are not scientifically satisficing: \textbf{NA}.
+\end{itemize}
+
+\noindent\textbf{Does this paper include computational experiments?} \textbf{Yes}.
+\begin{itemize}
+\item This paper states the number and range of values tried per (hyper-)parameter during development of the paper, along with the criterion used for selecting the final parameter setting: \textbf{Partial}.
+\item Any code required for pre-processing data is included in the appendix: \textbf{No}.
+\item All source code required for conducting and analyzing the experiments is included in a code appendix: \textbf{No}.
+\item All source code required for conducting and analyzing the experiments will be made publicly available upon publication of the paper with a license that allows free usage for research purposes: \textbf{Partial}.
+\item All source code implementing new methods have comments detailing the implementation, with references to the paper where each step comes from: \textbf{Partial}.
+\item If an algorithm depends on randomness, then the method used for setting seeds is described in a way sufficient to allow replication of results: \textbf{Partial}.
+\item This paper specifies the computing infrastructure used for running experiments, including hardware/software details: \textbf{Partial}.
+\item This paper formally describes evaluation metrics used and explains the motivation for choosing these metrics: \textbf{Yes}.
+\item This paper states the number of algorithm runs used to compute each reported result: \textbf{Yes}.
+\item Analysis of experiments goes beyond single-dimensional summaries of performance to include measures of variation, confidence, or other distributional information: \textbf{Yes}.
+\item The significance of any improvement or decrease in performance is judged using appropriate statistical tests: \textbf{Partial} (selected confidence intervals and bootstrap summaries are reported, but not every manuscript comparison is presented as a closed significance claim).
+\item This paper lists all final (hyper-)parameters used for each model/algorithm in the paper's experiments: \textbf{Partial}.
+\end{itemize}
+
+\end{document}
+
+
+

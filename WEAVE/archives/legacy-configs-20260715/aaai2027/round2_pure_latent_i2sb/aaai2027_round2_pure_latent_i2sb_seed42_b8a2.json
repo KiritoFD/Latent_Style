@@ -1,0 +1,73 @@
+{
+  "_base": "../inmortal_knee_e13_spatial_carriergate_bodydecoder_seed42_b8a2.json",
+  "model": {
+    "tokenizer_family": "pure_latent_spatial",
+    "transport_prediction_mode": "endpoint",
+    "solver_family": "solver_i2sb",
+    "style_tokenizer": "null",
+    "tokenizer_num_clusters": 32,
+    "tokenizer_structured_temperature": 0.1,
+    "proximal_mode": "off"
+  },
+  "bridge": {
+    "objective_mode": "i2sb_endpoint",
+    "loss_type": "mse",
+    "bridge_sigma": 0.5,
+    "bridge_noise_mode": "gaussian",
+    "bridge_noise_schedule": "exact_brownian",
+    "semantic_supervision_family": "legacy_terminal_swd",
+    "dino_masked_swd_weight": 0.0,
+    "w_flow": 1.0,
+    "terminal_swd_weight": 18.0,
+    "terminal_swd_aux_weight": 0.0,
+    "w_kinetic": 0.0,
+    "w_anisotropic_kinetic": 0.0,
+    "w_stokes_viscous": 0.0,
+    "w_phase_separation": 0.0,
+    "w_curvature": 0.0,
+    "structure_penalty_mode": "off",
+    "w_style_energy_floor": 0.0,
+    "w_lowfreq_velocity": 0.0,
+    "w_style_contrastive": 0.0,
+    "w_residual_style_direction": 0.0,
+    "w_generated_delta_diversity": 0.0,
+    "w_spectral_amplitude": 0.0,
+    "target_teacher_mode": "off",
+    "target_teacher_weight": 0.0,
+    "cycle_consistency_weight": 0.0,
+    "sb_noise_epsilon": 0.0
+  },
+  "training": {
+    "batch_size": 40,
+    "accumulation_steps": 1,
+    "freeze_mode": "none",
+    "resume_checkpoint": "",
+    "resume_training_state": false,
+    "resume_optimizer": false,
+    "test_image_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache",
+    "full_eval_clip_hf_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache/hf"
+  },
+  "data": {
+    "data_root": "/mnt/i/wikiarts_5_full_notest_latents_ema/train",
+    "style_subdirs": [
+      "Early_Renaissance",
+      "Impressionism",
+      "Minimalism",
+      "Rococo",
+      "Ukiyo_e"
+    ],
+    "latent_cache_dir": "/mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache",
+    "pairing_cache_path": "/mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "dino_cache_required": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_round2_pure_latent_i2sb_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_round2_pure_latent_i2sb_seed42_b8a2",
+    "axis": "aaai2027_round2_pure_latent_i2sb",
+    "stage": "pure_latent_i2sb_foundation",
+    "notes": "Pure latent spatial tokenizer plus exact-posterior I2SB solver. DINO disabled from the main line."
+  }
+}

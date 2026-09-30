@@ -1,0 +1,6 @@
+{
+  "model": {
+    "endpoint_adain_mode": "spatial_fiber_wct",
+    "endpoint_adain_scale": 0.7
+  }
+}

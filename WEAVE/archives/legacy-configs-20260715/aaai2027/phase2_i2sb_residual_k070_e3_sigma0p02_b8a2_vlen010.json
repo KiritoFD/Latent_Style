@@ -1,0 +1,19 @@
+{
+  "_base": "./phase2_i2sb_clean_k070_e3_sigma0p02_b8a2_vlen010.json",
+  "model": {
+    "endpoint_parameterization": "residual"
+  },
+  "training": {
+    "full_eval_in_process": false,
+    "full_eval_runtime_model_cache": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_i2sb_residual_k070_e3_sigma0p02_b8a2_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_i2sb_residual_k070_e3_sigma0p02_b8a2_vlen010",
+    "axis": "phase2_fiber_path_objective",
+    "stage": "residual_i2sb_endpoint_path",
+    "notes": "Controlled follow-up after clean absolute endpoint I2SB: keep parent, sigma, tokenizer, TopoGate, loss, schedule, and fast10 eval fixed; change only endpoint_parameterization from absolute to residual so the network predicts a bounded endpoint delta instead of absolute target coordinates."
+  }
+}

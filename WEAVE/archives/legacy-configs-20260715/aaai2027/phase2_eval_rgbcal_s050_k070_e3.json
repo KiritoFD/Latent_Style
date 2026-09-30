@@ -1,0 +1,13 @@
+{
+  "_comment": "Eval-only decoded-RGB calibration screen from k070 epoch_0003. Only postprocess_strength differs from the matched no-postprocess control.",
+  "full_eval": {
+    "postprocess_mode": "style_rgb_affine",
+    "postprocess_strength": 0.5,
+    "postprocess_mean_strength": 1.0,
+    "postprocess_std_strength": 1.0,
+    "postprocess_ref_limit": 64,
+    "only_lpips_clip_style": true,
+    "save_generated_images": false,
+    "save_summary_grid": false
+  }
+}

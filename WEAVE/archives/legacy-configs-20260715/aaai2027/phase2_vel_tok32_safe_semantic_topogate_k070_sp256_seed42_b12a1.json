@@ -1,0 +1,14 @@
+{
+  "_base": "./phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1.json",
+  "model": {
+    "tokenizer_spatial_dim": 256
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_sp256_seed42_b12a1"
+  },
+  "ablation": {
+    "name": "phase2_vel_tok32_safe_semantic_topogate_k070_sp256_b12a1",
+    "axis": "phase2_velocity_style_release",
+    "notes": "Guide-aligned tokenizer-capacity follow-on behind k070: keep the same safe tokenizer family, topology blend 0.7, velocity transport, and appearance head, but raise tokenizer_spatial_dim from the default body width to 256 and project it back into the body channel width at runtime."
+  }
+}

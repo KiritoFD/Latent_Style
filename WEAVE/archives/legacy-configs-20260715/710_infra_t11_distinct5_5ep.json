@@ -1,0 +1,26 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/710_infra_t11_distinct5_5ep",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "num_epochs": 5,
+    "save_interval": 1,
+    "patience": 10,
+    "use_tqdm": false,
+    "log_interval": 1000,
+    "gpu_monitor_enabled": false,
+    "full_eval_each_epoch": false,
+    "full_eval_defer_until_training_end": false
+  },
+  "data": {
+    "preload_to_gpu": false
+  },
+  "ablation": {
+    "name": "infra_t11_distinct5_5ep",
+    "axis": "training_infrastructure",
+    "stage": "710_infra",
+    "notes": "Clean five-epoch Distinct5 T11 training run after removing unconditional GPU-to-CPU metric synchronization. Evaluation is deferred to dedicated four-metric runs."
+  }
+}

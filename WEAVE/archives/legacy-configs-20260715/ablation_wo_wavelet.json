@@ -1,0 +1,5 @@
+{
+  "model": {
+    "lowpass_mode": "avg_pool"
+  }
+}

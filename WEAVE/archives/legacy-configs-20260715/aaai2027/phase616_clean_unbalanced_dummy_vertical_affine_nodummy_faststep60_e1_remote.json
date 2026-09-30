@@ -1,0 +1,15 @@
+{
+  "_base": "./phase616_clean_unbalanced_dummy_vertical_affine_faststep60_e1_remote.json",
+  "bridge": {
+    "sinkhorn_unbalanced_dummy_cost": 0.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_unbalanced_dummy_vertical_affine_nodummy_faststep60_e1_remote"
+  },
+  "ablation": {
+    "name": "phase616_clean_unbalanced_dummy_vertical_affine_nodummy_faststep60_e1_remote",
+    "axis": "phase616_ot_rebuild_stage2",
+    "stage": "affine_vertical_nodummy_fast_probe",
+    "notes": "Stage-2 diagnostic control. Keep affine tokenizer, structure-aware OT, and wavelet vertical projections fixed, but remove explicit source-local dummy targets so we can isolate whether high leak comes from dummy routing or from the affine/vertical stack itself."
+  }
+}

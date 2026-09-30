@@ -1,0 +1,1 @@
+family,role,train_epoch_wall_sec,train_avg_step_sec,train_ot_cost,train_ot_target_gini,train_ot_target_max_mass,train_fiber_energy_ratio,train_low_freq_leak,eval_clip_style,eval_lpips,eval_generated_rank,eval_generated_offdiag_cos,decision

@@ -1,0 +1,10 @@
+import torch
+ck = torch.load(r'I:\Github\Latent_Style\SchrodingerBridge\exp\712_sf1_subband\epoch_0005.pt', map_location='cpu', weights_only=False)
+cfg = ck.get('config', {})
+print('test_image_dir:', cfg.get('training', {}).get('test_image_dir', 'NOT_SET'))
+print('style_subdirs:', cfg.get('data', {}).get('style_subdirs', 'NOT_SET'))
+print('solver_family:', cfg.get('model', {}).get('solver_family', 'NOT_SET'))
+print('objective_mode:', cfg.get('bridge', {}).get('objective_mode', 'NOT_SET'))
+print('contract_family:', cfg.get('model', {}).get('contract_family', 'NOT_SET'))
+print('tokenizer_family:', cfg.get('model', {}).get('tokenizer_family', 'NOT_SET'))
+print('subband_time_schedule_enabled:', cfg.get('bridge', {}).get('subband_time_schedule_enabled', 'NOT_SET'))

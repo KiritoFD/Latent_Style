@@ -1,0 +1,27 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/t11evo/t11e_j_long20",
+    "resume_checkpoint": ""
+  },
+  "data": {
+    "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train",
+    "pairing_cache_path": "",
+    "latent_cache_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train/.latent_cache/packed"
+  },
+  "training": {
+    "batch_size": 32,
+    "num_epochs": 20,
+    "patience": 4,
+    "full_eval_each_epoch": false,
+    "test_image_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512/test",
+    "full_eval_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache/hf"
+  },
+  "ablation": {
+    "name": "t11e_j_long20",
+    "axis": "longer_training",
+    "stage": "t11evo_r2",
+    "notes": "R2: T11 baseline + ONLY 20 epochs (vs 5). Same config. Test if longer training improves clip without hurting lpips."
+  }
+}

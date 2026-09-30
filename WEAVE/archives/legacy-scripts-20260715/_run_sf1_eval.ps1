@@ -1,0 +1,5 @@
+$ErrorActionPreference = "Continue"
+Set-Location "I:\Github\Latent_Style\SchrodingerBridge"
+$env:PYTHONPATH = "src"
+python run_evaluation.py --checkpoint "I:\Github\Latent_Style\SchrodingerBridge\exp\712_sf1_subband\epoch_0005.pt" --output "I:\Github\Latent_Style\SchrodingerBridge\exp\712_sf1_subband\full_eval" --batch_size 2 --ref_feature_batch_size 2 --vae_decode_batch_size 16 --test_dir "I:\datasets\wikiart_distinct5_samam_512_classview\test" *>&1 | Tee-Object -FilePath "C:\Users\Administrator\logs\712_sf1_eval2.log"
+Write-Output "EXIT_CODE=$LASTEXITCODE"

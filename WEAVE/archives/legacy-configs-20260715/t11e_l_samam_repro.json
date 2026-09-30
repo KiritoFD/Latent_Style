@@ -1,0 +1,28 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/t11evo/t11e_l_samam_repro",
+    "resume_checkpoint": ""
+  },
+  "data": {
+    "data_root": "G:/GitHub/Latent_Style/Dataset/wikiart_distinct5_samam_512_latents_ema/train",
+    "pairing_cache_path": "G:/GitHub/Latent_Style/Dataset/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "pairing_cache_active_topk": 0,
+    "latent_cache_dir": "G:/GitHub/Latent_Style/Dataset/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/packed"
+  },
+  "training": {
+    "batch_size": 24,
+    "num_epochs": 5,
+    "patience": 2,
+    "full_eval_each_epoch": false,
+    "test_image_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512/test",
+    "full_eval_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache/hf"
+  },
+  "ablation": {
+    "name": "t11e_l_samam_repro",
+    "axis": "correct_dataset_samam",
+    "stage": "t11evo_diag",
+    "notes": "Diagnostic: T11 config with CORRECT dataset (wikiart_distinct5_samam_512_latents_ema) + pairing cache. If lpips drops to ~0.2-0.3, confirms wrong dataset was root cause of local lpips inflation (0.44)."
+  }
+}

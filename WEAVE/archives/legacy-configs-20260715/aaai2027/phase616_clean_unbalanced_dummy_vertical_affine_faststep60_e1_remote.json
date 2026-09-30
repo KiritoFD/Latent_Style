@@ -1,0 +1,15 @@
+{
+  "_base": "./phase616_clean_unbalanced_dummy_vertical_affine_faststep60_e1.json",
+  "data": {
+    "latent_cache_mode": "packed",
+    "latent_cache_dir": "/mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_unbalanced_dummy_vertical_affine_faststep60_e1_remote"
+  },
+  "ablation": {
+    "name": "phase616_clean_unbalanced_dummy_vertical_affine_faststep60_e1_remote",
+    "stage": "smoke_remote",
+    "notes": "Remote 3060 WSL launch variant of the canonical 616 short probe. Reuses the same clean-contract, dummy-OT, and vertical/fiber settings, but restores the packed latent cache on /mnt/i and writes checkpoints under a remote-specific save_dir."
+  }
+}

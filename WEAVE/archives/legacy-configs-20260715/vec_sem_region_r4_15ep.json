@@ -1,0 +1,22 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "checkpoint": {
+    "save_dir": "exp/vec_sem_region_r4_15ep",
+    "resume_checkpoint": ""
+  },
+  "bridge": {
+    "swd_semantic_mode": "region",
+    "swd_semantic_regions": 4,
+    "swd_semantic_blend": 0.5,
+    "swd_semantic_kmeans_iters": 4
+  },
+  "training": {
+    "batch_size": 128
+  },
+  "ablation": {
+    "name": "vec_sem_region_r4_15ep",
+    "axis": "vec_semantic_swd",
+    "stage": "phase2_vectorized",
+    "notes": "Vectorized semantic region SWD: Q=256 quantile gather, no K×B loop, zero .item() sync. Based on hp_simple_swd12 (simple SWD squared+global + spectral_ode). swd_semantic_mode=region, K=4, blend=0.5. Goal: recover MUSIQ toward WEAVE 54.5 (hp=43.2) while keeping training fast (~20s/ep). bs=128 for VRAM headroom."
+  }
+}

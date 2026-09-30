@@ -1,0 +1,36 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "base_dim": 96,
+    "num_res_blocks": 6,
+    "style_adaln_enabled": true,
+    "style_velocity_head_enabled": true,
+    "style_vhead_hf_nonzero_init": true,
+    "cross_attn_dwt_route": true,
+    "dwt_route_train_prob": 0.5,
+    "enable_hh_head": true
+  },
+  "bridge": {
+    "structure_aligned_target": false
+  },
+  "data": {
+    "virtual_length_multiplier": 3.0
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 10,
+    "batch_size": 64,
+    "save_interval": 2,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/stage5_no_sat"
+  },
+  "ablation": {
+    "name": "stage5_no_sat",
+    "axis": "style_injection",
+    "stage": "712_sty_inject_stage5",
+    "notes": "变体B: stage4配置但不加SAT. save_interval=2. 测试SAT(structure_aligned_target)的真实贡献."
+  }
+}

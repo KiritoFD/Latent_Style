@@ -1,0 +1,16 @@
+{
+  "_base": "t11_repro_15ep.json",
+  "model": {
+    "dwt_route_train_prob": 0.9
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/t11e3_p09_15ep",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "t11e3_p09_15ep",
+    "axis": "t11_evolution_higher_dwt_prob",
+    "stage": "t11_evo",
+    "notes": "T11 evo-3: Higher DWT route probability (p=0.8->0.9). T11 p-sweep: p=1.0(4J.1) clip=0.7226 lpips=0.3068, p=0.8(T11) clip=0.7213 lpips=0.2868. Higher p->higher clip (q_proj more DWT-proficient) but higher lpips. p=0.9 interpolates: target clip~0.7220, lpips~0.2970. Tests if 0.9 gives better clip-lpips tradeoff than 0.8 while staying under lpips<0.3068."
+  }
+}

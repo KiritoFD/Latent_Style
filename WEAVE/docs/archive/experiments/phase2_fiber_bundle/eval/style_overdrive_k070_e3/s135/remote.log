@@ -1,0 +1,60 @@
+﻿=== START 2026-06-14T23:16:18+08:00 ===
+CWD: /mnt/i/Github/Latent_Style
+COMMAND: /home/xy/venvs/samam312/bin/python SchrodingerBridge/tools/experiments/run_phase2_eval_only_override.py --checkpoint /mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1/epoch_0003.pt --config-override /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_eval_style_overdrive_s135_k070_e3.json --output exp/inmortal-exp/phase2_style_overdrive_k070_e3/phase2_eval_style_overdrive_s135_k070_e3/epoch_0003 --test-dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache-dir /mnt/i/Github/Latent_Style/eval_cache --clip-hf-cache-dir /mnt/i/Github/Latent_Style/eval_cache/hf --device cuda --seed 42
+[run_phase2_eval_only_override] /home/xy/venvs/samam312/bin/python /mnt/i/Github/Latent_Style/SchrodingerBridge/src/utils/run_evaluation.py --checkpoint /mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1/epoch_0003.pt --output /mnt/i/Github/Latent_Style/exp/inmortal-exp/phase2_style_overdrive_k070_e3/phase2_eval_style_overdrive_s135_k070_e3/epoch_0003 --config_override /mnt/i/Github/Latent_Style/SchrodingerBridge/configs/aaai2027/phase2_eval_style_overdrive_s135_k070_e3.json --test_dir /mnt/i/wikiart_distinct5_samam_512_classview/test --cache_dir /mnt/i/Github/Latent_Style/eval_cache --clip_hf_cache_dir /mnt/i/Github/Latent_Style/eval_cache/hf --seed 42
+HF cache dir: /mnt/i/Github/Latent_Style/eval_cache/hf
+HF hub cache dir: /mnt/i/Github/Latent_Style/eval_cache/hf/hub
+
+Phase 1: Generation (Batch Size 4)
+  Generating Batch 1/38
+  Generating Batch 2/38
+  Generating Batch 3/38
+  Generating Batch 4/38
+  Generating Batch 5/38
+  Generating Batch 6/38
+  Generating Batch 7/38
+  Generating Batch 8/38
+  Generating Batch 9/38
+  Generating Batch 10/38
+  Generating Batch 11/38
+  Generating Batch 12/38
+  Generating Batch 13/38
+  Generating Batch 14/38
+  Generating Batch 15/38
+  Generating Batch 16/38
+  Generating Batch 17/38
+  Generating Batch 18/38
+  Generating Batch 19/38
+  Generating Batch 20/38
+  Generating Batch 21/38
+  Generating Batch 22/38
+  Generating Batch 23/38
+  Generating Batch 24/38
+  Generating Batch 25/38
+  Generating Batch 26/38
+  Generating Batch 27/38
+  Generating Batch 28/38
+  Generating Batch 29/38
+  Generating Batch 30/38
+  Generating Batch 31/38
+  Generating Batch 32/38
+  Generating Batch 33/38
+  Generating Batch 34/38
+  Generating Batch 35/38
+  Generating Batch 36/38
+  Generating Batch 37/38
+  Generating Batch 38/38
+  Generation models unloaded
+
+妫ｅ啯鐣?Phase 2: Evaluation
+  LPIPS Loaded
+  CLIP Loaded (HF) from: /mnt/i/Github/Latent_Style/eval_cache/manual_clip/openai-clip-vit-base-patch32
+Found global reference cache: /mnt/i/Github/Latent_Style/eval_cache/ref_feats_06b1376662_m30.pt
+  Reference cache loaded successfully
+  Processing 750 generated images...
+Found global source cache: /mnt/i/Github/Latent_Style/eval_cache/src_feats_06b1376662_img256_clip0.pt
+  Source cache loaded successfully
+
+妫ｅ啯鎯?Generating Summary...
+Summary saved: /mnt/i/Github/Latent_Style/exp/inmortal-exp/phase2_style_overdrive_k070_e3/phase2_eval_style_overdrive_s135_k070_e3/epoch_0003/summary.json
+=== END 2026-06-14T23:19:10+08:00 rc=0 ===

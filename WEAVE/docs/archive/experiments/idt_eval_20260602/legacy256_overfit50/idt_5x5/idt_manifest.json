@@ -1,0 +1,4517 @@
+{
+  "name": "idt",
+  "definition": "identical baseline: copy each source image unchanged to every target column",
+  "dataset": "legacy256_overfit50",
+  "test_dir": "G:\\GitHub\\Latent_Style\\Dataset\\legacy256_overfit50\\test",
+  "styles": [
+    "cezanne",
+    "Hayao",
+    "monet",
+    "photo",
+    "vangogh"
+  ],
+  "count": 750,
+  "images_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\idt_eval_20260602\\legacy256_overfit50\\idt_5x5\\images",
+  "rows": [
+    {
+      "src_style": "cezanne",
+      "src_image": "00057.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00057_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00057.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00057_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00057.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00057_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00057.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00057_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00057.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00057_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00104.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00104_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00104.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00104_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00104.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00104_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00104.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00104_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00104.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00104_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00123.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00123_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00123.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00123_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00123.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00123_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00123.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00123_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00123.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00123_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00204.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00204_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00204.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00204_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00204.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00204_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00204.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00204_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00204.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00204_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00212.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00212_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00212.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00212_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00212.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00212_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00212.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00212_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00212.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00212_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00219.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00219_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00219.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00219_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00219.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00219_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00219.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00219_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00219.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00219_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00223.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00223_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00223.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00223_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00223.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00223_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00223.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00223_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00223.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00223_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00263.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00263_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00263.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00263_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00263.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00263_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00263.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00263_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00263.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00263_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00271.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00271_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00271.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00271_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00271.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00271_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00271.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00271_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00271.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00271_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00275.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00275_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00275.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00275_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00275.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00275_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00275.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00275_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00275.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00275_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00286.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00286_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00286.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00286_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00286.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00286_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00286.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00286_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00286.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00286_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00298.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00298_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00298.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00298_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00298.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00298_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00298.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00298_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00298.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00298_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00303.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00303_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00303.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00303_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00303.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00303_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00303.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00303_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00303.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00303_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00332.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00332_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00332.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00332_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00332.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00332_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00332.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00332_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00332.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00332_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00335.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00335_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00335.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00335_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00335.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00335_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00335.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00335_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00335.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00335_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00342.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00342_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00342.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00342_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00342.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00342_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00342.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00342_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00342.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00342_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00348.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00348_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00348.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00348_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00348.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00348_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00348.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00348_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00348.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00348_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00375.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00375_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00375.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00375_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00375.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00375_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00375.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00375_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00375.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00375_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00379.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00379_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00379.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00379_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00379.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00379_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00379.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00379_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00379.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00379_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00382.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00382_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00382.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00382_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00382.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00382_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00382.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00382_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00382.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00382_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00388.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00388_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00388.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00388_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00388.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00388_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00388.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00388_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00388.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00388_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00393.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00393_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00393.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00393_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00393.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00393_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00393.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00393_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00393.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00393_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00411.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00411_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00411.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00411_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00411.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00411_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00411.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00411_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00411.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00411_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00428.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00428_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00428.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00428_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00428.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00428_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00428.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00428_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00428.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00428_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00437.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00437_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00437.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00437_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00437.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00437_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00437.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00437_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00437.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00437_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00517.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00517_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00517.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00517_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00517.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00517_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00517.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00517_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00517.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00517_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00546.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00546_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00546.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00546_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00546.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00546_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00546.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00546_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00546.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00546_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00576.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00576_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00576.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00576_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00576.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00576_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00576.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00576_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00576.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00576_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00582.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00582_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00582.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00582_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00582.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00582_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00582.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00582_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00582.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00582_to_vangogh.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00605.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "cezanne_00605_to_cezanne.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00605.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "cezanne_00605_to_Hayao.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00605.jpg",
+      "tgt_style": "monet",
+      "gen_image": "cezanne_00605_to_monet.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00605.jpg",
+      "tgt_style": "photo",
+      "gen_image": "cezanne_00605_to_photo.jpg"
+    },
+    {
+      "src_style": "cezanne",
+      "src_image": "00605.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "cezanne_00605_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "0.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_0_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "0.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_0_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "0.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_0_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "0.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_0_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "0.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_0_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1000.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1000_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1000.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1000_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1000.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1000_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1000.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1000_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1000.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1000_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1001.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1001_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1001.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1001_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1001.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1001_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1001.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1001_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1001.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1001_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1006.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1006_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1006.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1006_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1006.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1006_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1006.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1006_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1006.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1006_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1007.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1007_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1007.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1007_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1007.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1007_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1007.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1007_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1007.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1007_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1008.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1008_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1008.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1008_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1008.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1008_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1008.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1008_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1008.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1008_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1009.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1009_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1009.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1009_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1009.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1009_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1009.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1009_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1009.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1009_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1012.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1012_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1012.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1012_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1012.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1012_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1012.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1012_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1012.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1012_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1014.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1014_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1014.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1014_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1014.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1014_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1014.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1014_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1014.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1014_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1015.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1015_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1015.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1015_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1015.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1015_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1015.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1015_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1015.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1015_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1016.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1016_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1016.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1016_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1016.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1016_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1016.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1016_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1016.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1016_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1017.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1017_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1017.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1017_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1017.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1017_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1017.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1017_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1017.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1017_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1018.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1018_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1018.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1018_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1018.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1018_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1018.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1018_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1018.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1018_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1019.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1019_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1019.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1019_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1019.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1019_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1019.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1019_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1019.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1019_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1020.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1020_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1020.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1020_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1020.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1020_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1020.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1020_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1020.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1020_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1021.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1021_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1021.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1021_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1021.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1021_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1021.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1021_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1021.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1021_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1023.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1023_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1023.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1023_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1023.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1023_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1023.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1023_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1023.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1023_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1024.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1024_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1024.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1024_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1024.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1024_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1024.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1024_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1024.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1024_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1025.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1025_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1025.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1025_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1025.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1025_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1025.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1025_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1025.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1025_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1026.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1026_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1026.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1026_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1026.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1026_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1026.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1026_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1026.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1026_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1028.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1028_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1028.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1028_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1028.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1028_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1028.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1028_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1028.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1028_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "102.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_102_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "102.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_102_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "102.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_102_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "102.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_102_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "102.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_102_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1033.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1033_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1033.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1033_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1033.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1033_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1033.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1033_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1033.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1033_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1039.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1039_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1039.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1039_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1039.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1039_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1039.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1039_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1039.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1039_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "103.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_103_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "103.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_103_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "103.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_103_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "103.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_103_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "103.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_103_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1040.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1040_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1040.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1040_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1040.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1040_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1040.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1040_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1040.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1040_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1041.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1041_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1041.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1041_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1041.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1041_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1041.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1041_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1041.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1041_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1042.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1042_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1042.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1042_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1042.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1042_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1042.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1042_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1042.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1042_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1044.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1044_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1044.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1044_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1044.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1044_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1044.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1044_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1044.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1044_to_vangogh.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1049.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "Hayao_1049_to_cezanne.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1049.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "Hayao_1049_to_Hayao.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1049.jpg",
+      "tgt_style": "monet",
+      "gen_image": "Hayao_1049_to_monet.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1049.jpg",
+      "tgt_style": "photo",
+      "gen_image": "Hayao_1049_to_photo.jpg"
+    },
+    {
+      "src_style": "Hayao",
+      "src_image": "1049.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "Hayao_1049_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00018.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00018_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00018.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00018_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00018.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00018_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00018.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00018_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00018.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00018_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00075.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00075_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00075.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00075_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00075.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00075_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00075.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00075_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00075.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00075_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00092.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00092_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00092.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00092_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00092.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00092_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00092.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00092_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00092.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00092_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00278.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00278_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00278.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00278_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00278.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00278_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00278.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00278_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00278.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00278_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00282.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00282_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00282.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00282_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00282.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00282_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00282.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00282_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00282.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00282_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00286.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00286_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00286.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00286_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00286.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00286_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00286.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00286_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00286.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00286_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00291.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00291_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00291.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00291_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00291.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00291_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00291.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00291_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00291.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00291_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00389.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00389_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00389.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00389_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00389.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00389_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00389.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00389_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00389.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00389_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00429.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00429_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00429.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00429_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00429.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00429_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00429.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00429_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00429.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00429_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00444.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00444_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00444.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00444_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00444.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00444_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00444.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00444_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00444.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00444_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00446.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00446_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00446.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00446_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00446.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00446_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00446.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00446_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00446.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00446_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00542.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00542_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00542.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00542_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00542.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00542_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00542.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00542_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00542.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00542_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00557.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00557_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00557.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00557_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00557.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00557_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00557.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00557_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00557.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00557_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00607.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00607_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00607.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00607_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00607.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00607_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00607.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00607_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00607.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00607_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00677.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00677_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00677.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00677_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00677.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00677_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00677.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00677_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00677.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00677_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00695.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00695_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00695.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00695_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00695.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00695_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00695.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00695_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00695.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00695_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00756.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00756_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00756.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00756_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00756.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00756_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00756.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00756_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00756.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00756_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00776.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00776_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00776.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00776_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00776.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00776_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00776.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00776_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00776.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00776_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00786.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00786_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00786.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00786_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00786.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00786_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00786.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00786_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00786.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00786_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00789.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00789_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00789.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00789_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00789.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00789_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00789.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00789_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00789.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00789_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00812.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00812_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00812.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00812_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00812.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00812_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00812.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00812_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00812.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00812_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00928.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00928_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00928.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00928_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00928.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00928_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00928.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00928_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00928.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00928_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00959.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_00959_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00959.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_00959_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00959.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_00959_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00959.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_00959_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "00959.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_00959_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01039.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_01039_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01039.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_01039_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01039.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_01039_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01039.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_01039_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01039.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_01039_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01059.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_01059_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01059.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_01059_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01059.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_01059_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01059.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_01059_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01059.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_01059_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01127.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_01127_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01127.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_01127_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01127.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_01127_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01127.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_01127_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01127.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_01127_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01151.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_01151_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01151.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_01151_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01151.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_01151_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01151.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_01151_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01151.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_01151_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01155.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_01155_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01155.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_01155_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01155.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_01155_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01155.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_01155_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01155.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_01155_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01208.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_01208_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01208.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_01208_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01208.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_01208_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01208.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_01208_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01208.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_01208_to_vangogh.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01326.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "monet_01326_to_cezanne.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01326.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "monet_01326_to_Hayao.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01326.jpg",
+      "tgt_style": "monet",
+      "gen_image": "monet_01326_to_monet.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01326.jpg",
+      "tgt_style": "photo",
+      "gen_image": "monet_01326_to_photo.jpg"
+    },
+    {
+      "src_style": "monet",
+      "src_image": "01326.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "monet_01326_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-08 16_45_24.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-08 16_45_24_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-08 16_45_24.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-08 16_45_24_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-08 16_45_24.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-08 16_45_24_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-08 16_45_24.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-08 16_45_24_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-08 16_45_24.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-08 16_45_24_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-10 12_45_41.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-10 12_45_41_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-10 12_45_41.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-10 12_45_41_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-10 12_45_41.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-10 12_45_41_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-10 12_45_41.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-10 12_45_41_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-10 12_45_41.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-10 12_45_41_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-10 19_30_53.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-10 19_30_53_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-10 19_30_53.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-10 19_30_53_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-10 19_30_53.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-10 19_30_53_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-10 19_30_53.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-10 19_30_53_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-10 19_30_53.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-10 19_30_53_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-11 22_03_00.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-11 22_03_00_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-11 22_03_00.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-11 22_03_00_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-11 22_03_00.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-11 22_03_00_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-11 22_03_00.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-11 22_03_00_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-11 22_03_00.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-11 22_03_00_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 01_54_20.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-12 01_54_20_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 01_54_20.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-12 01_54_20_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 01_54_20.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-12 01_54_20_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 01_54_20.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-12 01_54_20_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 01_54_20.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-12 01_54_20_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 10_29_19.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-12 10_29_19_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 10_29_19.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-12 10_29_19_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 10_29_19.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-12 10_29_19_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 10_29_19.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-12 10_29_19_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 10_29_19.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-12 10_29_19_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 16_58_40.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-12 16_58_40_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 16_58_40.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-12 16_58_40_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 16_58_40.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-12 16_58_40_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 16_58_40.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-12 16_58_40_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-12 16_58_40.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-12 16_58_40_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-14 07_04_51.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-14 07_04_51_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-14 07_04_51.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-14 07_04_51_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-14 07_04_51.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-14 07_04_51_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-14 07_04_51.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-14 07_04_51_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-14 07_04_51.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-14 07_04_51_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-14 14_11_02.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-14 14_11_02_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-14 14_11_02.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-14 14_11_02_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-14 14_11_02.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-14 14_11_02_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-14 14_11_02.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-14 14_11_02_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-14 14_11_02.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-14 14_11_02_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-16 04_17_00.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-16 04_17_00_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-16 04_17_00.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-16 04_17_00_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-16 04_17_00.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-16 04_17_00_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-16 04_17_00.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-16 04_17_00_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-16 04_17_00.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-16 04_17_00_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 09_05_09.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-17 09_05_09_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 09_05_09.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-17 09_05_09_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 09_05_09.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-17 09_05_09_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 09_05_09.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-17 09_05_09_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 09_05_09.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-17 09_05_09_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 14_54_20.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-17 14_54_20_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 14_54_20.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-17 14_54_20_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 14_54_20.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-17 14_54_20_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 14_54_20.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-17 14_54_20_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 14_54_20.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-17 14_54_20_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 16_40_10.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-17 16_40_10_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 16_40_10.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-17 16_40_10_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 16_40_10.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-17 16_40_10_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 16_40_10.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-17 16_40_10_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 16_40_10.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-17 16_40_10_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 17_36_09.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-17 17_36_09_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 17_36_09.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-17 17_36_09_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 17_36_09.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-17 17_36_09_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 17_36_09.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-17 17_36_09_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 17_36_09.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-17 17_36_09_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 18_08_26.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-17 18_08_26_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 18_08_26.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-17 18_08_26_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 18_08_26.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-17 18_08_26_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 18_08_26.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-17 18_08_26_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 18_08_26.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-17 18_08_26_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 23_58_45.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-17 23_58_45_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 23_58_45.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-17 23_58_45_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 23_58_45.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-17 23_58_45_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 23_58_45.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-17 23_58_45_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-17 23_58_45.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-17 23_58_45_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 02_42_31.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-18 02_42_31_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 02_42_31.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-18 02_42_31_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 02_42_31.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-18 02_42_31_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 02_42_31.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-18 02_42_31_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 02_42_31.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-18 02_42_31_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 06_58_36.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-18 06_58_36_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 06_58_36.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-18 06_58_36_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 06_58_36.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-18 06_58_36_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 06_58_36.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-18 06_58_36_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 06_58_36.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-18 06_58_36_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 08_52_05.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-18 08_52_05_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 08_52_05.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-18 08_52_05_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 08_52_05.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-18 08_52_05_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 08_52_05.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-18 08_52_05_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 08_52_05.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-18 08_52_05_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 11_46_45.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-18 11_46_45_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 11_46_45.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-18 11_46_45_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 11_46_45.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-18 11_46_45_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 11_46_45.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-18 11_46_45_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-18 11_46_45.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-18 11_46_45_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-19 00_58_04.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-19 00_58_04_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-19 00_58_04.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-19 00_58_04_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-19 00_58_04.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-19 00_58_04_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-19 00_58_04.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-19 00_58_04_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-19 00_58_04.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-19 00_58_04_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-19 05_01_31.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-19 05_01_31_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-19 05_01_31.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-19 05_01_31_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-19 05_01_31.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-19 05_01_31_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-19 05_01_31.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-19 05_01_31_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-19 05_01_31.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-19 05_01_31_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-20 11_21_32.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-20 11_21_32_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-20 11_21_32.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-20 11_21_32_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-20 11_21_32.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-20 11_21_32_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-20 11_21_32.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-20 11_21_32_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-20 11_21_32.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-20 11_21_32_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 01_47_41.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-21 01_47_41_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 01_47_41.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-21 01_47_41_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 01_47_41.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-21 01_47_41_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 01_47_41.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-21 01_47_41_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 01_47_41.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-21 01_47_41_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 05_56_32.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-21 05_56_32_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 05_56_32.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-21 05_56_32_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 05_56_32.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-21 05_56_32_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 05_56_32.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-21 05_56_32_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 05_56_32.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-21 05_56_32_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 17_44_44.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-21 17_44_44_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 17_44_44.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-21 17_44_44_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 17_44_44.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-21 17_44_44_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 17_44_44.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-21 17_44_44_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-21 17_44_44.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-21 17_44_44_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-22 14_12_35.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-22 14_12_35_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-22 14_12_35.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-22 14_12_35_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-22 14_12_35.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-22 14_12_35_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-22 14_12_35.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-22 14_12_35_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-22 14_12_35.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-22 14_12_35_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-22 14_15_50.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-22 14_15_50_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-22 14_15_50.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-22 14_15_50_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-22 14_15_50.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-22 14_15_50_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-22 14_15_50.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-22 14_15_50_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-22 14_15_50.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-22 14_15_50_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-23 13_03_15.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-23 13_03_15_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-23 13_03_15.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-23 13_03_15_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-23 13_03_15.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-23 13_03_15_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-23 13_03_15.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-23 13_03_15_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-23 13_03_15.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-23 13_03_15_to_vangogh.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-25 10_46_18.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "photo_2013-11-25 10_46_18_to_cezanne.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-25 10_46_18.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "photo_2013-11-25 10_46_18_to_Hayao.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-25 10_46_18.jpg",
+      "tgt_style": "monet",
+      "gen_image": "photo_2013-11-25 10_46_18_to_monet.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-25 10_46_18.jpg",
+      "tgt_style": "photo",
+      "gen_image": "photo_2013-11-25 10_46_18_to_photo.jpg"
+    },
+    {
+      "src_style": "photo",
+      "src_image": "2013-11-25 10_46_18.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "photo_2013-11-25 10_46_18_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00005.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00005_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00005.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00005_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00005.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00005_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00005.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00005_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00005.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00005_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00090.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00090_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00090.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00090_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00090.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00090_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00090.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00090_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00090.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00090_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00098.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00098_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00098.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00098_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00098.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00098_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00098.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00098_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00098.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00098_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00163.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00163_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00163.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00163_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00163.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00163_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00163.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00163_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00163.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00163_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00167.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00167_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00167.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00167_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00167.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00167_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00167.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00167_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00167.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00167_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00169.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00169_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00169.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00169_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00169.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00169_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00169.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00169_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00169.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00169_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00177.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00177_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00177.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00177_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00177.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00177_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00177.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00177_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00177.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00177_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00202.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00202_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00202.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00202_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00202.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00202_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00202.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00202_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00202.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00202_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00220.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00220_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00220.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00220_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00220.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00220_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00220.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00220_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00220.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00220_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00243.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00243_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00243.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00243_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00243.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00243_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00243.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00243_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00243.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00243_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00264.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00264_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00264.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00264_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00264.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00264_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00264.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00264_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00264.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00264_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00272.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00272_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00272.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00272_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00272.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00272_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00272.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00272_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00272.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00272_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00277.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00277_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00277.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00277_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00277.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00277_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00277.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00277_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00277.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00277_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00289.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00289_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00289.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00289_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00289.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00289_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00289.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00289_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00289.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00289_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00292.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00292_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00292.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00292_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00292.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00292_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00292.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00292_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00292.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00292_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00295.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00295_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00295.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00295_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00295.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00295_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00295.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00295_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00295.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00295_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00321.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00321_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00321.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00321_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00321.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00321_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00321.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00321_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00321.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00321_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00352.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00352_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00352.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00352_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00352.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00352_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00352.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00352_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00352.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00352_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00412.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00412_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00412.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00412_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00412.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00412_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00412.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00412_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00412.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00412_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00418.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00418_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00418.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00418_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00418.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00418_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00418.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00418_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00418.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00418_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00427.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00427_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00427.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00427_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00427.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00427_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00427.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00427_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00427.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00427_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00436.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00436_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00436.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00436_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00436.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00436_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00436.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00436_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00436.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00436_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00455.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00455_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00455.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00455_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00455.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00455_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00455.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00455_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00455.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00455_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00519.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00519_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00519.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00519_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00519.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00519_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00519.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00519_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00519.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00519_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00528.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00528_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00528.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00528_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00528.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00528_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00528.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00528_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00528.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00528_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00557.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00557_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00557.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00557_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00557.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00557_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00557.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00557_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00557.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00557_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00561.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00561_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00561.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00561_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00561.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00561_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00561.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00561_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00561.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00561_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00573.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00573_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00573.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00573_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00573.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00573_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00573.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00573_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00573.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00573_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00668.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00668_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00668.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00668_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00668.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00668_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00668.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00668_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00668.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00668_to_vangogh.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00681.jpg",
+      "tgt_style": "cezanne",
+      "gen_image": "vangogh_00681_to_cezanne.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00681.jpg",
+      "tgt_style": "Hayao",
+      "gen_image": "vangogh_00681_to_Hayao.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00681.jpg",
+      "tgt_style": "monet",
+      "gen_image": "vangogh_00681_to_monet.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00681.jpg",
+      "tgt_style": "photo",
+      "gen_image": "vangogh_00681_to_photo.jpg"
+    },
+    {
+      "src_style": "vangogh",
+      "src_image": "00681.jpg",
+      "tgt_style": "vangogh",
+      "gen_image": "vangogh_00681_to_vangogh.jpg"
+    }
+  ]
+}

@@ -1,0 +1,514 @@
+Total lines: 41
+
+Header:
+dataset,dataset_title,scope,method,label,clip_style,content_lpips,one_minus_lpips,aggregate_art_fid,aggregate_art_fid_fid,aggregate_art_fid_content_lpips,summary_path,artfid_path,source_type,point_order,train_time_label
+
+=== All rows (formatted) ===
+Total rows: 40
+
+
+--- Dataset: distinct5_512 (14 rows) ---
+
+  Scope: full (7 rows)
+    method=LANCET, label=LANCET best-lpips (F e1)
+      clip_style=0.696914507508278, content_lpips=0.31864464036
+      aggregate_art_fid=122.63254700962189
+      aggregate_art_fid_fid=92.61727192582305
+      aggregate_art_fid_content_lpips=0.309935063123703
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json
+      source_type=targetwise_remote_bundle, train_time=1.2m
+
+    method=LANCET, label=LANCET best-style (K e1)
+      clip_style=0.7009949656327565, content_lpips=0.3622938977466666
+      aggregate_art_fid=157.1687499147529
+      aggregate_art_fid_fid=112.52361103288379
+      aggregate_art_fid_content_lpips=0.3844586908817291
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json
+      source_type=targetwise_remote_bundle, train_time=1.2m
+
+    method=SaMAM, label=SaMAM best-lpips (2250)
+      clip_style=0.5810966821114222, content_lpips=0.3538204092184702
+      aggregate_art_fid=146.07096815798894
+      aggregate_art_fid_fid=114.06197350041356
+      aggregate_art_fid_content_lpips=0.26949819922447205
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json
+      source_type=targetwise_remote_bundle, train_time=7.6h
+
+    method=SaMAM, label=SaMAM best-style (2k)
+      clip_style=0.5833460243542989, content_lpips=0.3621530055602391
+      aggregate_art_fid=152.2123439756121
+      aggregate_art_fid_fid=118.74986367096437
+      aggregate_art_fid_content_lpips=0.2710857391357422
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json
+      source_type=targetwise_remote_bundle, train_time=6.8h
+
+    method=SaMAM, label=SaMAM closed 3k
+      clip_style=0.6978010030587514, content_lpips=0.3220869704133334
+      aggregate_art_fid=345.60174531483347
+      aggregate_art_fid_fid=nan
+      aggregate_art_fid_content_lpips=nan
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\baseline_packet_status_20260604\packet_status.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\baseline_packet_status_20260604\packet_status.json
+      source_type=packet_status, train_time=10.2h
+
+    method=SaMST, label=SaMST e15
+      clip_style=0.7247245136102042, content_lpips=0.6255497488
+      aggregate_art_fid=395.71170712852535
+      aggregate_art_fid_fid=247.8291918397209
+      aggregate_art_fid_content_lpips=0.6072965741157532
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst_distinct5_512_real_b2_e15_20260602\eval_epoch15\epoch_0015\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst_distinct5_512_real_b2_e15_20260602\eval_epoch15\epoch_0015\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=5.8h
+
+    method=idt, label=idt
+      clip_style=0.6801251527865727, content_lpips=0.0
+      aggregate_art_fid=216.50988095718216
+      aggregate_art_fid_fid=215.50988095718216
+      aggregate_art_fid_content_lpips=0.0
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\distinct5_512\idt_5x5\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\distinct5_512\idt_5x5\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=ref
+
+
+  Scope: transfer (7 rows)
+    method=LANCET, label=LANCET best-lpips (F e1)
+      clip_style=0.6643604030708471, content_lpips=0.3245282069166667
+      aggregate_art_fid=126.8257137813018
+      aggregate_art_fid_fid=95.07419973534797
+      aggregate_art_fid_content_lpips=0.32008087635040283
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json
+      source_type=targetwise_remote_bundle, train_time=1.2m
+
+    method=LANCET, label=LANCET best-style (K e1)
+      clip_style=0.6711669415235519, content_lpips=0.3722808781833334
+      aggregate_art_fid=161.95765747448172
+      aggregate_art_fid_fid=114.79748097321135
+      aggregate_art_fid_content_lpips=0.39862850308418274
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json
+      source_type=targetwise_remote_bundle, train_time=1.2m
+
+    method=SaMAM, label=SaMAM best-lpips (2250)
+      clip_style=0.5522515382866064, content_lpips=0.3604523678372304
+      aggregate_art_fid=148.20585228085082
+      aggregate_art_fid_fid=115.22282856112793
+      aggregate_art_fid_content_lpips=0.27518710494041443
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json
+      source_type=targetwise_remote_bundle, train_time=7.6h
+
+    method=SaMAM, label=SaMAM best-style (2k)
+      clip_style=0.5545786788066228, content_lpips=0.3691024965047836
+      aggregate_art_fid=154.25894735281716
+      aggregate_art_fid_fid=119.85407723584393
+      aggregate_art_fid_content_lpips=0.2764066457748413
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json
+      source_type=targetwise_remote_bundle, train_time=6.8h
+
+    method=SaMAM, label=SaMAM closed 3k
+      clip_style=0.6646182161569595, content_lpips=0.3270938639666667
+      aggregate_art_fid=394.76620834787985
+      aggregate_art_fid_fid=nan
+      aggregate_art_fid_content_lpips=nan
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\baseline_packet_status_20260604\packet_status.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\baseline_packet_status_20260604\packet_status.json
+      source_type=packet_status, train_time=10.2h
+
+    method=SaMST, label=SaMST e15
+      clip_style=0.69574123164018, content_lpips=0.6319495817333334
+      aggregate_art_fid=444.4870406090582
+      aggregate_art_fid_fid=276.8698551085637
+      aggregate_art_fid_content_lpips=0.6180838584899903
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst_distinct5_512_real_b2_e15_20260602\eval_epoch15\epoch_0015\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst_distinct5_512_real_b2_e15_20260602\eval_epoch15\epoch_0015\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=5.8h
+
+    method=idt, label=idt
+      clip_style=0.6399224616587161, content_lpips=0.0
+      aggregate_art_fid=323.66084570519234
+      aggregate_art_fid_fid=322.66084570519234
+      aggregate_art_fid_content_lpips=0.0
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\distinct5_512\idt_5x5\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\distinct5_512\idt_5x5\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=ref
+
+
+--- Dataset: legacy256_overfit50 (12 rows) ---
+
+  Scope: full (6 rows)
+    method=LANCET, label=LANCET archive e7
+      clip_style=0.703508348663648, content_lpips=0.4426572581466667
+      aggregate_art_fid=287.8303786488108
+      aggregate_art_fid_fid=205.72016742171817
+      aggregate_art_fid_content_lpips=0.3939118266105652
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0007\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0007\aggregate_targetwise_artfid.json
+      source_type=targetwise_archive_proxy, train_time=5.2m
+
+    method=LANCET, label=LANCET archive e8
+      clip_style=0.7036010053555171, content_lpips=0.44816957577333333
+      aggregate_art_fid=293.018483138329
+      aggregate_art_fid_fid=208.24250822979752
+      aggregate_art_fid_content_lpips=0.40219072699546815
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0008\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0008\aggregate_targetwise_artfid.json
+      source_type=targetwise_archive_proxy, train_time=5.9m
+
+    method=SaMAM, label=SaMAM best-content (25k)
+      clip_style=0.6938233523368835, content_lpips=0.39395823450666667
+      aggregate_art_fid=248.70793080820545
+      aggregate_art_fid_fid=191.53220675609083
+      aggregate_art_fid_content_lpips=0.290424519777298
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_continue17k_to25k\formal_eval_750\step_025000\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_continue17k_to25k\formal_eval_750\step_025000\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=3.9h
+
+    method=SaMAM, label=SaMAM best-style (14k)
+      clip_style=0.6968672373692193, content_lpips=0.43627805274666664
+      aggregate_art_fid=285.8129778113213
+      aggregate_art_fid_fid=212.61751282774404
+      aggregate_art_fid_content_lpips=0.33688645362854003
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_formal_750_eval\step_014000\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_formal_750_eval\step_014000\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=2.2h
+
+    method=SaMST, label=SaMST
+      clip_style=0.7253123044570288, content_lpips=0.53903856028
+      aggregate_art_fid=273.7965843550592
+      aggregate_art_fid_fid=183.8895877568293
+      aggregate_art_fid_content_lpips=0.4805033266544342
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst\protocol_a_800\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst\protocol_a_800\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=1.9h
+
+    method=idt, label=idt
+      clip_style=0.6593609295606613, content_lpips=0.0
+      aggregate_art_fid=182.7174038755024
+      aggregate_art_fid_fid=181.7174038755024
+      aggregate_art_fid_content_lpips=0.0
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\legacy256_overfit50\idt_5x5\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\legacy256_overfit50\idt_5x5\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=ref
+
+
+  Scope: transfer (6 rows)
+    method=LANCET, label=LANCET archive e7
+      clip_style=0.6752455333371958, content_lpips=0.45385478981666666
+      aggregate_art_fid=310.06004445072676
+      aggregate_art_fid_fid=220.1142993870075
+      aggregate_art_fid_content_lpips=0.4039080858230591
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0007\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0007\aggregate_targetwise_artfid.json
+      source_type=targetwise_archive_proxy, train_time=5.2m
+
+    method=LANCET, label=LANCET archive e8
+      clip_style=0.6759850123027961, content_lpips=0.4594570128666667
+      aggregate_art_fid=313.84374996766155
+      aggregate_art_fid_fid=221.5358377208032
+      aggregate_art_fid_content_lpips=0.4121687650680542
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0008\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0008\aggregate_targetwise_artfid.json
+      source_type=targetwise_archive_proxy, train_time=5.9m
+
+    method=SaMAM, label=SaMAM best-content (25k)
+      clip_style=0.6669773708780606, content_lpips=0.4021742742833333
+      aggregate_art_fid=277.2721633527835
+      aggregate_art_fid_fid=212.2865906033747
+      aggregate_art_fid_content_lpips=0.2998263597488403
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_continue17k_to25k\formal_eval_750\step_025000\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_continue17k_to25k\formal_eval_750\step_025000\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=3.9h
+
+    method=SaMAM, label=SaMAM best-style (14k)
+      clip_style=0.671752924968799, content_lpips=0.4392484994666666
+      aggregate_art_fid=304.32280945149495
+      aggregate_art_fid_fid=225.85327039521172
+      aggregate_art_fid_content_lpips=0.34035760164260864
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_formal_750_eval\step_014000\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_formal_750_eval\step_014000\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=2.2h
+
+    method=SaMST, label=SaMST
+      clip_style=0.7034510732193787, content_lpips=0.5571298963833333
+      aggregate_art_fid=302.48498753747083
+      aggregate_art_fid_fid=200.69496764021508
+      aggregate_art_fid_content_lpips=0.4994563102722168
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst\protocol_a_800\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst\protocol_a_800\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=1.9h
+
+    method=idt, label=idt
+      clip_style=0.613607810229063, content_lpips=0.0
+      aggregate_art_fid=265.57669131867476
+      aggregate_art_fid_fid=264.57669131867476
+      aggregate_art_fid_content_lpips=0.0
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\legacy256_overfit50\idt_5x5\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\legacy256_overfit50\idt_5x5\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=ref
+
+
+--- Dataset: wikiart512_5style (14 rows) ---
+
+  Scope: full (7 rows)
+    method=LANCET, label=LANCET hist b32 e8
+      clip_style=0.7922978092034658, content_lpips=0.3550378331343333
+      aggregate_art_fid=350.2084875218386
+      aggregate_art_fid_fid=244.12116471086114
+      aggregate_art_fid_content_lpips=0.42881656885147096
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\exp\local_wsl_wikiart512_hist_b32_e8\full_eval_epoch_0008_b2_opt_nocls\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\exp\local_wsl_wikiart512_hist_b32_e8\full_eval_epoch_0008_b2_opt_nocls\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=0.7m
+
+    method=SaMAM, label=SaMAM best-content (10k)
+      clip_style=0.7850886265436807, content_lpips=0.16433595481733335
+      aggregate_art_fid=254.39062778771137
+      aggregate_art_fid_fid=224.6961306698845
+      aggregate_art_fid_content_lpips=0.1270085722208023
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_010000\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_010000\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=4.4h
+
+    method=SaMAM, label=SaMAM best-style (5k)
+      clip_style=0.7912443998654684, content_lpips=0.28329175086666664
+      aggregate_art_fid=289.12667544442655
+      aggregate_art_fid_fid=231.8651696763564
+      aggregate_art_fid_content_lpips=0.2415346086025238
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_005000\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_005000\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=2.1h
+
+    method=SaMST, label=SaMST e10
+      clip_style=0.7745031952063244, content_lpips=0.6108974266133333
+      aggregate_art_fid=426.19807589160456
+      aggregate_art_fid_fid=277.69582736866334
+      aggregate_art_fid_content_lpips=0.5258884191513061
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0010\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0010\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=8.3h
+
+    method=SaMST, label=SaMST e15
+      clip_style=0.7767400147120159, content_lpips=0.6088616661733334
+      aggregate_art_fid=421.3698495410816
+      aggregate_art_fid_fid=275.21751436417696
+      aggregate_art_fid_content_lpips=0.5217884063720704
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_epoch15_generate750_png\epoch_0015\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_epoch15_generate750_png\epoch_0015\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=12.3h
+
+    method=SaMST, label=SaMST e5
+      clip_style=0.773973307609558, content_lpips=0.6123956792533333
+      aggregate_art_fid=426.6529968076026
+      aggregate_art_fid_fid=277.1446330073166
+      aggregate_art_fid_content_lpips=0.5303690016269684
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0005\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0005\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=4.2h
+
+    method=idt, label=idt
+      clip_style=0.7815262297789255, content_lpips=0.0
+      aggregate_art_fid=211.60215436533116
+      aggregate_art_fid_fid=210.60215436533116
+      aggregate_art_fid_content_lpips=0.0
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\wikiart512_5style\idt_5x5\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\wikiart512_5style\idt_5x5\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=ref
+
+
+  Scope: transfer (7 rows)
+    method=LANCET, label=LANCET hist b32 e8
+      clip_style=0.7852639506260554, content_lpips=0.3557362271596988
+      aggregate_art_fid=404.2144887592864
+      aggregate_art_fid_fid=281.9369774761958
+      aggregate_art_fid_content_lpips=0.4288938581943512
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\exp\local_wsl_wikiart512_hist_b32_e8\full_eval_epoch_0008_b2_opt_nocls\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\exp\local_wsl_wikiart512_hist_b32_e8\full_eval_epoch_0008_b2_opt_nocls\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=0.7m
+
+    method=SaMAM, label=SaMAM best-content (10k)
+      clip_style=0.7773564200599988, content_lpips=0.16439261076166667
+      aggregate_art_fid=328.58145188042766
+      aggregate_art_fid_fid=290.50495357493577
+      aggregate_art_fid_content_lpips=0.12708002030849458
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_010000\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_010000\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=4.4h
+
+    method=SaMAM, label=SaMAM best-style (5k)
+      clip_style=0.7845889044801393, content_lpips=0.2833103877333334
+      aggregate_art_fid=343.37426300387875
+      aggregate_art_fid_fid=275.5669637410815
+      aggregate_art_fid_content_lpips=0.24152885675430297
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_005000\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_005000\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=2.1h
+
+    method=SaMST, label=SaMST e10
+      clip_style=0.7688595057527224, content_lpips=0.6106467537666668
+      aggregate_art_fid=444.65943001870994
+      aggregate_art_fid_fid=290.1660113942539
+      aggregate_art_fid_content_lpips=0.5252555072307586
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0010\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0010\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=8.3h
+
+    method=SaMST, label=SaMST e15
+      clip_style=0.7710875839988389, content_lpips=0.6085886559
+      aggregate_art_fid=441.68304609634197
+      aggregate_art_fid_fid=288.9649257888858
+      aggregate_art_fid_content_lpips=0.5212089359760285
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_epoch15_generate750_png\epoch_0015\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_epoch15_generate750_png\epoch_0015\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=12.3h
+
+    method=SaMST, label=SaMST e5
+      clip_style=0.7687445387244225, content_lpips=0.6121340467499999
+      aggregate_art_fid=444.2399203067613
+      aggregate_art_fid_fid=288.99177259251275
+      aggregate_art_fid_content_lpips=0.5297609210014343
+      summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0005\summary.json
+      artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0005\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=4.2h
+
+    method=idt, label=idt
+      clip_style=0.7730244772632916, content_lpips=0.0
+      aggregate_art_fid=312.6146369027132
+      aggregate_art_fid_fid=311.6146369027132
+      aggregate_art_fid_content_lpips=0.0
+      summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\wikiart512_5style\idt_5x5\summary.json
+      artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\wikiart512_5style\idt_5x5\aggregate_targetwise_artfid.json
+      source_type=targetwise_local, train_time=ref
+
+
+=== Existence check of summary_path and artfid_path ===
+  MISSING: method=LANCET, label=LANCET best-lpips (F e1), dataset=distinct5_512, scope=full
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json [False]
+  MISSING: method=LANCET, label=LANCET best-style (K e1), dataset=distinct5_512, scope=full
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-lpips (2250), dataset=distinct5_512, scope=full
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-style (2k), dataset=distinct5_512, scope=full
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json [False]
+  MISSING: method=SaMAM, label=SaMAM closed 3k, dataset=distinct5_512, scope=full
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\baseline_packet_status_20260604\packet_status.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\baseline_packet_status_20260604\packet_status.json [False]
+  MISSING: method=SaMST, label=SaMST e15, dataset=distinct5_512, scope=full
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst_distinct5_512_real_b2_e15_20260602\eval_epoch15\epoch_0015\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst_distinct5_512_real_b2_e15_20260602\eval_epoch15\epoch_0015\aggregate_targetwise_artfid.json [False]
+  MISSING: method=idt, label=idt, dataset=distinct5_512, scope=full
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\distinct5_512\idt_5x5\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\distinct5_512\idt_5x5\aggregate_targetwise_artfid.json [False]
+  MISSING: method=LANCET, label=LANCET best-lpips (F e1), dataset=distinct5_512, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json [False]
+  MISSING: method=LANCET, label=LANCET best-style (K e1), dataset=distinct5_512, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-lpips (2250), dataset=distinct5_512, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-style (2k), dataset=distinct5_512, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.csv [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\artfid_metric_hacking\distinct5_aggregate_artfid_keypoints.remote.json [False]
+  MISSING: method=SaMAM, label=SaMAM closed 3k, dataset=distinct5_512, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\baseline_packet_status_20260604\packet_status.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\distinct5_512_20260602\baseline_packet_status_20260604\packet_status.json [False]
+  MISSING: method=SaMST, label=SaMST e15, dataset=distinct5_512, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst_distinct5_512_real_b2_e15_20260602\eval_epoch15\epoch_0015\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst_distinct5_512_real_b2_e15_20260602\eval_epoch15\epoch_0015\aggregate_targetwise_artfid.json [False]
+  MISSING: method=idt, label=idt, dataset=distinct5_512, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\distinct5_512\idt_5x5\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\distinct5_512\idt_5x5\aggregate_targetwise_artfid.json [False]
+  MISSING: method=LANCET, label=LANCET archive e7, dataset=legacy256_overfit50, scope=full
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0007\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0007\aggregate_targetwise_artfid.json [False]
+  MISSING: method=LANCET, label=LANCET archive e8, dataset=legacy256_overfit50, scope=full
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0008\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0008\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-content (25k), dataset=legacy256_overfit50, scope=full
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_continue17k_to25k\formal_eval_750\step_025000\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_continue17k_to25k\formal_eval_750\step_025000\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-style (14k), dataset=legacy256_overfit50, scope=full
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_formal_750_eval\step_014000\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_formal_750_eval\step_014000\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMST, label=SaMST, dataset=legacy256_overfit50, scope=full
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst\protocol_a_800\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst\protocol_a_800\aggregate_targetwise_artfid.json [False]
+  MISSING: method=idt, label=idt, dataset=legacy256_overfit50, scope=full
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\legacy256_overfit50\idt_5x5\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\legacy256_overfit50\idt_5x5\aggregate_targetwise_artfid.json [False]
+  MISSING: method=LANCET, label=LANCET archive e7, dataset=legacy256_overfit50, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0007\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0007\aggregate_targetwise_artfid.json [False]
+  MISSING: method=LANCET, label=LANCET archive e8, dataset=legacy256_overfit50, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0008\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\archives\old_experiment_dirs\grid_search_3epoch\S-none_K-1_C-0_W-20_Col-0\full_eval\epoch_0008\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-content (25k), dataset=legacy256_overfit50, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_continue17k_to25k\formal_eval_750\step_025000\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_continue17k_to25k\formal_eval_750\step_025000\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-style (14k), dataset=legacy256_overfit50, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_formal_750_eval\step_014000\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_256_formal_750_eval\step_014000\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMST, label=SaMST, dataset=legacy256_overfit50, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst\protocol_a_800\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samst\protocol_a_800\aggregate_targetwise_artfid.json [False]
+  MISSING: method=idt, label=idt, dataset=legacy256_overfit50, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\legacy256_overfit50\idt_5x5\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\legacy256_overfit50\idt_5x5\aggregate_targetwise_artfid.json [False]
+  MISSING: method=LANCET, label=LANCET hist b32 e8, dataset=wikiart512_5style, scope=full
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\exp\local_wsl_wikiart512_hist_b32_e8\full_eval_epoch_0008_b2_opt_nocls\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\exp\local_wsl_wikiart512_hist_b32_e8\full_eval_epoch_0008_b2_opt_nocls\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-content (10k), dataset=wikiart512_5style, scope=full
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_010000\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_010000\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-style (5k), dataset=wikiart512_5style, scope=full
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_005000\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_005000\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMST, label=SaMST e10, dataset=wikiart512_5style, scope=full
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0010\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0010\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMST, label=SaMST e15, dataset=wikiart512_5style, scope=full
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_epoch15_generate750_png\epoch_0015\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_epoch15_generate750_png\epoch_0015\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMST, label=SaMST e5, dataset=wikiart512_5style, scope=full
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0005\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0005\aggregate_targetwise_artfid.json [False]
+  MISSING: method=idt, label=idt, dataset=wikiart512_5style, scope=full
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\wikiart512_5style\idt_5x5\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\wikiart512_5style\idt_5x5\aggregate_targetwise_artfid.json [False]
+  MISSING: method=LANCET, label=LANCET hist b32 e8, dataset=wikiart512_5style, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\exp\local_wsl_wikiart512_hist_b32_e8\full_eval_epoch_0008_b2_opt_nocls\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\exp\local_wsl_wikiart512_hist_b32_e8\full_eval_epoch_0008_b2_opt_nocls\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-content (10k), dataset=wikiart512_5style, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_010000\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_010000\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMAM, label=SaMAM best-style (5k), dataset=wikiart512_5style, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_005000\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\samam_wsl_mamba_512_scratch_clean_silent_b1_20k\formal_eval_750\step_005000\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMST, label=SaMST e10, dataset=wikiart512_5style, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0010\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0010\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMST, label=SaMST e15, dataset=wikiart512_5style, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_epoch15_generate750_png\epoch_0015\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_epoch15_generate750_png\epoch_0015\aggregate_targetwise_artfid.json [False]
+  MISSING: method=SaMST, label=SaMST e5, dataset=wikiart512_5style, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0005\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\results\timing_20260602\samst_wikiart512_curve_midpoints\epoch_0005\aggregate_targetwise_artfid.json [False]
+  MISSING: method=idt, label=idt, dataset=wikiart512_5style, scope=transfer
+    summary_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\wikiart512_5style\idt_5x5\summary.json [False]
+    artfid_path=G:\GitHub\Latent_Style\SchrodingerBridge\docs\experiments\idt_eval_20260602\wikiart512_5style\idt_5x5\aggregate_targetwise_artfid.json [False]
+
+
+=== artfid_comparison_points.json structure ===
+list with 38 items
+first item keys: ['dataset', 'dataset_title', 'scope', 'method', 'label', 'clip_style', 'content_lpips', 'one_minus_lpips', 'aggregate_art_fid', 'aggregate_art_fid_fid', 'aggregate_art_fid_content_lpips', 'summary_path', 'artfid_path', 'source_type', 'point_order', 'train_time_label']
+first item: {'dataset': 'distinct5_512', 'dataset_title': 'Distinct5-512 / 1000 per style', 'scope': 'full', 'method': 'LANCET', 'label': 'LANCET best-lpips (F e1)', 'clip_style': 0.6969145075, 'content_lpips': 0.3186446404, 'one_minus_lpips': 0.6813553596, 'aggregate_art_fid': 122.6325470096, 'aggregate_art_fid_fid': 92.6172719258, 'aggregate_art_fid_content_lpips': 0.3099350631, 'summary_path': 'G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\distinct5_512_20260602\\artfid_metric_hacking\\distinct5_aggregate_artfid_keypoints.remote.csv', 'artfid_path': 'G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\distinct5_512_20260602\\artfid_metric_hacking\\distinct5_aggregate_artfid_keypoints.remote.json', 'source_type': 'targetwise_remote_bundle', 'point_order': 5, 'train_time_label': '1.2m'}

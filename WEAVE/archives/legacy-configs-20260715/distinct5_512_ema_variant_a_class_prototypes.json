@@ -1,0 +1,24 @@
+{
+  "_base": "distinct5_512_ema_baseline_direct_atom_residual.json",
+  "model": {
+    "tokenizer_projection_mode": "class_prototypes",
+    "tokenizer_num_prototypes": 4,
+    "tokenizer_atom_temperature": 0.25,
+    "tokenizer_latent_init_mode": "latent_stats",
+    "tokenizer_latent_init_scale": 0.2,
+    "tokenizer_latent_init_pool_size": 4,
+    "tokenizer_latent_init_kmeans_iters": 12,
+    "style_spatial_mode": "prototype",
+    "style_spatial_num_prototypes": 4,
+    "style_spatial_routing_temperature": 0.25
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_a_class_prototypes_b80"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_a_class_prototypes",
+    "axis": "distinct5_512_representation",
+    "stage": "variant_a",
+    "notes": "Per-class prototype tokenizer. Each style learns K latent style prototypes and a mixture over them; spatial prior follows the same class-local mixture."
+  }
+}

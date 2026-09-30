@@ -1,0 +1,25 @@
+docs(archive): M27 旧文档归档到 docs/archive/ (1917 文件移动)
+
+归档 26 个历史目录 + 26 个根级历史文件到 docs/archive/:
+- 日期型目录: 612-lookback, 612-phase2, 616, 618, 619, 620, 622, 625, 625_fc_sb, 627, 628, 630
+- 主题型目录: Related, cleanup, experiments, logs, maths, model, plan, plans, presentations, references, repro_report_zh, reviews, theory, timing
+- 根级文件: aaai2027_working_index, ablation_log, architecture, attn, bridge, cleanup_report, CLEAN_BASE*, dump*, exp_*, inmortal, known_issues, plan-612, quickstart, remote_server, review, tokenizer, writing 等
+
+保留的现代文档结构:
+- docs/baseline/ (M22 baseline 核查)
+- docs/exp/ (实验脉络 + 数据集分类)
+- docs/math/ (M24 FC-SB 理论)
+- docs/tools/ (M24 工程手册)
+- docs/72/ (论文草稿)
+- docs/README.md (文档总入口, M27 更新)
+
+新增:
+- docs/archive/README.md (归档索引, 含分类/原因/恢复指南)
+
+修复主线文档中对已归档路径的引用:
+- docs/math/README.md (9 处)
+- docs/baseline/README.md (4 处)
+- docs/exp/samam_data_integrity_audit.md (3 处)
+- docs/exp/README.md (5 处)
+
+执行: Deli_AutoResearch rewrite task, iteration 3, M27

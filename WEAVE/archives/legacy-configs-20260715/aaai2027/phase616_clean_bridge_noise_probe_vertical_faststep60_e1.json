@@ -1,0 +1,17 @@
+{
+  "_base": "./phase616_clean_bridge_noise_probe_control_faststep60_e1.json",
+  "bridge": {
+    "training_bridge_noise_projection_mode": "pure_vertical_flow",
+    "training_bridge_noise_projection_kernel": 5,
+    "training_bridge_noise_projection_preserve_rms": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_bridge_noise_probe_vertical_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_bridge_noise_probe_vertical_faststep60_e1",
+    "axis": "phase616_bridge_noise_probe_fast",
+    "stage": "clean_bridge_noise_projection_vertical",
+    "notes": "Matched 616 candidate that keeps OT and target geometry fixed, and changes only the training bridge-noise spectrum by projecting Brownian noise into the pure_vertical_flow fiber split while preserving RMS."
+  }
+}

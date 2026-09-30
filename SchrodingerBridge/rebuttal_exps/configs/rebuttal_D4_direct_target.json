@@ -1,0 +1,19 @@
+{
+  "_base": "../runs/submission/hf_oriented_internal_early_stop/config.json",
+  "bridge": {
+    "structure_aligned_target": false,
+    "ll_partial_style_enabled": false
+  },
+  "training": {
+    "internal_early_stop_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "runs/submission/rebuttal_D4_direct_target"
+  },
+  "ablation": {
+    "name": "rebuttal_D4_direct_target",
+    "axis": "matched_ablation_direct_endpoint",
+    "stage": "rebuttal_batch2",
+    "notes": "D4: Direct target endpoint, no source-aligned LL. Disables structure_aligned_target and ll_partial_style_enabled. Tests source-aligned endpoint contribution to content preservation on current 1.04M architecture. Seed=42, 15 epochs, internal early stop disabled (probe kept)."
+  }
+}

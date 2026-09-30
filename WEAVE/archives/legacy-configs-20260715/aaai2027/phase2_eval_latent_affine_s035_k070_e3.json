@@ -1,0 +1,13 @@
+{
+  "_comment": "Eval-only latent-space style-affine refinement from k070 epoch_0003. Only full_eval latent_postprocess_* changes; no training.",
+  "full_eval": {
+    "latent_postprocess_mode": "style_latent_affine",
+    "latent_postprocess_strength": 0.35,
+    "latent_postprocess_mean_strength": 1.0,
+    "latent_postprocess_std_strength": 1.0,
+    "latent_postprocess_ref_limit": 64,
+    "only_lpips_clip_style": true,
+    "save_generated_images": false,
+    "save_summary_grid": false
+  }
+}

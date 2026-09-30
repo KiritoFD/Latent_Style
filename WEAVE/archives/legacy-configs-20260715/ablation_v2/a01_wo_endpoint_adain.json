@@ -1,0 +1,15 @@
+{
+  "_base": "../refactor_clean_baseline.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/ablation_v2/a01_wo_endpoint_adain"
+  },
+  "ablation": {
+    "name": "a01_wo_endpoint_adain",
+    "axis": "ablation_v2",
+    "stage": "comprehensive_extreme",
+    "notes": "Destructive: endpoint_adain_scale=0 (no AdaIN at train+inference)"
+  },
+  "model": {
+    "endpoint_adain_scale": 0.0
+  }
+}

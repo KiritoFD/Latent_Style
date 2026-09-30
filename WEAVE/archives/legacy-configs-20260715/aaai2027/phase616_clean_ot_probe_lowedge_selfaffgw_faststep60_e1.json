@@ -1,0 +1,16 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_faststep60_e1.json",
+  "bridge": {
+    "coupling_structure_cost_mode": "lowedge_self_affinity_gw",
+    "coupling_structure_hybrid_stats_weight": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_lowedge_selfaffgw_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_lowedge_selfaffgw_faststep60_e1",
+    "axis": "phase616_ot_probe_fast",
+    "stage": "clean_ot_lowedge_self_affinity_gw_fast_candidate",
+    "notes": "Fast matched 616 OT probe candidate. Changes only the OT structure cost from self_affinity_gw to a hybrid lowedge + self-affinity descriptor, following the 616 design note that structure masks/edges and topology affinity should be combined rather than tested in isolation."
+  }
+}

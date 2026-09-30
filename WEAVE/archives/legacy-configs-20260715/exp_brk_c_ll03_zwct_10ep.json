@@ -1,0 +1,27 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "structure_aligned_target": true,
+    "ll_partial_style_enabled": true,
+    "ll_partial_alpha": 0.3,
+    "ll_partial_mode": "adain",
+    "zero_step_wct_enabled": true,
+    "zero_step_wct_alpha": 0.5
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 10,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_c_ll03_zwct_10ep"
+  },
+  "ablation": {
+    "name": "brk_c_ll03_zwct_10ep",
+    "axis": "dino_s_break",
+    "stage": "brk_round1",
+    "notes": "LL AdaIN α=0.3 + zero_step_wct α=0.5 + 10 epochs. Structural: pre-align LL color stats at t=0 via WCT, then ODE integrates from pre-aligned起点. Combines LL color migration (zero-step) + mild LL partial (training) + longer training. Most aggressive structural change."
+  }
+}

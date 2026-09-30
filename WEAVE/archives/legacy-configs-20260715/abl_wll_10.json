@@ -1,0 +1,15 @@
+{
+  "_base": "refactor_clean_baseline.json",
+  "bridge": {
+    "spectral_w_ll": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/ablation_full/wll_10"
+  },
+  "ablation": {
+    "name": "wll_10",
+    "axis": "training_param_sweep",
+    "stage": "ablation_full",
+    "notes": "spectral_w_ll=1.0 (no LL de-weighting, full LL style learning)"
+  }
+}

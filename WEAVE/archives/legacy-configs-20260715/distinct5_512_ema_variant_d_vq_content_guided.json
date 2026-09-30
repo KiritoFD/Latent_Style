@@ -1,0 +1,16 @@
+{
+  "_base": "distinct5_512_ema_variant_b_global_vq.json",
+  "model": {
+    "style_spatial_mode": "vq_content_guided",
+    "style_spatial_content_hidden_dim": 128
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_d_vq_content_guided_b80"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_d_vq_content_guided",
+    "axis": "distinct5_512_representation",
+    "stage": "variant_d",
+    "notes": "Main representation candidate: shared VQ codebook plus content-guided routing over shared spatial atoms."
+  }
+}

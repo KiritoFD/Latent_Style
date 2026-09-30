@@ -1,0 +1,19 @@
+{
+  "_base": "mainline_h_seed42_b44_base.json",
+  "model": {
+    "semantic_attn_temperature": 0.12
+  },
+  "bridge": {
+    "terminal_swd_weight": 16.0,
+    "w_kinetic": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_mainline_h_softterm16_sem012_seed42_b44"
+  },
+  "ablation": {
+    "name": "aaai2027_mainline_h_softterm16_sem012_seed42_b44",
+    "axis": "aaai2027_mainline_softening",
+    "stage": "soft_term16_sem012",
+    "notes": "Aggressive but still theory-guided H-family softening packet. Keep the proven high-kinetic prior, lower terminal pressure more noticeably, and soften routing to test whether the mainline can gain LPIPS without collapsing no-op-adjusted style movement."
+  }
+}

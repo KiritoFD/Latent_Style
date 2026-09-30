@@ -1,0 +1,8 @@
+[loaded latents] (750, 4, 64, 64) torch.float16
+[decoder only] scaling_factor=0.18215 | tiling/slicing DISABLED (fixed-shape max-throughput)
+[compile] torch.compile(mode=max-autotune, fullgraph, dynamic=False) caches->G:\GitHub\Latent_Style\WEAVE\experiments\inference_speed\.compile_cache
+[compile] first call 10.6s (cached to disk)
+[cudagraph] relying on inductor built-in CUDA Graphs (fullgraph=True) for bs=8
+[decode] bs=8 cudagraph(inductor)=True: 84831.0ms total = 113.108 ms/img = 8.8 img/s
+[saved] experiments\inference_speed\results\stage3b_bs8_cg.json
+[done]

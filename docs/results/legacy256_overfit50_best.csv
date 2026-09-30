@@ -1,0 +1,3 @@
+source_root,method,dataset,experiment,epoch,clip_style,clip_content,clip_dir,content_lpips,fid,artfid,delta_l2,nfe,style_strength,num_styles,projection_mode,variant,timing_sec,timestamp,relative_path
+Related_Works,Baseline,legacy256_overfit50,baseline_pipeline,-1,0.6510369691095854,0.0,0.0,0.8087843269263157,,,,,,,,,29.790614609999466,2026-06-06 02:29:41,baseline_pipeline/results/samam_latent_legacy256_probe4/formal_eval/step_005000_fast/summary.json
+Latent_Style,LANCET/LBM,legacy256_overfit50,baseline_pipeline,-1,0.6510369691095854,0.0,0.0,0.8087843269263157,,,,,,,,,29.790614609999466,2026-06-06 02:29:41,Related_Works/baseline_pipeline/results/samam_latent_legacy256_probe4/formal_eval/step_005000_fast/summary.json

@@ -1,0 +1,39 @@
+{
+  "_base": "../distinct5_512_ema_variant_h_hard_explore_queue_e3.json",
+  "training": {
+    "seed": 42,
+    "batch_size": 44,
+    "test_image_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache",
+    "full_eval_clip_hf_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache/hf",
+    "full_eval_batch_size": 4,
+    "full_eval_vae_decode_batch_size": 4
+  },
+  "data": {
+    "data_root": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train",
+    "latent_cache_dir": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache",
+    "pairing_cache_path": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt"
+  },
+  "full_eval": {
+    "batch_size": 4,
+    "vae_decode_batch_size": 4
+  },
+  "checkpoint": {
+    "save_dir": "exp\\saswd_axis_h_base_seed42_b44_saswd_semantic"
+  },
+  "ablation": {
+    "name": "saswd_axis_h_base_seed42_b44_saswd_semantic",
+    "axis": "aaai2027_saswd_axis_ablation",
+    "stage": "saswd_axis_semantic",
+    "notes": "Matched SA-SWD projection-axis ablation generated from base config. terminal_swd_axis_source=semantic."
+  },
+  "bridge": {
+    "terminal_swd_mode": "standard",
+    "terminal_swd_axis_source": "semantic"
+  },
+  "experiment": {
+    "name": "saswd_axis_h_base_seed42_b44_saswd_semantic",
+    "notes": "SA-SWD projection-axis ablation generated from base config. terminal_swd_axis_source=semantic."
+  },
+  "output_dir": "exp\\saswd_axis_h_base_seed42_b44_saswd_semantic"
+}

@@ -1,0 +1,19 @@
+{
+  "_base": "mainline_h_seed42_b44_base.json",
+  "model": {
+    "semantic_attn_temperature": 0.1
+  },
+  "bridge": {
+    "terminal_swd_weight": 18.0,
+    "w_kinetic": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_mainline_h_softterm18_sem010_seed42_b44"
+  },
+  "ablation": {
+    "name": "aaai2027_mainline_h_softterm18_sem010_seed42_b44",
+    "axis": "aaai2027_mainline_softening",
+    "stage": "soft_term18_sem010",
+    "notes": "Conservative H-family softening packet. Keep the high-kinetic path prior intact and only reduce terminal pressure slightly while softening semantic routing from the default 0.08 to 0.10."
+  }
+}

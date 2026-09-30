@@ -1,0 +1,290 @@
+[
+  {
+    "file": "target_hf_delta_ft15_epoch0006_dino_summary.json",
+    "dino_s": 0.482656,
+    "dino_c": 0.791748,
+    "dino_structure": 0.024586,
+    "clip_s": 0.717485,
+    "lpips": 0.295013,
+    "off_dino_s": 0.398592
+  },
+  {
+    "file": "target_hf_delta_ft15_epoch0015_dino_summary.json",
+    "dino_s": 0.48248,
+    "dino_c": 0.791313,
+    "dino_structure": 0.02465,
+    "clip_s": 0.71803,
+    "lpips": 0.299062,
+    "off_dino_s": 0.398681
+  },
+  {
+    "file": "target_hf_delta_ft15_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.484984,
+    "dino_c": 0.79657,
+    "dino_structure": 0.024582,
+    "clip_s": 0.717586,
+    "lpips": 0.292892,
+    "off_dino_s": 0.400533
+  },
+  {
+    "file": "target_hf_delta_ft15_epoch0006_adain20_dino_summary.json",
+    "dino_s": 0.484675,
+    "dino_c": 0.830479,
+    "dino_structure": 0.023864,
+    "clip_s": 0.70258,
+    "lpips": 0.26795,
+    "off_dino_s": 0.394223
+  },
+  {
+    "file": "target_hf_delta_strong_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.487036,
+    "dino_c": 0.799077,
+    "dino_structure": 0.024591,
+    "clip_s": 0.717586,
+    "lpips": 0.295459,
+    "off_dino_s": 0.401948
+  },
+  {
+    "file": "target_hf_spatial_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.490074,
+    "dino_c": 0.404308,
+    "dino_structure": 0.046968,
+    "clip_s": 0.748291,
+    "lpips": 0.53824,
+    "off_dino_s": null
+  },
+  {
+    "file": "target_hf_subband_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.488624,
+    "dino_c": 0.798123,
+    "dino_structure": 0.024536,
+    "clip_s": 0.720880,
+    "lpips": 0.296553,
+    "off_dino_s": 0.403917
+  },
+  {
+    "file": "target_hf_subband_ablate_residual_adain15_dino_summary.json",
+    "dino_s": 0.485770,
+    "dino_c": 0.788810,
+    "dino_structure": 0.024649,
+    "clip_s": 0.720464,
+    "lpips": 0.300980,
+    "off_dino_s": 0.403276
+  },
+  {
+    "file": "target_hf_subband_scale_1p25_adain15_dino_summary.json",
+    "dino_s": 0.487311,
+    "dino_c": 0.788688,
+    "dino_structure": 0.024654,
+    "clip_s": 0.720082,
+    "lpips": 0.300671,
+    "off_dino_s": 0.404491
+  },
+  {
+    "file": "target_hf_subband_scale_1p5_adain15_dino_summary.json",
+    "dino_s": 0.487485,
+    "dino_c": 0.779830,
+    "dino_structure": 0.024840,
+    "clip_s": 0.721106,
+    "lpips": 0.305438,
+    "off_dino_s": 0.406744
+  },
+  {
+    "file": "target_hf_subband_scale_hh1p5_adain15_dino_summary.json",
+    "dino_s": 0.487815,
+    "dino_c": 0.783560,
+    "dino_structure": 0.024765,
+    "clip_s": 0.720560,
+    "lpips": 0.303415,
+    "off_dino_s": 0.406092
+  },
+  {
+    "file": "target_hf_subband_nomem_ft6_dino_summary_adain15.json",
+    "dino_s": 0.484903,
+    "dino_c": 0.794833,
+    "dino_structure": 0.024491,
+    "clip_s": 0.716728,
+    "lpips": 0.294348,
+    "off_dino_s": 0.401335
+  },
+  {
+    "file": "target_hf_subband_memres_ft6_dino_summary_adain15.json",
+    "dino_s": 0.486561,
+    "dino_c": 0.793519,
+    "dino_structure": 0.024531,
+    "clip_s": 0.719228,
+    "lpips": 0.297730,
+    "off_dino_s": 0.402490
+  },
+  {
+    "file": "target_hf_hybrid_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.485753,
+    "dino_c": 0.797810,
+    "dino_structure": 0.024605,
+    "clip_s": 0.719710,
+    "lpips": 0.295576,
+    "off_dino_s": 0.400962
+  },
+  {
+    "file": "target_hf_subband_head_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.487264,
+    "dino_c": 0.798699,
+    "dino_structure": 0.024614,
+    "clip_s": 0.719169,
+    "lpips": 0.296164,
+    "off_dino_s": 0.402149
+  },
+  {
+    "file": "target_hf_spatial_energy_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.486100,
+    "dino_c": 0.790866,
+    "dino_structure": 0.024809,
+    "clip_s": 0.720364,
+    "lpips": 0.297755,
+    "off_dino_s": 0.402737
+  },
+  {
+    "file": "target_hf_texture_ft6/dino_summary_adain15.json",
+    "dino_s": 0.486044,
+    "dino_c": 0.798035,
+    "dino_structure": 0.024473,
+    "clip_s": 0.718189,
+    "lpips": 0.296399,
+    "off_dino_s": 0.401347
+  },
+  {
+    "file": "target_hf_subband_texture_ft6/dino_summary_adain15.json",
+    "dino_s": 0.488420,
+    "dino_c": 0.798815,
+    "dino_structure": 0.024596,
+    "clip_s": 0.719357,
+    "lpips": 0.296046,
+    "off_dino_s": 0.404302
+  },
+  {
+    "file": "target_hf_content_anchor_ft6/dino_summary_adain15.json",
+    "dino_s": 0.484393,
+    "dino_c": 0.795462,
+    "dino_structure": 0.024555,
+    "clip_s": 0.717251,
+    "lpips": 0.298162,
+    "off_dino_s": 0.399538
+  },
+  {
+    "file": "target_hf_multitoken_ft6/dino_summary_adain15.json",
+    "dino_s": 0.483562,
+    "dino_c": 0.794129,
+    "dino_structure": 0.024531,
+    "clip_s": 0.718699,
+    "lpips": 0.297979,
+    "off_dino_s": 0.398793
+  },
+  {
+    "file": "target_hf_subband_deep_energy_ft6/dino_summary_adain15.json",
+    "dino_s": 0.482631,
+    "dino_c": 0.794932,
+    "dino_structure": 0.024497,
+    "clip_s": 0.717588,
+    "lpips": 0.297529,
+    "off_dino_s": 0.397683
+  },
+  {
+    "file": "target_hf_subband_film_head_ft6/dino_summary_adain15.json",
+    "dino_s": 0.482591,
+    "dino_c": 0.791672,
+    "dino_structure": 0.024594,
+    "clip_s": 0.717951,
+    "lpips": 0.299591,
+    "off_dino_s": 0.398305
+  },
+  {
+    "file": "target_hf_subband_diraux_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.486150,
+    "dino_c": 0.793859,
+    "dino_structure": 0.024536,
+    "clip_s": 0.718929,
+    "lpips": 0.297425,
+    "off_dino_s": 0.402097
+  },
+  {
+    "file": "target_hf_subband_timewindow_late_norm_adain15_dino_summary.json",
+    "dino_s": 0.486637,
+    "dino_c": 0.793614,
+    "dino_structure": 0.024534,
+    "clip_s": 0.719335,
+    "lpips": 0.297480,
+    "off_dino_s": 0.402562
+  },
+  {
+    "file": "target_hf_subband_timewindow_early_norm_adain15_dino_summary.json",
+    "dino_s": 0.486602,
+    "dino_c": 0.793654,
+    "dino_structure": 0.024533,
+    "clip_s": 0.719377,
+    "lpips": 0.297480,
+    "off_dino_s": 0.402543
+  },
+  {
+    "file": "target_hf_subband_basis_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.482840,
+    "dino_c": 0.793659,
+    "dino_structure": 0.024564,
+    "clip_s": 0.718310,
+    "lpips": 0.297061,
+    "off_dino_s": 0.398561
+  },
+  {
+    "file": "target_hf_subband_pairstats_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.483765,
+    "dino_c": 0.794304,
+    "dino_structure": 0.024541,
+    "clip_s": 0.718318,
+    "lpips": 0.297092,
+    "off_dino_s": 0.399385
+  },
+  {
+    "file": "target_hf_subband_mixer_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.486666,
+    "dino_c": 0.793705,
+    "dino_structure": 0.024535,
+    "clip_s": 0.719392,
+    "lpips": 0.297500,
+    "off_dino_s": 0.402582
+  },
+  {
+    "file": "target_hf_subband_current_delta_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.486683,
+    "dino_c": 0.793621,
+    "dino_structure": 0.024539,
+    "clip_s": 0.719366,
+    "lpips": 0.297567,
+    "off_dino_s": 0.402626
+  },
+  {
+    "file": "target_hf_subband_affine_delta_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.482449,
+    "dino_c": 0.790343,
+    "dino_structure": 0.024682,
+    "clip_s": 0.717787,
+    "lpips": 0.298913,
+    "off_dino_s": 0.398861
+  },
+  {
+    "file": "target_hf_subband_wct_direction_ft6_epoch0006_adain15_dino_summary.json",
+    "dino_s": 0.486511,
+    "dino_c": 0.793320,
+    "dino_structure": 0.024538,
+    "clip_s": 0.719448,
+    "lpips": 0.297849,
+    "off_dino_s": 0.402438
+  },
+  {
+    "file": "target_hf_subband_memdrop_ft6_dino_summary_adain15.json",
+    "dino_s": 0.486414,
+    "dino_c": 0.791995,
+    "dino_structure": 0.024542,
+    "clip_s": 0.719449,
+    "lpips": 0.298218,
+    "off_dino_s": 0.402734
+  }
+]

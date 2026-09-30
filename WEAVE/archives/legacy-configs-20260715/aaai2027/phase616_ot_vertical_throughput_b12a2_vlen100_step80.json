@@ -1,0 +1,25 @@
+{
+  "_base": "./phase616_ot_vertical_scratch_b8a2_e24.json",
+  "training": {
+    "batch_size": 12,
+    "accumulation_steps": 2,
+    "num_epochs": 1,
+    "save_interval": 1,
+    "log_interval": 20,
+    "full_eval_each_epoch": false,
+    "stop_after_global_steps": 80,
+    "save_step_milestones": [20, 40, 60, 80]
+  },
+  "data": {
+    "virtual_length_multiplier": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_ot_vertical_throughput_b12a2_vlen100_step80"
+  },
+  "ablation": {
+    "name": "phase616_ot_vertical_throughput_b12a2_vlen100_step80",
+    "axis": "phase616_throughput_probe",
+    "stage": "matched_throughput_only",
+    "notes": "Matched throughput probe for the 616 OT+vertical foundation. Only batch size is increased relative to the b8a2 control; mechanism, data root, and eval contract remain unchanged."
+  }
+}

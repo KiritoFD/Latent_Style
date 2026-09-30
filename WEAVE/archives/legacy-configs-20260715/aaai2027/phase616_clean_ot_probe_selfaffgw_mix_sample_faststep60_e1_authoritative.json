@@ -1,0 +1,16 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_faststep60_e1.json",
+  "bridge": {
+    "coupling_cost_composition": "appearance_plus_structure",
+    "coupling_target_mode": "sample"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_selfaffgw_mix_sample_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_selfaffgw_mix_sample_faststep60_e1_authoritative",
+    "axis": "phase616_ot_probe_clean_2x2",
+    "stage": "clean_ot_selfaffgw_mix_sample_authoritative_control",
+    "notes": "Authoritative 616 OT 2x2 control. Keep the retained self_affinity_gw descriptor, mixed appearance-plus-structure cost, and sampled OT target geometry so later rows can isolate composition and barycentric-target effects."
+  }
+}

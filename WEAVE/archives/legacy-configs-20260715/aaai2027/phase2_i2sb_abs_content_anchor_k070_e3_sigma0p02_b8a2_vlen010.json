@@ -1,0 +1,21 @@
+{
+  "_base": "./phase2_i2sb_clean_k070_e3_sigma0p02_b8a2_vlen010.json",
+  "bridge": {
+    "w_content_lowpass_anchor": 0.35,
+    "w_content_edge_anchor": 0.10,
+    "content_anchor_lowpass_kernel": 9
+  },
+  "training": {
+    "full_eval_in_process": false,
+    "full_eval_runtime_model_cache": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_i2sb_abs_content_anchor_k070_e3_sigma0p02_b8a2_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_i2sb_abs_content_anchor_k070_e3_sigma0p02_b8a2_vlen010",
+    "axis": "phase2_fiber_path_objective",
+    "stage": "i2sb_absolute_content_anchor",
+    "notes": "Controlled single-variable follow-up after clean absolute I2SB sigma0p02 and blend0p25: keep parent, endpoint absolute parameterization, sigma0p02, tokenizer, TopoGate, attention, terminal SWD, schedule, and fast10 transfer eval fixed. Change only bridge content topology anchors: lowpass 0.35 and edge 0.10, kernel 9. Purpose is to test whether I2SB's style actuation can be retained while reducing endpoint coordinate drift/LPIPS."
+  }
+}

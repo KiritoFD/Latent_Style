@@ -1,0 +1,1 @@
+ort 1.27.0 ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']

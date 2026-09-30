@@ -1,0 +1,12 @@
+{
+  "_comment": "Phase616 converged checkpoint eval-only style overdrive probe. Tests whether the post-convergence style ceiling is mostly an inference-strength clamp.",
+  "model": {
+    "style_strength_max": 1.10
+  },
+  "full_eval": {
+    "style_strength": 1.10,
+    "only_lpips_clip_style": true,
+    "save_generated_images": false,
+    "save_summary_grid": false
+  }
+}

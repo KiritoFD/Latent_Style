@@ -1,0 +1,15 @@
+{
+  "_base": "distinct5_512_ema_variant_f_annealed_prototype_ot_queue_e3.json",
+  "data": {
+    "pairing_cache_sample_mode": "rank_biased_stratified"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_g_stratified_prototype_ot_queue_e3"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_g_stratified_prototype_ot_queue_e3",
+    "axis": "distinct5_512_representation_speed",
+    "stage": "variant_g",
+    "notes": "Variant F plus deterministic rank-stratified target queue sampling. Keeps the same internal VAE-latent pairing cache and easy-to-hard active top-k schedule, but reduces per-batch target-hardness jitter. No DINO, CLIP supervision, classifier, or external semantic features."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "_base": "./phase2_actuation_head_adapter_k070_e3_b16a2bf16_vlen010.json",
+  "model": {
+    "style_head_adapter_scale": 0.05
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_actuation_head_adapter_s005_k070_e3_b16a2bf16_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_actuation_head_adapter_s005_k070_e3_b16a2bf16_vlen010",
+    "axis": "phase2_fiber_actuation_bottleneck",
+    "stage": "actuation_style_conditioned_head_adapter_scale_check",
+    "notes": "Matched scale-control after s0.20 head_adapter injected active residual energy but hurt transfer style. Keep every mechanism and eval setting fixed; reduce only style_head_adapter_scale from 0.20 to 0.05 to test whether the negative result was caused by over-actuation rather than by the parallel-head hypothesis."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "_base": "tokenizer_t01_factorized_base.json",
+  "training": {
+    "batch_size": 16,
+    "num_epochs": 1,
+    "save_interval": 1,
+    "use_tqdm": false,
+    "numeric_debug": true,
+    "numeric_debug_interval": 1
+  },
+  "data": {
+    "virtual_length_multiplier": 0.05
+  },
+  "checkpoint": {
+    "save_dir": "./exp/tokenizer_t01_factorized_smoke_b16"
+  }
+}

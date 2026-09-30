@@ -1,0 +1,16 @@
+{
+  "_base": "./phase2_actuation_predec_section_k070_e3_b32bf16_vlen010.json",
+  "training": {
+    "batch_size": 16,
+    "accumulation_steps": 2
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_actuation_predec_section_k070_e3_b16a2bf16_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_actuation_predec_section_k070_e3_b16a2bf16_vlen010",
+    "axis": "phase2_fiber_actuation_bottleneck",
+    "stage": "actuation_predec_style_section_vram_safe",
+    "notes": "Same pre-decoder style-section mechanism as the b32 config, but batch=16 and accumulation_steps=2 for a safer remote WSL launch. This changes throughput only, not the core mechanism or eval contract."
+  }
+}

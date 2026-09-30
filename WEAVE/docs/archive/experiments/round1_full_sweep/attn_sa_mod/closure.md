@@ -1,0 +1,41 @@
+# attn_sa_mod Closure
+
+- Status: closed_reject
+- Current decision note:
+  - [decision.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/attn_sa_mod/decision.md)
+- Frozen `VLM` stageclose snapshot:
+  - [vlm_stageclose_snapshot.md](/G:/GitHub/Latent_Style/SchrodingerBridge/docs/experiments/round1_full_sweep/attn_sa_mod/vlm_stageclose_snapshot.md)
+- Fast-screen status:
+  - settled through `epoch_0024`
+  - current fast convergence read: `converged = true`
+- Remote train status:
+  - completed through `epoch_0024`
+  - remote train log explicitly reports `Training completed.`
+- Current best checkpoints:
+  - best transfer `CLIP-S`:
+    - `epoch_0001`
+  - best transfer `LPIPS`:
+    - `epoch_0008`
+  - best all-pairs `CLIP-S`:
+    - `epoch_0003`
+  - latest:
+    - `epoch_0024`
+- Deep-review status:
+  - refreshed image-backed rerun landed for `epoch_0008` and `epoch_0024`
+  - `IntroStyle` has landed
+  - `DINO` has landed
+  - frozen `VLM` snapshot205 compare is now running on the detached local `CPU / network` lane
+  - frozen stageclose `e08` summary:
+    - `Seedream = 94 / 200`
+    - `SaMAM = 104 / 200`
+    - `AttnSA_e08 = 2 / 200`
+  - `e24` snapshot compare has now also been launched in parallel
+  - frozen stageclose `e24` summary:
+    - `Seedream = 72 / 169`
+    - `SaMAM = 97 / 169`
+    - `AttnSA_e24 = 0 / 169`
+  - frozen external `VLM` snapshot decisively favors `Seedream / SaMAM` over `attn_sa_mod`
+  - final decision:
+    - reject `attn_sa_mod` for promotion
+    - do not allocate a fresh remote continuation lane to this family
+    - retain it only as negative evidence

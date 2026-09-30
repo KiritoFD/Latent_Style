@@ -1,0 +1,17 @@
+{
+  "_base": "exp_brk_a_ll03_10ep.json",
+  "model": {
+    "target_latent_token_fusion_enabled": true,
+    "target_latent_token_fusion_gate_init": 0.05,
+    "target_latent_token_fusion_pool_hw": 16
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/model_probe/target_latent_fusion"
+  },
+  "ablation": {
+    "name": "probe_target_latent_fusion",
+    "axis": "model_probe",
+    "stage": "probe_guided_style_path",
+    "notes": "Probe-guided variant: fuse target-style latent tokens into cross-attention style tokens so flow loss trains an image-specific style condition path. Baseline remains unchanged when disabled."
+  }
+}

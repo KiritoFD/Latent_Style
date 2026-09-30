@@ -1,0 +1,70 @@
+{
+  "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\src\\exp\\620_spatial_bridge\\620_swd16_notext_vlen004_b8_local\\config.json",
+  "checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\src\\exp\\620_spatial_bridge\\620_swd16_notext_vlen004_b8_local\\epoch_0008.pt",
+  "output_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\620\\fog\\local_probe_smoke",
+  "device": "cpu",
+  "sample_count": 2,
+  "start_index": 0,
+  "steps": [
+    1,
+    4
+  ],
+  "sigma_eval": 0.02,
+  "stage_summary": {
+    "source_latent": {
+      "latent_std": 0.8244675695896149,
+      "latent_high_rms": 0.5899577140808105,
+      "img_std": 0.21757731586694717,
+      "img_grad_rms": 0.08924991637468338,
+      "to_source_latent_delta_rms": 0.0,
+      "to_target_latent_delta_rms": 1.2207520604133606,
+      "to_source_img_delta_rms": 0.0,
+      "to_target_img_delta_rms": 0.3626081496477127
+    },
+    "target_latent": {
+      "latent_std": 0.8769898414611816,
+      "latent_high_rms": 0.532386064529419,
+      "img_std": 0.20103366672992706,
+      "img_grad_rms": 0.04924796614795923,
+      "to_source_latent_delta_rms": 1.2207520604133606,
+      "to_target_latent_delta_rms": 0.0,
+      "to_source_img_delta_rms": 0.3626081496477127,
+      "to_target_img_delta_rms": 0.0
+    },
+    "predict_endpoint_t0": {
+      "latent_std": 0.6979765594005585,
+      "latent_high_rms": 0.567640483379364,
+      "img_std": 0.1877746805548668,
+      "img_grad_rms": 0.09494665078818798,
+      "to_source_latent_delta_rms": 0.19623418897390366,
+      "to_target_latent_delta_rms": 1.1355202496051788,
+      "to_source_img_delta_rms": 0.05959852412343025,
+      "to_target_img_delta_rms": 0.3548828214406967
+    },
+    "integrate_nfe_1": {
+      "latent_std": 0.6979765594005585,
+      "latent_high_rms": 0.567640483379364,
+      "img_std": 0.1877746805548668,
+      "img_grad_rms": 0.09494665078818798,
+      "to_source_latent_delta_rms": 0.19623418897390366,
+      "to_target_latent_delta_rms": 1.1355202496051788,
+      "to_source_img_delta_rms": 0.05959852412343025,
+      "to_target_img_delta_rms": 0.3548828214406967
+    },
+    "integrate_nfe_4": {
+      "latent_std": 0.7034984529018402,
+      "latent_high_rms": 0.5672657489776611,
+      "img_std": 0.18909992277622223,
+      "img_grad_rms": 0.09401597082614899,
+      "to_source_latent_delta_rms": 0.18289733678102493,
+      "to_target_latent_delta_rms": 1.1370805203914642,
+      "to_source_img_delta_rms": 0.0556812658905983,
+      "to_target_img_delta_rms": 0.352959543466568
+    }
+  },
+  "headline": {
+    "endpoint_latent_high_vs_source_ratio": 0.9621714740416301,
+    "endpoint_img_grad_vs_source_ratio": 1.0638290168204632,
+    "endpoint_img_std_vs_source_ratio": 0.8630250805635212
+  }
+}

@@ -1,0 +1,7 @@
+source_root,method,dataset,experiment,epoch,clip_style,clip_content,clip_dir,content_lpips,fid,artfid,delta_l2,nfe,style_strength,num_styles,projection_mode,variant,timing_sec,timestamp,relative_path
+Latent_Style_TokenizerClean,LANCET/LBM,strict_protocol_750,split_axis_geometry_derivgate_fieldbound_g005_120b,-1,0.7812561549345652,0.8597000932533332,0.3933174345170458,0.34523872083999996,,,,,,,,,,2026-06-01 07:59:09,SchrodingerBridge/exp/formal_eval_750/split_axis_geometry_derivgate_fieldbound_g005_120b/summary.json
+Latent_Style_TokenizerClean,LANCET/LBM,strict_protocol_750,Latent_Style_TokenizerClean,-1,0.7808552194436392,0.8612288302266667,0.3891597378427784,0.34146489577333333,,,,,,,,,,2026-06-01 07:45:51,SchrodingerBridge/exp/formal_eval_750/pair_content_spatial_head_c120_g050_b020_pc040_bound050_120b_b80/summary.json
+Latent_Style_TokenizerClean,LANCET/LBM,strict_protocol_750,Latent_Style_TokenizerClean,-1,,,,,,,,,,,,,,,Related_Works/run_511/outputs/s2wat_750_strict/summary.json
+Latent_Style_TokenizerClean,LANCET/LBM,strict_protocol_750,Latent_Style_TokenizerClean,-1,,,,,,,,,,,,,,,Related_Works/run_511/outputs/samst_750_strict/summary.json
+Latent_Style_TokenizerClean,LANCET/LBM,strict_protocol_750,Latent_Style_TokenizerClean,-1,,,,,,,,,,,,,,,Related_Works/run_511/outputs/styleid_750_strict/summary.json
+Latent_Style_TokenizerClean,LANCET/LBM,strict_protocol_750,Latent_Style_TokenizerClean,-1,,,,,,,,,,,,,,,Related_Works/run_511/outputs/stytr2_750_full_4g/summary.json

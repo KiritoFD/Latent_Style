@@ -1,0 +1,23 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "swd_semantic_mode": "region",
+    "swd_symmetric_regions": true,
+    "swd_semantic_regions": 4,
+    "swd_semantic_blend": 0.8,
+    "single_step_swd_weight": 8.0
+  },
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 24
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/abl_sym_swd"
+  },
+  "ablation": {
+    "name": "abl_sym_swd",
+    "axis": "loss_function",
+    "stage": "destructive_ablation",
+    "notes": "Symmetric content-based semantic SWD: gen and target share the same content-defined region labels (no asymmetric clustering, no brightness-proxy alignment). blend=0.8 (80% region SWD + 20% global SWD). Tests whether fixed semantic SWD implementation can produce measurable effect."
+  }
+}

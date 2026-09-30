@@ -1,0 +1,25 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue.json",
+  "training": {
+    "num_epochs": 16,
+    "batch_size": 4,
+    "accumulation_steps": 2,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue/epoch_0011.pt",
+    "resume_optimizer": true,
+    "resume_model_strict": true,
+    "resume_training_state": true
+  },
+  "bridge": {
+    "structure_penalty_mode": "stokes",
+    "w_stokes_viscous": 0.03
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_pattn_stokes003_from_pattn_seed42_b4a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_stokes003_from_pattn_seed42_b4a2",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_Stokes003_b4a2",
+    "notes": "Late intermediate-Stokes repair packet under persistent host-GUI VRAM pressure. Reduce micro-batch to 4 and use accumulation_steps=2 so the lane can fit the 11.5 GiB explosion contract while staying closer to the b8 optimization regime."
+  }
+}

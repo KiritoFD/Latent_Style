@@ -1,0 +1,12 @@
+Initial Win CP for (console input, console output, system): (CP65001, CP65001, CP936)
+I changed them all to CP936
+Rc files read:
+  NONE
+Latexmk: This is Latexmk, John Collins, 15 June 2025. Version 4.87.
+
+------------
+Latexmk: Could not find file '.'.
+-- Use the -f option to force complete processing.
+Reverting Windows console CPs to (in,out) = (65001,65001)
+C:\texlive\2026\bin\windows\runscript.tlu:933: command failed with exit code 11:
+perl.exe c:\texlive\2026\texmf-dist\scripts\latexmk\latexmk.pl -pdf -interaction=nonstopmode -file-line-error -outdir= . -auxdir= . paper.tex

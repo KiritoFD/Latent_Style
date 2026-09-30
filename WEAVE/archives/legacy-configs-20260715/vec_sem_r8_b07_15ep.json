@@ -1,0 +1,22 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/vec_sem_r8_b07_15ep",
+    "resume_checkpoint": ""
+  },
+  "bridge": {
+    "swd_semantic_mode": "region",
+    "swd_semantic_regions": 8,
+    "swd_semantic_blend": 0.7,
+    "swd_semantic_kmeans_iters": 4
+  },
+  "training": {
+    "batch_size": 96
+  },
+  "ablation": {
+    "name": "vec_sem_r8_b07_15ep",
+    "axis": "vec_semantic_swd_k8",
+    "stage": "phase2_vectorized_k8",
+    "notes": "Vectorized semantic region SWD K=8 beta=0.7 (reproduces sem_r8 sweet spot with vectorized code). Based on hp_simple_swd12. Goal: CLIP-S>=0.715 (sem_r8 historical), MUSIQ~51.9, then stack EOTA for 54.5 target."
+  }
+}

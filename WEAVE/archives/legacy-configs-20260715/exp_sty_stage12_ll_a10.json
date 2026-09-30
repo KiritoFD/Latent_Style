@@ -1,0 +1,34 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "style_delta_head_enabled": true,
+    "style_delta_init_std": 0.1,
+    "style_delta_gate_init": 0.0,
+    "style_cross_attn_gate_init": 0.5,
+    "cross_attn_dwt_route": true,
+    "dwt_route_train_prob": 0.5,
+    "enable_hh_head": true
+  },
+  "bridge": {
+    "structure_aligned_target": true,
+    "ll_partial_style_enabled": true,
+    "ll_partial_alpha": 1.0,
+    "ll_partial_mode": "adain"
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/stage12_ll_adain_a10"
+  },
+  "ablation": {
+    "name": "stage12_ll_adain_a10",
+    "axis": "style_injection",
+    "stage": "712_sty_inject_stage12_ll_a10",
+    "notes": "LL AdaIN α=1.0 (完全替换): LL_blended = AdaIN(LL_c→LL_s), 完全采用 style LL 色彩统计. 验证 α sweep 极端值: 若 DINO-sty 仍不变, 则确认 LL 色彩统计与 DINO-sty 无关."
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "_base": "../runs/submission/hf_oriented_internal_early_stop/config.json",
+  "model": {
+    "enable_hh_head": true
+  },
+  "bridge": {
+    "spectral_w_hh": 2.0
+  },
+  "training": {
+    "internal_early_stop_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "runs/submission/rebuttal_D5_hh_head"
+  },
+  "ablation": {
+    "name": "rebuttal_D5_hh_head",
+    "axis": "matched_ablation_hh_head",
+    "stage": "rebuttal_batch2",
+    "notes": "D5: Enable learned HH velocity head with spectral_w_hh=2.0. Current production has enable_hh_head=false. Tests whether learning HH head improves style transfer on current 1.04M architecture. Seed=42, 15 epochs, internal early stop disabled (probe kept)."
+  }
+}

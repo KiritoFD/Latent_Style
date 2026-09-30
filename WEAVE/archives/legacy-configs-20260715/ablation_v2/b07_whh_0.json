@@ -1,0 +1,15 @@
+{
+  "_base": "../refactor_clean_baseline.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/ablation_v2/b07_whh_0"
+  },
+  "ablation": {
+    "name": "b07_whh_0",
+    "axis": "ablation_v2",
+    "stage": "comprehensive_extreme",
+    "notes": "Extreme: w_hh=0 (no HH subband loss)"
+  },
+  "bridge": {
+    "spectral_w_hh": 0.0
+  }
+}

@@ -1,0 +1,16 @@
+src_style,tgt_style,src_slug,depth_mse,edge_iou
+Early_Renaissance,Early_Renaissance,Early_Renaissance__piero-della-francesca_portrait-of-a-boy,0.07343970984220505,0.00453604181047234
+Early_Renaissance,Impressionism,Early_Renaissance__piero-della-francesca_portrait-of-a-boy,0.09734390676021576,0.0010224948875255625
+Early_Renaissance,Minimalism,Early_Renaissance__piero-della-francesca_portrait-of-a-boy,0.09168289601802826,0.0
+Early_Renaissance,Rococo,Early_Renaissance__piero-della-francesca_portrait-of-a-boy,0.12311770021915436,0.0027247956403269754
+Early_Renaissance,Ukiyo_e,Early_Renaissance__piero-della-francesca_portrait-of-a-boy,0.08152452111244202,0.00414585885235089
+Minimalism,Early_Renaissance,Minimalism__imi-knoebel_weiss-und-schwarz-4-2009,0.25595009326934814,0.008544652701212789
+Minimalism,Impressionism,Minimalism__imi-knoebel_weiss-und-schwarz-4-2009,0.1810842752456665,0.0
+Minimalism,Minimalism,Minimalism__imi-knoebel_weiss-und-schwarz-4-2009,0.17408636212348938,0.0
+Minimalism,Rococo,Minimalism__imi-knoebel_weiss-und-schwarz-4-2009,0.18591608107089996,0.011642411642411643
+Minimalism,Ukiyo_e,Minimalism__imi-knoebel_weiss-und-schwarz-4-2009,0.14936447143554688,0.006107536263496564
+Minimalism,Early_Renaissance,Minimalism__tony-smith_die-1968,0.09936216473579407,0.005276705276705276
+Minimalism,Impressionism,Minimalism__tony-smith_die-1968,0.1100764200091362,0.0
+Minimalism,Minimalism,Minimalism__tony-smith_die-1968,0.15139268338680267,0.0
+Minimalism,Rococo,Minimalism__tony-smith_die-1968,0.0940500870347023,0.006685432793807178
+Minimalism,Ukiyo_e,Minimalism__tony-smith_die-1968,0.06722338497638702,0.009857494910532519

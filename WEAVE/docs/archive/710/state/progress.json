@@ -1,0 +1,23 @@
+{
+  "iteration": 15,
+  "total_findings": 19,
+  "status": "adaptive_directions_failed_t1_asg_still_best",
+  "stale_count": 2,
+  "best_dino_s": 0.4843,
+  "best_config": "t1_asg_5ep (adaptive_style_gate=true, 5 epochs, batch=24)",
+  "target_dino_s": 0.5000,
+  "gap_to_target": 0.0157,
+  "last_updated": "2026-07-11T19:15:00Z",
+  "train_time_per_epoch": "baseline 23.0s -> 19.4s/epoch (batch=96+channels_last, -15.7%)",
+  "inf750_time": "baseline b2=108.69s -> b16_save=53.79s (-50.5%, batch=16); b16_nosave=53.14s (marginal). uint8_cpu_copy=37.87s is hard remaining bottleneck.",
+  "current_direction": "Infra optimization phase complete. Training: baseline 23.0s/epoch -> 19.4s/epoch (batch=96+channels_last, -15.7%). Inference 750img: baseline b2=108.69s -> b16_save=53.79s (-50.5%). uint8_cpu_copy (37.87s) is the hard remaining bottleneck. Architecture fixed at T1 ASG.",
+  "rgb_postprocess_verdict": "ALL HARMFUL: RGB AdaIN=0.4285, RGB WCT=0.4364, VGG-opt=0.4472. RGB-space methods consistently break DINO CLS features.",
+  "latent_wct_ceiling": "0.4614-0.4617 for inference-time methods. BROKEN by training-side ASG: 0.4843.",
+  "style_amplification_verdict": "HARMFUL: s4_amp20=0.4479, s1_extrap02=0.4338. Inference-time style signal amplification consistently degrades DINO-S.",
+  "cov_interp_verdict": "HARMFUL: s5_cov07=0.4478, s5_cov05=0.4478. All perturbation directions converge to ~0.4478 floor.",
+  "t1_asg_verdict": "BREAKTHROUGH: DINO-S=0.4843 (+0.0422 vs S0, +0.0226 vs inference ceiling). DINO-C=0.7692 (+0.0741), LPIPS=0.3354 (-0.1277). CLIP-S=0.7261 (-0.0037, neutral). ASG makes style gate content-dependent — flat areas get less style (protect content), textured areas get more style (enhance style). Zero-init MLP ensures safe training start. Gap to 0.5 target: 0.0157.",
+  "t2_fasg_verdict": "NO IMPROVEMENT: DINO-S=0.4833 (-0.001 vs T1 ASG). Per-subband gate differentiation not the bottleneck. Unified gate + spatial adaptivity already captures the gain.",
+  "t4_adaptive_wct_verdict": "HARMFUL: DINO-S=0.4801 (-0.004), DINO-C=0.6123 (-0.157 SEVERE), LPIPS=0.5341 (+0.199 SEVERE). Full-covariance WCT on content subbands destroys structure. Adaptive ratio insufficient to mitigate.",
+  "infra_optimization_verdict": "TRAIN: baseline 23.0s/epoch -> 19.4s/epoch (batch=96+channels_last, -15.7%, VRAM 5.69GB/12GB). INFERENCE 750img: baseline b2=108.69s -> b16_save=53.79s (-50.5%). Key findings: (1) torch.compile unusable on Windows (no Triton); (2) batch scaling recovers gen time but uint8_cpu_copy is a hard 37.87s bottleneck independent of batch; (3) nosave path shifts VAE decode cost to Phase 2 (1.5s -> 30.8s), net savings only ~0.65s vs save; (4) b16_save is optimal — b16_nosave gives only 0.65s further gain. Metrics unchanged: CLIP-S=0.7261, LPIPS=0.3354.",
+  "pivot_strategy": "Infra optimization exhausted. Next: train ASG 10ep, tune ASG MLP capacity, D1-Plus Gram loss, lighter inference postprocess."
+}

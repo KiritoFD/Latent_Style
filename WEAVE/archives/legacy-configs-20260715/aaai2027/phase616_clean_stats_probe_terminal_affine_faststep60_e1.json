@@ -1,0 +1,17 @@
+{
+  "_base": "./phase616_clean_stats_probe_control_none_faststep60_e1.json",
+  "model": {
+    "transport_stats_mode": "terminal_affine",
+    "transport_stats_bank_path": "/mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache/style_stats_bank.pt",
+    "transport_stats_bank_required": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_stats_probe_terminal_affine_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_stats_probe_terminal_affine_faststep60_e1",
+    "axis": "phase616_stats_probe_fast",
+    "stage": "clean_stats_terminal_affine",
+    "notes": "Matched phase616 stats-track probe A. Leave the solver path unchanged, but remap the final latent to the per-style mean/std bank so we can test whether clean terminal photometry alignment improves transfer without contaminating OT or vertical target geometry."
+  }
+}

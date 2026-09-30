@@ -1,0 +1,15 @@
+{
+  "_base": "inmortal_xpred_bary_seed42_b16.json",
+  "training": {
+    "batch_size": 40
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_bary_seed42_b40"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_bary_seed42_b40",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_Barycenter_b40",
+    "notes": "Higher-throughput rerun target for the x-prediction barycenter line. The b16 probe stayed far below the 3060 ceiling, so the promoted rerun should move closer to the 10G target band."
+  }
+}

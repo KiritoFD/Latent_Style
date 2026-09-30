@@ -1,0 +1,14 @@
+{
+  "_base": "./phase616_clean_ot_probe_tokenentropy_selfaffgw_mix_faststep60_e1.json",
+  "training": {
+    "full_eval_each_epoch": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_tokenentropy_selfaffgw_mix_faststep60_e1_noeval"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_tokenentropy_selfaffgw_mix_faststep60_e1_noeval",
+    "stage": "clean_ot_tokenizer_entropy_affinity_gw_fast_noeval",
+    "notes": "Fast stage-1 remote control. Keep the retained tokenizer-entropy OT probe unchanged, but disable epoch-end full eval so the three-way 616 diagnosis batch stays in the training-probe budget."
+  }
+}

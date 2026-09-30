@@ -1,6 +1,6 @@
-content_image_dir: G:\GitHub\Latent_Style\Related_Works\SaMST-main\content
+content_image_dir: Y:\Latent_Style\Related_Works\baseline_pipeline\results\samst_wikiarts5_wsl_20260610_172206\eval_bundle\eval_epoch5\epoch_0005\_tmp\Impressionism\content
 content_scale: null
 cuda: 1
-model: G:\GitHub\Latent_Style\Related_Works\baseline_pipeline\checkpoints\samst_smoke\monet\epoch_1.model
-output_image_dir: G:\GitHub\Latent_Style\Related_Works\SaMST-main\outputs/
+model: Y:\Latent_Style\Related_Works\baseline_pipeline\results\samst_wikiarts5_wsl_20260610_172206\checkpoints\Impressionism\epoch_5.model
+output_image_dir: Y:\Latent_Style\Related_Works\baseline_pipeline\results\samst_wikiarts5_wsl_20260610_172206\eval_bundle\eval_epoch5\epoch_0005\_tmp\Impressionism\outputs/
 style_num: 1

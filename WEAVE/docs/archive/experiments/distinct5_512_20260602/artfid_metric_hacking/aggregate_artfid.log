@@ -1,0 +1,14 @@
+C:\Program Files\Python312\Lib\site-packages\torchvision\models\_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+C:\Program Files\Python312\Lib\site-packages\torchvision\models\_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=AlexNet_Weights.IMAGENET1K_V1`. You can also use `weights=AlexNet_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+No-op full: n=750 clip=0.6801226128737131 artfid=1.0012583908589932 fid=0.0012583908589931525 lpipsA=0.0
+No-op transfer: n=600 clip=0.6399208252628644 artfid=1.0010985648530095 fid=0.0010985648530095204 lpipsA=0.0
+SaMAM-2000 full: n=750 clip=None artfid=152.2123439756121 fid=118.74986367096437 lpipsA=0.2710857391357422
+SaMAM-2000 transfer: n=600 clip=None artfid=154.25894735281716 fid=119.85407723584393 lpipsA=0.2764066457748413
+SaMAM-2250 full: n=750 clip=None artfid=146.07096815798894 fid=114.06197350041356 lpipsA=0.26949819922447205
+SaMAM-2250 transfer: n=600 clip=None artfid=148.20585228085082 fid=115.22282856112793 lpipsA=0.27518710494041443
+LANCET-F-e1 full: n=750 clip=0.696914507508278 artfid=122.63254700962189 fid=92.61727192582305 lpipsA=0.309935063123703
+LANCET-F-e1 transfer: n=600 clip=0.6643604030708471 artfid=126.8257137813018 fid=95.07419973534797 lpipsA=0.32008087635040283
+LANCET-K-e1 full: n=750 clip=0.7009949656327565 artfid=157.1687499147529 fid=112.52361103288379 lpipsA=0.3844586908817291
+LANCET-K-e1 transfer: n=600 clip=0.6711669415235519 artfid=161.95765747448172 fid=114.79748097321135 lpipsA=0.39862850308418274

@@ -1,0 +1,37 @@
+{
+  "_comment": "Phase-2 eval-only matched noise-family probe on lowanchor050 e9. Keep solver/checkpoint/eval contract fixed; change only bridge sigma and i2sb_noise_family.",
+  "model": {
+    "solver_family": "solver_i2sb",
+    "transport_prediction_mode": "endpoint",
+    "bridge_sigma": 0.5,
+    "i2sb_noise_family": "gaussian",
+    "i2sb_fiber_aligned_noise": false,
+    "i2sb_fiber_noise_rms_normalize": false,
+    "i2sb_fiber_project_endpoint": false,
+    "i2sb_fiber_project_noise": false,
+    "i2sb_fiber_project_use_gate": false,
+    "i2sb_style_noise_amplitude_power": 1.0
+  },
+  "bridge": {
+    "bridge_sigma": 0.5,
+    "i2sb_noise_family": "gaussian",
+    "i2sb_style_noise_amplitude_power": 1.0
+  },
+  "full_eval": {
+    "only_lpips_clip_style": true,
+    "transfer_only": true,
+    "max_src_samples": 10,
+    "generation_batch_size": 8,
+    "metric_batch_size": 16,
+    "target_chunk_size": 5,
+    "vae_decode_batch_size": 16,
+    "vae_onnx_decoder": "../eval_cache/vae_onnx/ema_b16_32/decoder.onnx",
+    "keep_generated_on_device": true,
+    "source_latent_cache": true,
+    "delta_observability": true,
+    "hf_clip_skip_processor": true,
+    "save_generated_images": false,
+    "save_summary_grid": false,
+    "num_steps": 8
+  }
+}

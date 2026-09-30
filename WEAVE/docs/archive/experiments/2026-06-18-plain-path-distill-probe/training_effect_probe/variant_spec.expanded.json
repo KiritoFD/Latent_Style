@@ -1,0 +1,8 @@
+[
+  {
+    "name": "plain_path_distill_w0p50",
+    "overrides": {
+      "bridge.w_plain_path_distill": 0.5
+    }
+  }
+]

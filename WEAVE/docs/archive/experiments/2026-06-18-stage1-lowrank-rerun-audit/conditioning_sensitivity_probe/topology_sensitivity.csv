@@ -1,0 +1,6 @@
+probe_family,variant,semantic_self_topology_gate,semantic_self_topology_blend,forward_a_vs_b_mean_abs,semantic_attn_entropy,semantic_topology_attn_active,semantic_topology_attn_entropy,style_spatial_source_override_palette,style_spatial_source_target_latent,style_spatial_source_structured_map,style_spatial_source_code_map,style_spatial_source_legacy_zero,style_spatial_code_map_primary,style_spatial_code_map_residual,style_spatial_code_map_pre_resolved_abs,style_spatial_code_map_abs,style_spatial_map_abs
+topology,gate0_blend0,0.0,0.0,0.015167802572250366,2.813107967376709,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.07756535708904266,0.07303658127784729,1.004786729812622
+topology,gate0_blend1,0.0,1.0,0.015167802572250366,2.813107967376709,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.07756535708904266,0.07303658127784729,1.004786729812622
+topology,gate1_blend0,1.0,0.0,0.015167802572250366,2.813107967376709,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.07756535708904266,0.07303658127784729,1.004786729812622
+topology,gate1_blend05,1.0,0.5,0.009587448090314865,3.8445043563842773,1.0,2.8272693157196045,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.07756535708904266,0.07303658872842789,1.004786729812622
+topology,gate1_blend1,1.0,1.0,0.014578190632164478,2.8231747150421143,1.0,2.8231747150421143,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.07756535708904266,0.07303662598133087,1.004786729812622

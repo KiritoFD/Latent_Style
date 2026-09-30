@@ -1,0 +1,81 @@
+{
+  "baseline_config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit\\generated_configs\\h0_vertical_fm\\config.json",
+  "variant_config_count": 7,
+  "variant_spec_count": 6,
+  "exclude_prefixes": [
+    "ablation",
+    "checkpoint.save_dir",
+    "training.resume_checkpoint",
+    "training.resume_optimizer",
+    "training.resume_training_state",
+    "training.resume_prefer_local_checkpoint"
+  ],
+  "variant_spec_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit-h0full\\variant_spec.json",
+  "variant_manifest_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit-h0full\\variant_manifest.json",
+  "probe_runs": [
+    {
+      "script": "probe_config_effectiveness.py",
+      "command": [
+        "C:\\Users\\xy\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\tools\\probe_config_effectiveness.py",
+        "--config",
+        "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit\\generated_configs\\h0_vertical_fm\\config.json",
+        "--variant-spec",
+        "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit-h0full\\variant_spec.json",
+        "--output-dir",
+        "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit-h0full\\config_effect_probe",
+        "--device",
+        "cpu",
+        "--seed",
+        "0",
+        "--input-seed",
+        "123",
+        "--batch-size",
+        "2",
+        "--latent-size",
+        "32",
+        "--style-id",
+        "1"
+      ],
+      "returncode": 0,
+      "stdout_tail": [
+        "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit-h0full\\config_effect_probe\\summary.json"
+      ],
+      "stderr_tail": [],
+      "output_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit-h0full\\config_effect_probe"
+    },
+    {
+      "script": "probe_training_variant_effect.py",
+      "command": [
+        "C:\\Users\\xy\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\tools\\probe_training_variant_effect.py",
+        "--config",
+        "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit\\generated_configs\\h0_vertical_fm\\config.json",
+        "--variant-spec",
+        "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit-h0full\\variant_spec.json",
+        "--output-dir",
+        "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit-h0full\\training_effect_probe",
+        "--device",
+        "cpu",
+        "--seed",
+        "0",
+        "--input-seed",
+        "123",
+        "--batch-size",
+        "2",
+        "--latent-size",
+        "32",
+        "--target-style-id",
+        "1",
+        "--source-style-id",
+        "0"
+      ],
+      "returncode": 0,
+      "stdout_tail": [
+        "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit-h0full\\training_effect_probe\\summary.json"
+      ],
+      "stderr_tail": [],
+      "output_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit-h0full\\training_effect_probe"
+    }
+  ]
+}

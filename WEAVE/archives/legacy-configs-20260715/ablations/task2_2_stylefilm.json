@@ -1,0 +1,18 @@
+{
+  "experiments": [
+    {
+      "name": "620_ablation_stylefilm_on_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_stylefilm_on_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_stylefilm_off_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_stylefilm_off_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    }
+  ]
+}

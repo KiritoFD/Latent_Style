@@ -1,0 +1,10 @@
+[
+  {
+    "name": "h1_linear_fm",
+    "config_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\2026-06-18-stage1-exact-family-audit\\generated_configs\\h1_linear_fm\\config.json",
+    "override_count": 1,
+    "overrides": {
+      "bridge.bridge_path_mode": "linear"
+    }
+  }
+]

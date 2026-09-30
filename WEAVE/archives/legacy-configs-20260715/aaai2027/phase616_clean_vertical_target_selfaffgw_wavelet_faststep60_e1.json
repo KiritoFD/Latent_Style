@@ -1,0 +1,15 @@
+{
+  "_base": "./phase616_clean_vertical_target_selfaffgw_faststep60_e1.json",
+  "bridge": {
+    "training_target_projection_mode": "pure_vertical_flow_wavelet"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_vertical_target_selfaffgw_wavelet_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_vertical_target_selfaffgw_wavelet_faststep60_e1",
+    "axis": "phase616_vertical_target_fast",
+    "stage": "self_affinity_gw_pure_vertical_flow_wavelet_fast_candidate",
+    "notes": "Fast matched 616 vertical-target candidate. Keep OT fixed at self_affinity_gw and change only the base/fiber split operator from pure_vertical_flow to pure_vertical_flow_wavelet, following the design note that avgpool 5x5 is too crude a separator."
+  }
+}

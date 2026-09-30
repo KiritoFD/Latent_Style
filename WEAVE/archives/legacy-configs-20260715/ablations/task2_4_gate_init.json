@@ -1,0 +1,25 @@
+{
+  "experiments": [
+    {
+      "name": "620_ablation_gate_init005_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_gate_init005_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_gate_init03_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_gate_init03_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    },
+    {
+      "name": "620_ablation_gate_init05_smoke",
+      "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_gate_init05_smoke.json",
+      "epochs": [
+        "epoch_0001"
+      ]
+    }
+  ]
+}

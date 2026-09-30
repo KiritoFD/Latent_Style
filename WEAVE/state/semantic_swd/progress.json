@@ -1,0 +1,216 @@
+{
+  "iteration": 15,
+  "total_findings": 24,
+  "status": "round5_hp_complete_complex_swd_retired",
+  "stale_count": 0,
+  "last_seen": "2026-07-09T20:00:00",
+  "current_milestone": "M7_round5_hp_simple_swd_complete",
+  "best_musiq": 53.11,
+  "best_config_musiq": "r4_baseline_10ep (MUSIQ=53.11, CLIP-S=0.7100, DINO-con=0.6831) — quality SOTA",
+  "best_config_style": "r3_spectral_15ep (CLIP-S=0.7311, MUSIQ=44.56, DINO-con=0.7306) — style SOTA",
+  "best_config_dino": "hp_simple_swd12_15ep (DINO-con=0.8002, DINO-sty=0.4727, DINO-str=0.0242, cLPIPS=0.2990) — content/structure SOTA + 训练最快",
+  "best_config_balanced_spectral": "r4_spec_swd9_15ep (MUSIQ=45.31 spectral最高, CLIP-S=0.7281, DINO-con=0.7501) — spectral均衡最优",
+  "best_config_speed": "hp_simple_swd12_15ep (18.6s/ep, 4.8min训练, VRAM 11.54GB顶满) — 速度+内容帕累托最优",
+  "ablation_round1": {
+    "status": "complete",
+    "baseline_clip_s": 0.7087,
+    "experiments_completed": 15,
+    "experiments_failed": 1,
+    "best_variant": "abl_spectral (CLIP-S=0.7237, delta_idt=0.0838)",
+    "failed": {"abl_sinkhorn": "OT diverged, killed at 04:21:38"}
+  },
+  "ablation_round2": {
+    "status": "complete",
+    "started_at": "2026-07-09T06:36:49 (remote)",
+    "base_config": "spectral (Round 1 best)",
+    "experiments_total": 6,
+    "experiments_completed": 6,
+    "experiments_failed": 0,
+    "experiments_running": null,
+    "completed_at": "2026-07-09T09:00:39 (remote)",
+    "best_variant": "r2_spectral_10ep (CLIP-S=0.7288, d_idt=0.0888, +0.0051 vs R1 spectral-5ep)",
+    "runner": "r2_ablation_runner (scheduled task)",
+    "remote_repo": "I:\\Github\\Latent_Style\\SchrodingerBridge",
+    "log_file": "I:\\Github\\Latent_Style\\SchrodingerBridge\\remote_ablation_r2_log.txt"
+  },
+  "ablation_round3": {
+    "status": "complete",
+    "started_at": "2026-07-09T09:22:23 (remote)",
+    "completed_at": "2026-07-09T13:28:41 (remote)",
+    "base_config": "r2_spectral_10ep (Round 2 best, CLIP-S=0.7288)",
+    "experiments_total": 6,
+    "experiments_completed": 6,
+    "experiments_failed": 0,
+    "best_variant_style": "r3_spectral_15ep (CLIP-S=0.7311, d_idt=0.0912, +0.0023 vs R2_10ep) — STYLE SOTA",
+    "best_variant_content": "r3_swd6_llw1_10ep (cLPIPS=0.3260, -0.0199 vs R2_10ep) — CONTENT SOTA",
+    "runner": "r3_ablation_runner (scheduled task)",
+    "log_file": "I:\\Github\\Latent_Style\\SchrodingerBridge\\remote_ablation_r3_log.txt",
+    "configs": [
+      "r3_swd6_llw1_5ep (5ep) - swd_w=6 + ll_w=1.0, isolate 10ep effect",
+      "r3_swd6_llw1_10ep (10ep) - TRIPLE COMBO",
+      "r3_swd9_llw1_10ep (10ep) - swd_w gap fill (6-12)",
+      "r3_llw05_10ep (10ep) - ll_w middle point (0.5)",
+      "r3_llw2_10ep (10ep) - ll_w upper probe (2.0)",
+      "r3_spectral_15ep (15ep) - 10->15ep continuation check"
+    ],
+    "estimated_total_runtime_min": 246,
+    "actual_total_runtime_min": 246,
+    "results": {
+      "r3_swd6_llw1_5ep": {
+        "status": "complete",
+        "clip_style": 0.7204,
+        "clip_t": 0.2271,
+        "content_lpips": 0.3353,
+        "clip_s_delta_idt": 0.0805,
+        "vs_r2_spectral_10ep_clip_s": -0.0084,
+        "duration_min": 20.4,
+        "interpretation": "Triple combo at 5ep: best content (0.3353) but style drops to 0.7204. Negative interaction on style at 5ep."
+      },
+      "r3_swd6_llw1_10ep": {
+        "status": "complete",
+        "clip_style": 0.7240,
+        "clip_t": 0.2279,
+        "content_lpips": 0.3260,
+        "clip_s_delta_idt": 0.0841,
+        "vs_r2_spectral_10ep_clip_s": -0.0048,
+        "vs_r2_spectral_10ep_content_lpips": -0.0199,
+        "duration_min": 41.2,
+        "interpretation": "CONTENT SOTA across all 3 rounds (cLPIPS=0.3260). 10ep rescues style (+0.0036 vs 5ep) AND huge content improvement (-0.0093 vs 5ep). vs R2 best: trades -0.0048 style for -0.0199 content."
+      },
+      "r3_swd9_llw1_10ep": {
+        "status": "complete",
+        "clip_style": 0.7259,
+        "clip_t": 0.2284,
+        "content_lpips": 0.3325,
+        "clip_s_delta_idt": 0.0860,
+        "vs_r2_spectral_10ep_clip_s": -0.0029,
+        "duration_min": 41.0,
+        "interpretation": "swd_w=9 (gap fill 6-12): style 0.7259 between swd6 (0.7240) and swd12 (0.7288). Confirms monotonic swd_w -> style. Content 0.3325 between swd6 (0.3260) and swd12 (0.3459)."
+      },
+      "r3_llw05_10ep": {
+        "status": "complete",
+        "clip_style": 0.7278,
+        "clip_t": 0.2289,
+        "content_lpips": 0.3426,
+        "clip_s_delta_idt": 0.0879,
+        "vs_r2_spectral_10ep_clip_s": -0.0010,
+        "duration_min": 40.9,
+        "interpretation": "ll_w=0.5 (10ep): near-baseline style (-0.0010) with slight content improvement (-0.0033). ll_w=0.3 remains style-optimal at 10ep; higher ll_w trades style for content."
+      },
+      "r3_llw2_10ep": {
+        "status": "complete",
+        "clip_style": 0.7266,
+        "clip_t": 0.2285,
+        "content_lpips": 0.3307,
+        "clip_s_delta_idt": 0.0867,
+        "vs_r2_spectral_10ep_clip_s": -0.0022,
+        "vs_r2_spectral_10ep_content_lpips": -0.0152,
+        "duration_min": 40.9,
+        "interpretation": "ll_w=2.0 (10ep): stronger content gain (-0.0152) but style drops -0.0022. Confirms ll_w as style-content trade-off knob (NOT strict improvement at 10ep, contrary to Round 2 5ep finding)."
+      },
+      "r3_spectral_15ep": {
+        "status": "complete",
+        "clip_style": 0.7311,
+        "clip_t": 0.2296,
+        "content_lpips": 0.3524,
+        "clip_s_delta_idt": 0.0912,
+        "vs_r2_spectral_10ep_clip_s": 0.0023,
+        "vs_r2_spectral_10ep_delta_idt": 0.0024,
+        "vs_r2_spectral_10ep_content_lpips": 0.0065,
+        "duration_min": 61.3,
+        "interpretation": "STYLE SOTA across all 3 rounds (CLIP-S=0.7311, d_idt=0.0912). 10->15ep continues to improve style (+0.0023) but content degrades (+0.0065 vs 10ep). Training length exhibits style-content trade-off past 10ep; 10ep is content sweet spot, 15ep+ is style sweet spot."
+      }
+    }
+  },
+  "next_action": "Round 5 complete: hp_simple_swd12_15ep proves complex SWD should be retired. Simple SWD (squared+global+off, swd_w=12) + spectral_ode reaches DINO-con=0.8002 (全场最高, +0.039 over complex SWD best), DINO-str=0.0242 (最优), cLPIPS=0.2990 (最优), 18.6s/ep (13.7x faster). Only weakness: CLIP-S=0.7167 (略低于复杂SWD 0.7281) and DINO-sty=0.4727 (略低于0.4864). 复杂SWD已关闭. dataset_index.json路径解耦机制已端到端验证(I:/G:双环境通用). Next: 可探索在简单SWD基础上提升CLIP-S(如swd_w调高/ll_w调高/长训练), 或转向MUSIQ恢复方向.",
+  "pivot_rationale": "Round3 complete 6/6 ok in 246 min. r3_spectral_15ep is new style SOTA (+0.0023 vs R2 best). r3_swd6_llw1_10ep is content SOTA (cLPIPS=0.3260). MUSIQ analysis REVEALED baseline(region) MUSIQ=51.34 >> spectral(region_spectral) 41.50-44.66 — spectral ODE improves CLIP-S but introduces artifacts hurting perceptual quality. Round 4 pivoted from 'push style limit' to 'quality recovery': 7 configs exploring region mode (baseline architecture) + long training + swd_w variations. Key question: can region mode + 15ep reach CLIP-S 0.73+ while keeping MUSIQ 50+?",
+  "ablation_round4": {
+    "status": "stopped_4_of_7_complete",
+    "started_at": "2026-07-09T14:25:21 (remote)",
+    "stopped_at": "2026-07-09T16:15:00 (remote) — user stopped due to slow spectral training (256s/epoch vs region 79s/epoch)",
+    "pivot_trigger": "MUSIQ analysis showed baseline MUSIQ=51.34 >> spectral 41.50-44.66. Original Round 4 (push style limit) was wrong direction.",
+    "base_configs": {
+      "region": "abl_baseline.json (bridge.swd_semantic_mode=region, MUSIQ=51.34)",
+      "region_spectral": "r3_spectral_15ep.json (bridge.swd_semantic_mode=region_spectral, MUSIQ=44.56)",
+      "region_soft": "abl_soft_mask.json (bridge.swd_semantic_mode=region_soft, MUSIQ=41.63)"
+    },
+    "experiments_total": 7,
+    "experiments_completed": 4,
+    "experiments_stopped": 3,
+    "experiments_running": null,
+    "results_complete": {
+      "r4_baseline_15ep": {"clip_style": 0.7143, "content_lpips": 0.4026, "musiq": 51.84, "dino_content": 0.6642, "dino_style": 0.4702, "dino_structure": 0.0289, "duration_min": 32.2, "note": "region 15ep — MUSIQ preserved, style far below spectral"},
+      "r4_baseline_10ep": {"clip_style": 0.7100, "content_lpips": 0.3842, "musiq": 53.11, "dino_content": 0.6831, "dino_style": 0.4663, "dino_structure": 0.0282, "duration_min": 21.7, "note": "region 10ep — GLOBAL MUSIQ SOTA"},
+      "r4_region_swd9_15ep": {"status": "eval_epoch5_only", "clip_style_epoch5": 0.7085, "musiq_epoch5": 51.96, "dino_content_epoch5": 0.7129, "dino_style_epoch5": 0.4661, "dino_structure_epoch5": 0.0273, "note": "epoch_0015 eval crashed (OOM). epoch_0005 values shown."},
+      "r4_spec_swd9_15ep": {"clip_style": 0.7281, "content_lpips": 0.3400, "musiq": 45.31, "dino_content": 0.7501, "dino_style": 0.4864, "dino_structure": 0.0259, "duration_min": 64.0, "note": "spectral+swd9+15ep — SPECTRAL MUSIQ SOTA + DINO-sty SOTA"}
+    },
+    "musiq_key_finding": "Region mode MUSIQ=51-53 >> Spectral mode MUSIQ=44-45. 7-9 point gap. r4_baseline_10ep MUSIQ=53.11 is global highest. Pareto trade-off confirmed: region=quality, spectral=style.",
+    "runner": "r4_ablation_runner (scheduled task)",
+    "log_file": "I:\\Github\\Latent_Style\\SchrodingerBridge\\remote_ablation_r4_log.txt",
+    "configs": [
+      "r4_baseline_15ep (region, swd_w=12, ll_w=0.3, 15ep) - quality recovery via long training",
+      "r4_baseline_10ep (region, swd_w=12, ll_w=0.3, 10ep) - training-length control",
+      "r4_region_swd9_15ep (region, swd_w=9, ll_w=0.3, 15ep) - region + lower swd_w",
+      "r4_spec_swd9_15ep (region_spectral, swd_w=9, ll_w=1.0, 15ep) - MUSIQ-best spectral + longer",
+      "r4_spec_swd9_20ep (region_spectral, swd_w=9, ll_w=1.0, 20ep) - push MUSIQ-best further",
+      "r4_spec_swd9_llw05_15ep (region_spectral, swd_w=9, ll_w=0.5, 15ep) - ll_w probe",
+      "r4_softmask_15ep (region_soft, swd_w=12, ll_w=0.3, 15ep) - alternative region mode"
+    ],
+    "estimated_total_runtime_min": 300,
+    "musiq_eval_planned": true
+  },
+  "ablation_round5": {
+    "status": "complete",
+    "started_at": "2026-07-09T19:30:00 (remote)",
+    "completed_at": "2026-07-09T20:00:00 (remote)",
+    "trigger": "用户要求核查复杂SWD是否提升DINO, 若无则关闭. 并综合最优结论拼高性能配置顶满显存测速+eval.",
+    "base_config": "630_local_t11_stochastic_dwt_p08 (t11: region + DWT route p=0.8 + simple SWD squared+global + spectral_ode)",
+    "experiments_total": 1,
+    "experiments_completed": 1,
+    "experiments_failed": 0,
+    "key_finding_swd_complexity": {
+      "verdict": "复杂SWD应关闭",
+      "complex_swd_best_dino_con": 0.7615,
+      "simple_swd_dino_con": 0.8002,
+      "delta_dino_con": "+0.0387 (简单SWD更高)",
+      "complex_swd_speed_s_per_ep": 256,
+      "simple_swd_speed_s_per_ep": 18.6,
+      "speedup": "13.7x",
+      "complex_swd_advantage_only": "DINO-sty +0.013, CLIP-S +0.011 (代价是DINO-con -0.039, cLPIPS +0.041, 速度慢13.7x)"
+    },
+    "results": {
+      "hp_simple_swd12_15ep": {
+        "status": "complete",
+        "config": "t11 base + swd_w=12, ll_w=0.3, spectral_ode on, swd_scale=global, swd_dist=squared, swd_semantic=off, kinetic=off, bs=160, 15ep",
+        "clip_style": 0.7167,
+        "clip_t": 0.2233,
+        "content_lpips": 0.2990,
+        "dino_content": 0.8002,
+        "dino_style": 0.4727,
+        "dino_structure": 0.0242,
+        "identity_clip_style": 0.8383,
+        "train_sec_per_epoch": 18.6,
+        "train_total_min": 4.8,
+        "vram_gb": 11.54,
+        "gpu_power_w": 135,
+        "duration_min": 4.8,
+        "sota_dimensions": ["DINO-content (0.8002)", "DINO-structure (0.0242)", "cLPIPS (0.2990)", "训练速度 (18.6s/ep)"],
+        "non_sota_dimensions": ["CLIP-S (0.7167 < 0.7311)", "DINO-style (0.4727 < 0.4864)"],
+        "note": "内容保持全场SOTA + 训练最快. 简单SWD在DINO维度全面优于复杂SWD."
+      }
+    },
+    "dataset_decoupling": {
+      "status": "verified_end_to_end",
+      "mechanism": "dataset_index.json + $index:KEY prefix resolution in config_schema.py (_resolve_dataset_paths_via_index at line 1248)",
+      "fields_resolved": ["data.data_root", "data.pairing_cache_path", "data.latent_cache_dir", "training.test_image_dir", "training.full_eval_cache_dir", "training.full_eval_clip_hf_cache_dir"],
+      "local_index": "G:/GitHub/Latent_Style/SchrodingerBridge/dataset_index.json (G: paths first)",
+      "remote_index": "I:/Github/Latent_Style/SchrodingerBridge/dataset_index.json (I: paths first)",
+      "verification": "hp实验config.json在远程显示 $index:samam_512_train 已解析为 I:/datasets/... (第一个存在的候选路径)"
+    },
+    "remote_cleanup": {
+      "status": "complete",
+      "temp_scripts_deleted": ["_check_hp.ps1", "_cleanup_remote.ps1", "_extract_agg.ps1", "_extract_metrics.ps1", "_find_images.ps1", "_run_dino_fix.ps1", "_run_dino_t11.ps1", "_run_eval_dino_hp.ps1", "_run_hp.ps1"],
+      "kept": ["_compute_dino.py (通用DINO计算工具)"]
+    }
+  }
+}

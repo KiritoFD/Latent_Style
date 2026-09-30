@@ -1,0 +1,128 @@
+[
+  {
+    "name": "r1_linear_blend_0p20",
+    "overrides": {
+      "bridge.bridge_path_mode": "linear",
+      "bridge.coupling_cost_composition": "structure_only",
+      "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+      "bridge.bridge_sigma": 0.0,
+      "model.semantic_self_topology_blend": 0.2
+    }
+  },
+  {
+    "name": "r2_linear_blend_0p40",
+    "overrides": {
+      "bridge.bridge_path_mode": "linear",
+      "bridge.coupling_cost_composition": "structure_only",
+      "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+      "bridge.bridge_sigma": 0.0,
+      "model.semantic_self_topology_blend": 0.4
+    }
+  },
+  {
+    "name": "r3_linear_blend_0p60",
+    "overrides": {
+      "bridge.bridge_path_mode": "linear",
+      "bridge.coupling_cost_composition": "structure_only",
+      "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+      "bridge.bridge_sigma": 0.0,
+      "model.semantic_self_topology_blend": 0.6
+    }
+  },
+  {
+    "name": "r4_vertical_blend_0p20",
+    "overrides": {
+      "bridge.bridge_path_mode": "vertical",
+      "bridge.coupling_cost_composition": "structure_only",
+      "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+      "bridge.bridge_sigma": 0.0,
+      "model.semantic_self_topology_blend": 0.2
+    }
+  },
+  {
+    "name": "r5_vertical_blend_0p40",
+    "overrides": {
+      "bridge.bridge_path_mode": "vertical",
+      "bridge.coupling_cost_composition": "structure_only",
+      "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+      "bridge.bridge_sigma": 0.0,
+      "model.semantic_self_topology_blend": 0.4
+    }
+  },
+  {
+    "name": "r6_vertical_blend_0p60",
+    "overrides": {
+      "bridge.bridge_path_mode": "vertical",
+      "bridge.coupling_cost_composition": "structure_only",
+      "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+      "bridge.bridge_sigma": 0.0,
+      "model.semantic_self_topology_blend": 0.6
+    }
+  },
+  {
+    "name": "r7_linear_code_map_lowrank",
+    "overrides": {
+      "bridge.bridge_path_mode": "linear",
+      "bridge.coupling_cost_composition": "structure_only",
+      "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+      "bridge.bridge_sigma": 0.0,
+      "model.style_code_spatial_mode": "lowrank",
+      "model.style_code_spatial_hidden_dim": 64,
+      "model.style_code_spatial_rank": 8,
+      "model.style_code_spatial_base_hw": 16,
+      "model.style_code_spatial_scale": 0.35
+    }
+  },
+  {
+    "name": "r8_linear_code_map_lowrank_both",
+    "overrides": {
+      "bridge.bridge_path_mode": "linear",
+      "bridge.coupling_cost_composition": "structure_only",
+      "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+      "bridge.bridge_sigma": 0.0,
+      "model.matched_target_conditioning_mode": "both",
+      "model.matched_target_style_encoder_mode": "residual",
+      "model.matched_target_style_encoder_hidden_dim": 64,
+      "model.style_code_spatial_mode": "lowrank",
+      "model.style_code_spatial_hidden_dim": 64,
+      "model.style_code_spatial_rank": 8,
+      "model.style_code_spatial_base_hw": 16,
+      "model.style_code_spatial_scale": 0.35
+    }
+  },
+  {
+    "name": "r9_linear_code_map_lowrank_blend_0p40",
+    "overrides": {
+      "bridge.bridge_path_mode": "linear",
+      "bridge.coupling_cost_composition": "structure_only",
+      "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+      "bridge.bridge_sigma": 0.0,
+      "model.semantic_self_topology_blend": 0.4,
+      "model.matched_target_conditioning_mode": "both",
+      "model.matched_target_style_encoder_mode": "residual",
+      "model.matched_target_style_encoder_hidden_dim": 64,
+      "model.style_code_spatial_mode": "lowrank",
+      "model.style_code_spatial_hidden_dim": 64,
+      "model.style_code_spatial_rank": 8,
+      "model.style_code_spatial_base_hw": 16,
+      "model.style_code_spatial_scale": 0.35
+    }
+  },
+  {
+    "name": "r10_vertical_code_map_lowrank_both",
+    "overrides": {
+      "bridge.bridge_path_mode": "vertical",
+      "bridge.coupling_cost_composition": "structure_only",
+      "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+      "bridge.bridge_sigma": 0.0,
+      "model.matched_target_conditioning_mode": "both",
+      "model.matched_target_style_encoder_mode": "residual",
+      "model.matched_target_style_encoder_hidden_dim": 64,
+      "model.style_code_spatial_mode": "lowrank",
+      "model.style_code_spatial_hidden_dim": 64,
+      "model.style_code_spatial_rank": 8,
+      "model.style_code_spatial_base_hw": 16,
+      "model.style_code_spatial_scale": 0.35
+    }
+  }
+]

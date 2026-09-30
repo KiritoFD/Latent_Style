@@ -1,0 +1,19 @@
+refactor: remove ASG (Adaptive Style Gate) — proven counterproductive
+
+Controlled experiment (5 epochs, batch=24, D5 dataset):
+  Without ASG (bug, scalar gate only): CLIP-S=0.7261 LPIPS=0.3354 DINO-S=0.4843 DINO-C=0.7692
+  With ASG (fixed, content-dependent gate): CLIP-S=0.7276 LPIPS=0.3762 DINO-S=0.4762 DINO-C=0.7276
+
+ASG degrades 3/4 metrics (LPIPS +0.041, DINO-S -0.008, DINO-C -0.042) for a
+negligible CLIP-S gain (+0.002). The content-dependent spatial gate introduces
+degrees of freedom that, with 5 epochs of training, hurt both content
+preservation and style consistency. Removing it as dead code per the
+subtraction refactoring goal.
+
+Deleted:
+  - blocks620.py: asg_norm, asg_proj modules, ASG branch in _effective_gate_value
+  - spectral_bridge620.py: adaptive_style_gate config propagation
+  - model620.py: adaptive_style_gate config propagation (non-active contract)
+  - config_schema.py: adaptive_style_gate field
+  - 5 ASG-specific config files (t1_asg_5ep, t1_asg_10ep, t2_fasg_5ep, t4_asg_adaptive_wct, ablation_wo_asg)
+  - Cleaned 2 infra config files (removed ASG override)

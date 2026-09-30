@@ -1,0 +1,6 @@
+{
+  "_base": "../architecture/hf_oriented_internal_early_stop.json",
+  "training": {"internal_probe_batch_size": 8},
+  "checkpoint": {"save_dir": "runs/submission/robustness/early_stop_probe_b8_relative"},
+  "ablation": {"name": "early_stop_probe_b8_relative", "axis": "early_stop_robustness"}
+}

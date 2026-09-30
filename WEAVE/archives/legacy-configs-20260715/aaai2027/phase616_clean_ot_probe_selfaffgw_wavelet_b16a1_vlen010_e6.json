@@ -1,0 +1,15 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_b16a1_vlen010_e6.json",
+  "bridge": {
+    "training_target_projection_mode": "pure_vertical_flow_wavelet"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_selfaffgw_wavelet_b16a1_vlen010_e6"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_selfaffgw_wavelet_b16a1_vlen010_e6",
+    "axis": "phase616_frequency_probe",
+    "stage": "self_affinity_gw_plus_wavelet_vertical_split",
+    "notes": "Matched 616 frequency-separation probe. Keep clean self-affinity GW OT and unbalanced Sinkhorn fixed, and change only the base/fiber split used by pure vertical target projection from avgpool-k5 to the wavelet-style 2x down/up lowpass."
+  }
+}

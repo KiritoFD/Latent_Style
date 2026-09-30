@@ -1,0 +1,21 @@
+{
+  "_base": "../../runs/submission/hf_oriented_internal_early_stop/config.json",
+  "model": {
+    "enable_hh_head": true
+  },
+  "bridge": {
+    "spectral_w_hh": 2.0
+  },
+  "training": {
+    "seed": 7,
+    "internal_early_stop_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "runs/submission/rebuttal_D5_hh_head_seed7"
+  },
+  "ablation": {
+    "name": "rebuttal_D5_hh_head_seed7",
+    "axis": "matched_ablation_hh_head",
+    "notes": "Matched learned-HH replication of D5 under seed 7, with early stopping disabled and the probe still logged."
+  }
+}

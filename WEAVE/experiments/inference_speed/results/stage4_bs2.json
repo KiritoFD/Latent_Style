@@ -1,0 +1,9 @@
+{
+  "backend": "onnx-ort-cuda",
+  "onnx": "G:\\GitHub\\Latent_Style\\WEAVE\\experiments\\inference_speed\\exported\\decoder.onnx",
+  "n": 750,
+  "batch": 2,
+  "total_sec": 115.7686,
+  "ms_per_image": 154.358,
+  "img_per_sec": 6.478
+}

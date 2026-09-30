@@ -1,0 +1,77 @@
+{
+  "status": "ok",
+  "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\aaai2027\\phase2_vel_tok32_safe_semantic_topogate_k070_kin070_vlen010_seed42_b12a1.json",
+  "objective_mode": "bridge_velocity",
+  "tokenizer_family": "pure_latent_spatial",
+  "solver_family": "euler_legacy",
+  "transport_prediction_mode": "velocity",
+  "semantic_supervision_family": "legacy_terminal_swd",
+  "dino_runtime_required": false,
+  "bridge_sigma": 0.0,
+  "forward_shape": [
+    1,
+    4,
+    32,
+    32
+  ],
+  "endpoint_shape": [
+    1,
+    4,
+    32,
+    32
+  ],
+  "integrated_shape": [
+    1,
+    4,
+    32,
+    32
+  ],
+  "loss": 2.3867063522338867,
+  "flow": 2.140524387359619,
+  "terminal_swd": 0.010233554057776928,
+  "t_mean": 0.6829325556755066,
+  "bridge_noise_schedule_exact_metric": 0.0,
+  "semantic_attn_shape": [
+    1,
+    256,
+    256
+  ],
+  "semantic_topology_attn_shape": [
+    1,
+    256,
+    256
+  ],
+  "semantic_topology_attn_entropy_runtime": 2.8531110286712646,
+  "semantic_topology_attn_entropy_metric": 2.8531110286712646,
+  "semantic_topology_attn_active_metric": 1.0,
+  "semantic_attn_mean_metric": 0.00390625,
+  "semantic_k_abs_metric": 0.07067360728979111,
+  "structured_style_tokenizer_debug": {
+    "attn_entropy": 2.674271821975708,
+    "attn_effective_count": 14.501786231994629,
+    "attn_max": 0.4691639244556427,
+    "attn_top1_mean": 0.2142380326986313,
+    "spatial_map_abs": 0.005490742623806,
+    "gate_mean": 0.22836823761463165,
+    "gate_std": 0.044394224882125854,
+    "mask_mean": 0.2142380326986313,
+    "mask_std": 0.06223997846245766,
+    "num_clusters": 32.0,
+    "spatial_dim": 128.0,
+    "pe_temp": 0.75,
+    "query_dim": 96.0,
+    "query_num_blocks": 5.0,
+    "global_gate_scale": 1.15,
+    "global_gate_abs": 0.03901210054755211,
+    "global_raw_abs": 0.01541974674910307,
+    "global_full_abs": 0.10754548013210297,
+    "spatial_gap_abs": 0.004984572529792786,
+    "spatial_map_channels_raw": 128.0,
+    "spatial_map_channels_out": 128.0,
+    "spatial_map_proj_active": 0.0
+  },
+  "i2sb_transport_debug": {},
+  "body_block_type": "SemanticCrossAttn",
+  "first_grad_name": "structured_style_tokenizer.universal_keys",
+  "first_grad_abs_mean": 0.006198288407176733
+}

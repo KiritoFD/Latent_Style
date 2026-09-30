@@ -1,0 +1,10 @@
+{
+  "_base": "./phase2_eval_fiber_project_sigma0p5_lowanchor050e9.json",
+  "_comment": "Eval-only Orthogonal Fiber-SDE probe on lowanchor0.50 e9, sigma=1.5.",
+  "model": {
+    "bridge_sigma": 1.5
+  },
+  "bridge": {
+    "bridge_sigma": 1.5
+  }
+}

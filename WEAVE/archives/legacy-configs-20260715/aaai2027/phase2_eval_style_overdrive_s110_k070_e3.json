@@ -1,0 +1,12 @@
+{
+  "_comment": "Eval-only style-strength overdrive from k070 epoch_0003. Only generation style_strength/horizon cap changes; no latent affine and no training.",
+  "model": {
+    "style_strength_max": 1.10
+  },
+  "full_eval": {
+    "style_strength": 1.10,
+    "only_lpips_clip_style": true,
+    "save_generated_images": false,
+    "save_summary_grid": false
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "structure_aligned_target": true,
+    "ll_partial_style_enabled": true,
+    "ll_partial_alpha": 0.3,
+    "ll_partial_mode": "adain",
+    "alpha_aug_enabled": true,
+    "alpha_aug_min": 0.2,
+    "alpha_aug_max": 0.4
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 10,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_aa_aug24"
+  },
+  "ablation": {
+    "name": "brk_aa_aug24",
+    "axis": "dino_s_break",
+    "stage": "brk_round7",
+    "notes": "Alpha augmentation: train with alpha~Uniform(0.2,0.4), E[alpha]=0.3. Goal: model robustness to varying style strength, enabling more aggressive inference-time endpoint_adain_scale without collapse. Round7 pivot (stale_count=5)."
+  }
+}

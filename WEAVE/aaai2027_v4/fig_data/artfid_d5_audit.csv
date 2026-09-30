@@ -1,0 +1,8 @@
+method,artfid,fid,lpips,count,status
+IDT,216.5097,215.5097,0.000000,750,10000 target-style bootstrap replicates
+TGT (random),545.6990,305.2613,0.787034,750,30 random reference sets
+WEAVE,295.2679,230.5231,0.283129,750,complete
+SaMam,297.3159,231.8669,0.282842,750,complete
+Seedream 4.5,310.9730,217.3736,0.421549,,API
+Z-STAR,332.9112,251.9887,0.321232,750,complete
+StyleAligned,368.6293,202.6702,0.821774,750,complete

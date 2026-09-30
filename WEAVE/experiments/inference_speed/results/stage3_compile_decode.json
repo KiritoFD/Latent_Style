@@ -1,0 +1,12 @@
+{
+  "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "num_images": 750,
+  "batch_size": 6,
+  "scaling_factor": 0.18215,
+  "backend": "torch.compile(mode=max-autotune, fullgraph=True) on VAEDecodeWrapper",
+  "compile_cache": "G:\\GitHub\\Latent_Style\\WEAVE\\experiments\\inference_speed\\.compile_cache",
+  "compile_first_call_sec": 142.8,
+  "decode_sec": 74.976,
+  "ms_per_img": 99.968,
+  "images_per_sec": 10.0
+}

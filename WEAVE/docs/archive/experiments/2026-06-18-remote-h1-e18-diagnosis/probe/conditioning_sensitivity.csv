@@ -1,0 +1,5 @@
+probe_family,mode,encoder_mode,spatial_active,code_active,encoded_code_a_vs_b_mean_abs,forward_a_vs_b_mean_abs,predict_transport_base_a_vs_b_mean_abs,integrate_a_vs_b_mean_abs,style_code_override_active,style_code_content_router_active,style_code_content_router_bypassed,style_code_content_delta_abs,style_code_adapted_abs,style_spatial_source_target_latent,style_spatial_source_legacy_zero,style_spatial_map_abs
+conditioning,none,none,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.6590491533279419,0.0,1.0,0.0
+conditioning,spatial,none,1.0,0.0,0.0,0.0007440653862431645,0.0007440653862431645,0.0008138742414303124,0.0,0.0,0.0,0.0,0.6590491533279419,1.0,0.0,1.8136751651763916
+conditioning,code,residual,0.0,1.0,0.004943581763654947,0.0005612247623503208,0.000561224645934999,0.0004981295205652714,1.0,0.0,1.0,0.0,0.6532875299453735,0.0,1.0,0.0
+conditioning,both,residual,1.0,1.0,0.004943581763654947,0.0009249740978702903,0.0009249742142856121,0.0009511583484709263,1.0,0.0,1.0,0.0,0.6532875299453735,1.0,0.0,1.8136751651763916

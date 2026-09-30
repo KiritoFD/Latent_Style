@@ -1,0 +1,7 @@
+{
+    "latent256_e10": {
+        "gen_dir": "/mnt/i/exp_our_models_eval/latent256_e10/images",
+        "ref_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+        "src_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test"
+    }
+}

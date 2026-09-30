@@ -1,0 +1,15 @@
+{
+  "_base": "./phase616_clean_unbalanced_dummy_vertical_affine_faststep60_e1_remote.json",
+  "bridge": {
+    "sinkhorn_unbalanced_dummy_cost": 0.55
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_unbalanced_dummy_vertical_affine_dummy055_faststep60_e1_remote"
+  },
+  "ablation": {
+    "name": "phase616_clean_unbalanced_dummy_vertical_affine_dummy055_faststep60_e1_remote",
+    "axis": "phase616_ot_rebuild_stage2",
+    "stage": "affine_vertical_dummy055_fast_probe",
+    "notes": "Stage-2 dummy-mass calibration. Raise the source-local dummy admission cost so unmatched transport stays available but is no longer the dominant route."
+  }
+}

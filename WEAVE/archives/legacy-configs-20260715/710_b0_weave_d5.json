@@ -1,0 +1,35 @@
+{
+  "_base": "clean_base_v2_local.json",
+  "training": {
+    "seed": 42,
+    "batch_size": 16,
+    "num_epochs": 10,
+    "full_eval_each_epoch": false,
+    "full_eval_defer_until_training_end": false,
+    "test_image_dir": "I:/datasets/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache/hf"
+  },
+  "data": {
+    "data_root": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train",
+    "latent_cache_dir": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/packed",
+    "pairing_cache_path": "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "pairing_cache_active_topk": 0,
+    "style_subdirs": ["Early_Renaissance", "Impressionism", "Minimalism", "Rococo", "Ukiyo_e"]
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/710_b0_weave"
+  },
+  "full_eval": {
+    "num_steps": 8,
+    "batch_size": 2,
+    "target_chunk_size": 1,
+    "vae_decode_batch_size": 16
+  },
+  "ablation": {
+    "name": "710_b0_weave",
+    "axis": "closed_four_metric_baseline",
+    "stage": "710_phase_b",
+    "notes": "Reproducible WEAVE baseline retraining of clean_base_v2_local. All four metrics must come from the same checkpoint and the same 750 generated images."
+  }
+}

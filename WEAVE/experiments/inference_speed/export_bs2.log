@@ -1,0 +1,17 @@
+[loaded DECODER only] scaling_factor=0.18215 export_batch=2
+[mem before export] 0.17 GB alloc
+[torch.onnx] Obtain model graph for `VAEDecodeWrapper([...]` with `torch.export.export(..., strict=False)`...
+[torch.onnx] Obtain model graph for `VAEDecodeWrapper([...]` with `torch.export.export(..., strict=False)`... ✅
+[torch.onnx] Run decompositions...
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\copyreg.py:99: FutureWarning: `isinstance(treespec, LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+  return cls.__new__(cls, *args)
+[torch.onnx] Run decompositions... ✅
+[torch.onnx] Translate the graph into ONNX...
+[torch.onnx] Translate the graph into ONNX... ✅
+[torch.onnx] Optimize the ONNX graph...
+[torch.onnx] Optimize the ONNX graph... ✅
+[mem after export]  0.17 GB alloc
+[export] onnx -> experiments\inference_speed\exported\decoder.onnx (0.6 MB)
+[export] re-saved with inline weights -> 99.6 MB
+[verify] onnx OK in=['latent'] out=['image']
+[done] onnx export complete, GPU released on exit.

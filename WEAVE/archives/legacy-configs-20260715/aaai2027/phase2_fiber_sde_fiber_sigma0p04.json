@@ -1,0 +1,19 @@
+{
+  "_comment": "Fiber Bundle cheap style-ceiling extension: fiber-aligned SDE eval-only override. Only solver_fiber_aligned differs from the matched isotropic sigma config.",
+  "model": {
+    "solver_family": "solver_unsb_cycle",
+    "solver_corrector_steps": 2,
+    "solver_corrector_step_size": 0.06,
+    "solver_corrector_mode": "latent_lowpass",
+    "solver_corrector_lowpass_kernel": 5,
+    "solver_stochastic_noise_scale": 0.04,
+    "solver_fiber_aligned": true
+  },
+  "training": {
+    "num_epochs": 0,
+    "full_eval_each_epoch": true,
+    "full_eval_only_lpips_clip_style": true,
+    "resume_model_strict": false,
+    "resume_training_state": false
+  }
+}

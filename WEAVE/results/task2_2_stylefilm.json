@@ -1,0 +1,64 @@
+[
+  {
+    "name": "620_ablation_stylefilm_on_smoke",
+    "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_stylefilm_on_smoke.json",
+    "status": "ok",
+    "train_wall_sec": 253.09442281723022,
+    "epochs": {
+      "epoch_0001": {
+        "status": "ok",
+        "clip_style": 0.7020125300884247,
+        "clip_content": 0.0,
+        "content_lpips": 0.3320899603333334,
+        "clip_s_delta_idt": -0.1382637890974681,
+        "transfer_clip_style": 0.6674465828140577,
+        "transfer_content_lpips": 0.3336173695833334,
+        "idt_clip_style": 0.8402763191858927,
+        "idt_content_lpips": 0.3259803233333333,
+        "wfi_score": 0.37850560811008305,
+        "wfi_contrast_ratio": 3.5799800981034036,
+        "wfi_dynamic_range": 43.35473057174683,
+        "wfi_saturation": 0.2629104015727838,
+        "wfi_brightness": 0.501310675740242,
+        "wfi_entropy": 6.94194523764959,
+        "wfi_transfer_score": 0.3727470327466674,
+        "wfi_idt_score": 0.42073516077513157,
+        "source_wfi_score": null,
+        "checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\620_spatial_bridge\\620_ablation_stylefilm_on_smoke\\epoch_0001.pt",
+        "eval_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\620_spatial_bridge\\620_ablation_stylefilm_on_smoke\\full_eval_wfi\\epoch_0001",
+        "eval_wall_sec": 167.29216766357422
+      }
+    }
+  },
+  {
+    "name": "620_ablation_stylefilm_off_smoke",
+    "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_stylefilm_off_smoke.json",
+    "status": "ok",
+    "train_wall_sec": 256.3080532550812,
+    "epochs": {
+      "epoch_0001": {
+        "status": "ok",
+        "clip_style": 0.7020852606296539,
+        "clip_content": 0.0,
+        "content_lpips": 0.33219834532,
+        "clip_s_delta_idt": -0.13771217735608418,
+        "transfer_clip_style": 0.6676572162906329,
+        "transfer_content_lpips": 0.33377110583333336,
+        "idt_clip_style": 0.839797437985738,
+        "idt_content_lpips": 0.32590730326666667,
+        "wfi_score": 0.3781963193098586,
+        "wfi_contrast_ratio": 3.5972756976613667,
+        "wfi_dynamic_range": 43.50330120340983,
+        "wfi_saturation": 0.25971766077975433,
+        "wfi_brightness": 0.5015678924322128,
+        "wfi_entropy": 6.94651026438088,
+        "wfi_transfer_score": 0.37238904197707046,
+        "wfi_idt_score": 0.42078301975030513,
+        "source_wfi_score": null,
+        "checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\620_spatial_bridge\\620_ablation_stylefilm_off_smoke\\epoch_0001.pt",
+        "eval_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\620_spatial_bridge\\620_ablation_stylefilm_off_smoke\\full_eval_wfi\\epoch_0001",
+        "eval_wall_sec": 169.12309646606445
+      }
+    }
+  }
+]

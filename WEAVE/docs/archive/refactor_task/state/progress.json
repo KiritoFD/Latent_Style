@@ -1,0 +1,36 @@
+{
+  "iteration": 4,
+  "total_findings": 7,
+  "status": "clean_baseline_trained_evaluated",
+  "stale_count": 0,
+  "baseline": {
+    "config": "t1_asg_5ep_old_noasg (buggy ASG, inactive)",
+    "clip_s": 0.7261,
+    "lpips": 0.3354,
+    "dino_s": 0.4843,
+    "dino_c": 0.7692
+  },
+  "clean_baseline": {
+    "config": "refactor_clean_baseline (5ep, batch=24, ASG removed)",
+    "clip_s": 0.7272,
+    "lpips": 0.3431,
+    "dino_s": 0.4829,
+    "dino_c": 0.7552,
+    "checkpoint": "exp/refactor_clean_baseline/epoch_0005.pt",
+    "training_time": "~90s",
+    "vram_peak": "3.90GB"
+  },
+  "current_best": {
+    "config": "refactor_clean_baseline",
+    "clip_s": 0.7272,
+    "lpips": 0.3431,
+    "dino_s": 0.4829,
+    "dino_c": 0.7552
+  },
+  "code_lines_start": 3926,
+  "code_lines_current": 1670,
+  "deletions_verified": 5,
+  "ablations_run": 1,
+  "asg_status": "removed (counterproductive, 3/4 metrics worse)",
+  "last_update": "2026-07-11T22:20:00"
+}

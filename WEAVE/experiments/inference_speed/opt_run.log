@@ -1,0 +1,8 @@
+
+===== Q1: latent bridge (current vs optimized) =====
+W0715 17:59:37.500000 144180 site-packages\torch\_inductor\utils.py:1731] [0/0] Not enough SMs to use max_autotune_gemm mode
+  CURRENT  : 267.57 ms/img (3.7 img/s)
+  OPTIMIZED: 2.103 ms/img (475.6 img/s)  [127.3x vs current]
+  750-img latent latency @optimized: 1.577 s
+
+===== Q2: batched 512x512 VAE decode (750 images) =====

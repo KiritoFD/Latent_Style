@@ -1,0 +1,65 @@
+{
+  "variants": [
+    {
+      "name": "blend_0p20",
+      "overrides": {
+        "model.semantic_self_topology_blend": 0.2
+      }
+    },
+    {
+      "name": "blend_0p40",
+      "overrides": {
+        "model.semantic_self_topology_blend": 0.4
+      }
+    },
+    {
+      "name": "blend_0p60",
+      "overrides": {
+        "model.semantic_self_topology_blend": 0.6
+      }
+    },
+    {
+      "name": "blend_0p00",
+      "overrides": {
+        "model.semantic_self_topology_blend": 0.0
+      }
+    },
+    {
+      "name": "code_map_lowrank",
+      "overrides": {
+        "model.style_code_spatial_mode": "lowrank",
+        "model.style_code_spatial_hidden_dim": 64,
+        "model.style_code_spatial_rank": 8,
+        "model.style_code_spatial_base_hw": 16,
+        "model.style_code_spatial_scale": 0.35
+      }
+    },
+    {
+      "name": "code_map_lowrank_both",
+      "overrides": {
+        "model.matched_target_conditioning_mode": "both",
+        "model.matched_target_style_encoder_mode": "residual",
+        "model.matched_target_style_encoder_hidden_dim": 64,
+        "model.style_code_spatial_mode": "lowrank",
+        "model.style_code_spatial_hidden_dim": 64,
+        "model.style_code_spatial_rank": 8,
+        "model.style_code_spatial_base_hw": 16,
+        "model.style_code_spatial_scale": 0.35
+      }
+    },
+    {
+      "name": "code_map_lowrank_both_blend_0p40",
+      "overrides": {
+        "model.semantic_self_topology_blend": 0.4,
+        "model.matched_target_conditioning_mode": "both",
+        "model.matched_target_style_encoder_mode": "residual",
+        "model.matched_target_style_encoder_hidden_dim": 64,
+        "model.style_code_spatial_mode": "lowrank",
+        "model.style_code_spatial_hidden_dim": 64,
+        "model.style_code_spatial_rank": 8,
+        "model.style_code_spatial_base_hw": 16,
+        "model.style_code_spatial_scale": 0.35
+      }
+    }
+  ]
+}

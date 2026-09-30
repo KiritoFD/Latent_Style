@@ -1,0 +1,15 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_mix050_warmtopo_k085e3_b16a1_vlen010_e6.json",
+  "bridge": {
+    "coupling_structure_cost_mode": "tokenizer_entropy_affinity_gw"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_tokenentropy_mix050_warmtopo_k085e3_b16a1_vlen010_e6_r2"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_tokenentropy_mix050_warmtopo_k085e3_b16a1_vlen010_e6",
+    "axis": "phase616_ot_theory_probe",
+    "stage": "descriptor_candidate_tokenentropy_mix050_warmtopo",
+    "notes": "Theory-driven OT candidate from docs/616/ot_theory.md. Only replace the structure descriptor with tokenizer routing-entropy affinity, while keeping warmstart parent, solver, target mode, batch, eval contract, and 50/50 appearance-vs-structure mixing fixed."
+  }
+}

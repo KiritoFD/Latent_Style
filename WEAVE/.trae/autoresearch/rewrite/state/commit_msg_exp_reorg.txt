@@ -1,0 +1,26 @@
+docs(exp): sync docs/ to exp/ physical reorg by lineage + dataset
+
+exp/ 目录按实验脉络+数据集物理重组 (本地生效, exp/** 仍被 .gitignore 忽略):
+- FCSB/ (93 distinct5 主线): early 3 + phase4 66 + local_t 24
+- baseline/ (3): reeval, images, v2
+- 256/ (占位, 非主线)
+- wiki5/ (11 wikiarts5 非主线): smoke 10 + full/task4_iter 16 子目录
+- fewshot6/ (3 非主线, 全 FAIL): 4J.6 系列
+- legacy/ (shared 7 + logs 12)
+
+文档更新:
+- docs/exp/README.md §2.2 本地 G 盘结构 → 新结构
+- docs/exp/local_experiments.md §0 当前结构 → 新结构, task4_iter 子目录计数 15→16
+- docs/exp/experiment_audit.md 标题 (exp_ours)→(FCSB), §2 section header 同步
+- docs/tools/README.md §3.3 本地 G 盘结构 → 新结构
+- docs/72/07_related_works.md 7 处 exp/baseline_v2/ → exp/baseline/v2/
+
+校验:
+- 6 个 SOTA ckpt 验证完好 (各 10.26 MB):
+  T11, T10, 4F.1, 4I.2b, 4I.7b, 4J.1
+- FCSB/phase4=66, FCSB/local_t=24, FCSB/early=3 (与 README 一致)
+- wiki5/smoke=10 (与 README 一致), full/task4_iter=16 (README 已修正)
+- docs/72/ 无残留 exp_baselines/exp_ours/exp_shared 引用
+
+state: .trae/autoresearch/rewrite/state/progress.json
+status: ALL_MILESTONES_COMPLETED_PLUS_EXP_REORG

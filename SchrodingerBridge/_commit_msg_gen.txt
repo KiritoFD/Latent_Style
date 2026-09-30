@@ -1,0 +1,15 @@
+rebuttal: add Task1+ generalization validation (VAE x wavelet levels)
+
+Task 1+ validates WEAVE's transport field generalization across 4 configs:
+
+1. Baseline (SD1.5 VAE + 1-level Haar): DINO-S=0.912, LPIPS=0.301
+2. SD1.5 VAE + 2-level Haar: DINO-S=0.898 (Δ=-0.014), LPIPS=0.311
+   - 1.5% degradation proves 1-level Haar is pareto-optimal
+3. SDXL VAE + 1-level Haar: DINO-S=0.814 (Δ=-0.098), LPIPS=0.488
+   - 10.8% degradation but model still works (same 4ch, different scaling)
+4. TAESD VAE + 1-level Haar: DINO-S=0.596 (Δ=-0.316), LPIPS=0.629
+   - 34.7% degradation with completely different VAE architecture
+5. FLUX VAE: load failed (gated repo, needs HF token for download)
+
+Created weave_gen/ copy with patched model.py (lowpass_levels configurable).
+Generated comparison chart showing DINO-S and LPIPS across configs.

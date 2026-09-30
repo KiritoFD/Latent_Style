@@ -1,0 +1,16 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_seed42_b16.json",
+  "bridge": {
+    "structure_penalty_mode": "stokes",
+    "w_stokes_viscous": 0.05
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_pattn_stokes_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_stokes_seed42_b16",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_plus_Stokes",
+    "notes": "Gentler transport-side repair on top of the promoted Pattn frontier. Keep the strongest current family and add weak Stokes / Laplacian smoothing instead of the harsher anisotropic normal suppression."
+  }
+}

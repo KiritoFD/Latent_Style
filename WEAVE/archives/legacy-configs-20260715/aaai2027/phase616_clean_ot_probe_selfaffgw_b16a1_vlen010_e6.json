@@ -1,0 +1,16 @@
+{
+  "_base": "./phase616_clean_ot_probe_lowedge_b16a1_vlen010_e6.json",
+  "bridge": {
+    "coupling_structure_cost_mode": "self_affinity_gw",
+    "coupling_structure_affinity_grid": 8
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_selfaffgw_b16a1_vlen010_e6"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_selfaffgw_b16a1_vlen010_e6",
+    "axis": "phase616_ot_probe",
+    "stage": "clean_ot_self_affinity_gw",
+    "notes": "Matched fast candidate for 616 OT repair. Change only the OT structure cost from lowedge to a GW-like self-affinity descriptor over low/edge/high latent tokens, while keeping the phase616 clean base, unbalanced Sinkhorn, and pure vertical target projection fixed."
+  }
+}

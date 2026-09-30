@@ -1,0 +1,33 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "style_delta_head_enabled": true,
+    "style_delta_init_std": 0.1,
+    "style_delta_gate_init": 0.0,
+    "style_cross_attn_gate_init": 0.5,
+    "cross_attn_dwt_route": true,
+    "dwt_route_train_prob": 0.5,
+    "enable_hh_head": true
+  },
+  "bridge": {
+    "structure_aligned_target": true,
+    "ll_partial_style_enabled": true,
+    "ll_partial_alpha": 0.5
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/stage10_ll_partial_a05"
+  },
+  "ablation": {
+    "name": "stage10_ll_partial_a05",
+    "axis": "style_injection",
+    "stage": "712_sty_inject_stage10_ll_partial",
+    "notes": "LL 子带部分风格化: target = IDWT(LL_blended, LH_s, HL_s, HH_s), LL_blended = (1-α)·LL_c + α·AdaIN(LL_c→LL_s). α=0.5. 基于 stage7_delta (增量分支), 验证解锁 LL 色彩统计能否突破 DINO-S 0.48 天花板."
+  }
+}

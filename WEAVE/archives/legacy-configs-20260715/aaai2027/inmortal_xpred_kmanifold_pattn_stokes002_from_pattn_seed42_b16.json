@@ -1,0 +1,23 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue.json",
+  "training": {
+    "num_epochs": 16,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue/epoch_0011.pt",
+    "resume_optimizer": true,
+    "resume_model_strict": true,
+    "resume_training_state": true
+  },
+  "bridge": {
+    "structure_penalty_mode": "stokes",
+    "w_stokes_viscous": 0.02
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_pattn_stokes002_from_pattn_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_stokes002_from_pattn_seed42_b16",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_Stokes002",
+    "notes": "Late weaker-Stokes repair packet. Start from the promoted Pattn continuation frontier, but lower the Stokes coefficient after the positive 0.05 fine-tune packet showed early LPIPS gain followed by over-smoothing."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "_base": "inmortal_p_highpass_seed42_b16.json",
+  "training": {
+    "batch_size": 32
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_p_highpass_seed42_b32"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_p_highpass_seed42_b32",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "P_highpass_b32",
+    "notes": "Higher-throughput candidate for the proximal high-pass packet. Unlike the curvature-heavy kinetic lines, this branch is expected to fit a materially larger batch on the 3060."
+  }
+}

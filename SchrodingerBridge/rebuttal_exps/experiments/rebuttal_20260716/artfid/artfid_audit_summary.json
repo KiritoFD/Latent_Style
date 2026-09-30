@@ -1,0 +1,299 @@
+{
+  "canonical_manifest_size": 150,
+  "manifest_per_style": {
+    "Early_Renaissance": 30,
+    "Impressionism": 30,
+    "Minimalism": 30,
+    "Rococo": 30,
+    "Ukiyo_e": 30
+  },
+  "expected_pairs_per_method": 750,
+  "method_summary": [
+    {
+      "method": "IDT",
+      "file_count": 1500,
+      "expected": 750,
+      "missing": 0,
+      "extra": 0,
+      "manifest_consistent": true
+    },
+    {
+      "method": "WEAVE",
+      "file_count": 750,
+      "expected": 750,
+      "missing": 0,
+      "extra": 0,
+      "manifest_consistent": true
+    },
+    {
+      "method": "SaMam",
+      "file_count": 1500,
+      "expected": 750,
+      "missing": 0,
+      "extra": 0,
+      "manifest_consistent": true
+    },
+    {
+      "method": "Seedream 4.5",
+      "file_count": 791,
+      "expected": 750,
+      "missing": 30,
+      "extra": 30,
+      "manifest_consistent": false
+    },
+    {
+      "method": "Z-STAR",
+      "file_count": 750,
+      "expected": 750,
+      "missing": 735,
+      "extra": 735,
+      "manifest_consistent": false
+    },
+    {
+      "method": "StyleAligned",
+      "file_count": 750,
+      "expected": 750,
+      "missing": 735,
+      "extra": 735,
+      "manifest_consistent": false
+    }
+  ],
+  "manifest_inconsistent_methods": [
+    {
+      "method": "Seedream 4.5",
+      "file_count": 791,
+      "expected": 750,
+      "missing": 30,
+      "extra": 30,
+      "manifest_consistent": false
+    },
+    {
+      "method": "Z-STAR",
+      "file_count": 750,
+      "expected": 750,
+      "missing": 735,
+      "extra": 735,
+      "manifest_consistent": false
+    },
+    {
+      "method": "StyleAligned",
+      "file_count": 750,
+      "expected": 750,
+      "missing": 735,
+      "extra": 735,
+      "manifest_consistent": false
+    }
+  ],
+  "aggregate_components": [
+    {
+      "method": "IDT",
+      "dir": "identity",
+      "target_style": "ALL",
+      "count": 750,
+      "raw_fid": 215.5097142982339,
+      "source_lpips": 0.0,
+      "artfid": 216.5097142982339,
+      "note": ""
+    },
+    {
+      "method": "WEAVE",
+      "dir": "weave_oriented_e4",
+      "target_style": "ALL",
+      "count": 750,
+      "raw_fid": 230.5231168507965,
+      "source_lpips": 0.28312917053699493,
+      "artfid": 295.26794315341783,
+      "note": ""
+    },
+    {
+      "method": "SaMam",
+      "dir": "samam",
+      "target_style": "ALL",
+      "count": 750,
+      "raw_fid": 231.86685240245805,
+      "source_lpips": 0.2828415870666504,
+      "artfid": 297.31591836710044,
+      "note": ""
+    },
+    {
+      "method": "Seedream 4.5",
+      "dir": "seedream",
+      "target_style": "ALL",
+      "count": 720,
+      "raw_fid": 217.37362264146128,
+      "source_lpips": 0.4215487360954285,
+      "artfid": 310.97300711488043,
+      "note": ""
+    },
+    {
+      "method": "Z-STAR",
+      "dir": "zstar",
+      "target_style": "ALL",
+      "count": 750,
+      "raw_fid": 251.9887277118649,
+      "source_lpips": 0.3212321221828461,
+      "artfid": 332.91118562415176,
+      "note": ""
+    },
+    {
+      "method": "StyleAligned",
+      "dir": "stylealigned",
+      "target_style": "ALL",
+      "count": 750,
+      "raw_fid": 202.67022096207378,
+      "source_lpips": 0.821774160861969,
+      "artfid": 368.6292855115675,
+      "note": ""
+    }
+  ],
+  "cross_method_manifest_overlap": [
+    {
+      "method_a": "IDT",
+      "method_b": "WEAVE",
+      "intersection": 150,
+      "union": 150,
+      "jaccard": 1.0
+    },
+    {
+      "method_a": "IDT",
+      "method_b": "SaMam",
+      "intersection": 150,
+      "union": 150,
+      "jaccard": 1.0
+    },
+    {
+      "method_a": "IDT",
+      "method_b": "Seedream 4.5",
+      "intersection": 144,
+      "union": 156,
+      "jaccard": 0.9231
+    },
+    {
+      "method_a": "IDT",
+      "method_b": "Z-STAR",
+      "intersection": 3,
+      "union": 297,
+      "jaccard": 0.0101
+    },
+    {
+      "method_a": "IDT",
+      "method_b": "StyleAligned",
+      "intersection": 3,
+      "union": 297,
+      "jaccard": 0.0101
+    },
+    {
+      "method_a": "IDT",
+      "method_b": "CANONICAL",
+      "intersection": 150,
+      "union": 150,
+      "jaccard": 1.0
+    },
+    {
+      "method_a": "WEAVE",
+      "method_b": "SaMam",
+      "intersection": 150,
+      "union": 150,
+      "jaccard": 1.0
+    },
+    {
+      "method_a": "WEAVE",
+      "method_b": "Seedream 4.5",
+      "intersection": 144,
+      "union": 156,
+      "jaccard": 0.9231
+    },
+    {
+      "method_a": "WEAVE",
+      "method_b": "Z-STAR",
+      "intersection": 3,
+      "union": 297,
+      "jaccard": 0.0101
+    },
+    {
+      "method_a": "WEAVE",
+      "method_b": "StyleAligned",
+      "intersection": 3,
+      "union": 297,
+      "jaccard": 0.0101
+    },
+    {
+      "method_a": "WEAVE",
+      "method_b": "CANONICAL",
+      "intersection": 150,
+      "union": 150,
+      "jaccard": 1.0
+    },
+    {
+      "method_a": "SaMam",
+      "method_b": "Seedream 4.5",
+      "intersection": 144,
+      "union": 156,
+      "jaccard": 0.9231
+    },
+    {
+      "method_a": "SaMam",
+      "method_b": "Z-STAR",
+      "intersection": 3,
+      "union": 297,
+      "jaccard": 0.0101
+    },
+    {
+      "method_a": "SaMam",
+      "method_b": "StyleAligned",
+      "intersection": 3,
+      "union": 297,
+      "jaccard": 0.0101
+    },
+    {
+      "method_a": "SaMam",
+      "method_b": "CANONICAL",
+      "intersection": 150,
+      "union": 150,
+      "jaccard": 1.0
+    },
+    {
+      "method_a": "Seedream 4.5",
+      "method_b": "Z-STAR",
+      "intersection": 3,
+      "union": 297,
+      "jaccard": 0.0101
+    },
+    {
+      "method_a": "Seedream 4.5",
+      "method_b": "StyleAligned",
+      "intersection": 3,
+      "union": 297,
+      "jaccard": 0.0101
+    },
+    {
+      "method_a": "Seedream 4.5",
+      "method_b": "CANONICAL",
+      "intersection": 144,
+      "union": 156,
+      "jaccard": 0.9231
+    },
+    {
+      "method_a": "Z-STAR",
+      "method_b": "StyleAligned",
+      "intersection": 150,
+      "union": 150,
+      "jaccard": 1.0
+    },
+    {
+      "method_a": "Z-STAR",
+      "method_b": "CANONICAL",
+      "intersection": 3,
+      "union": 297,
+      "jaccard": 0.0101
+    },
+    {
+      "method_a": "StyleAligned",
+      "method_b": "CANONICAL",
+      "intersection": 3,
+      "union": 297,
+      "jaccard": 0.0101
+    }
+  ],
+  "protocol_note": "ArtFID values are read as-is from results/_artfid_details.json. Recomputation with a frozen canonical manifest is documented as a second-batch task if any method's missing/extra count is non-zero."
+}

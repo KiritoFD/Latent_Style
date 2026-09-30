@@ -1,0 +1,1792 @@
+{
+  "config": "configs\\exp_probe_target_hf_subband_ft6.json",
+  "checkpoint": "exp\\model_probe\\target_hf_subband_ft6\\epoch_0006.pt",
+  "device": "cuda",
+  "batch_size": 4,
+  "data_root": "I:\\datasets\\wikiart_distinct5_samam_512_latents_ema\\train",
+  "latent_cache_mode": "off",
+  "load_info": {
+    "missing": 0,
+    "unexpected": 0
+  },
+  "model_focus": {
+    "style_cross_attention_enabled": true,
+    "style_adaln_enabled": false,
+    "style_velocity_head_enabled": false,
+    "style_delta_head_enabled": false,
+    "target_latent_hf_subband_fusion_enabled": true,
+    "enable_hh_head": true,
+    "structure_aligned_target": true,
+    "ll_partial_alpha": 0.3
+  },
+  "route_decomposition": {
+    "t_values": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "num_batches": 2,
+    "route_transitions": {
+      "backbone_to_style_memory": {
+        "lh": {
+          "after_mse": 0.5136859665314356,
+          "after_rms": 0.28506691257158917,
+          "before_mse": 0.5295603622992834,
+          "before_rms": 0.23196227848529816,
+          "cos_delta_desired": 0.16652719428141913,
+          "delta_orthogonal_fraction_to_desired": 0.9827289382616679,
+          "delta_over_before": 0.5440042990566837,
+          "delta_over_desired": 0.17009052788587845,
+          "delta_projection_on_desired": 0.032468300933639206,
+          "delta_rms": 0.1229000265399615,
+          "desired_rms": 0.7262775699297587,
+          "mse_improvement": 0.015874395767847698,
+          "mse_improvement_frac": 0.03077170379396119,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5732156932353973,
+          "after_rms": 0.3037494048476219,
+          "before_mse": 0.5884223282337189,
+          "before_rms": 0.23721777151028314,
+          "cos_delta_desired": 0.1565403938293457,
+          "delta_orthogonal_fraction_to_desired": 0.9842897951602936,
+          "delta_over_before": 0.5444341979672317,
+          "delta_over_desired": 0.16151956225885422,
+          "delta_projection_on_desired": 0.02830987547834714,
+          "delta_rms": 0.12326578423380852,
+          "desired_rms": 0.7663168907165527,
+          "mse_improvement": 0.015206634998321533,
+          "mse_improvement_frac": 0.026150810491629168,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.5108584016561508,
+          "after_rms": 0.1681986004114151,
+          "before_mse": 0.5219612469275793,
+          "before_rms": 0.14135666812459627,
+          "cos_delta_desired": 0.15657981733481088,
+          "delta_orthogonal_fraction_to_desired": 0.9848492542902628,
+          "delta_over_before": 0.5039975451643578,
+          "delta_over_desired": 0.09981744578605707,
+          "delta_projection_on_desired": 0.016697978600859642,
+          "delta_rms": 0.07186269884308179,
+          "desired_rms": 0.7219113012154897,
+          "mse_improvement": 0.011102845271428427,
+          "mse_improvement_frac": 0.02189229604228125,
+          "target_rms": 0.7344059646129608
+        }
+      },
+      "backbone_to_target_hf": {
+        "lh": {
+          "after_mse": 0.5234841307004293,
+          "after_rms": 0.2318925311168035,
+          "before_mse": 0.5295603622992834,
+          "before_rms": 0.23196227848529816,
+          "cos_delta_desired": 0.10928762952486674,
+          "delta_orthogonal_fraction_to_desired": 0.9936391711235046,
+          "delta_over_before": 0.32674443683715404,
+          "delta_over_desired": 0.09681031609239064,
+          "delta_projection_on_desired": 0.010649869373689095,
+          "delta_rms": 0.07014592612783115,
+          "desired_rms": 0.7262775699297587,
+          "mse_improvement": 0.006076231598854065,
+          "mse_improvement_frac": 0.011757414591139692,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5852225919564565,
+          "after_rms": 0.24060086905956268,
+          "before_mse": 0.5884223282337189,
+          "before_rms": 0.23721777151028314,
+          "cos_delta_desired": 0.07442366766432922,
+          "delta_orthogonal_fraction_to_desired": 0.99641352891922,
+          "delta_over_before": 0.28122404783368404,
+          "delta_over_desired": 0.08058515949763434,
+          "delta_projection_on_desired": 0.00612009068330129,
+          "delta_rms": 0.06173276404539744,
+          "desired_rms": 0.7663168907165527,
+          "mse_improvement": 0.0031997362772623696,
+          "mse_improvement_frac": 0.005709498030204856,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.48376643160978955,
+          "after_rms": 0.18028072267770767,
+          "before_mse": 0.5219612469275793,
+          "before_rms": 0.14135666812459627,
+          "cos_delta_desired": 0.265614482263724,
+          "delta_orthogonal_fraction_to_desired": 0.959678848584493,
+          "delta_over_before": 1.226025908843461,
+          "delta_over_desired": 0.24339979459857142,
+          "delta_projection_on_desired": 0.06911363328496616,
+          "delta_rms": 0.1749497652053833,
+          "desired_rms": 0.7219113012154897,
+          "mse_improvement": 0.03819481531778971,
+          "mse_improvement_frac": 0.07440417715852912,
+          "target_rms": 0.7344059646129608
+        }
+      },
+      "style_memory_to_full_target_hf_marginal": {
+        "lh": {
+          "after_mse": 0.5075317223866781,
+          "after_rms": 0.28795188168684643,
+          "before_mse": 0.5136859665314356,
+          "before_rms": 0.28506691257158917,
+          "cos_delta_desired": 0.11010018239418666,
+          "delta_orthogonal_fraction_to_desired": 0.9935380518436432,
+          "delta_over_before": 0.3022747538178042,
+          "delta_over_desired": 0.1093062256040188,
+          "delta_projection_on_desired": 0.012362185555199781,
+          "delta_rms": 0.07788706819216411,
+          "desired_rms": 0.7151382565498352,
+          "mse_improvement": 0.006154244144757588,
+          "mse_improvement_frac": 0.012230074557107735,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5687504857778549,
+          "after_rms": 0.3065703511238098,
+          "before_mse": 0.5732156932353973,
+          "before_rms": 0.3037494048476219,
+          "cos_delta_desired": 0.08811199789245923,
+          "delta_orthogonal_fraction_to_desired": 0.9956488907337189,
+          "delta_over_before": 0.25212075006160467,
+          "delta_over_desired": 0.09332809230750616,
+          "delta_projection_on_desired": 0.008455794459829727,
+          "delta_rms": 0.07040960465868314,
+          "desired_rms": 0.7562756538391113,
+          "mse_improvement": 0.004465207457542419,
+          "mse_improvement_frac": 0.007904974095789889,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.4725789924462636,
+          "after_rms": 0.25150299072265625,
+          "before_mse": 0.5108584016561508,
+          "before_rms": 0.1681986004114151,
+          "cos_delta_desired": 0.26814567546049756,
+          "delta_orthogonal_fraction_to_desired": 0.9580192764600118,
+          "delta_over_before": 1.1790638183189455,
+          "delta_over_desired": 0.28224350108460805,
+          "delta_projection_on_desired": 0.08282051204393308,
+          "delta_rms": 0.2002770478526751,
+          "desired_rms": 0.7140683035055796,
+          "mse_improvement": 0.038279409209887184,
+          "mse_improvement_frac": 0.07650654197618079,
+          "target_rms": 0.7344059646129608
+        }
+      },
+      "target_hf_to_full_style_memory_marginal": {
+        "lh": {
+          "after_mse": 0.5075317223866781,
+          "after_rms": 0.28795188168684643,
+          "before_mse": 0.5234841307004293,
+          "before_rms": 0.2318925311168035,
+          "cos_delta_desired": 0.16736348842581114,
+          "delta_orthogonal_fraction_to_desired": 0.982422798871994,
+          "delta_over_before": 0.5504409111255963,
+          "delta_over_desired": 0.17157941657178657,
+          "delta_projection_on_desired": 0.03309422669311365,
+          "delta_rms": 0.12326852232217789,
+          "desired_rms": 0.7220463256041209,
+          "mse_improvement": 0.01595240831375122,
+          "mse_improvement_frac": 0.031229686454930794,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5687504857778549,
+          "after_rms": 0.3065703511238098,
+          "before_mse": 0.5852225919564565,
+          "before_rms": 0.24060086905956268,
+          "cos_delta_desired": 0.16575820868213972,
+          "delta_orthogonal_fraction_to_desired": 0.9831653038660685,
+          "delta_over_before": 0.561548445094645,
+          "delta_over_desired": 0.169232224527048,
+          "delta_projection_on_desired": 0.03091414055476586,
+          "delta_rms": 0.12879219527045885,
+          "desired_rms": 0.764176627000173,
+          "mse_improvement": 0.01647210617860158,
+          "mse_improvement_frac": 0.028313330663725003,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.4725789924462636,
+          "after_rms": 0.25150299072265625,
+          "before_mse": 0.48376643160978955,
+          "before_rms": 0.18028072267770767,
+          "cos_delta_desired": 0.14982227484385172,
+          "delta_orthogonal_fraction_to_desired": 0.9850193162759145,
+          "delta_over_before": 0.684328975246308,
+          "delta_over_desired": 0.162026846742068,
+          "delta_projection_on_desired": 0.02784427224347989,
+          "delta_rms": 0.11171420911947887,
+          "desired_rms": 0.6946598986784617,
+          "mse_improvement": 0.0111874391635259,
+          "mse_improvement_frac": 0.02414995151345818,
+          "target_rms": 0.7344059646129608
+        }
+      },
+      "backbone_to_full": {
+        "lh": {
+          "after_mse": 0.5075317223866781,
+          "after_rms": 0.28795188168684643,
+          "before_mse": 0.5295603622992834,
+          "before_rms": 0.23196227848529816,
+          "cos_delta_desired": 0.20240937173366547,
+          "delta_orthogonal_fraction_to_desired": 0.976799895366033,
+          "delta_over_before": 0.6549253320058738,
+          "delta_over_desired": 0.20252838881416632,
+          "delta_projection_on_desired": 0.04431721568107605,
+          "delta_rms": 0.14640821889042854,
+          "desired_rms": 0.7262775699297587,
+          "mse_improvement": 0.022028639912605286,
+          "mse_improvement_frac": 0.042630085298263676,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5687504857778549,
+          "after_rms": 0.3065703511238098,
+          "before_mse": 0.5884223282337189,
+          "before_rms": 0.23721777151028314,
+          "cos_delta_desired": 0.17978166043758392,
+          "delta_orthogonal_fraction_to_desired": 0.9803977608680725,
+          "delta_over_before": 0.6180218361670587,
+          "delta_over_desired": 0.18531635824194984,
+          "delta_projection_on_desired": 0.03665290089944998,
+          "delta_rms": 0.14128771175940832,
+          "desired_rms": 0.7663168907165527,
+          "mse_improvement": 0.019671842455863953,
+          "mse_improvement_frac": 0.033842736877592414,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.4725789924462636,
+          "after_rms": 0.25150299072265625,
+          "before_mse": 0.5219612469275793,
+          "before_rms": 0.14135666812459627,
+          "cos_delta_desired": 0.29967789103587467,
+          "delta_orthogonal_fraction_to_desired": 0.9472233752409617,
+          "delta_over_before": 1.572838684712363,
+          "delta_over_desired": 0.3137411215328257,
+          "delta_projection_on_desired": 0.10236936000486214,
+          "delta_rms": 0.2253290315469106,
+          "desired_rms": 0.7219113012154897,
+          "mse_improvement": 0.04938225448131561,
+          "mse_improvement_frac": 0.09640939581490215,
+          "target_rms": 0.7344059646129608
+        }
+      }
+    },
+    "route_interactions": {
+      "route_interaction": {
+        "lh": {
+          "interaction_abs": 0.023094932238260906,
+          "interaction_cos_desired": 0.031205744793017704,
+          "interaction_over_desired": 0.042728268659367595,
+          "interaction_projection_on_desired": 0.0011990443260098498,
+          "interaction_rms": 0.030723472436269123
+        },
+        "hl": {
+          "interaction_abs": 0.021596265646318596,
+          "interaction_cos_desired": 0.057924687241514526,
+          "interaction_over_desired": 0.036452700557654434,
+          "interaction_projection_on_desired": 0.002222934776606659,
+          "interaction_rms": 0.027774440745512646
+        },
+        "hh": {
+          "interaction_abs": 0.06861507706344128,
+          "interaction_cos_desired": 0.11204169069727261,
+          "interaction_over_desired": 0.12502646762170194,
+          "interaction_projection_on_desired": 0.016557742996762197,
+          "interaction_rms": 0.08982899350424607
+        }
+      }
+    },
+    "block_cross_attention_transitions": {
+      "block0_memory_marginal_no_target_hf": {
+        "lh": {
+          "after_mse": 0.5136859665314356,
+          "after_rms": 0.28506691257158917,
+          "before_mse": 0.5148538947105408,
+          "before_rms": 0.27664364377657574,
+          "cos_delta_desired": 0.0438906525572141,
+          "delta_orthogonal_fraction_to_desired": 0.9982642928759257,
+          "delta_over_before": 0.13291870238693956,
+          "delta_over_desired": 0.04537802563554253,
+          "delta_projection_on_desired": 0.002354111250800391,
+          "delta_rms": 0.032581305441757046,
+          "desired_rms": 0.7159305910269419,
+          "mse_improvement": 0.0011679281791051228,
+          "mse_improvement_frac": 0.0021565748235136436,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5732156932353973,
+          "after_rms": 0.3037494048476219,
+          "before_mse": 0.5744468569755554,
+          "before_rms": 0.29350005090236664,
+          "cos_delta_desired": 0.04452271340414882,
+          "delta_orthogonal_fraction_to_desired": 0.9977248112360636,
+          "delta_over_before": 0.12642316992713723,
+          "delta_over_desired": 0.043392055186864974,
+          "delta_projection_on_desired": 0.0020874073185647526,
+          "delta_rms": 0.03279793914407492,
+          "desired_rms": 0.7570535242557526,
+          "mse_improvement": 0.001231163740158081,
+          "mse_improvement_frac": 0.0019642499829290653,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.5108584016561508,
+          "after_rms": 0.1681986004114151,
+          "before_mse": 0.5121172765890757,
+          "before_rms": 0.16458041841785112,
+          "cos_delta_desired": 0.07377330648402373,
+          "delta_orthogonal_fraction_to_desired": 0.9948124289512634,
+          "delta_over_before": 0.11807128127950985,
+          "delta_over_desired": 0.02617165447302222,
+          "delta_projection_on_desired": 0.0018120724756348257,
+          "delta_rms": 0.018753198130677145,
+          "desired_rms": 0.714967409769694,
+          "mse_improvement": 0.0012588749329249065,
+          "mse_improvement_frac": 0.0025672267042497455,
+          "target_rms": 0.7344059646129608
+        }
+      },
+      "block0_memory_marginal_full": {
+        "lh": {
+          "after_mse": 0.5075317223866781,
+          "after_rms": 0.28795188168684643,
+          "before_mse": 0.5084913074970245,
+          "before_rms": 0.278669573366642,
+          "cos_delta_desired": 0.040925197303295135,
+          "delta_orthogonal_fraction_to_desired": 0.9984320600827535,
+          "delta_over_before": 0.1345694190436031,
+          "delta_over_desired": 0.04549498839738717,
+          "delta_projection_on_desired": 0.0021967243713637194,
+          "delta_rms": 0.03246720818181833,
+          "desired_rms": 0.7114590406417847,
+          "mse_improvement": 0.0009595851103464762,
+          "mse_improvement_frac": 0.001839373415316553,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5687504857778549,
+          "after_rms": 0.3065703511238098,
+          "before_mse": 0.570115198691686,
+          "before_rms": 0.2959912021954854,
+          "cos_delta_desired": 0.049033657958110176,
+          "delta_orthogonal_fraction_to_desired": 0.9976884524027506,
+          "delta_over_before": 0.1305445096510169,
+          "delta_over_desired": 0.04444579423559091,
+          "delta_projection_on_desired": 0.002284325601067394,
+          "delta_rms": 0.03346725211789211,
+          "desired_rms": 0.7541773319244385,
+          "mse_improvement": 0.001364712913831075,
+          "mse_improvement_frac": 0.0022457986131942526,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.4725789924462636,
+          "after_rms": 0.25150299072265625,
+          "before_mse": 0.4731813768545787,
+          "before_rms": 0.24014380822579065,
+          "cos_delta_desired": 0.03289190555612246,
+          "delta_orthogonal_fraction_to_desired": 0.9970841705799103,
+          "delta_over_before": 0.15486581103892777,
+          "delta_over_desired": 0.04103750359404095,
+          "delta_projection_on_desired": 0.0020256611654379717,
+          "delta_rms": 0.028275563071171444,
+          "desired_rms": 0.6868443091710409,
+          "mse_improvement": 0.0006023844083150228,
+          "mse_improvement_frac": 0.0013928719928422602,
+          "target_rms": 0.7344059646129608
+        }
+      },
+      "block1_memory_marginal_no_target_hf": {
+        "lh": {
+          "after_mse": 0.5136859665314356,
+          "after_rms": 0.28506691257158917,
+          "before_mse": 0.514175479610761,
+          "before_rms": 0.2623685722549756,
+          "cos_delta_desired": 0.039325720785806574,
+          "delta_orthogonal_fraction_to_desired": 0.9981471101442972,
+          "delta_over_before": 0.18986953594205133,
+          "delta_over_desired": 0.07233100939713465,
+          "delta_projection_on_desired": 0.0037501086141370856,
+          "delta_rms": 0.05093731793264548,
+          "desired_rms": 0.7154569824536642,
+          "mse_improvement": 0.000489513079325358,
+          "mse_improvement_frac": 0.0008251718740540842,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5732156932353973,
+          "after_rms": 0.3037494048476219,
+          "before_mse": 0.5776497423648834,
+          "before_rms": 0.2856606940428416,
+          "cos_delta_desired": 0.09193599099914233,
+          "delta_orthogonal_fraction_to_desired": 0.9944764276345571,
+          "delta_over_before": 0.16358674939305784,
+          "delta_over_desired": 0.06377119581457484,
+          "delta_projection_on_desired": 0.00670555893642207,
+          "delta_rms": 0.047739384385446705,
+          "desired_rms": 0.7592426836490631,
+          "mse_improvement": 0.004434049129486084,
+          "mse_improvement_frac": 0.007917164028356613,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.5108584016561508,
+          "after_rms": 0.1681986004114151,
+          "before_mse": 0.5162401249011358,
+          "before_rms": 0.16349164644877115,
+          "cos_delta_desired": 0.1304217129945755,
+          "delta_orthogonal_fraction_to_desired": 0.9894257883230845,
+          "delta_over_before": 0.19072747017211514,
+          "delta_over_desired": 0.04529264606837766,
+          "delta_projection_on_desired": 0.006632835681860645,
+          "delta_rms": 0.03226406965404749,
+          "desired_rms": 0.7178611059983572,
+          "mse_improvement": 0.005381723244984944,
+          "mse_improvement_frac": 0.010627752819200533,
+          "target_rms": 0.7344059646129608
+        }
+      },
+      "block1_memory_marginal_full": {
+        "lh": {
+          "after_mse": 0.5075317223866781,
+          "after_rms": 0.28795188168684643,
+          "before_mse": 0.5100280493497849,
+          "before_rms": 0.26835068066914874,
+          "cos_delta_desired": 0.0679407889644305,
+          "delta_orthogonal_fraction_to_desired": 0.996582011381785,
+          "delta_over_before": 0.18220310102183482,
+          "delta_over_desired": 0.07072556061985781,
+          "delta_projection_on_desired": 0.005745219124946743,
+          "delta_rms": 0.04966049610326687,
+          "desired_rms": 0.7125625610351562,
+          "mse_improvement": 0.002496326963106791,
+          "mse_improvement_frac": 0.005003032652674621,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5687504857778549,
+          "after_rms": 0.3065703511238098,
+          "before_mse": 0.5717024306456248,
+          "before_rms": 0.28492383658885956,
+          "cos_delta_desired": 0.07179289869964123,
+          "delta_orthogonal_fraction_to_desired": 0.9959516028563181,
+          "delta_over_before": 0.1621262030877885,
+          "delta_over_desired": 0.0633308191140777,
+          "delta_projection_on_desired": 0.005402326428641875,
+          "delta_rms": 0.04714196237425009,
+          "desired_rms": 0.7552925248940786,
+          "mse_improvement": 0.002951944867769877,
+          "mse_improvement_frac": 0.005357806299403221,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.4725789924462636,
+          "after_rms": 0.25150299072265625,
+          "before_mse": 0.47526973485946655,
+          "before_rms": 0.2261754423379898,
+          "cos_delta_desired": 0.07408182819684346,
+          "delta_orthogonal_fraction_to_desired": 0.9953120748202006,
+          "delta_over_before": 0.21619659696264162,
+          "delta_over_desired": 0.07254606584565668,
+          "delta_projection_on_desired": 0.006568451489632328,
+          "delta_rms": 0.049216543324291706,
+          "desired_rms": 0.6883818209171295,
+          "mse_improvement": 0.0026907424132029214,
+          "mse_improvement_frac": 0.005908909605216485,
+          "target_rms": 0.7344059646129608
+        }
+      },
+      "block2_memory_marginal_no_target_hf": {
+        "lh": {
+          "after_mse": 0.5136859665314356,
+          "after_rms": 0.28506691257158917,
+          "before_mse": 0.5185799052317938,
+          "before_rms": 0.2627114976445834,
+          "cos_delta_desired": 0.09036818767587344,
+          "delta_orthogonal_fraction_to_desired": 0.9937254091103872,
+          "delta_over_before": 0.2286933875605428,
+          "delta_over_desired": 0.08140828731003741,
+          "delta_projection_on_desired": 0.00903583651718994,
+          "delta_rms": 0.05786114682753881,
+          "desired_rms": 0.7186224857966105,
+          "mse_improvement": 0.004893938700358073,
+          "mse_improvement_frac": 0.009859331476201855,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5732156932353973,
+          "after_rms": 0.3037494048476219,
+          "before_mse": 0.5771198570728302,
+          "before_rms": 0.27458856751521427,
+          "cos_delta_desired": 0.07757596299052238,
+          "delta_orthogonal_fraction_to_desired": 0.9948028226693472,
+          "delta_over_before": 0.218355399104162,
+          "delta_over_desired": 0.07467517187309791,
+          "delta_projection_on_desired": 0.0068848586330811186,
+          "delta_rms": 0.05634900306661924,
+          "desired_rms": 0.7588877379894257,
+          "mse_improvement": 0.0039041638374328613,
+          "mse_improvement_frac": 0.006965789722943387,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.5108584016561508,
+          "after_rms": 0.1681986004114151,
+          "before_mse": 0.5147159149249395,
+          "before_rms": 0.1570099393526713,
+          "cos_delta_desired": 0.09317281593879063,
+          "delta_orthogonal_fraction_to_desired": 0.9924651483694712,
+          "delta_over_before": 0.2030085492054047,
+          "delta_over_desired": 0.04476227403998038,
+          "delta_projection_on_desired": 0.005080370445890973,
+          "delta_rms": 0.031910352098445095,
+          "desired_rms": 0.7168064415454865,
+          "mse_improvement": 0.0038575132687886557,
+          "mse_improvement_frac": 0.007723807170213756,
+          "target_rms": 0.7344059646129608
+        }
+      },
+      "block2_memory_marginal_full": {
+        "lh": {
+          "after_mse": 0.5075317223866781,
+          "after_rms": 0.28795188168684643,
+          "before_mse": 0.5114905883868536,
+          "before_rms": 0.2630910774072011,
+          "cos_delta_desired": 0.08440371230244637,
+          "delta_orthogonal_fraction_to_desired": 0.9950685203075409,
+          "delta_over_before": 0.24436409899482356,
+          "delta_over_desired": 0.08717344551334842,
+          "delta_projection_on_desired": 0.008710997023930153,
+          "delta_rms": 0.0614336629708608,
+          "desired_rms": 0.7136176923910776,
+          "mse_improvement": 0.003958866000175476,
+          "mse_improvement_frac": 0.008028124985463585,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5687504857778549,
+          "after_rms": 0.3065703511238098,
+          "before_mse": 0.5736087461312612,
+          "before_rms": 0.2785101781288783,
+          "cos_delta_desired": 0.08983601443469524,
+          "delta_orthogonal_fraction_to_desired": 0.9941394329071045,
+          "delta_over_before": 0.23132060273722455,
+          "delta_over_desired": 0.07979355072895149,
+          "delta_projection_on_desired": 0.00802502769511193,
+          "delta_rms": 0.060030270367860794,
+          "desired_rms": 0.7565302352110544,
+          "mse_improvement": 0.00485826035340627,
+          "mse_improvement_frac": 0.008551394212368208,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.4725789924462636,
+          "after_rms": 0.25150299072265625,
+          "before_mse": 0.4756729652484258,
+          "before_rms": 0.2250280442337195,
+          "cos_delta_desired": 0.07407108865057428,
+          "delta_orthogonal_fraction_to_desired": 0.9950927098592123,
+          "delta_over_before": 0.27017037593520943,
+          "delta_over_desired": 0.08239025925431684,
+          "delta_projection_on_desired": 0.008116932110472893,
+          "delta_rms": 0.05603808909654617,
+          "desired_rms": 0.6886961956818899,
+          "mse_improvement": 0.0030939728021621704,
+          "mse_improvement_frac": 0.0068637884398005805,
+          "target_rms": 0.7344059646129608
+        }
+      },
+      "block3_memory_marginal_no_target_hf": {
+        "lh": {
+          "after_mse": 0.5136859665314356,
+          "after_rms": 0.28506691257158917,
+          "before_mse": 0.5232376257578532,
+          "before_rms": 0.2882332429289818,
+          "cos_delta_desired": 0.10009905695915222,
+          "delta_orthogonal_fraction_to_desired": 0.989450216293335,
+          "delta_over_before": 0.2912876092361287,
+          "delta_over_desired": 0.10883847473512027,
+          "delta_projection_on_desired": 0.018803125334670767,
+          "delta_rms": 0.07881819363683462,
+          "desired_rms": 0.7218975226084391,
+          "mse_improvement": 0.009551659226417542,
+          "mse_improvement_frac": 0.018727293052378007,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5732156932353973,
+          "after_rms": 0.3037494048476219,
+          "before_mse": 0.5769162972768148,
+          "before_rms": 0.29528722167015076,
+          "cos_delta_desired": 0.07025597671357293,
+          "delta_orthogonal_fraction_to_desired": 0.9956689675649008,
+          "delta_over_before": 0.26487774105072626,
+          "delta_over_desired": 0.08984421510412256,
+          "delta_projection_on_desired": 0.008894305326975882,
+          "delta_rms": 0.0686002333338062,
+          "desired_rms": 0.7586865425109863,
+          "mse_improvement": 0.00370060404141744,
+          "mse_improvement_frac": 0.006242543809438446,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.5108584016561508,
+          "after_rms": 0.1681986004114151,
+          "before_mse": 0.5107502142588297,
+          "before_rms": 0.15767610197265944,
+          "cos_delta_desired": 0.01154991922279199,
+          "delta_orthogonal_fraction_to_desired": 0.9985185662905375,
+          "delta_over_before": 0.22450844889765154,
+          "delta_over_desired": 0.04669358655969385,
+          "delta_projection_on_desired": 0.001349308460097139,
+          "delta_rms": 0.03336822319154938,
+          "desired_rms": 0.714015950759252,
+          "mse_improvement": -0.00010818739732106526,
+          "mse_improvement_frac": -8.529214581144321e-05,
+          "target_rms": 0.7344059646129608
+        }
+      },
+      "block3_memory_marginal_full": {
+        "lh": {
+          "after_mse": 0.5075317223866781,
+          "after_rms": 0.28795188168684643,
+          "before_mse": 0.5157753676176071,
+          "before_rms": 0.2879592776298523,
+          "cos_delta_desired": 0.09852674213470891,
+          "delta_orthogonal_fraction_to_desired": 0.9909552931785583,
+          "delta_over_before": 0.28419475057383964,
+          "delta_over_desired": 0.10566346321842056,
+          "delta_projection_on_desired": 0.017276090903881897,
+          "delta_rms": 0.07589962457617123,
+          "desired_rms": 0.7166754305362701,
+          "mse_improvement": 0.008243645230929056,
+          "mse_improvement_frac": 0.016489067410323036,
+          "target_rms": 0.7733666002750397
+        },
+        "hl": {
+          "after_mse": 0.5687504857778549,
+          "after_rms": 0.3065703511238098,
+          "before_mse": 0.573254386583964,
+          "before_rms": 0.2992985397577286,
+          "cos_delta_desired": 0.07941682295252879,
+          "delta_orthogonal_fraction_to_desired": 0.9948710997899374,
+          "delta_over_before": 0.2801715532116427,
+          "delta_over_desired": 0.09593643380128013,
+          "delta_projection_on_desired": 0.010591603902867064,
+          "delta_rms": 0.07301962530861299,
+          "desired_rms": 0.7562473316987356,
+          "mse_improvement": 0.004503900806109111,
+          "mse_improvement_frac": 0.007652504795225013,
+          "target_rms": 0.8218138813972473
+        },
+        "hh": {
+          "after_mse": 0.4725789924462636,
+          "after_rms": 0.25150299072265625,
+          "before_mse": 0.47583889961242676,
+          "before_rms": 0.2418044644097487,
+          "cos_delta_desired": 0.0654495171426485,
+          "delta_orthogonal_fraction_to_desired": 0.9954651693503062,
+          "delta_over_before": 0.2711970185420155,
+          "delta_over_desired": 0.07862873531380715,
+          "delta_projection_on_desired": 0.00832224041854109,
+          "delta_rms": 0.05429653202493986,
+          "desired_rms": 0.6888048152128855,
+          "mse_improvement": 0.0032599071661631265,
+          "mse_improvement_frac": 0.0071282904062026095,
+          "target_rms": 0.7344059646129608
+        }
+      }
+    }
+  },
+  "gradient_competition": {
+    "loss_fm_hf_total": {
+      "full": {
+        "style_memory": {
+          "grad_norm": 0.04533568294827725,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.003083355720658801
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.07904832936777911,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0037786829686570285
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.08182502912851262,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0026352903837077546
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.08182502912851262,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0026352903837077546
+        },
+        "input_time": {
+          "grad_norm": 0.5907107298629364,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.07077019187019358
+        },
+        "self_attn": {
+          "grad_norm": 0.24548476207891234,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.013157032421178907
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.0684054245933762,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.007195301326552355
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.0834245140096614,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.00626246635541145
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.2127771893740017,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.022845175839294782
+        },
+        "adaln": {
+          "grad_norm": 0.11427051882236924,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.04591046697140725
+        },
+        "ffn": {
+          "grad_norm": 0.42331418972137935,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.01974675138752966
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 0.5738020826876901,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.03883521427686729
+        }
+      },
+      "no_style_memory": {
+        "style_memory": {
+          "grad_norm": 0.0,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.0,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.1382713525801619,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.004453223783452244
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.1382713525801619,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.004453223783452244
+        },
+        "input_time": {
+          "grad_norm": 0.6065730767866622,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.07267058283746808
+        },
+        "self_attn": {
+          "grad_norm": 0.2603015144603908,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.013951152959695371
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.0,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.0,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.0,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.0
+        },
+        "adaln": {
+          "grad_norm": 0.13417232246890004,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.0539064147311773
+        },
+        "ffn": {
+          "grad_norm": 0.43985628159779966,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.02051840654023868
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 1.1058260990651352,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.07484286796066053
+        }
+      },
+      "no_target_hf": {
+        "style_memory": {
+          "grad_norm": 0.041197303464688854,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.002801897601465205
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.09353986330287024,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.004471409973872707
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "input_time": {
+          "grad_norm": 0.484913291939561,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.05809511318498083
+        },
+        "self_attn": {
+          "grad_norm": 0.313904403944265,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.01682406021811614
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.09991059633351336,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.01050920816014899
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.13065205811436095,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.009807718126013784
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.220559881308582,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.023680777466854736
+        },
+        "adaln": {
+          "grad_norm": 0.13497246219137887,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.05422788687184797
+        },
+        "ffn": {
+          "grad_norm": 0.5752891131259961,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.026836074406880985
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 3.057473917840528,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.2069313763887061
+        }
+      },
+      "backbone_only": {
+        "style_memory": {
+          "grad_norm": 0.0,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.0,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "input_time": {
+          "grad_norm": 0.39978250832333395,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.047896006268507096
+        },
+        "self_attn": {
+          "grad_norm": 0.30162432875550643,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.016165895751919766
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.0,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.0,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.0,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.0
+        },
+        "adaln": {
+          "grad_norm": 0.1345971906649375,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.054077114028619894
+        },
+        "ffn": {
+          "grad_norm": 0.5576228985821748,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.026011981203709112
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 3.5409119385619894,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.23965070538863434
+        }
+      }
+    },
+    "loss_fm_spectral_lh": {
+      "full": {
+        "style_memory": {
+          "grad_norm": 0.010611637610709648,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0007217152451385541
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.018270755455655575,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0008733820564830856
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.03865544609654403,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0012449531208374367
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.03865544609654403,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0012449531208374367
+        },
+        "input_time": {
+          "grad_norm": 0.16900770777323457,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.020247995003288125
+        },
+        "self_attn": {
+          "grad_norm": 0.07517931633725677,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.004029320166656167
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.018062604304473307,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0018999352973178075
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.02252428643609732,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0016908409675527034
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.027824953416667422,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.0029874722727286037
+        },
+        "adaln": {
+          "grad_norm": 0.03615500017444622,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.014525994617565359
+        },
+        "ffn": {
+          "grad_norm": 0.14930987040259433,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.006965003683162375
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 0.2977279648084503,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.020150378777633222
+        }
+      },
+      "no_style_memory": {
+        "style_memory": {
+          "grad_norm": 0.0,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.0,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.08620104791331022,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.002776226236042003
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.08620104791331022,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.002776226236042003
+        },
+        "input_time": {
+          "grad_norm": 0.1341386412055658,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.016070501000595715
+        },
+        "self_attn": {
+          "grad_norm": 0.09151407058215288,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.004904799725436283
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.0,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.0,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.0,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.0
+        },
+        "adaln": {
+          "grad_norm": 0.04139291497326979,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.01663043167489812
+        },
+        "ffn": {
+          "grad_norm": 0.17879551566313123,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.008340449440943237
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 0.6644516991194082,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.04497042602401198
+        }
+      },
+      "no_target_hf": {
+        "style_memory": {
+          "grad_norm": 0.011305769080031565,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0007689242888241828
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.0379657651488867,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0018148465793966129
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "input_time": {
+          "grad_norm": 0.21566177295244493,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.025837392617621857
+        },
+        "self_attn": {
+          "grad_norm": 0.1536430947496347,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.008234674778964036
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.04356941821718228,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.004582898133572322
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.060282290344378334,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.004525238409720837
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.06429634128073976,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.0069032833204689436
+        },
+        "adaln": {
+          "grad_norm": 0.06695885044927093,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.026902057710731876
+        },
+        "ffn": {
+          "grad_norm": 0.29473347817367734,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.013748721069114607
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 1.0978073023487704,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.07430015175568615
+        }
+      },
+      "backbone_only": {
+        "style_memory": {
+          "grad_norm": 0.0,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.0,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "input_time": {
+          "grad_norm": 0.17221734058020796,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.020632525566386378
+        },
+        "self_attn": {
+          "grad_norm": 0.1587584839785144,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.008508839828400727
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.0,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.0,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.0,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.0
+        },
+        "adaln": {
+          "grad_norm": 0.06672089401337128,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.02680645395218076
+        },
+        "ffn": {
+          "grad_norm": 0.3078582479887601,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.014360965054433352
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 1.3814830864705838,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.09349947185910429
+        }
+      }
+    },
+    "loss_fm_spectral_hl": {
+      "full": {
+        "style_memory": {
+          "grad_norm": 0.019384117560039327,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0013183462977023744
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.03560864183865764,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0017021709317438045
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.031087268937935557,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.00100120930918595
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.031087268937935557,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.00100120930918595
+        },
+        "input_time": {
+          "grad_norm": 0.3924515005185988,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.04701771372578763
+        },
+        "self_attn": {
+          "grad_norm": 0.13454255472463436,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.007210959814977102
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.036950779988925896,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.003886709246406863
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.043429345664071174,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0032601306616815585
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.0848927778894402,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.009114653897235016
+        },
+        "adaln": {
+          "grad_norm": 0.0610229849004479,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.024517204976759636
+        },
+        "ffn": {
+          "grad_norm": 0.24247220520746035,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.011310838310828247
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 0.3191353310395225,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.021599240118102696
+        }
+      },
+      "no_style_memory": {
+        "style_memory": {
+          "grad_norm": 0.0,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.0,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.08296756116209893,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0026720872380841727
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.08296756116209893,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0026720872380841727
+        },
+        "input_time": {
+          "grad_norm": 0.3321591384065154,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.0397943778030266
+        },
+        "self_attn": {
+          "grad_norm": 0.14530526655598006,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.007787799482358581
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.0,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.0,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.0,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.0
+        },
+        "adaln": {
+          "grad_norm": 0.06726560321143983,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.027025301769663956
+        },
+        "ffn": {
+          "grad_norm": 0.2688319666302005,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.012540467905319385
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 0.7731929602289208,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.05233008940505829
+        }
+      },
+      "no_target_hf": {
+        "style_memory": {
+          "grad_norm": 0.019657028038049203,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0013369073963530667
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.036005550327596704,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0017211440252837265
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "input_time": {
+          "grad_norm": 0.3742715962554941,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.044839667437073356
+        },
+        "self_attn": {
+          "grad_norm": 0.13291764890541585,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.007123871156749314
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.029897579469735713,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0031448104371553658
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.040272443631078673,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0030231500450889825
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.07179771341584307,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.007708680581174372
+        },
+        "adaln": {
+          "grad_norm": 0.05780004026212706,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.02322232249181779
+        },
+        "ffn": {
+          "grad_norm": 0.2557489368953024,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.011930171010380117
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 0.7742871053147695,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.052404141696154705
+        }
+      },
+      "backbone_only": {
+        "style_memory": {
+          "grad_norm": 0.0,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.0,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "input_time": {
+          "grad_norm": 0.3071350268350511,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.036796360181602025
+        },
+        "self_attn": {
+          "grad_norm": 0.10814589714603463,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.0057962012098757695
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.0,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.0,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.0,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.0
+        },
+        "adaln": {
+          "grad_norm": 0.054587248121765415,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.02193151897603647
+        },
+        "ffn": {
+          "grad_norm": 0.1965414581347733,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.009168261790809339
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 0.5129100479718336,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.03471401066452032
+        }
+      }
+    },
+    "loss_fm_spectral_hh": {
+      "full": {
+        "style_memory": {
+          "grad_norm": 0.021112936811742988,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.001435926190252071
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.044064269247281844,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.002106368408576268
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.06507436967587325,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0020958117883873163
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.06507436967587325,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0020958117883873163
+        },
+        "input_time": {
+          "grad_norm": 0.2608169921513789,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.03124722075362117
+        },
+        "self_attn": {
+          "grad_norm": 0.09873110027883138,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.005291604563747535
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.034399692702510115,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0036183702682452434
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.04446274207748799,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0033377051054484853
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.11964474378854399,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.012845856353954781
+        },
+        "adaln": {
+          "grad_norm": 0.049821274076646715,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.020016693557897446
+        },
+        "ffn": {
+          "grad_norm": 0.1981717355131693,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.009244310935547643
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 0.37250440205458407,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.025211285753976312
+        }
+      },
+      "no_style_memory": {
+        "style_memory": {
+          "grad_norm": 0.0,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.0,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.06931616029331124,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.002232424633416429
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.06931616029331124,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.002232424633416429
+        },
+        "input_time": {
+          "grad_norm": 0.3027348071814344,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.036269191174142644
+        },
+        "self_attn": {
+          "grad_norm": 0.10183708382232409,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.005458073251397668
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.0,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.0,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.0,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.0
+        },
+        "adaln": {
+          "grad_norm": 0.06034035311057844,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.024242943998815256
+        },
+        "ffn": {
+          "grad_norm": 0.1829633120807479,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.008534868720265487
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 0.42840161900182394,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.02899443758127303
+        }
+      },
+      "no_target_hf": {
+        "style_memory": {
+          "grad_norm": 0.021075856823051638,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0014334043181235784
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.06269480248174782,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.002996948629475542
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "input_time": {
+          "grad_norm": 0.18435533884451916,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.02208672035693081
+        },
+        "self_attn": {
+          "grad_norm": 0.18571054524286026,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.009953365919835307
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.058969621343255056,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0062027857761224854
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.08540826188457822,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.006411381269352055
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.1355488208968548,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.014553423970436595
+        },
+        "adaln": {
+          "grad_norm": 0.07751448384402665,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.031142994597397604
+        },
+        "ffn": {
+          "grad_norm": 0.35116018912599956,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.016380913090659848
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 2.746533335630226,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.18588676100329388
+        }
+      },
+      "backbone_only": {
+        "style_memory": {
+          "grad_norm": 0.0,
+          "param_norm": 14.7033579825125,
+          "grad_over_param": 0.0
+        },
+        "style_patch_proj": {
+          "grad_norm": 0.0,
+          "param_norm": 20.91954525517384,
+          "grad_over_param": 0.0
+        },
+        "target_hf_fusion": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "target_hf_subband": {
+          "grad_norm": 0.0,
+          "param_norm": 31.049720226044027,
+          "grad_over_param": 0.0
+        },
+        "input_time": {
+          "grad_norm": 0.15961010834574121,
+          "param_norm": 8.3468860865369,
+          "grad_over_param": 0.0191221141262686
+        },
+        "self_attn": {
+          "grad_norm": 0.19707874217759508,
+          "param_norm": 18.658064692744983,
+          "grad_over_param": 0.010562657243557356
+        },
+        "cross_attn_q": {
+          "grad_norm": 0.0,
+          "param_norm": 9.506957594803833,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_kv": {
+          "grad_norm": 0.0,
+          "param_norm": 13.321351249666565,
+          "grad_over_param": 0.0
+        },
+        "cross_attn_out_gate": {
+          "grad_norm": 0.0,
+          "param_norm": 9.313878381622786,
+          "grad_over_param": 0.0
+        },
+        "adaln": {
+          "grad_norm": 0.07799869619702875,
+          "param_norm": 2.4889862020678266,
+          "grad_over_param": 0.031337536597108015
+        },
+        "ffn": {
+          "grad_norm": 0.37968514047274504,
+          "param_norm": 21.43715598651271,
+          "grad_over_param": 0.017711544419026858
+        },
+        "head_ll": {
+          "grad_norm": 0.0,
+          "param_norm": 8.07447120922673,
+          "grad_over_param": 0.0
+        },
+        "head_hf": {
+          "grad_norm": 3.2197026448316723,
+          "param_norm": 14.775303635428735,
+          "grad_over_param": 0.21791109842989215
+        }
+      }
+    }
+  },
+  "reading": "Mean HF cos(memory, desired)=0.1599; cos(target-HF, desired)=0.1498; cos(target-HF | memory, desired)=0.1555; full MSE improvement=0.0576. Interpretation: target-HF remains at least as aligned after style memory is present."
+}

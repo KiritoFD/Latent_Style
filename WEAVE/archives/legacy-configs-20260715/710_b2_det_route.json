@@ -1,0 +1,15 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "dwt_route_train_prob": 1.0
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/710_b2_det_route"
+  },
+  "ablation": {
+    "name": "710_b2_det_route",
+    "axis": "deterministic_route_p1",
+    "stage": "710_phase_b",
+    "notes": "B2: p=1.0. Deterministic DWT route (always on)."
+  }
+}

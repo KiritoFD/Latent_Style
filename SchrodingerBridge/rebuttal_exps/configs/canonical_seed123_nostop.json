@@ -1,0 +1,15 @@
+{
+  "_base": "../../runs/submission/hf_oriented_internal_early_stop/config.json",
+  "training": {
+    "seed": 123,
+    "internal_early_stop_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "runs/submission/rebuttal_seed123_nostop"
+  },
+  "ablation": {
+    "name": "rebuttal_seed123_nostop",
+    "axis": "early_stop_validation",
+    "notes": "Canonical configuration with the frozen internal probe recorded but early stopping disabled; runs all 15 epochs."
+  }
+}

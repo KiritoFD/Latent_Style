@@ -1,0 +1,14 @@
+{
+  "_base": "wikiart512_ema_direct_atom_residual_calib.json",
+  "training": {
+    "batch_size": 80
+  },
+  "checkpoint": {
+    "save_dir": "./exp/wikiart512_ema_direct_atom_residual_calib_b80"
+  },
+  "ablation": {
+    "name": "wikiart512_ema_direct_atom_residual_calib_b80",
+    "axis": "wikiart512_batch_calibration",
+    "notes": "Short 512-native EMA batch calibration at batch size 80."
+  }
+}

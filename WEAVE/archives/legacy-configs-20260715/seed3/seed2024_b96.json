@@ -1,0 +1,19 @@
+{
+  "_base": "../710_b0_weave_d5.json",
+  "training": {
+    "seed": 2024,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/seed3/seed2024_b96"
+  },
+  "ablation": {
+    "name": "seed2024_b96",
+    "axis": "3seed_reproducibility",
+    "stage": "seed3",
+    "notes": "3-seed reproducibility experiment. Seed=2024, batch=96+channels_last, 5 epochs on D5-512."
+  }
+}

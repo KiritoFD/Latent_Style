@@ -1,0 +1,34 @@
+{
+  "_base": "tokenizer_t01_concept_atoms_tokonly_from_backbone_e16.json",
+  "model": {
+    "tokenizer_projection_mode": "direct_atom_residual",
+    "tokenizer_residual_gain": 0.25,
+    "tokenizer_num_atoms": 32,
+    "tokenizer_atom_temperature": 0.25,
+    "tokenizer_init_std": 0.2
+  },
+  "training": {
+    "batch_size": 288,
+    "learning_rate": 0.0004,
+    "num_epochs": 2,
+    "resume_checkpoint": "exp/tokenizer_t01_factorized_backbone_e16/epoch_0016.pt",
+    "resume_model_strict": false,
+    "resume_ignore_prefixes": [
+      "style_tokenizer."
+    ],
+    "resume_include_prefixes": [],
+    "resume_training_state": false,
+    "resume_optimizer": false,
+    "freeze_mode": "tokenizer_only",
+    "freeze_reinit_trainable": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/tokenizer_t01_direct_atom_residual_warmup_e2_from_backbone_e16"
+  },
+  "ablation": {
+    "name": "tokenizer_direct_atom_residual_warmup",
+    "axis": "style_representation",
+    "notes": "Short frozen-LANCET tokenizer warmup. Preserve a full-rank per-style prototype and add a shared concept-atom residual. This is initialization for a later fresh-LANCET run, not a standalone tokenizer performance run.",
+    "stage": "tokenizer_lancet_representation"
+  }
+}

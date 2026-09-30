@@ -1,0 +1,9 @@
+dataset,dataset_id,source,method,label,step_or_epoch,scope,count,clip_style,content_lpips,one_minus_lpips,noop_clip_style,style_gain_vs_noop,note
+WikiArt512-5style / 3600,wikiart512_5style,No-op audit,No-op,No-op,0,full,750,0.781528,0.000000,1.000000,0.781528,0.000000,unchanged 5x5 copy
+WikiArt512-5style / 3600,wikiart512_5style,SaMAM curve,SaMAM,SaMAM 10000,10000,full,750,0.785089,0.164336,0.835664,0.781528,0.003561,SaMAM best LPIPS/latest point
+WikiArt512-5style / 3600,wikiart512_5style,SaMAM curve,SaMAM,SaMAM 5000,5000,full,750,0.791244,0.283292,0.716708,0.781528,0.009716,SaMAM best clip_style
+WikiArt512-5style / 3600,wikiart512_5style,LANCET local_wsl_wikiart512_hist_b32_e8,LANCET,local WSL hist b32 e8,8,full,750,0.792298,0.355038,0.644962,0.781528,0.010770,"verified LANCET epoch-8 full eval, 2026-06-01 output"
+WikiArt512-5style / 3600,wikiart512_5style,No-op audit,No-op,No-op,0,transfer,600,0.773026,0.000000,1.000000,0.773026,0.000000,unchanged 5x5 copy
+WikiArt512-5style / 3600,wikiart512_5style,SaMAM curve,SaMAM,SaMAM 10000,10000,transfer,600,0.777356,0.164393,0.835607,0.773026,0.004330,SaMAM best LPIPS/latest point
+WikiArt512-5style / 3600,wikiart512_5style,SaMAM curve,SaMAM,SaMAM 5000,5000,transfer,600,0.784589,0.283310,0.716690,0.773026,0.011563,SaMAM best clip_style
+WikiArt512-5style / 3600,wikiart512_5style,LANCET local_wsl_wikiart512_hist_b32_e8,LANCET,local WSL hist b32 e8,8,transfer,600,0.785264,0.355736,0.644264,0.773026,0.012238,"verified LANCET epoch-8 cross-only eval, 2026-06-01 output"

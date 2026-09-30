@@ -1,0 +1,27 @@
+{
+  "_base": "refactor_clean_baseline.json",
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 24,
+    "full_eval_each_epoch": false,
+    "full_eval_defer_until_training_end": true,
+    "test_image_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512/test",
+    "full_eval_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache/hf"
+  },
+  "data": {
+    "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train",
+    "latent_cache_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train/.latent_cache/packed",
+    "pairing_cache_path": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt"
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/refactor_minimal_baseline",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "refactor_minimal_baseline",
+    "axis": "code_cleanup_verification",
+    "stage": "minimal_src",
+    "notes": "Five-epoch clean baseline retrain after consolidating the active WEAVE source modules."
+  }
+}

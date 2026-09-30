@@ -1,0 +1,18 @@
+{
+  "_base": "inmortal_k_spatial_seed42_b16.json",
+  "bridge": {
+    "kinetic_penalty_mode": "spectral_orthogonal_split",
+    "kinetic_spectral_cutoff": 12.0,
+    "kinetic_lambda_low": 1.0,
+    "kinetic_lambda_high": 0.01
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_k_spectral_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_k_spectral_seed42_b16",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "K_spectral",
+    "notes": "FFT-domain orthogonal kinetic split from inmortal.md. Preserve curvature smoothing and the same H-family transport surface, but replace the spatial low/high split with the stricter spectral low/high decomposition."
+  }
+}

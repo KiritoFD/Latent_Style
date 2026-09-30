@@ -1,0 +1,15 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_anisostokes_queue_trust_reseed_from_e13_seed42_b8a2.json",
+  "model": {
+    "proximal_clamp_ratio": 1.25
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamp_reseed_from_e13_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamp_reseed_from_e13_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_AnisoStokesQueueClampReseed",
+    "notes": "Hard-clamp followup after trust and optimizer-reset closures. Keep the e13 model weights and reset optimizer state, but enforce a hard proximal RMS cap relative to transport RMS instead of relying only on a soft trust penalty."
+  }
+}

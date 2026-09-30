@@ -1,0 +1,18 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "style_extrap_alpha": 0.2
+  },
+  "training": {
+    "num_epochs": 15
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/710_s2_extrap02_15ep"
+  },
+  "ablation": {
+    "name": "710_s2_extrap02_15ep",
+    "axis": "extrap_alpha_02_15ep",
+    "stage": "710_phase_s2",
+    "notes": "S2: style_extrap_alpha 0.1->0.2 (train+eval aligned) + 15 epochs. Stronger style extrapolation."
+  }
+}

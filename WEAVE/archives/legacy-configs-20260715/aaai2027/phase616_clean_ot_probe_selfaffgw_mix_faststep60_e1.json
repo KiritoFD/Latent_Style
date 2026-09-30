@@ -1,0 +1,15 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_faststep60_e1.json",
+  "bridge": {
+    "coupling_cost_composition": "appearance_plus_structure"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_selfaffgw_mix_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_selfaffgw_mix_faststep60_e1",
+    "axis": "phase616_ot_probe_fast",
+    "stage": "clean_ot_self_affinity_gw_mix_fast_control",
+    "notes": "Round-3 OT control. Keep the retained self_affinity_gw descriptor and the current mixed appearance-plus-structure cost composition, so the next comparison isolates whether 616 should delete pointwise appearance cost entirely."
+  }
+}

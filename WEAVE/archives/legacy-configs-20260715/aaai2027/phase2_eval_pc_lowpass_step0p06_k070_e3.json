@@ -1,0 +1,16 @@
+{
+  "_comment": "Eval-only PC solver scan from k070 epoch_0003. Only solver_family and latent_lowpass corrector step size are changed; no training.",
+  "model": {
+    "solver_family": "solver_pc",
+    "solver_corrector_steps": 2,
+    "solver_corrector_step_size": 0.06,
+    "solver_corrector_mode": "latent_lowpass",
+    "solver_corrector_lowpass_kernel": 5,
+    "solver_corrector_clamp": 0.0
+  },
+  "full_eval": {
+    "only_lpips_clip_style": true,
+    "save_generated_images": false,
+    "save_summary_grid": false
+  }
+}

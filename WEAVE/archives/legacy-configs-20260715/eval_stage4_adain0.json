@@ -1,0 +1,18 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "endpoint_adain_scale": 0.0
+  },
+  "full_eval": {
+    "num_steps": 8,
+    "batch_size": 2,
+    "target_chunk_size": 1,
+    "vae_decode_batch_size": 16
+  },
+  "ablation": {
+    "name": "stage4_adain0_eval",
+    "axis": "inference_adain",
+    "stage": "712_sty_inject_adain_ablation",
+    "notes": "用stage4 checkpoint, 推理时endpoint_adain_scale=0.0(完全关闭AdaIN). 测试网络自身是否学到了风格注入."
+  }
+}

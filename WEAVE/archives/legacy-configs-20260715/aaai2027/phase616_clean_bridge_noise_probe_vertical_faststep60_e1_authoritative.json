@@ -1,0 +1,11 @@
+{
+  "_base": "./phase616_clean_bridge_noise_probe_vertical_faststep60_e1.json",
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_bridge_noise_probe_vertical_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_bridge_noise_probe_vertical_faststep60_e1_authoritative",
+    "stage": "clean_bridge_noise_projection_vertical_authoritative",
+    "notes": "Authoritative rerun root for the 616 bridge-noise candidate. Keeps OT and target geometry fixed, changes only the training bridge-noise spectrum, and isolates all outputs in a fresh save root."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "_base": "./phase2_vel_tok32_pos_refresh_seed42_b20a1.json",
+  "model": {
+    "semantic_self_topology_gate": true,
+    "semantic_self_topology_blend": 1.0
+  },
+  "bridge": {
+    "w_kinetic": 0.85
+  },
+  "training": {
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_pos_refresh_seed42_b20a1/epoch_0004.pt",
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false,
+    "resume_prefer_local_checkpoint": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_vel_tok32_semantic_topogate_k085_seed42_b20a1"
+  },
+  "ablation": {
+    "name": "phase2_vel_tok32_semantic_topogate_k085_b20a1",
+    "axis": "phase2_velocity_structure_reentry",
+    "notes": "Queued structure-side candidate: refreshed pure tokenizer plus content-topology-gated semantic cross-attention, with only a modest kinetic rollback from the safe shelf.",
+    "stage": "phase2_structure_reentry"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "dwt_route_train_prob": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/710_b3_p05"
+  },
+  "ablation": {
+    "name": "710_b3_p05",
+    "axis": "insufficient_routed_exposure_p05",
+    "stage": "710_phase_b",
+    "notes": "B3: p=0.5. Insufficient routed exposure."
+  }
+}

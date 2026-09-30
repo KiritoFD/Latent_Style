@@ -1,0 +1,27 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "structure_aligned_target": true,
+    "ll_partial_style_enabled": true,
+    "ll_partial_alpha": 0.3,
+    "ll_partial_mode": "adain",
+    "train_adain_enabled": true,
+    "train_adain_scale": 1.0
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 10,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_v_train_adain"
+  },
+  "ablation": {
+    "name": "brk_v_train_adain",
+    "axis": "dino_s_break_round5",
+    "stage": "brk_round5",
+    "notes": "Round 5 Direction 2: Train-time AdaIN alignment. Math: endpoint_adain_scale=1.0 at inference creates train-test mismatch. Training target x1* is raw SAT, but inference output is AdaIN(ODE(v_theta), x_s). Enabling train_adain makes training target = AdaIN(x1*, x_s, alpha=1.0), aligning distributions. Expected: CLIP-S recovery (mismatch eliminated), DINO-S maintained."
+  }
+}

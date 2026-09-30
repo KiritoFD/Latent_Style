@@ -1,0 +1,11 @@
+import json
+d = json.load(open('/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/t4_asg_adaptive_wct/full_eval/epoch_0005/summary.json'))
+a = d.get('analysis', {})
+ap = a.get('all_pairs_overview', {})
+st = a.get('style_transfer_ability', {})
+idt = a.get('identity_reconstruction', {})
+print('all_pairs CLIP-S:', ap.get('clip_style'))
+print('all_pairs LPIPS:', ap.get('content_lpips'))
+print('transfer CLIP-S:', st.get('clip_style'))
+print('transfer LPIPS:', st.get('content_lpips'))
+print('identity CLIP-S:', idt.get('clip_style'))

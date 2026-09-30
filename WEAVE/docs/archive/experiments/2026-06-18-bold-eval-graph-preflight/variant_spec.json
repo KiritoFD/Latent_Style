@@ -1,0 +1,45 @@
+{
+  "variants": [
+    {
+      "name": "r11_linear_blend_0p00",
+      "overrides": {
+        "model.semantic_self_topology_blend": 0.0
+      }
+    },
+    {
+      "name": "r12_linear_blend_0p30",
+      "overrides": {
+        "model.semantic_self_topology_blend": 0.3
+      }
+    },
+    {
+      "name": "r13_linear_blend_0p00_solver_pc",
+      "overrides": {
+        "model.semantic_self_topology_blend": 0.0,
+        "model.solver_family": "solver_pc"
+      }
+    },
+    {
+      "name": "r14_linear_blend_0p30_solver_pc",
+      "overrides": {
+        "model.semantic_self_topology_blend": 0.3,
+        "model.solver_family": "solver_pc"
+      }
+    },
+    {
+      "name": "r15_vertical_blend_0p00",
+      "overrides": {
+        "bridge.bridge_path_mode": "vertical",
+        "model.semantic_self_topology_blend": 0.0
+      }
+    },
+    {
+      "name": "r16_vertical_blend_0p00_solver_pc",
+      "overrides": {
+        "bridge.bridge_path_mode": "vertical",
+        "model.semantic_self_topology_blend": 0.0,
+        "model.solver_family": "solver_pc"
+      }
+    }
+  ]
+}

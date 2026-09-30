@@ -1,0 +1,16 @@
+{
+  "_base": "t11_repro_15ep.json",
+  "model": {
+    "style_extrap_alpha": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/t11e2_extrap05_15ep",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "t11e2_extrap05_15ep",
+    "axis": "t11_evolution_stronger_extrapolation",
+    "stage": "t11_evo",
+    "notes": "T11 evo-2: Stronger style extrapolation (style_extrap_alpha 0.4->0.5). T11 uses extrap=0.4 for style direction amplification. Higher alpha pushes latent further along style direction during ODE integration. Tests if +0.1 alpha can boost clip without hurting lpips (content is protected by LL bypass, not extrap)."
+  }
+}

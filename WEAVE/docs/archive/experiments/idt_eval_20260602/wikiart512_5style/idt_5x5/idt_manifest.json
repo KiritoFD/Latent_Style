@@ -1,0 +1,4517 @@
+{
+  "name": "idt",
+  "definition": "identical baseline: copy each source image unchanged to every target column",
+  "dataset": "wikiart512_5style",
+  "test_dir": "G:\\GitHub\\Latent_Style\\Dataset\\wikiart512_5style\\test",
+  "styles": [
+    "Realism",
+    "Impressionism",
+    "Post_Impressionism",
+    "Expressionism",
+    "Symbolism"
+  ],
+  "count": 750,
+  "images_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\idt_eval_20260602\\wikiart512_5style\\idt_5x5\\images",
+  "rows": [
+    {
+      "src_style": "Realism",
+      "src_image": "adolf-hitler_the-munich-opera-house.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_adolf-hitler_the-munich-opera-house_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "adolf-hitler_the-munich-opera-house.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_adolf-hitler_the-munich-opera-house_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "adolf-hitler_the-munich-opera-house.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_adolf-hitler_the-munich-opera-house_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "adolf-hitler_the-munich-opera-house.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_adolf-hitler_the-munich-opera-house_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "adolf-hitler_the-munich-opera-house.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_adolf-hitler_the-munich-opera-house_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_spring-2.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_aleksey-savrasov_spring-2_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_spring-2.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_aleksey-savrasov_spring-2_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_spring-2.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_aleksey-savrasov_spring-2_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_spring-2.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_aleksey-savrasov_spring-2_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_spring-2.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_aleksey-savrasov_spring-2_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_spring-the-rooks-have-arrived-1872.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_aleksey-savrasov_spring-the-rooks-have-arrived-1872_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_spring-the-rooks-have-arrived-1872.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_aleksey-savrasov_spring-the-rooks-have-arrived-1872_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_spring-the-rooks-have-arrived-1872.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_aleksey-savrasov_spring-the-rooks-have-arrived-1872_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_spring-the-rooks-have-arrived-1872.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_aleksey-savrasov_spring-the-rooks-have-arrived-1872_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_spring-the-rooks-have-arrived-1872.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_aleksey-savrasov_spring-the-rooks-have-arrived-1872_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_swiss-form-1862.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_aleksey-savrasov_swiss-form-1862_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_swiss-form-1862.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_aleksey-savrasov_swiss-form-1862_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_swiss-form-1862.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_aleksey-savrasov_swiss-form-1862_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_swiss-form-1862.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_aleksey-savrasov_swiss-form-1862_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "aleksey-savrasov_swiss-form-1862.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_aleksey-savrasov_swiss-form-1862_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "camille-corot_landscape-1.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_camille-corot_landscape-1_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "camille-corot_landscape-1.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_camille-corot_landscape-1_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "camille-corot_landscape-1.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_camille-corot_landscape-1_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "camille-corot_landscape-1.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_camille-corot_landscape-1_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "camille-corot_landscape-1.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_camille-corot_landscape-1_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "camille-corot_the-artist-s-studio.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_camille-corot_the-artist-s-studio_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "camille-corot_the-artist-s-studio.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_camille-corot_the-artist-s-studio_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "camille-corot_the-artist-s-studio.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_camille-corot_the-artist-s-studio_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "camille-corot_the-artist-s-studio.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_camille-corot_the-artist-s-studio_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "camille-corot_the-artist-s-studio.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_camille-corot_the-artist-s-studio_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "charles-francois-daubigny_the-banks-of-the-oise-1877.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_charles-francois-daubigny_the-banks-of-the-oise-1877_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "charles-francois-daubigny_the-banks-of-the-oise-1877.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_charles-francois-daubigny_the-banks-of-the-oise-1877_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "charles-francois-daubigny_the-banks-of-the-oise-1877.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_charles-francois-daubigny_the-banks-of-the-oise-1877_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "charles-francois-daubigny_the-banks-of-the-oise-1877.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_charles-francois-daubigny_the-banks-of-the-oise-1877_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "charles-francois-daubigny_the-banks-of-the-oise-1877.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_charles-francois-daubigny_the-banks-of-the-oise-1877_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "constantin-guys_two-grisettes.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_constantin-guys_two-grisettes_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "constantin-guys_two-grisettes.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_constantin-guys_two-grisettes_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "constantin-guys_two-grisettes.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_constantin-guys_two-grisettes_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "constantin-guys_two-grisettes.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_constantin-guys_two-grisettes_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "constantin-guys_two-grisettes.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_constantin-guys_two-grisettes_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "eugene-boudin_le-havre-francais-tower.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_eugene-boudin_le-havre-francais-tower_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "eugene-boudin_le-havre-francais-tower.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_eugene-boudin_le-havre-francais-tower_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "eugene-boudin_le-havre-francais-tower.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_eugene-boudin_le-havre-francais-tower_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "eugene-boudin_le-havre-francais-tower.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_eugene-boudin_le-havre-francais-tower_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "eugene-boudin_le-havre-francais-tower.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_eugene-boudin_le-havre-francais-tower_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "frederic-remington_attack-on-the-supply-train-1885.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_frederic-remington_attack-on-the-supply-train-1885_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "frederic-remington_attack-on-the-supply-train-1885.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_frederic-remington_attack-on-the-supply-train-1885_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "frederic-remington_attack-on-the-supply-train-1885.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_frederic-remington_attack-on-the-supply-train-1885_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "frederic-remington_attack-on-the-supply-train-1885.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_frederic-remington_attack-on-the-supply-train-1885_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "frederic-remington_attack-on-the-supply-train-1885.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_frederic-remington_attack-on-the-supply-train-1885_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "fyodor-vasilyev_poplars-lit-by-the-sun.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_fyodor-vasilyev_poplars-lit-by-the-sun_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "fyodor-vasilyev_poplars-lit-by-the-sun.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_fyodor-vasilyev_poplars-lit-by-the-sun_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "fyodor-vasilyev_poplars-lit-by-the-sun.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_fyodor-vasilyev_poplars-lit-by-the-sun_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "fyodor-vasilyev_poplars-lit-by-the-sun.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_fyodor-vasilyev_poplars-lit-by-the-sun_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "fyodor-vasilyev_poplars-lit-by-the-sun.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_fyodor-vasilyev_poplars-lit-by-the-sun_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "fyodor-vasilyev_the-shore-cloudy-day-1869.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_fyodor-vasilyev_the-shore-cloudy-day-1869_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "fyodor-vasilyev_the-shore-cloudy-day-1869.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_fyodor-vasilyev_the-shore-cloudy-day-1869_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "fyodor-vasilyev_the-shore-cloudy-day-1869.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_fyodor-vasilyev_the-shore-cloudy-day-1869_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "fyodor-vasilyev_the-shore-cloudy-day-1869.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_fyodor-vasilyev_the-shore-cloudy-day-1869_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "fyodor-vasilyev_the-shore-cloudy-day-1869.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_fyodor-vasilyev_the-shore-cloudy-day-1869_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "gustave-courbet_lake-leman-1874.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_gustave-courbet_lake-leman-1874_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "gustave-courbet_lake-leman-1874.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_gustave-courbet_lake-leman-1874_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "gustave-courbet_lake-leman-1874.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_gustave-courbet_lake-leman-1874_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "gustave-courbet_lake-leman-1874.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_gustave-courbet_lake-leman-1874_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "gustave-courbet_lake-leman-1874.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_gustave-courbet_lake-leman-1874_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "henri-fantin-latour_carnations-1.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_henri-fantin-latour_carnations-1_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "henri-fantin-latour_carnations-1.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_henri-fantin-latour_carnations-1_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "henri-fantin-latour_carnations-1.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_henri-fantin-latour_carnations-1_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "henri-fantin-latour_carnations-1.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_henri-fantin-latour_carnations-1_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "henri-fantin-latour_carnations-1.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_henri-fantin-latour_carnations-1_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ilya-repin_portrait-of-a-woman-e-d-botkina-1881.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_ilya-repin_portrait-of-a-woman-e-d-botkina-1881_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ilya-repin_portrait-of-a-woman-e-d-botkina-1881.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_ilya-repin_portrait-of-a-woman-e-d-botkina-1881_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ilya-repin_portrait-of-a-woman-e-d-botkina-1881.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_ilya-repin_portrait-of-a-woman-e-d-botkina-1881_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ilya-repin_portrait-of-a-woman-e-d-botkina-1881.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_ilya-repin_portrait-of-a-woman-e-d-botkina-1881_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ilya-repin_portrait-of-a-woman-e-d-botkina-1881.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_ilya-repin_portrait-of-a-woman-e-d-botkina-1881_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "isaac-levitan_landscape-1.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_isaac-levitan_landscape-1_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "isaac-levitan_landscape-1.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_isaac-levitan_landscape-1_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "isaac-levitan_landscape-1.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_isaac-levitan_landscape-1_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "isaac-levitan_landscape-1.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_isaac-levitan_landscape-1_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "isaac-levitan_landscape-1.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_isaac-levitan_landscape-1_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "isaac-levitan_plyos.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_isaac-levitan_plyos_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "isaac-levitan_plyos.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_isaac-levitan_plyos_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "isaac-levitan_plyos.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_isaac-levitan_plyos_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "isaac-levitan_plyos.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_isaac-levitan_plyos_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "isaac-levitan_plyos.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_isaac-levitan_plyos_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ivan-shishkin_rocky-shore-1879.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_ivan-shishkin_rocky-shore-1879_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ivan-shishkin_rocky-shore-1879.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_ivan-shishkin_rocky-shore-1879_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ivan-shishkin_rocky-shore-1879.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_ivan-shishkin_rocky-shore-1879_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ivan-shishkin_rocky-shore-1879.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_ivan-shishkin_rocky-shore-1879_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ivan-shishkin_rocky-shore-1879.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_ivan-shishkin_rocky-shore-1879_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ivan-vladimirov_the-seizure-of-german-automobiles.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_ivan-vladimirov_the-seizure-of-german-automobiles_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ivan-vladimirov_the-seizure-of-german-automobiles.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_ivan-vladimirov_the-seizure-of-german-automobiles_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ivan-vladimirov_the-seizure-of-german-automobiles.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_ivan-vladimirov_the-seizure-of-german-automobiles_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ivan-vladimirov_the-seizure-of-german-automobiles.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_ivan-vladimirov_the-seizure-of-german-automobiles_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "ivan-vladimirov_the-seizure-of-german-automobiles.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_ivan-vladimirov_the-seizure-of-german-automobiles_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "john-singer-sargent_the-acheson-sisters-1902.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_john-singer-sargent_the-acheson-sisters-1902_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "john-singer-sargent_the-acheson-sisters-1902.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_john-singer-sargent_the-acheson-sisters-1902_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "john-singer-sargent_the-acheson-sisters-1902.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_john-singer-sargent_the-acheson-sisters-1902_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "john-singer-sargent_the-acheson-sisters-1902.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_john-singer-sargent_the-acheson-sisters-1902_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "john-singer-sargent_the-acheson-sisters-1902.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_john-singer-sargent_the-acheson-sisters-1902_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "mikhail-vrubel_portrait-of-a-businessman-k-artsybushev.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_mikhail-vrubel_portrait-of-a-businessman-k-artsybushev_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "mikhail-vrubel_portrait-of-a-businessman-k-artsybushev.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_mikhail-vrubel_portrait-of-a-businessman-k-artsybushev_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "mikhail-vrubel_portrait-of-a-businessman-k-artsybushev.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_mikhail-vrubel_portrait-of-a-businessman-k-artsybushev_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "mikhail-vrubel_portrait-of-a-businessman-k-artsybushev.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_mikhail-vrubel_portrait-of-a-businessman-k-artsybushev_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "mikhail-vrubel_portrait-of-a-businessman-k-artsybushev.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_mikhail-vrubel_portrait-of-a-businessman-k-artsybushev_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "n.c.-wyeth_captain-nemo.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_n.c.-wyeth_captain-nemo_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "n.c.-wyeth_captain-nemo.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_n.c.-wyeth_captain-nemo_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "n.c.-wyeth_captain-nemo.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_n.c.-wyeth_captain-nemo_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "n.c.-wyeth_captain-nemo.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_n.c.-wyeth_captain-nemo_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "n.c.-wyeth_captain-nemo.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_n.c.-wyeth_captain-nemo_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "nikolai-ge_oak-grove-at-san-terenzo.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_nikolai-ge_oak-grove-at-san-terenzo_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "nikolai-ge_oak-grove-at-san-terenzo.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_nikolai-ge_oak-grove-at-san-terenzo_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "nikolai-ge_oak-grove-at-san-terenzo.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_nikolai-ge_oak-grove-at-san-terenzo_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "nikolai-ge_oak-grove-at-san-terenzo.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_nikolai-ge_oak-grove-at-san-terenzo_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "nikolai-ge_oak-grove-at-san-terenzo.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_nikolai-ge_oak-grove-at-san-terenzo_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "paul-mathiopoulos_nude-standing.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_paul-mathiopoulos_nude-standing_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "paul-mathiopoulos_nude-standing.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_paul-mathiopoulos_nude-standing_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "paul-mathiopoulos_nude-standing.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_paul-mathiopoulos_nude-standing_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "paul-mathiopoulos_nude-standing.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_paul-mathiopoulos_nude-standing_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "paul-mathiopoulos_nude-standing.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_paul-mathiopoulos_nude-standing_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "pyotr-konchalovsky_still-life-apples-on-a-table-near-the-stove-1947.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_pyotr-konchalovsky_still-life-apples-on-a-table-near-the-stove-1947_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "pyotr-konchalovsky_still-life-apples-on-a-table-near-the-stove-1947.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_pyotr-konchalovsky_still-life-apples-on-a-table-near-the-stove-1947_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "pyotr-konchalovsky_still-life-apples-on-a-table-near-the-stove-1947.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_pyotr-konchalovsky_still-life-apples-on-a-table-near-the-stove-1947_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "pyotr-konchalovsky_still-life-apples-on-a-table-near-the-stove-1947.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_pyotr-konchalovsky_still-life-apples-on-a-table-near-the-stove-1947_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "pyotr-konchalovsky_still-life-apples-on-a-table-near-the-stove-1947.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_pyotr-konchalovsky_still-life-apples-on-a-table-near-the-stove-1947_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "pyotr-konchalovsky_still-life-red-tray-and-ash-1947.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_pyotr-konchalovsky_still-life-red-tray-and-ash-1947_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "pyotr-konchalovsky_still-life-red-tray-and-ash-1947.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_pyotr-konchalovsky_still-life-red-tray-and-ash-1947_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "pyotr-konchalovsky_still-life-red-tray-and-ash-1947.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_pyotr-konchalovsky_still-life-red-tray-and-ash-1947_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "pyotr-konchalovsky_still-life-red-tray-and-ash-1947.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_pyotr-konchalovsky_still-life-red-tray-and-ash-1947_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "pyotr-konchalovsky_still-life-red-tray-and-ash-1947.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_pyotr-konchalovsky_still-life-red-tray-and-ash-1947_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "thomas-eakins_music-1904.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_thomas-eakins_music-1904_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "thomas-eakins_music-1904.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_thomas-eakins_music-1904_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "thomas-eakins_music-1904.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_thomas-eakins_music-1904_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "thomas-eakins_music-1904.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_thomas-eakins_music-1904_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "thomas-eakins_music-1904.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_thomas-eakins_music-1904_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "valentin-serov_the-wolf-and-the-crane.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_valentin-serov_the-wolf-and-the-crane_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "valentin-serov_the-wolf-and-the-crane.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_valentin-serov_the-wolf-and-the-crane_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "valentin-serov_the-wolf-and-the-crane.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_valentin-serov_the-wolf-and-the-crane_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "valentin-serov_the-wolf-and-the-crane.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_valentin-serov_the-wolf-and-the-crane_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "valentin-serov_the-wolf-and-the-crane.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_valentin-serov_the-wolf-and-the-crane_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "vasily-perov_return-of-the-peasants-from-a-funeral-in-the-winter.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_vasily-perov_return-of-the-peasants-from-a-funeral-in-the-winter_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "vasily-perov_return-of-the-peasants-from-a-funeral-in-the-winter.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_vasily-perov_return-of-the-peasants-from-a-funeral-in-the-winter_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "vasily-perov_return-of-the-peasants-from-a-funeral-in-the-winter.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_vasily-perov_return-of-the-peasants-from-a-funeral-in-the-winter_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "vasily-perov_return-of-the-peasants-from-a-funeral-in-the-winter.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_vasily-perov_return-of-the-peasants-from-a-funeral-in-the-winter_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "vasily-perov_return-of-the-peasants-from-a-funeral-in-the-winter.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_vasily-perov_return-of-the-peasants-from-a-funeral-in-the-winter_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "vincent-van-gogh_peasant-girl-half-figure.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Realism_vincent-van-gogh_peasant-girl-half-figure_to_Realism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "vincent-van-gogh_peasant-girl-half-figure.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Realism_vincent-van-gogh_peasant-girl-half-figure_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "vincent-van-gogh_peasant-girl-half-figure.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Realism_vincent-van-gogh_peasant-girl-half-figure_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "vincent-van-gogh_peasant-girl-half-figure.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Realism_vincent-van-gogh_peasant-girl-half-figure_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Realism",
+      "src_image": "vincent-van-gogh_peasant-girl-half-figure.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Realism_vincent-van-gogh_peasant-girl-half-figure_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "berthe-morisot_the-artist-s-sister-edma-with-her-daughter-jeanne.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_berthe-morisot_the-artist-s-sister-edma-with-her-daughter-jeanne_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "berthe-morisot_the-artist-s-sister-edma-with-her-daughter-jeanne.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_berthe-morisot_the-artist-s-sister-edma-with-her-daughter-jeanne_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "berthe-morisot_the-artist-s-sister-edma-with-her-daughter-jeanne.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_berthe-morisot_the-artist-s-sister-edma-with-her-daughter-jeanne_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "berthe-morisot_the-artist-s-sister-edma-with-her-daughter-jeanne.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_berthe-morisot_the-artist-s-sister-edma-with-her-daughter-jeanne_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "berthe-morisot_the-artist-s-sister-edma-with-her-daughter-jeanne.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_berthe-morisot_the-artist-s-sister-edma-with-her-daughter-jeanne_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "berthe-morisot_young-girl-with-a-bird.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_berthe-morisot_young-girl-with-a-bird_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "berthe-morisot_young-girl-with-a-bird.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_berthe-morisot_young-girl-with-a-bird_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "berthe-morisot_young-girl-with-a-bird.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_berthe-morisot_young-girl-with-a-bird_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "berthe-morisot_young-girl-with-a-bird.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_berthe-morisot_young-girl-with-a-bird_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "berthe-morisot_young-girl-with-a-bird.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_berthe-morisot_young-girl-with-a-bird_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_haymaking-1874.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_camille-pissarro_haymaking-1874_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_haymaking-1874.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_camille-pissarro_haymaking-1874_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_haymaking-1874.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_camille-pissarro_haymaking-1874_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_haymaking-1874.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_camille-pissarro_haymaking-1874_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_haymaking-1874.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_camille-pissarro_haymaking-1874_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_the-carrousel-autumn-morning-1899.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_camille-pissarro_the-carrousel-autumn-morning-1899_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_the-carrousel-autumn-morning-1899.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_camille-pissarro_the-carrousel-autumn-morning-1899_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_the-carrousel-autumn-morning-1899.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_camille-pissarro_the-carrousel-autumn-morning-1899_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_the-carrousel-autumn-morning-1899.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_camille-pissarro_the-carrousel-autumn-morning-1899_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_the-carrousel-autumn-morning-1899.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_camille-pissarro_the-carrousel-autumn-morning-1899_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_the-tuileries-gardens-1900.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_camille-pissarro_the-tuileries-gardens-1900_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_the-tuileries-gardens-1900.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_camille-pissarro_the-tuileries-gardens-1900_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_the-tuileries-gardens-1900.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_camille-pissarro_the-tuileries-gardens-1900_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_the-tuileries-gardens-1900.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_camille-pissarro_the-tuileries-gardens-1900_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "camille-pissarro_the-tuileries-gardens-1900.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_camille-pissarro_the-tuileries-gardens-1900_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "childe-hassam_afternoon-in-nantucket.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_childe-hassam_afternoon-in-nantucket_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "childe-hassam_afternoon-in-nantucket.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_childe-hassam_afternoon-in-nantucket_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "childe-hassam_afternoon-in-nantucket.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_childe-hassam_afternoon-in-nantucket_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "childe-hassam_afternoon-in-nantucket.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_childe-hassam_afternoon-in-nantucket_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "childe-hassam_afternoon-in-nantucket.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_childe-hassam_afternoon-in-nantucket_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "childe-hassam_paris-street-scene.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_childe-hassam_paris-street-scene_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "childe-hassam_paris-street-scene.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_childe-hassam_paris-street-scene_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "childe-hassam_paris-street-scene.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_childe-hassam_paris-street-scene_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "childe-hassam_paris-street-scene.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_childe-hassam_paris-street-scene_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "childe-hassam_paris-street-scene.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_childe-hassam_paris-street-scene_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_dancer-with-a-fan-study.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_edgar-degas_dancer-with-a-fan-study_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_dancer-with-a-fan-study.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_edgar-degas_dancer-with-a-fan-study_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_dancer-with-a-fan-study.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_edgar-degas_dancer-with-a-fan-study_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_dancer-with-a-fan-study.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_edgar-degas_dancer-with-a-fan-study_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_dancer-with-a-fan-study.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_edgar-degas_dancer-with-a-fan-study_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_jockey-1882.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_edgar-degas_jockey-1882_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_jockey-1882.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_edgar-degas_jockey-1882_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_jockey-1882.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_edgar-degas_jockey-1882_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_jockey-1882.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_edgar-degas_jockey-1882_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_jockey-1882.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_edgar-degas_jockey-1882_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_view-of-saint-valery-sur-somme.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_edgar-degas_view-of-saint-valery-sur-somme_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_view-of-saint-valery-sur-somme.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_edgar-degas_view-of-saint-valery-sur-somme_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_view-of-saint-valery-sur-somme.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_edgar-degas_view-of-saint-valery-sur-somme_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_view-of-saint-valery-sur-somme.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_edgar-degas_view-of-saint-valery-sur-somme_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edgar-degas_view-of-saint-valery-sur-somme.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_edgar-degas_view-of-saint-valery-sur-somme_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edouard-manet_swallows-1873.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_edouard-manet_swallows-1873_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edouard-manet_swallows-1873.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_edouard-manet_swallows-1873_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edouard-manet_swallows-1873.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_edouard-manet_swallows-1873_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edouard-manet_swallows-1873.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_edouard-manet_swallows-1873_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "edouard-manet_swallows-1873.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_edouard-manet_swallows-1873_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "georges-seurat_a-canoes-1885.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_georges-seurat_a-canoes-1885_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "georges-seurat_a-canoes-1885.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_georges-seurat_a-canoes-1885_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "georges-seurat_a-canoes-1885.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_georges-seurat_a-canoes-1885_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "georges-seurat_a-canoes-1885.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_georges-seurat_a-canoes-1885_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "georges-seurat_a-canoes-1885.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_georges-seurat_a-canoes-1885_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "giovanni-boldini_portrait-of-sarah-bernhardt-1.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_giovanni-boldini_portrait-of-sarah-bernhardt-1_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "giovanni-boldini_portrait-of-sarah-bernhardt-1.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_giovanni-boldini_portrait-of-sarah-bernhardt-1_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "giovanni-boldini_portrait-of-sarah-bernhardt-1.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_giovanni-boldini_portrait-of-sarah-bernhardt-1_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "giovanni-boldini_portrait-of-sarah-bernhardt-1.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_giovanni-boldini_portrait-of-sarah-bernhardt-1_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "giovanni-boldini_portrait-of-sarah-bernhardt-1.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_giovanni-boldini_portrait-of-sarah-bernhardt-1_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "giovanni-boldini_the-sisters-laskaraki.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_giovanni-boldini_the-sisters-laskaraki_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "giovanni-boldini_the-sisters-laskaraki.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_giovanni-boldini_the-sisters-laskaraki_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "giovanni-boldini_the-sisters-laskaraki.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_giovanni-boldini_the-sisters-laskaraki_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "giovanni-boldini_the-sisters-laskaraki.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_giovanni-boldini_the-sisters-laskaraki_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "giovanni-boldini_the-sisters-laskaraki.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_giovanni-boldini_the-sisters-laskaraki_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "henri-catargi_pansies-1974.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_henri-catargi_pansies-1974_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "henri-catargi_pansies-1974.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_henri-catargi_pansies-1974_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "henri-catargi_pansies-1974.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_henri-catargi_pansies-1974_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "henri-catargi_pansies-1974.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_henri-catargi_pansies-1974_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "henri-catargi_pansies-1974.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_henri-catargi_pansies-1974_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "henri-martin_fishing-boats-at-collioure.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_henri-martin_fishing-boats-at-collioure_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "henri-martin_fishing-boats-at-collioure.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_henri-martin_fishing-boats-at-collioure_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "henri-martin_fishing-boats-at-collioure.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_henri-martin_fishing-boats-at-collioure_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "henri-martin_fishing-boats-at-collioure.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_henri-martin_fishing-boats-at-collioure_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "henri-martin_fishing-boats-at-collioure.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_henri-martin_fishing-boats-at-collioure_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "joaquã­n-sorolla_furnace-of-elche-palm.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_joaquã­n-sorolla_furnace-of-elche-palm_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "joaquã­n-sorolla_furnace-of-elche-palm.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_joaquã­n-sorolla_furnace-of-elche-palm_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "joaquã­n-sorolla_furnace-of-elche-palm.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_joaquã­n-sorolla_furnace-of-elche-palm_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "joaquã­n-sorolla_furnace-of-elche-palm.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_joaquã­n-sorolla_furnace-of-elche-palm_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "joaquã­n-sorolla_furnace-of-elche-palm.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_joaquã­n-sorolla_furnace-of-elche-palm_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "john-singer-sargent_carrara-workmen-1911.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_john-singer-sargent_carrara-workmen-1911_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "john-singer-sargent_carrara-workmen-1911.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_john-singer-sargent_carrara-workmen-1911_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "john-singer-sargent_carrara-workmen-1911.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_john-singer-sargent_carrara-workmen-1911_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "john-singer-sargent_carrara-workmen-1911.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_john-singer-sargent_carrara-workmen-1911_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "john-singer-sargent_carrara-workmen-1911.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_john-singer-sargent_carrara-workmen-1911_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "john-singer-sargent_the-simplon-large-rocks.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_john-singer-sargent_the-simplon-large-rocks_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "john-singer-sargent_the-simplon-large-rocks.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_john-singer-sargent_the-simplon-large-rocks_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "john-singer-sargent_the-simplon-large-rocks.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_john-singer-sargent_the-simplon-large-rocks_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "john-singer-sargent_the-simplon-large-rocks.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_john-singer-sargent_the-simplon-large-rocks_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "john-singer-sargent_the-simplon-large-rocks.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_john-singer-sargent_the-simplon-large-rocks_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "konstantin-korovin_in-the-caucasus-sitting-mountaineers-1889.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_konstantin-korovin_in-the-caucasus-sitting-mountaineers-1889_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "konstantin-korovin_in-the-caucasus-sitting-mountaineers-1889.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_konstantin-korovin_in-the-caucasus-sitting-mountaineers-1889_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "konstantin-korovin_in-the-caucasus-sitting-mountaineers-1889.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_konstantin-korovin_in-the-caucasus-sitting-mountaineers-1889_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "konstantin-korovin_in-the-caucasus-sitting-mountaineers-1889.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_konstantin-korovin_in-the-caucasus-sitting-mountaineers-1889_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "konstantin-korovin_in-the-caucasus-sitting-mountaineers-1889.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_konstantin-korovin_in-the-caucasus-sitting-mountaineers-1889_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "konstantin-korovin_roses-and-fruit-1917.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_konstantin-korovin_roses-and-fruit-1917_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "konstantin-korovin_roses-and-fruit-1917.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_konstantin-korovin_roses-and-fruit-1917_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "konstantin-korovin_roses-and-fruit-1917.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_konstantin-korovin_roses-and-fruit-1917_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "konstantin-korovin_roses-and-fruit-1917.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_konstantin-korovin_roses-and-fruit-1917_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "konstantin-korovin_roses-and-fruit-1917.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_konstantin-korovin_roses-and-fruit-1917_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "octav-bancila_flori-de-m-r.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_octav-bancila_flori-de-m-r_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "octav-bancila_flori-de-m-r.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_octav-bancila_flori-de-m-r_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "octav-bancila_flori-de-m-r.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_octav-bancila_flori-de-m-r_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "octav-bancila_flori-de-m-r.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_octav-bancila_flori-de-m-r_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "octav-bancila_flori-de-m-r.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_octav-bancila_flori-de-m-r_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "paul-cezanne_the-orchard-1877.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_paul-cezanne_the-orchard-1877_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "paul-cezanne_the-orchard-1877.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_paul-cezanne_the-orchard-1877_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "paul-cezanne_the-orchard-1877.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_paul-cezanne_the-orchard-1877_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "paul-cezanne_the-orchard-1877.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_paul-cezanne_the-orchard-1877_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "paul-cezanne_the-orchard-1877.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_paul-cezanne_the-orchard-1877_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "paul-gauguin_chicken-coup.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_paul-gauguin_chicken-coup_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "paul-gauguin_chicken-coup.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_paul-gauguin_chicken-coup_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "paul-gauguin_chicken-coup.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_paul-gauguin_chicken-coup_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "paul-gauguin_chicken-coup.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_paul-gauguin_chicken-coup_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "paul-gauguin_chicken-coup.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_paul-gauguin_chicken-coup_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_gladiolas-in-a-vase-1875.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_gladiolas-in-a-vase-1875_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_gladiolas-in-a-vase-1875.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_gladiolas-in-a-vase-1875_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_gladiolas-in-a-vase-1875.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_gladiolas-in-a-vase-1875_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_gladiolas-in-a-vase-1875.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_gladiolas-in-a-vase-1875_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_gladiolas-in-a-vase-1875.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_gladiolas-in-a-vase-1875_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_profile-of-a-young-woman-in-a-hat.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_profile-of-a-young-woman-in-a-hat_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_profile-of-a-young-woman-in-a-hat.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_profile-of-a-young-woman-in-a-hat_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_profile-of-a-young-woman-in-a-hat.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_profile-of-a-young-woman-in-a-hat_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_profile-of-a-young-woman-in-a-hat.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_profile-of-a-young-woman-in-a-hat_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_profile-of-a-young-woman-in-a-hat.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_profile-of-a-young-woman-in-a-hat_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_seated-nude-in-profile-gabrielle-1913.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_seated-nude-in-profile-gabrielle-1913_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_seated-nude-in-profile-gabrielle-1913.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_seated-nude-in-profile-gabrielle-1913_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_seated-nude-in-profile-gabrielle-1913.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_seated-nude-in-profile-gabrielle-1913_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_seated-nude-in-profile-gabrielle-1913.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_seated-nude-in-profile-gabrielle-1913_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_seated-nude-in-profile-gabrielle-1913.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_seated-nude-in-profile-gabrielle-1913_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_three-young-girls-sitting-in-the-grass-1897.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_three-young-girls-sitting-in-the-grass-1897_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_three-young-girls-sitting-in-the-grass-1897.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_three-young-girls-sitting-in-the-grass-1897_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_three-young-girls-sitting-in-the-grass-1897.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_three-young-girls-sitting-in-the-grass-1897_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_three-young-girls-sitting-in-the-grass-1897.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_three-young-girls-sitting-in-the-grass-1897_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "pierre-auguste-renoir_three-young-girls-sitting-in-the-grass-1897.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_pierre-auguste-renoir_three-young-girls-sitting-in-the-grass-1897_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "stefan-popescu_landscape-with-stronghold.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_stefan-popescu_landscape-with-stronghold_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "stefan-popescu_landscape-with-stronghold.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_stefan-popescu_landscape-with-stronghold_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "stefan-popescu_landscape-with-stronghold.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_stefan-popescu_landscape-with-stronghold_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "stefan-popescu_landscape-with-stronghold.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_stefan-popescu_landscape-with-stronghold_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "stefan-popescu_landscape-with-stronghold.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_stefan-popescu_landscape-with-stronghold_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "walter-battiss_portrait-of-the-artist-s-wife-the-artist-grace-anderson-1945.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Impressionism_walter-battiss_portrait-of-the-artist-s-wife-the-artist-grace-anderson-1945_to_Realism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "walter-battiss_portrait-of-the-artist-s-wife-the-artist-grace-anderson-1945.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Impressionism_walter-battiss_portrait-of-the-artist-s-wife-the-artist-grace-anderson-1945_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "walter-battiss_portrait-of-the-artist-s-wife-the-artist-grace-anderson-1945.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Impressionism_walter-battiss_portrait-of-the-artist-s-wife-the-artist-grace-anderson-1945_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "walter-battiss_portrait-of-the-artist-s-wife-the-artist-grace-anderson-1945.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Impressionism_walter-battiss_portrait-of-the-artist-s-wife-the-artist-grace-anderson-1945_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Impressionism",
+      "src_image": "walter-battiss_portrait-of-the-artist-s-wife-the-artist-grace-anderson-1945.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Impressionism_walter-battiss_portrait-of-the-artist-s-wife-the-artist-grace-anderson-1945_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "amrita-sher-gil_shringaar-1940.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_amrita-sher-gil_shringaar-1940_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "amrita-sher-gil_shringaar-1940.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_amrita-sher-gil_shringaar-1940_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "amrita-sher-gil_shringaar-1940.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_amrita-sher-gil_shringaar-1940_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "amrita-sher-gil_shringaar-1940.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_amrita-sher-gil_shringaar-1940_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "amrita-sher-gil_shringaar-1940.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_amrita-sher-gil_shringaar-1940_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "amrita-sher-gil_south-indian-villagers-going-to-a-market-1937.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_amrita-sher-gil_south-indian-villagers-going-to-a-market-1937_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "amrita-sher-gil_south-indian-villagers-going-to-a-market-1937.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_amrita-sher-gil_south-indian-villagers-going-to-a-market-1937_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "amrita-sher-gil_south-indian-villagers-going-to-a-market-1937.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_amrita-sher-gil_south-indian-villagers-going-to-a-market-1937_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "amrita-sher-gil_south-indian-villagers-going-to-a-market-1937.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_amrita-sher-gil_south-indian-villagers-going-to-a-market-1937_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "amrita-sher-gil_south-indian-villagers-going-to-a-market-1937.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_amrita-sher-gil_south-indian-villagers-going-to-a-market-1937_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "edouard-cortes_st-martin-3.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_edouard-cortes_st-martin-3_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "edouard-cortes_st-martin-3.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_edouard-cortes_st-martin-3_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "edouard-cortes_st-martin-3.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_edouard-cortes_st-martin-3_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "edouard-cortes_st-martin-3.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_edouard-cortes_st-martin-3_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "edouard-cortes_st-martin-3.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_edouard-cortes_st-martin-3_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "felix-vallotton_the-laundress-1895.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_felix-vallotton_the-laundress-1895_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "felix-vallotton_the-laundress-1895.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_felix-vallotton_the-laundress-1895_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "felix-vallotton_the-laundress-1895.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_felix-vallotton_the-laundress-1895_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "felix-vallotton_the-laundress-1895.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_felix-vallotton_the-laundress-1895_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "felix-vallotton_the-laundress-1895.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_felix-vallotton_the-laundress-1895_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "gustave-loiseau_place-de-la-bastille.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_gustave-loiseau_place-de-la-bastille_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "gustave-loiseau_place-de-la-bastille.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_gustave-loiseau_place-de-la-bastille_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "gustave-loiseau_place-de-la-bastille.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_gustave-loiseau_place-de-la-bastille_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "gustave-loiseau_place-de-la-bastille.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_gustave-loiseau_place-de-la-bastille_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "gustave-loiseau_place-de-la-bastille.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_gustave-loiseau_place-de-la-bastille_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_at-the-rat-mort-1899.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_at-the-rat-mort-1899_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_at-the-rat-mort-1899.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_at-the-rat-mort-1899_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_at-the-rat-mort-1899.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_at-the-rat-mort-1899_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_at-the-rat-mort-1899.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_at-the-rat-mort-1899_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_at-the-rat-mort-1899.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_at-the-rat-mort-1899_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_madame-lili-grenier-1888.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_madame-lili-grenier-1888_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_madame-lili-grenier-1888.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_madame-lili-grenier-1888_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_madame-lili-grenier-1888.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_madame-lili-grenier-1888_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_madame-lili-grenier-1888.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_madame-lili-grenier-1888_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_madame-lili-grenier-1888.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_madame-lili-grenier-1888_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_portrait-of-countess-a-de-toulouse-lautrec.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_portrait-of-countess-a-de-toulouse-lautrec_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_portrait-of-countess-a-de-toulouse-lautrec.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_portrait-of-countess-a-de-toulouse-lautrec_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_portrait-of-countess-a-de-toulouse-lautrec.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_portrait-of-countess-a-de-toulouse-lautrec_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_portrait-of-countess-a-de-toulouse-lautrec.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_portrait-of-countess-a-de-toulouse-lautrec_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "henri-de-toulouse-lautrec_portrait-of-countess-a-de-toulouse-lautrec.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_henri-de-toulouse-lautrec_portrait-of-countess-a-de-toulouse-lautrec_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "ilya-mashkov_nude-1918.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_ilya-mashkov_nude-1918_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "ilya-mashkov_nude-1918.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_ilya-mashkov_nude-1918_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "ilya-mashkov_nude-1918.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_ilya-mashkov_nude-1918_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "ilya-mashkov_nude-1918.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_ilya-mashkov_nude-1918_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "ilya-mashkov_nude-1918.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_ilya-mashkov_nude-1918_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "kuzma-petrov-vodkin_neighborhoods-khvalynsk.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_kuzma-petrov-vodkin_neighborhoods-khvalynsk_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "kuzma-petrov-vodkin_neighborhoods-khvalynsk.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_kuzma-petrov-vodkin_neighborhoods-khvalynsk_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "kuzma-petrov-vodkin_neighborhoods-khvalynsk.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_kuzma-petrov-vodkin_neighborhoods-khvalynsk_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "kuzma-petrov-vodkin_neighborhoods-khvalynsk.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_kuzma-petrov-vodkin_neighborhoods-khvalynsk_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "kuzma-petrov-vodkin_neighborhoods-khvalynsk.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_kuzma-petrov-vodkin_neighborhoods-khvalynsk_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "le-pho_woman-in-a-garden.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_le-pho_woman-in-a-garden_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "le-pho_woman-in-a-garden.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_le-pho_woman-in-a-garden_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "le-pho_woman-in-a-garden.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_le-pho_woman-in-a-garden_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "le-pho_woman-in-a-garden.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_le-pho_woman-in-a-garden_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "le-pho_woman-in-a-garden.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_le-pho_woman-in-a-garden_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_floral-still-life-1913.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_floral-still-life-1913_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_floral-still-life-1913.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_floral-still-life-1913_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_floral-still-life-1913.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_floral-still-life-1913_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_floral-still-life-1913.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_floral-still-life-1913_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_floral-still-life-1913.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_floral-still-life-1913_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_little-bridge-venice.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_little-bridge-venice_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_little-bridge-venice.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_little-bridge-venice_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_little-bridge-venice.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_little-bridge-venice_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_little-bridge-venice.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_little-bridge-venice_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_little-bridge-venice.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_little-bridge-venice_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_st-malo-1.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_st-malo-1_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_st-malo-1.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_st-malo-1_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_st-malo-1.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_st-malo-1_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_st-malo-1.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_st-malo-1_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "maurice-prendergast_st-malo-1.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_maurice-prendergast_st-malo-1_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_motherhood-1901.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_pablo-picasso_motherhood-1901_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_motherhood-1901.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_pablo-picasso_motherhood-1901_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_motherhood-1901.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_pablo-picasso_motherhood-1901_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_motherhood-1901.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_pablo-picasso_motherhood-1901_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_motherhood-1901.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_pablo-picasso_motherhood-1901_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_nude-youth-1906.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_pablo-picasso_nude-youth-1906_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_nude-youth-1906.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_pablo-picasso_nude-youth-1906_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_nude-youth-1906.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_pablo-picasso_nude-youth-1906_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_nude-youth-1906.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_pablo-picasso_nude-youth-1906_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_nude-youth-1906.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_pablo-picasso_nude-youth-1906_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_profile-of-a-young-girl-girl-with-red-flower-in-her-hair-1901.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_pablo-picasso_profile-of-a-young-girl-girl-with-red-flower-in-her-hair-1901_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_profile-of-a-young-girl-girl-with-red-flower-in-her-hair-1901.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_pablo-picasso_profile-of-a-young-girl-girl-with-red-flower-in-her-hair-1901_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_profile-of-a-young-girl-girl-with-red-flower-in-her-hair-1901.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_pablo-picasso_profile-of-a-young-girl-girl-with-red-flower-in-her-hair-1901_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_profile-of-a-young-girl-girl-with-red-flower-in-her-hair-1901.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_pablo-picasso_profile-of-a-young-girl-girl-with-red-flower-in-her-hair-1901_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pablo-picasso_profile-of-a-young-girl-girl-with-red-flower-in-her-hair-1901.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_pablo-picasso_profile-of-a-young-girl-girl-with-red-flower-in-her-hair-1901_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-cezanne_seated-woman-1879.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_paul-cezanne_seated-woman-1879_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-cezanne_seated-woman-1879.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_paul-cezanne_seated-woman-1879_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-cezanne_seated-woman-1879.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_paul-cezanne_seated-woman-1879_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-cezanne_seated-woman-1879.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_paul-cezanne_seated-woman-1879_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-cezanne_seated-woman-1879.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_paul-cezanne_seated-woman-1879_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-cezanne_the-card-players-1893.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_paul-cezanne_the-card-players-1893_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-cezanne_the-card-players-1893.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_paul-cezanne_the-card-players-1893_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-cezanne_the-card-players-1893.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_paul-cezanne_the-card-players-1893_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-cezanne_the-card-players-1893.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_paul-cezanne_the-card-players-1893_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-cezanne_the-card-players-1893.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_paul-cezanne_the-card-players-1893_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-gauguin_path-down-to-the-aven-1888.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_paul-gauguin_path-down-to-the-aven-1888_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-gauguin_path-down-to-the-aven-1888.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_paul-gauguin_path-down-to-the-aven-1888_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-gauguin_path-down-to-the-aven-1888.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_paul-gauguin_path-down-to-the-aven-1888_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-gauguin_path-down-to-the-aven-1888.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_paul-gauguin_path-down-to-the-aven-1888_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "paul-gauguin_path-down-to-the-aven-1888.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_paul-gauguin_path-down-to-the-aven-1888_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pierre-bonnard_girl-with-a-dog-in-the-park-at-grand-lemps-also-known-as-dauphine-1900.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_pierre-bonnard_girl-with-a-dog-in-the-park-at-grand-lemps-also-known-as-dauphine-1900_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pierre-bonnard_girl-with-a-dog-in-the-park-at-grand-lemps-also-known-as-dauphine-1900.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_pierre-bonnard_girl-with-a-dog-in-the-park-at-grand-lemps-also-known-as-dauphine-1900_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pierre-bonnard_girl-with-a-dog-in-the-park-at-grand-lemps-also-known-as-dauphine-1900.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_pierre-bonnard_girl-with-a-dog-in-the-park-at-grand-lemps-also-known-as-dauphine-1900_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pierre-bonnard_girl-with-a-dog-in-the-park-at-grand-lemps-also-known-as-dauphine-1900.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_pierre-bonnard_girl-with-a-dog-in-the-park-at-grand-lemps-also-known-as-dauphine-1900_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pierre-bonnard_girl-with-a-dog-in-the-park-at-grand-lemps-also-known-as-dauphine-1900.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_pierre-bonnard_girl-with-a-dog-in-the-park-at-grand-lemps-also-known-as-dauphine-1900_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "piet-mondrian_dune-landscape-1911.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_piet-mondrian_dune-landscape-1911_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "piet-mondrian_dune-landscape-1911.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_piet-mondrian_dune-landscape-1911_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "piet-mondrian_dune-landscape-1911.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_piet-mondrian_dune-landscape-1911_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "piet-mondrian_dune-landscape-1911.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_piet-mondrian_dune-landscape-1911_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "piet-mondrian_dune-landscape-1911.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_piet-mondrian_dune-landscape-1911_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pyotr-konchalovsky_evening-on-the-pier-1920.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_pyotr-konchalovsky_evening-on-the-pier-1920_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pyotr-konchalovsky_evening-on-the-pier-1920.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_pyotr-konchalovsky_evening-on-the-pier-1920_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pyotr-konchalovsky_evening-on-the-pier-1920.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_pyotr-konchalovsky_evening-on-the-pier-1920_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pyotr-konchalovsky_evening-on-the-pier-1920.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_pyotr-konchalovsky_evening-on-the-pier-1920_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "pyotr-konchalovsky_evening-on-the-pier-1920.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_pyotr-konchalovsky_evening-on-the-pier-1920_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "raoul-dufy_interior-with-fruit-bowl-1908.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_raoul-dufy_interior-with-fruit-bowl-1908_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "raoul-dufy_interior-with-fruit-bowl-1908.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_raoul-dufy_interior-with-fruit-bowl-1908_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "raoul-dufy_interior-with-fruit-bowl-1908.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_raoul-dufy_interior-with-fruit-bowl-1908_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "raoul-dufy_interior-with-fruit-bowl-1908.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_raoul-dufy_interior-with-fruit-bowl-1908_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "raoul-dufy_interior-with-fruit-bowl-1908.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_raoul-dufy_interior-with-fruit-bowl-1908_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "raoul-dufy_the-jetty-at-sainte-adresse-1906.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_raoul-dufy_the-jetty-at-sainte-adresse-1906_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "raoul-dufy_the-jetty-at-sainte-adresse-1906.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_raoul-dufy_the-jetty-at-sainte-adresse-1906_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "raoul-dufy_the-jetty-at-sainte-adresse-1906.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_raoul-dufy_the-jetty-at-sainte-adresse-1906_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "raoul-dufy_the-jetty-at-sainte-adresse-1906.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_raoul-dufy_the-jetty-at-sainte-adresse-1906_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "raoul-dufy_the-jetty-at-sainte-adresse-1906.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_raoul-dufy_the-jetty-at-sainte-adresse-1906_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_mother-roulin-with-her-baby-1888.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_mother-roulin-with-her-baby-1888_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_mother-roulin-with-her-baby-1888.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_mother-roulin-with-her-baby-1888_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_mother-roulin-with-her-baby-1888.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_mother-roulin-with-her-baby-1888_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_mother-roulin-with-her-baby-1888.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_mother-roulin-with-her-baby-1888_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_mother-roulin-with-her-baby-1888.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_mother-roulin-with-her-baby-1888_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_road-with-cypresses-1890.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_road-with-cypresses-1890_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_road-with-cypresses-1890.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_road-with-cypresses-1890_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_road-with-cypresses-1890.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_road-with-cypresses-1890_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_road-with-cypresses-1890.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_road-with-cypresses-1890_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_road-with-cypresses-1890.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_road-with-cypresses-1890_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_silhouette-of-a-peasant-woman-digging-carrots.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_silhouette-of-a-peasant-woman-digging-carrots_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_silhouette-of-a-peasant-woman-digging-carrots.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_silhouette-of-a-peasant-woman-digging-carrots_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_silhouette-of-a-peasant-woman-digging-carrots.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_silhouette-of-a-peasant-woman-digging-carrots_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_silhouette-of-a-peasant-woman-digging-carrots.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_silhouette-of-a-peasant-woman-digging-carrots_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_silhouette-of-a-peasant-woman-digging-carrots.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_silhouette-of-a-peasant-woman-digging-carrots_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_the-zouave-half-length-1888.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_the-zouave-half-length-1888_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_the-zouave-half-length-1888.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_the-zouave-half-length-1888_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_the-zouave-half-length-1888.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_the-zouave-half-length-1888_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_the-zouave-half-length-1888.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_the-zouave-half-length-1888_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_the-zouave-half-length-1888.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_the-zouave-half-length-1888_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_two-women-working-in-wheat-field-1890.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_two-women-working-in-wheat-field-1890_to_Realism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_two-women-working-in-wheat-field-1890.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_two-women-working-in-wheat-field-1890_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_two-women-working-in-wheat-field-1890.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_two-women-working-in-wheat-field-1890_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_two-women-working-in-wheat-field-1890.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_two-women-working-in-wheat-field-1890_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Post_Impressionism",
+      "src_image": "vincent-van-gogh_two-women-working-in-wheat-field-1890.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Post_Impressionism_vincent-van-gogh_two-women-working-in-wheat-field-1890_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "balthus_young-girl-at-the-window-1957.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_balthus_young-girl-at-the-window-1957_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "balthus_young-girl-at-the-window-1957.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_balthus_young-girl-at-the-window-1957_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "balthus_young-girl-at-the-window-1957.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_balthus_young-girl-at-the-window-1957_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "balthus_young-girl-at-the-window-1957.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_balthus_young-girl-at-the-window-1957_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "balthus_young-girl-at-the-window-1957.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_balthus_young-girl-at-the-window-1957_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "david-alfaro-siqueiros_from-the-dictatorship-of-porfirio-diaz-to-the-revolution-the-people-in-arms-1957.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_david-alfaro-siqueiros_from-the-dictatorship-of-porfirio-diaz-to-the-revolution-the-people-in-arms-1957_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "david-alfaro-siqueiros_from-the-dictatorship-of-porfirio-diaz-to-the-revolution-the-people-in-arms-1957.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_david-alfaro-siqueiros_from-the-dictatorship-of-porfirio-diaz-to-the-revolution-the-people-in-arms-1957_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "david-alfaro-siqueiros_from-the-dictatorship-of-porfirio-diaz-to-the-revolution-the-people-in-arms-1957.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_david-alfaro-siqueiros_from-the-dictatorship-of-porfirio-diaz-to-the-revolution-the-people-in-arms-1957_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "david-alfaro-siqueiros_from-the-dictatorship-of-porfirio-diaz-to-the-revolution-the-people-in-arms-1957.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_david-alfaro-siqueiros_from-the-dictatorship-of-porfirio-diaz-to-the-revolution-the-people-in-arms-1957_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "david-alfaro-siqueiros_from-the-dictatorship-of-porfirio-diaz-to-the-revolution-the-people-in-arms-1957.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_david-alfaro-siqueiros_from-the-dictatorship-of-porfirio-diaz-to-the-revolution-the-people-in-arms-1957_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "emil-nolde_jesus-christ-and-the-sinner-1926.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_emil-nolde_jesus-christ-and-the-sinner-1926_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "emil-nolde_jesus-christ-and-the-sinner-1926.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_emil-nolde_jesus-christ-and-the-sinner-1926_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "emil-nolde_jesus-christ-and-the-sinner-1926.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_emil-nolde_jesus-christ-and-the-sinner-1926_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "emil-nolde_jesus-christ-and-the-sinner-1926.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_emil-nolde_jesus-christ-and-the-sinner-1926_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "emil-nolde_jesus-christ-and-the-sinner-1926.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_emil-nolde_jesus-christ-and-the-sinner-1926_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "ernst-ludwig-kirchner_female-nude-kneeling-before-a-red-screen.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_ernst-ludwig-kirchner_female-nude-kneeling-before-a-red-screen_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "ernst-ludwig-kirchner_female-nude-kneeling-before-a-red-screen.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_ernst-ludwig-kirchner_female-nude-kneeling-before-a-red-screen_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "ernst-ludwig-kirchner_female-nude-kneeling-before-a-red-screen.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_ernst-ludwig-kirchner_female-nude-kneeling-before-a-red-screen_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "ernst-ludwig-kirchner_female-nude-kneeling-before-a-red-screen.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_ernst-ludwig-kirchner_female-nude-kneeling-before-a-red-screen_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "ernst-ludwig-kirchner_female-nude-kneeling-before-a-red-screen.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_ernst-ludwig-kirchner_female-nude-kneeling-before-a-red-screen_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "george-bouzianis_portrait-1927(2).jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_george-bouzianis_portrait-1927(2)_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "george-bouzianis_portrait-1927(2).jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_george-bouzianis_portrait-1927(2)_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "george-bouzianis_portrait-1927(2).jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_george-bouzianis_portrait-1927(2)_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "george-bouzianis_portrait-1927(2).jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_george-bouzianis_portrait-1927(2)_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "george-bouzianis_portrait-1927(2).jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_george-bouzianis_portrait-1927(2)_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "george-mavroides_ydra.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_george-mavroides_ydra_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "george-mavroides_ydra.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_george-mavroides_ydra_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "george-mavroides_ydra.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_george-mavroides_ydra_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "george-mavroides_ydra.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_george-mavroides_ydra_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "george-mavroides_ydra.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_george-mavroides_ydra_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "georges-braque_boats-on-the-seashore-1929.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_georges-braque_boats-on-the-seashore-1929_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "georges-braque_boats-on-the-seashore-1929.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_georges-braque_boats-on-the-seashore-1929_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "georges-braque_boats-on-the-seashore-1929.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_georges-braque_boats-on-the-seashore-1929_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "georges-braque_boats-on-the-seashore-1929.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_georges-braque_boats-on-the-seashore-1929_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "georges-braque_boats-on-the-seashore-1929.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_georges-braque_boats-on-the-seashore-1929_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "ilka-gedo_self-portrait-1947.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_ilka-gedo_self-portrait-1947_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "ilka-gedo_self-portrait-1947.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_ilka-gedo_self-portrait-1947_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "ilka-gedo_self-portrait-1947.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_ilka-gedo_self-portrait-1947_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "ilka-gedo_self-portrait-1947.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_ilka-gedo_self-portrait-1947_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "ilka-gedo_self-portrait-1947.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_ilka-gedo_self-portrait-1947_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_evening-in-the-studio.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_lucian-freud_evening-in-the-studio_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_evening-in-the-studio.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_lucian-freud_evening-in-the-studio_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_evening-in-the-studio.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_lucian-freud_evening-in-the-studio_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_evening-in-the-studio.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_lucian-freud_evening-in-the-studio_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_evening-in-the-studio.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_lucian-freud_evening-in-the-studio_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_head-of-a-child.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_lucian-freud_head-of-a-child_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_head-of-a-child.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_lucian-freud_head-of-a-child_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_head-of-a-child.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_lucian-freud_head-of-a-child_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_head-of-a-child.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_lucian-freud_head-of-a-child_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_head-of-a-child.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_lucian-freud_head-of-a-child_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_solicitors-head.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_lucian-freud_solicitors-head_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_solicitors-head.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_lucian-freud_solicitors-head_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_solicitors-head.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_lucian-freud_solicitors-head_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_solicitors-head.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_lucian-freud_solicitors-head_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_solicitors-head.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_lucian-freud_solicitors-head_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_woman-in-a-butterfly-jersey-1991.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_lucian-freud_woman-in-a-butterfly-jersey-1991_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_woman-in-a-butterfly-jersey-1991.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_lucian-freud_woman-in-a-butterfly-jersey-1991_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_woman-in-a-butterfly-jersey-1991.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_lucian-freud_woman-in-a-butterfly-jersey-1991_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_woman-in-a-butterfly-jersey-1991.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_lucian-freud_woman-in-a-butterfly-jersey-1991_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lucian-freud_woman-in-a-butterfly-jersey-1991.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_lucian-freud_woman-in-a-butterfly-jersey-1991_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lynd-ward_not-detected-272484.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_lynd-ward_not-detected-272484_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lynd-ward_not-detected-272484.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_lynd-ward_not-detected-272484_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lynd-ward_not-detected-272484.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_lynd-ward_not-detected-272484_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lynd-ward_not-detected-272484.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_lynd-ward_not-detected-272484_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "lynd-ward_not-detected-272484.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_lynd-ward_not-detected-272484_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "martiros-saryan_moscow-still-life-1956.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_martiros-saryan_moscow-still-life-1956_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "martiros-saryan_moscow-still-life-1956.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_martiros-saryan_moscow-still-life-1956_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "martiros-saryan_moscow-still-life-1956.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_martiros-saryan_moscow-still-life-1956_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "martiros-saryan_moscow-still-life-1956.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_martiros-saryan_moscow-still-life-1956_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "martiros-saryan_moscow-still-life-1956.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_martiros-saryan_moscow-still-life-1956_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-beckmann_night-1918.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_max-beckmann_night-1918_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-beckmann_night-1918.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_max-beckmann_night-1918_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-beckmann_night-1918.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_max-beckmann_night-1918_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-beckmann_night-1918.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_max-beckmann_night-1918_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-beckmann_night-1918.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_max-beckmann_night-1918_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-beckmann_the-little-fish-1933.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_max-beckmann_the-little-fish-1933_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-beckmann_the-little-fish-1933.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_max-beckmann_the-little-fish-1933_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-beckmann_the-little-fish-1933.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_max-beckmann_the-little-fish-1933_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-beckmann_the-little-fish-1933.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_max-beckmann_the-little-fish-1933_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-beckmann_the-little-fish-1933.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_max-beckmann_the-little-fish-1933_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-weber_still-life-with-two-tables.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_max-weber_still-life-with-two-tables_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-weber_still-life-with-two-tables.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_max-weber_still-life-with-two-tables_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-weber_still-life-with-two-tables.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_max-weber_still-life-with-two-tables_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-weber_still-life-with-two-tables.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_max-weber_still-life-with-two-tables_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "max-weber_still-life-with-two-tables.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_max-weber_still-life-with-two-tables_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "natalia-goncharova_nativity.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_natalia-goncharova_nativity_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "natalia-goncharova_nativity.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_natalia-goncharova_nativity_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "natalia-goncharova_nativity.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_natalia-goncharova_nativity_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "natalia-goncharova_nativity.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_natalia-goncharova_nativity_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "natalia-goncharova_nativity.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_natalia-goncharova_nativity_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "nicolae-tonitza_turk-women-in-balcic-1936.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_nicolae-tonitza_turk-women-in-balcic-1936_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "nicolae-tonitza_turk-women-in-balcic-1936.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_nicolae-tonitza_turk-women-in-balcic-1936_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "nicolae-tonitza_turk-women-in-balcic-1936.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_nicolae-tonitza_turk-women-in-balcic-1936_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "nicolae-tonitza_turk-women-in-balcic-1936.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_nicolae-tonitza_turk-women-in-balcic-1936_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "nicolae-tonitza_turk-women-in-balcic-1936.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_nicolae-tonitza_turk-women-in-balcic-1936_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "otto-dix_myself-in-brussels(1).jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_otto-dix_myself-in-brussels(1)_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "otto-dix_myself-in-brussels(1).jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_otto-dix_myself-in-brussels(1)_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "otto-dix_myself-in-brussels(1).jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_otto-dix_myself-in-brussels(1)_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "otto-dix_myself-in-brussels(1).jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_otto-dix_myself-in-brussels(1)_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "otto-dix_myself-in-brussels(1).jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_otto-dix_myself-in-brussels(1)_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "pablo-picasso_family-of-jugglers-1905.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_pablo-picasso_family-of-jugglers-1905_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "pablo-picasso_family-of-jugglers-1905.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_pablo-picasso_family-of-jugglers-1905_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "pablo-picasso_family-of-jugglers-1905.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_pablo-picasso_family-of-jugglers-1905_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "pablo-picasso_family-of-jugglers-1905.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_pablo-picasso_family-of-jugglers-1905_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "pablo-picasso_family-of-jugglers-1905.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_pablo-picasso_family-of-jugglers-1905_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paul-klee_flora-on-rocks-sun-1940(1).jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_paul-klee_flora-on-rocks-sun-1940(1)_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paul-klee_flora-on-rocks-sun-1940(1).jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_paul-klee_flora-on-rocks-sun-1940(1)_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paul-klee_flora-on-rocks-sun-1940(1).jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_paul-klee_flora-on-rocks-sun-1940(1)_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paul-klee_flora-on-rocks-sun-1940(1).jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_paul-klee_flora-on-rocks-sun-1940(1)_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paul-klee_flora-on-rocks-sun-1940(1).jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_paul-klee_flora-on-rocks-sun-1940(1)_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paul-klee_still-life-with-dove-1931(1).jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_paul-klee_still-life-with-dove-1931(1)_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paul-klee_still-life-with-dove-1931(1).jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_paul-klee_still-life-with-dove-1931(1)_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paul-klee_still-life-with-dove-1931(1).jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_paul-klee_still-life-with-dove-1931(1)_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paul-klee_still-life-with-dove-1931(1).jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_paul-klee_still-life-with-dove-1931(1)_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paul-klee_still-life-with-dove-1931(1).jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_paul-klee_still-life-with-dove-1931(1)_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paula-modersohn-becker_self-portrait-1.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_paula-modersohn-becker_self-portrait-1_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paula-modersohn-becker_self-portrait-1.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_paula-modersohn-becker_self-portrait-1_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paula-modersohn-becker_self-portrait-1.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_paula-modersohn-becker_self-portrait-1_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paula-modersohn-becker_self-portrait-1.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_paula-modersohn-becker_self-portrait-1_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "paula-modersohn-becker_self-portrait-1.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_paula-modersohn-becker_self-portrait-1_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "richard-diebenkorn_bottles.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_richard-diebenkorn_bottles_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "richard-diebenkorn_bottles.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_richard-diebenkorn_bottles_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "richard-diebenkorn_bottles.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_richard-diebenkorn_bottles_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "richard-diebenkorn_bottles.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_richard-diebenkorn_bottles_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "richard-diebenkorn_bottles.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_richard-diebenkorn_bottles_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "richard-gerstl_self-portrait-2.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_richard-gerstl_self-portrait-2_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "richard-gerstl_self-portrait-2.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_richard-gerstl_self-portrait-2_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "richard-gerstl_self-portrait-2.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_richard-gerstl_self-portrait-2_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "richard-gerstl_self-portrait-2.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_richard-gerstl_self-portrait-2_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "richard-gerstl_self-portrait-2.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_richard-gerstl_self-portrait-2_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "salvador-dali_roger-freeing-angelica-st-george-and-the-damsel.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_salvador-dali_roger-freeing-angelica-st-george-and-the-damsel_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "salvador-dali_roger-freeing-angelica-st-george-and-the-damsel.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_salvador-dali_roger-freeing-angelica-st-george-and-the-damsel_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "salvador-dali_roger-freeing-angelica-st-george-and-the-damsel.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_salvador-dali_roger-freeing-angelica-st-george-and-the-damsel_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "salvador-dali_roger-freeing-angelica-st-george-and-the-damsel.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_salvador-dali_roger-freeing-angelica-st-george-and-the-damsel_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "salvador-dali_roger-freeing-angelica-st-george-and-the-damsel.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_salvador-dali_roger-freeing-angelica-st-george-and-the-damsel_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "salvador-dali_satirical-composition-the-dance-by-matisse.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_salvador-dali_satirical-composition-the-dance-by-matisse_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "salvador-dali_satirical-composition-the-dance-by-matisse.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_salvador-dali_satirical-composition-the-dance-by-matisse_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "salvador-dali_satirical-composition-the-dance-by-matisse.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_salvador-dali_satirical-composition-the-dance-by-matisse_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "salvador-dali_satirical-composition-the-dance-by-matisse.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_salvador-dali_satirical-composition-the-dance-by-matisse_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "salvador-dali_satirical-composition-the-dance-by-matisse.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_salvador-dali_satirical-composition-the-dance-by-matisse_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "vladimir-tatlin_artist-s-model.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_vladimir-tatlin_artist-s-model_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "vladimir-tatlin_artist-s-model.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_vladimir-tatlin_artist-s-model_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "vladimir-tatlin_artist-s-model.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_vladimir-tatlin_artist-s-model_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "vladimir-tatlin_artist-s-model.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_vladimir-tatlin_artist-s-model_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "vladimir-tatlin_artist-s-model.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_vladimir-tatlin_artist-s-model_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "zinaida-serebriakova_self-portrait-with-a-brush-1924.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Expressionism_zinaida-serebriakova_self-portrait-with-a-brush-1924_to_Realism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "zinaida-serebriakova_self-portrait-with-a-brush-1924.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Expressionism_zinaida-serebriakova_self-portrait-with-a-brush-1924_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "zinaida-serebriakova_self-portrait-with-a-brush-1924.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Expressionism_zinaida-serebriakova_self-portrait-with-a-brush-1924_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "zinaida-serebriakova_self-portrait-with-a-brush-1924.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Expressionism_zinaida-serebriakova_self-portrait-with-a-brush-1924_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Expressionism",
+      "src_image": "zinaida-serebriakova_self-portrait-with-a-brush-1924.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Expressionism_zinaida-serebriakova_self-portrait-with-a-brush-1924_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "arnold-bã¶cklin_meerestille-calm-sea-1887.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_arnold-bã¶cklin_meerestille-calm-sea-1887_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "arnold-bã¶cklin_meerestille-calm-sea-1887.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_arnold-bã¶cklin_meerestille-calm-sea-1887_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "arnold-bã¶cklin_meerestille-calm-sea-1887.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_arnold-bã¶cklin_meerestille-calm-sea-1887_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "arnold-bã¶cklin_meerestille-calm-sea-1887.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_arnold-bã¶cklin_meerestille-calm-sea-1887_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "arnold-bã¶cklin_meerestille-calm-sea-1887.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_arnold-bã¶cklin_meerestille-calm-sea-1887_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "arnold-bã¶cklin_the-isle-of-the-dead-1880.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_arnold-bã¶cklin_the-isle-of-the-dead-1880_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "arnold-bã¶cklin_the-isle-of-the-dead-1880.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_arnold-bã¶cklin_the-isle-of-the-dead-1880_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "arnold-bã¶cklin_the-isle-of-the-dead-1880.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_arnold-bã¶cklin_the-isle-of-the-dead-1880_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "arnold-bã¶cklin_the-isle-of-the-dead-1880.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_arnold-bã¶cklin_the-isle-of-the-dead-1880_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "arnold-bã¶cklin_the-isle-of-the-dead-1880.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_arnold-bã¶cklin_the-isle-of-the-dead-1880_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "eliseu-visconti_the-charte.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_eliseu-visconti_the-charte_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "eliseu-visconti_the-charte.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_eliseu-visconti_the-charte_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "eliseu-visconti_the-charte.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_eliseu-visconti_the-charte_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "eliseu-visconti_the-charte.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_eliseu-visconti_the-charte_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "eliseu-visconti_the-charte.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_eliseu-visconti_the-charte_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "felicien-rops_the-satanic-satan-sowing-tares.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_felicien-rops_the-satanic-satan-sowing-tares_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "felicien-rops_the-satanic-satan-sowing-tares.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_felicien-rops_the-satanic-satan-sowing-tares_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "felicien-rops_the-satanic-satan-sowing-tares.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_felicien-rops_the-satanic-satan-sowing-tares_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "felicien-rops_the-satanic-satan-sowing-tares.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_felicien-rops_the-satanic-satan-sowing-tares_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "felicien-rops_the-satanic-satan-sowing-tares.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_felicien-rops_the-satanic-satan-sowing-tares_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "ferdinand-hodler_compositional-study-to-retreat-from-marignano.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_ferdinand-hodler_compositional-study-to-retreat-from-marignano_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "ferdinand-hodler_compositional-study-to-retreat-from-marignano.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_ferdinand-hodler_compositional-study-to-retreat-from-marignano_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "ferdinand-hodler_compositional-study-to-retreat-from-marignano.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_ferdinand-hodler_compositional-study-to-retreat-from-marignano_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "ferdinand-hodler_compositional-study-to-retreat-from-marignano.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_ferdinand-hodler_compositional-study-to-retreat-from-marignano_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "ferdinand-hodler_compositional-study-to-retreat-from-marignano.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_ferdinand-hodler_compositional-study-to-retreat-from-marignano_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "ferdinand-hodler_the-dying-valentine-gode-darel.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_ferdinand-hodler_the-dying-valentine-gode-darel_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "ferdinand-hodler_the-dying-valentine-gode-darel.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_ferdinand-hodler_the-dying-valentine-gode-darel_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "ferdinand-hodler_the-dying-valentine-gode-darel.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_ferdinand-hodler_the-dying-valentine-gode-darel_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "ferdinand-hodler_the-dying-valentine-gode-darel.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_ferdinand-hodler_the-dying-valentine-gode-darel_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "ferdinand-hodler_the-dying-valentine-gode-darel.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_ferdinand-hodler_the-dying-valentine-gode-darel_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "franz-stuck_susanna-and-the-elders-1913.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_franz-stuck_susanna-and-the-elders-1913_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "franz-stuck_susanna-and-the-elders-1913.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_franz-stuck_susanna-and-the-elders-1913_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "franz-stuck_susanna-and-the-elders-1913.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_franz-stuck_susanna-and-the-elders-1913_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "franz-stuck_susanna-and-the-elders-1913.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_franz-stuck_susanna-and-the-elders-1913_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "franz-stuck_susanna-and-the-elders-1913.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_franz-stuck_susanna-and-the-elders-1913_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "george-frederick-watts_alfred-lord-tennyson(1).jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_george-frederick-watts_alfred-lord-tennyson(1)_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "george-frederick-watts_alfred-lord-tennyson(1).jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_george-frederick-watts_alfred-lord-tennyson(1)_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "george-frederick-watts_alfred-lord-tennyson(1).jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_george-frederick-watts_alfred-lord-tennyson(1)_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "george-frederick-watts_alfred-lord-tennyson(1).jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_george-frederick-watts_alfred-lord-tennyson(1)_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "george-frederick-watts_alfred-lord-tennyson(1).jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_george-frederick-watts_alfred-lord-tennyson(1)_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "george-frederick-watts_genius-of-greek-poetry-1878(1).jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_george-frederick-watts_genius-of-greek-poetry-1878(1)_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "george-frederick-watts_genius-of-greek-poetry-1878(1).jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_george-frederick-watts_genius-of-greek-poetry-1878(1)_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "george-frederick-watts_genius-of-greek-poetry-1878(1).jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_george-frederick-watts_genius-of-greek-poetry-1878(1)_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "george-frederick-watts_genius-of-greek-poetry-1878(1).jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_george-frederick-watts_genius-of-greek-poetry-1878(1)_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "george-frederick-watts_genius-of-greek-poetry-1878(1).jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_george-frederick-watts_genius-of-greek-poetry-1878(1)_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_a-esfinge-vencedora.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_gustave-moreau_a-esfinge-vencedora_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_a-esfinge-vencedora.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_gustave-moreau_a-esfinge-vencedora_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_a-esfinge-vencedora.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_gustave-moreau_a-esfinge-vencedora_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_a-esfinge-vencedora.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_gustave-moreau_a-esfinge-vencedora_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_a-esfinge-vencedora.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_gustave-moreau_a-esfinge-vencedora_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_sappho-on-the-rocks-1872.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_gustave-moreau_sappho-on-the-rocks-1872_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_sappho-on-the-rocks-1872.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_gustave-moreau_sappho-on-the-rocks-1872_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_sappho-on-the-rocks-1872.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_gustave-moreau_sappho-on-the-rocks-1872_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_sappho-on-the-rocks-1872.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_gustave-moreau_sappho-on-the-rocks-1872_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_sappho-on-the-rocks-1872.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_gustave-moreau_sappho-on-the-rocks-1872_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_self-portrait-1872.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_gustave-moreau_self-portrait-1872_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_self-portrait-1872.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_gustave-moreau_self-portrait-1872_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_self-portrait-1872.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_gustave-moreau_self-portrait-1872_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_self-portrait-1872.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_gustave-moreau_self-portrait-1872_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "gustave-moreau_self-portrait-1872.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_gustave-moreau_self-portrait-1872_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "henri-fantin-latour_bathers-i.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_henri-fantin-latour_bathers-i_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "henri-fantin-latour_bathers-i.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_henri-fantin-latour_bathers-i_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "henri-fantin-latour_bathers-i.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_henri-fantin-latour_bathers-i_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "henri-fantin-latour_bathers-i.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_henri-fantin-latour_bathers-i_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "henri-fantin-latour_bathers-i.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_henri-fantin-latour_bathers-i_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "jacek-malczewski_melancholia-1894.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_jacek-malczewski_melancholia-1894_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "jacek-malczewski_melancholia-1894.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_jacek-malczewski_melancholia-1894_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "jacek-malczewski_melancholia-1894.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_jacek-malczewski_melancholia-1894_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "jacek-malczewski_melancholia-1894.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_jacek-malczewski_melancholia-1894_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "jacek-malczewski_melancholia-1894.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_jacek-malczewski_melancholia-1894_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "koloman-moser_wotan-and-brunhilde.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_koloman-moser_wotan-and-brunhilde_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "koloman-moser_wotan-and-brunhilde.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_koloman-moser_wotan-and-brunhilde_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "koloman-moser_wotan-and-brunhilde.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_koloman-moser_wotan-and-brunhilde_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "koloman-moser_wotan-and-brunhilde.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_koloman-moser_wotan-and-brunhilde_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "koloman-moser_wotan-and-brunhilde.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_koloman-moser_wotan-and-brunhilde_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "kuzma-petrov-vodkin_ivan-karamazov-1927.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_kuzma-petrov-vodkin_ivan-karamazov-1927_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "kuzma-petrov-vodkin_ivan-karamazov-1927.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_kuzma-petrov-vodkin_ivan-karamazov-1927_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "kuzma-petrov-vodkin_ivan-karamazov-1927.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_kuzma-petrov-vodkin_ivan-karamazov-1927_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "kuzma-petrov-vodkin_ivan-karamazov-1927.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_kuzma-petrov-vodkin_ivan-karamazov-1927_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "kuzma-petrov-vodkin_ivan-karamazov-1927.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_kuzma-petrov-vodkin_ivan-karamazov-1927_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mikhail-nesterov_youth-of-st-sergius-1897.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_mikhail-nesterov_youth-of-st-sergius-1897_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mikhail-nesterov_youth-of-st-sergius-1897.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_mikhail-nesterov_youth-of-st-sergius-1897_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mikhail-nesterov_youth-of-st-sergius-1897.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_mikhail-nesterov_youth-of-st-sergius-1897_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mikhail-nesterov_youth-of-st-sergius-1897.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_mikhail-nesterov_youth-of-st-sergius-1897_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mikhail-nesterov_youth-of-st-sergius-1897.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_mikhail-nesterov_youth-of-st-sergius-1897_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mikhail-vrubel_italian-night-sketch-for-the-curtain-in-russian-private-opera-1891.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_mikhail-vrubel_italian-night-sketch-for-the-curtain-in-russian-private-opera-1891_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mikhail-vrubel_italian-night-sketch-for-the-curtain-in-russian-private-opera-1891.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_mikhail-vrubel_italian-night-sketch-for-the-curtain-in-russian-private-opera-1891_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mikhail-vrubel_italian-night-sketch-for-the-curtain-in-russian-private-opera-1891.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_mikhail-vrubel_italian-night-sketch-for-the-curtain-in-russian-private-opera-1891_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mikhail-vrubel_italian-night-sketch-for-the-curtain-in-russian-private-opera-1891.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_mikhail-vrubel_italian-night-sketch-for-the-curtain-in-russian-private-opera-1891_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mikhail-vrubel_italian-night-sketch-for-the-curtain-in-russian-private-opera-1891.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_mikhail-vrubel_italian-night-sketch-for-the-curtain-in-russian-private-opera-1891_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mstislav-dobuzhinsky_dredger-1923.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_mstislav-dobuzhinsky_dredger-1923_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mstislav-dobuzhinsky_dredger-1923.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_mstislav-dobuzhinsky_dredger-1923_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mstislav-dobuzhinsky_dredger-1923.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_mstislav-dobuzhinsky_dredger-1923_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mstislav-dobuzhinsky_dredger-1923.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_mstislav-dobuzhinsky_dredger-1923_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "mstislav-dobuzhinsky_dredger-1923.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_mstislav-dobuzhinsky_dredger-1923_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_giant-s-tomb-1915.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_nicholas-roerich_giant-s-tomb-1915_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_giant-s-tomb-1915.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_giant-s-tomb-1915_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_giant-s-tomb-1915.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_giant-s-tomb-1915_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_giant-s-tomb-1915.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_nicholas-roerich_giant-s-tomb-1915_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_giant-s-tomb-1915.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_nicholas-roerich_giant-s-tomb-1915_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_mongolian-horseman.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_nicholas-roerich_mongolian-horseman_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_mongolian-horseman.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_mongolian-horseman_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_mongolian-horseman.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_mongolian-horseman_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_mongolian-horseman.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_nicholas-roerich_mongolian-horseman_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_mongolian-horseman.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_nicholas-roerich_mongolian-horseman_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_monhigan-fairytale-1922.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_nicholas-roerich_monhigan-fairytale-1922_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_monhigan-fairytale-1922.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_monhigan-fairytale-1922_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_monhigan-fairytale-1922.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_monhigan-fairytale-1922_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_monhigan-fairytale-1922.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_nicholas-roerich_monhigan-fairytale-1922_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_monhigan-fairytale-1922.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_nicholas-roerich_monhigan-fairytale-1922_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_santana-1944.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_nicholas-roerich_santana-1944_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_santana-1944.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_santana-1944_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_santana-1944.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_santana-1944_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_santana-1944.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_nicholas-roerich_santana-1944_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_santana-1944.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_nicholas-roerich_santana-1944_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_sharugen-monastery-1932.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_nicholas-roerich_sharugen-monastery-1932_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_sharugen-monastery-1932.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_sharugen-monastery-1932_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_sharugen-monastery-1932.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_sharugen-monastery-1932_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_sharugen-monastery-1932.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_nicholas-roerich_sharugen-monastery-1932_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_sharugen-monastery-1932.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_nicholas-roerich_sharugen-monastery-1932_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_study-of-mountains.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_nicholas-roerich_study-of-mountains_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_study-of-mountains.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_study-of-mountains_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_study-of-mountains.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_nicholas-roerich_study-of-mountains_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_study-of-mountains.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_nicholas-roerich_study-of-mountains_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "nicholas-roerich_study-of-mountains.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_nicholas-roerich_study-of-mountains_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_bouquet-of-flowers-3.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_odilon-redon_bouquet-of-flowers-3_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_bouquet-of-flowers-3.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_odilon-redon_bouquet-of-flowers-3_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_bouquet-of-flowers-3.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_odilon-redon_bouquet-of-flowers-3_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_bouquet-of-flowers-3.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_odilon-redon_bouquet-of-flowers-3_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_bouquet-of-flowers-3.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_odilon-redon_bouquet-of-flowers-3_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_faust-and-mephistopheles-1880.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_odilon-redon_faust-and-mephistopheles-1880_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_faust-and-mephistopheles-1880.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_odilon-redon_faust-and-mephistopheles-1880_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_faust-and-mephistopheles-1880.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_odilon-redon_faust-and-mephistopheles-1880_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_faust-and-mephistopheles-1880.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_odilon-redon_faust-and-mephistopheles-1880_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_faust-and-mephistopheles-1880.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_odilon-redon_faust-and-mephistopheles-1880_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_the-boat.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_odilon-redon_the-boat_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_the-boat.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_odilon-redon_the-boat_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_the-boat.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_odilon-redon_the-boat_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_the-boat.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_odilon-redon_the-boat_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "odilon-redon_the-boat.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_odilon-redon_the-boat_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "salvador-dali_untitled-landscape-with-celestial-beings.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_salvador-dali_untitled-landscape-with-celestial-beings_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "salvador-dali_untitled-landscape-with-celestial-beings.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_salvador-dali_untitled-landscape-with-celestial-beings_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "salvador-dali_untitled-landscape-with-celestial-beings.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_salvador-dali_untitled-landscape-with-celestial-beings_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "salvador-dali_untitled-landscape-with-celestial-beings.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_salvador-dali_untitled-landscape-with-celestial-beings_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "salvador-dali_untitled-landscape-with-celestial-beings.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_salvador-dali_untitled-landscape-with-celestial-beings_to_Symbolism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "victor-hugo_lace-and-ghosts-1856.jpg",
+      "tgt_style": "Realism",
+      "gen_image": "Symbolism_victor-hugo_lace-and-ghosts-1856_to_Realism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "victor-hugo_lace-and-ghosts-1856.jpg",
+      "tgt_style": "Impressionism",
+      "gen_image": "Symbolism_victor-hugo_lace-and-ghosts-1856_to_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "victor-hugo_lace-and-ghosts-1856.jpg",
+      "tgt_style": "Post_Impressionism",
+      "gen_image": "Symbolism_victor-hugo_lace-and-ghosts-1856_to_Post_Impressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "victor-hugo_lace-and-ghosts-1856.jpg",
+      "tgt_style": "Expressionism",
+      "gen_image": "Symbolism_victor-hugo_lace-and-ghosts-1856_to_Expressionism.jpg"
+    },
+    {
+      "src_style": "Symbolism",
+      "src_image": "victor-hugo_lace-and-ghosts-1856.jpg",
+      "tgt_style": "Symbolism",
+      "gen_image": "Symbolism_victor-hugo_lace-and-ghosts-1856_to_Symbolism.jpg"
+    }
+  ]
+}

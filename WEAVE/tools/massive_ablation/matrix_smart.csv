@@ -1,0 +1,160 @@
+idx,name,group,overrides
+0,abl_swd_0p0_proj_legacy,A_Texture_vs_Projection,swd=0.0; proj=legacy
+1,abl_swd_0p0_proj_source_low_target_high,A_Texture_vs_Projection,swd=0.0; proj=source_low_target_high
+2,abl_swd_0p0_proj_pure_vertical_flow,A_Texture_vs_Projection,swd=0.0; proj=pure_vertical_flow
+3,abl_swd_1p0_proj_legacy,A_Texture_vs_Projection,swd=1.0; proj=legacy
+4,abl_swd_1p0_proj_source_low_target_high,A_Texture_vs_Projection,swd=1.0; proj=source_low_target_high
+5,abl_swd_1p0_proj_pure_vertical_flow,A_Texture_vs_Projection,swd=1.0; proj=pure_vertical_flow
+6,abl_swd_2p0_proj_legacy,A_Texture_vs_Projection,swd=2.0; proj=legacy
+7,abl_swd_2p0_proj_source_low_target_high,A_Texture_vs_Projection,swd=2.0; proj=source_low_target_high
+8,abl_swd_2p0_proj_pure_vertical_flow,A_Texture_vs_Projection,swd=2.0; proj=pure_vertical_flow
+9,abl_swd_5p0_proj_legacy,A_Texture_vs_Projection,swd=5.0; proj=legacy
+10,abl_swd_5p0_proj_source_low_target_high,A_Texture_vs_Projection,swd=5.0; proj=source_low_target_high
+11,abl_swd_5p0_proj_pure_vertical_flow,A_Texture_vs_Projection,swd=5.0; proj=pure_vertical_flow
+12,abl_swd_10p0_proj_legacy,A_Texture_vs_Projection,swd=10.0; proj=legacy
+13,abl_swd_10p0_proj_source_low_target_high,A_Texture_vs_Projection,swd=10.0; proj=source_low_target_high
+14,abl_swd_10p0_proj_pure_vertical_flow,A_Texture_vs_Projection,swd=10.0; proj=pure_vertical_flow
+15,abl_swd_20p0_proj_legacy,A_Texture_vs_Projection,swd=20.0; proj=legacy
+16,abl_swd_20p0_proj_source_low_target_high,A_Texture_vs_Projection,swd=20.0; proj=source_low_target_high
+17,abl_swd_20p0_proj_pure_vertical_flow,A_Texture_vs_Projection,swd=20.0; proj=pure_vertical_flow
+18,abl_swd_50p0_proj_legacy,A_Texture_vs_Projection,swd=50.0; proj=legacy
+19,abl_swd_50p0_proj_source_low_target_high,A_Texture_vs_Projection,swd=50.0; proj=source_low_target_high
+20,abl_swd_50p0_proj_pure_vertical_flow,A_Texture_vs_Projection,swd=50.0; proj=pure_vertical_flow
+21,abl_swd_80p0_proj_legacy,A_Texture_vs_Projection,swd=80.0; proj=legacy
+22,abl_swd_80p0_proj_source_low_target_high,A_Texture_vs_Projection,swd=80.0; proj=source_low_target_high
+23,abl_swd_80p0_proj_pure_vertical_flow,A_Texture_vs_Projection,swd=80.0; proj=pure_vertical_flow
+24,abl_swd_120p0_proj_legacy,A_Texture_vs_Projection,swd=120.0; proj=legacy
+25,abl_swd_120p0_proj_source_low_target_high,A_Texture_vs_Projection,swd=120.0; proj=source_low_target_high
+26,abl_swd_120p0_proj_pure_vertical_flow,A_Texture_vs_Projection,swd=120.0; proj=pure_vertical_flow
+27,abl_swd_200p0_proj_legacy,A_Texture_vs_Projection,swd=200.0; proj=legacy
+28,abl_swd_200p0_proj_source_low_target_high,A_Texture_vs_Projection,swd=200.0; proj=source_low_target_high
+29,abl_swd_200p0_proj_pure_vertical_flow,A_Texture_vs_Projection,swd=200.0; proj=pure_vertical_flow
+30,abl_flow_0p0_sig_0p0,B_Flow_vs_Sigma,flow=0.0; sig=0.0
+31,abl_flow_0p0_sig_0p01,B_Flow_vs_Sigma,flow=0.0; sig=0.01
+32,abl_flow_0p0_sig_0p02,B_Flow_vs_Sigma,flow=0.0; sig=0.02
+33,abl_flow_0p0_sig_0p05,B_Flow_vs_Sigma,flow=0.0; sig=0.05
+34,abl_flow_0p0_sig_0p1,B_Flow_vs_Sigma,flow=0.0; sig=0.1
+35,abl_flow_0p0_sig_0p2,B_Flow_vs_Sigma,flow=0.0; sig=0.2
+36,abl_flow_0p1_sig_0p0,B_Flow_vs_Sigma,flow=0.1; sig=0.0
+37,abl_flow_0p1_sig_0p01,B_Flow_vs_Sigma,flow=0.1; sig=0.01
+38,abl_flow_0p1_sig_0p02,B_Flow_vs_Sigma,flow=0.1; sig=0.02
+39,abl_flow_0p1_sig_0p05,B_Flow_vs_Sigma,flow=0.1; sig=0.05
+40,abl_flow_0p1_sig_0p1,B_Flow_vs_Sigma,flow=0.1; sig=0.1
+41,abl_flow_0p1_sig_0p2,B_Flow_vs_Sigma,flow=0.1; sig=0.2
+42,abl_flow_0p2_sig_0p0,B_Flow_vs_Sigma,flow=0.2; sig=0.0
+43,abl_flow_0p2_sig_0p01,B_Flow_vs_Sigma,flow=0.2; sig=0.01
+44,abl_flow_0p2_sig_0p02,B_Flow_vs_Sigma,flow=0.2; sig=0.02
+45,abl_flow_0p2_sig_0p05,B_Flow_vs_Sigma,flow=0.2; sig=0.05
+46,abl_flow_0p2_sig_0p1,B_Flow_vs_Sigma,flow=0.2; sig=0.1
+47,abl_flow_0p2_sig_0p2,B_Flow_vs_Sigma,flow=0.2; sig=0.2
+48,abl_flow_0p5_sig_0p0,B_Flow_vs_Sigma,flow=0.5; sig=0.0
+49,abl_flow_0p5_sig_0p01,B_Flow_vs_Sigma,flow=0.5; sig=0.01
+50,abl_flow_0p5_sig_0p02,B_Flow_vs_Sigma,flow=0.5; sig=0.02
+51,abl_flow_0p5_sig_0p05,B_Flow_vs_Sigma,flow=0.5; sig=0.05
+52,abl_flow_0p5_sig_0p1,B_Flow_vs_Sigma,flow=0.5; sig=0.1
+53,abl_flow_0p5_sig_0p2,B_Flow_vs_Sigma,flow=0.5; sig=0.2
+54,abl_flow_0p8_sig_0p0,B_Flow_vs_Sigma,flow=0.8; sig=0.0
+55,abl_flow_0p8_sig_0p01,B_Flow_vs_Sigma,flow=0.8; sig=0.01
+56,abl_flow_0p8_sig_0p02,B_Flow_vs_Sigma,flow=0.8; sig=0.02
+57,abl_flow_0p8_sig_0p05,B_Flow_vs_Sigma,flow=0.8; sig=0.05
+58,abl_flow_0p8_sig_0p1,B_Flow_vs_Sigma,flow=0.8; sig=0.1
+59,abl_flow_0p8_sig_0p2,B_Flow_vs_Sigma,flow=0.8; sig=0.2
+60,abl_flow_1p0_sig_0p0,B_Flow_vs_Sigma,flow=1.0; sig=0.0
+61,abl_flow_1p0_sig_0p01,B_Flow_vs_Sigma,flow=1.0; sig=0.01
+62,abl_flow_1p0_sig_0p02,B_Flow_vs_Sigma,flow=1.0; sig=0.02
+63,abl_flow_1p0_sig_0p05,B_Flow_vs_Sigma,flow=1.0; sig=0.05
+64,abl_flow_1p0_sig_0p1,B_Flow_vs_Sigma,flow=1.0; sig=0.1
+65,abl_flow_1p0_sig_0p2,B_Flow_vs_Sigma,flow=1.0; sig=0.2
+66,abl_flow_1p5_sig_0p0,B_Flow_vs_Sigma,flow=1.5; sig=0.0
+67,abl_flow_1p5_sig_0p01,B_Flow_vs_Sigma,flow=1.5; sig=0.01
+68,abl_flow_1p5_sig_0p02,B_Flow_vs_Sigma,flow=1.5; sig=0.02
+69,abl_flow_1p5_sig_0p05,B_Flow_vs_Sigma,flow=1.5; sig=0.05
+70,abl_flow_1p5_sig_0p1,B_Flow_vs_Sigma,flow=1.5; sig=0.1
+71,abl_flow_1p5_sig_0p2,B_Flow_vs_Sigma,flow=1.5; sig=0.2
+72,abl_flow_2p0_sig_0p0,B_Flow_vs_Sigma,flow=2.0; sig=0.0
+73,abl_flow_2p0_sig_0p01,B_Flow_vs_Sigma,flow=2.0; sig=0.01
+74,abl_flow_2p0_sig_0p02,B_Flow_vs_Sigma,flow=2.0; sig=0.02
+75,abl_flow_2p0_sig_0p05,B_Flow_vs_Sigma,flow=2.0; sig=0.05
+76,abl_flow_2p0_sig_0p1,B_Flow_vs_Sigma,flow=2.0; sig=0.1
+77,abl_flow_2p0_sig_0p2,B_Flow_vs_Sigma,flow=2.0; sig=0.2
+78,abl_dim_32_blk_2,C_Capacity,dim=32; blk=2
+79,abl_dim_32_blk_4,C_Capacity,dim=32; blk=4
+80,abl_dim_32_blk_6,C_Capacity,dim=32; blk=6
+81,abl_dim_32_blk_8,C_Capacity,dim=32; blk=8
+82,abl_dim_48_blk_2,C_Capacity,dim=48; blk=2
+83,abl_dim_48_blk_4,C_Capacity,dim=48; blk=4
+84,abl_dim_48_blk_6,C_Capacity,dim=48; blk=6
+85,abl_dim_48_blk_8,C_Capacity,dim=48; blk=8
+86,abl_dim_64_blk_2,C_Capacity,dim=64; blk=2
+87,abl_dim_64_blk_4,C_Capacity,dim=64; blk=4
+88,abl_dim_64_blk_6,C_Capacity,dim=64; blk=6
+89,abl_dim_64_blk_8,C_Capacity,dim=64; blk=8
+90,abl_dim_96_blk_2,C_Capacity,dim=96; blk=2
+91,abl_dim_96_blk_4,C_Capacity,dim=96; blk=4
+92,abl_dim_96_blk_6,C_Capacity,dim=96; blk=6
+93,abl_dim_96_blk_8,C_Capacity,dim=96; blk=8
+94,abl_dim_128_blk_2,C_Capacity,dim=128; blk=2
+95,abl_dim_128_blk_4,C_Capacity,dim=128; blk=4
+96,abl_dim_128_blk_6,C_Capacity,dim=128; blk=6
+97,abl_dim_128_blk_8,C_Capacity,dim=128; blk=8
+98,abl_cond_latent_short_0p0_attn_softmax,D_Routing,cond=latent; short=0.0; attn=softmax
+99,abl_cond_latent_short_0p0_attn_sparsemax,D_Routing,cond=latent; short=0.0; attn=sparsemax
+100,abl_cond_latent_short_0p0_attn_gated,D_Routing,cond=latent; short=0.0; attn=gated
+101,abl_cond_latent_short_0p2_attn_softmax,D_Routing,cond=latent; short=0.2; attn=softmax
+102,abl_cond_latent_short_0p2_attn_sparsemax,D_Routing,cond=latent; short=0.2; attn=sparsemax
+103,abl_cond_latent_short_0p2_attn_gated,D_Routing,cond=latent; short=0.2; attn=gated
+104,abl_cond_latent_short_0p5_attn_softmax,D_Routing,cond=latent; short=0.5; attn=softmax
+105,abl_cond_latent_short_0p5_attn_sparsemax,D_Routing,cond=latent; short=0.5; attn=sparsemax
+106,abl_cond_latent_short_0p5_attn_gated,D_Routing,cond=latent; short=0.5; attn=gated
+107,abl_cond_latent_short_1p0_attn_softmax,D_Routing,cond=latent; short=1.0; attn=softmax
+108,abl_cond_latent_short_1p0_attn_sparsemax,D_Routing,cond=latent; short=1.0; attn=sparsemax
+109,abl_cond_latent_short_1p0_attn_gated,D_Routing,cond=latent; short=1.0; attn=gated
+110,abl_cond_target_dino_patches_short_0p0_attn_softmax,D_Routing,cond=target_dino_patches; short=0.0; attn=softmax
+111,abl_cond_target_dino_patches_short_0p0_attn_sparsemax,D_Routing,cond=target_dino_patches; short=0.0; attn=sparsemax
+112,abl_cond_target_dino_patches_short_0p0_attn_gated,D_Routing,cond=target_dino_patches; short=0.0; attn=gated
+113,abl_cond_target_dino_patches_short_0p2_attn_softmax,D_Routing,cond=target_dino_patches; short=0.2; attn=softmax
+114,abl_cond_target_dino_patches_short_0p2_attn_sparsemax,D_Routing,cond=target_dino_patches; short=0.2; attn=sparsemax
+115,abl_cond_target_dino_patches_short_0p2_attn_gated,D_Routing,cond=target_dino_patches; short=0.2; attn=gated
+116,abl_cond_target_dino_patches_short_0p5_attn_softmax,D_Routing,cond=target_dino_patches; short=0.5; attn=softmax
+117,abl_cond_target_dino_patches_short_0p5_attn_sparsemax,D_Routing,cond=target_dino_patches; short=0.5; attn=sparsemax
+118,abl_cond_target_dino_patches_short_0p5_attn_gated,D_Routing,cond=target_dino_patches; short=0.5; attn=gated
+119,abl_cond_target_dino_patches_short_1p0_attn_softmax,D_Routing,cond=target_dino_patches; short=1.0; attn=softmax
+120,abl_cond_target_dino_patches_short_1p0_attn_sparsemax,D_Routing,cond=target_dino_patches; short=1.0; attn=sparsemax
+121,abl_cond_target_dino_patches_short_1p0_attn_gated,D_Routing,cond=target_dino_patches; short=1.0; attn=gated
+122,abl_ep_velocity,E_Endpoint,ep=velocity
+123,abl_ep_endpoint_lowhigh_k_3_hs_0p5,E_Endpoint,ep=endpoint_lowhigh; k=3; hs=0.5
+124,abl_ep_endpoint_lowhigh_k_3_hs_1p0,E_Endpoint,ep=endpoint_lowhigh; k=3; hs=1.0
+125,abl_ep_endpoint_lowhigh_k_3_hs_1p5,E_Endpoint,ep=endpoint_lowhigh; k=3; hs=1.5
+126,abl_ep_endpoint_lowhigh_k_3_hs_2p0,E_Endpoint,ep=endpoint_lowhigh; k=3; hs=2.0
+127,abl_ep_endpoint_lowhigh_k_5_hs_0p5,E_Endpoint,ep=endpoint_lowhigh; k=5; hs=0.5
+128,abl_ep_endpoint_lowhigh_k_5_hs_1p0,E_Endpoint,ep=endpoint_lowhigh; k=5; hs=1.0
+129,abl_ep_endpoint_lowhigh_k_5_hs_1p5,E_Endpoint,ep=endpoint_lowhigh; k=5; hs=1.5
+130,abl_ep_endpoint_lowhigh_k_5_hs_2p0,E_Endpoint,ep=endpoint_lowhigh; k=5; hs=2.0
+131,abl_ep_endpoint_lowhigh_k_9_hs_0p5,E_Endpoint,ep=endpoint_lowhigh; k=9; hs=0.5
+132,abl_ep_endpoint_lowhigh_k_9_hs_1p0,E_Endpoint,ep=endpoint_lowhigh; k=9; hs=1.0
+133,abl_ep_endpoint_lowhigh_k_9_hs_1p5,E_Endpoint,ep=endpoint_lowhigh; k=9; hs=1.5
+134,abl_ep_endpoint_lowhigh_k_9_hs_2p0,E_Endpoint,ep=endpoint_lowhigh; k=9; hs=2.0
+135,abl_ep_endpoint_lowhigh_k_15_hs_0p5,E_Endpoint,ep=endpoint_lowhigh; k=15; hs=0.5
+136,abl_ep_endpoint_lowhigh_k_15_hs_1p0,E_Endpoint,ep=endpoint_lowhigh; k=15; hs=1.0
+137,abl_ep_endpoint_lowhigh_k_15_hs_1p5,E_Endpoint,ep=endpoint_lowhigh; k=15; hs=1.5
+138,abl_ep_endpoint_lowhigh_k_15_hs_2p0,E_Endpoint,ep=endpoint_lowhigh; k=15; hs=2.0
+139,abl_ca_0p0_pa_0p0,F_Anchoring,ca=0.0; pa=0.0
+140,abl_ca_0p0_pa_0p5,F_Anchoring,ca=0.0; pa=0.5
+141,abl_ca_0p0_pa_0p8,F_Anchoring,ca=0.0; pa=0.8
+142,abl_ca_0p0_pa_1p0,F_Anchoring,ca=0.0; pa=1.0
+143,abl_ca_0p1_pa_0p0,F_Anchoring,ca=0.1; pa=0.0
+144,abl_ca_0p1_pa_0p5,F_Anchoring,ca=0.1; pa=0.5
+145,abl_ca_0p1_pa_0p8,F_Anchoring,ca=0.1; pa=0.8
+146,abl_ca_0p1_pa_1p0,F_Anchoring,ca=0.1; pa=1.0
+147,abl_ca_0p5_pa_0p0,F_Anchoring,ca=0.5; pa=0.0
+148,abl_ca_0p5_pa_0p5,F_Anchoring,ca=0.5; pa=0.5
+149,abl_ca_0p5_pa_0p8,F_Anchoring,ca=0.5; pa=0.8
+150,abl_ca_0p5_pa_1p0,F_Anchoring,ca=0.5; pa=1.0
+151,abl_ca_1p0_pa_0p0,F_Anchoring,ca=1.0; pa=0.0
+152,abl_ca_1p0_pa_0p5,F_Anchoring,ca=1.0; pa=0.5
+153,abl_ca_1p0_pa_0p8,F_Anchoring,ca=1.0; pa=0.8
+154,abl_ca_1p0_pa_1p0,F_Anchoring,ca=1.0; pa=1.0
+155,abl_ca_5p0_pa_0p0,F_Anchoring,ca=5.0; pa=0.0
+156,abl_ca_5p0_pa_0p5,F_Anchoring,ca=5.0; pa=0.5
+157,abl_ca_5p0_pa_0p8,F_Anchoring,ca=5.0; pa=0.8
+158,abl_ca_5p0_pa_1p0,F_Anchoring,ca=5.0; pa=1.0

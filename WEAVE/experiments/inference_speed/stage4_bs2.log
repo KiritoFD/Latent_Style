@@ -1,0 +1,6 @@
+[loaded] 750 latents, shape=(4, 64, 64), batch=2
+[ORT] providers=['CUDAExecutionProvider', 'CPUExecutionProvider'] fixed_batch=2
+[sanity] out shape=(2, 3, 512, 512) dtype=torch.float16
+[decode] n=750 bs=2 total=115.769s = 154.36 ms/img = 6.48 img/s
+[saved] experiments\inference_speed\results\stage4_bs2.json
+[done]

@@ -1,0 +1,23 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue.json",
+  "training": {
+    "num_epochs": 16,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue/epoch_0011.pt",
+    "resume_optimizer": true,
+    "resume_model_strict": true,
+    "resume_training_state": true
+  },
+  "bridge": {
+    "structure_penalty_mode": "stokes",
+    "w_stokes_viscous": 0.05
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_pattn_stokes_from_pattn_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_stokes_from_pattn_seed42_b16",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_Stokes",
+    "notes": "Fine-tuning repair packet. Start from the promoted Pattn continuation frontier instead of training Stokes from scratch, then enable weak Stokes smoothing to test whether some of the Stokes LPIPS gain can be recovered without paying the full style penalty."
+  }
+}

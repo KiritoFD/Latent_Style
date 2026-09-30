@@ -1,0 +1,11 @@
+dataset,dataset_id,source,method,label,step_or_epoch,scope,count,clip_style,content_lpips,one_minus_lpips,noop_clip_style,style_gain_vs_noop,note
+Distinct5-512 / 1000,distinct5_512,No-op audit,No-op,No-op,0,full,750,0.680123,0.000000,1.000000,0.680123,0.000000,unchanged 5x5 copy
+Distinct5-512 / 1000,distinct5_512,SaMAM curve,SaMAM,SaMAM 2000,2000,full,750,0.583346,0.362153,0.637847,0.680123,-0.096777,SaMAM best clip_style for this scope
+Distinct5-512 / 1000,distinct5_512,SaMAM curve,SaMAM,SaMAM 2250,2250,full,750,0.581097,0.353820,0.646180,0.680123,-0.099026,SaMAM best LPIPS/latest point
+Distinct5-512 / 1000,distinct5_512,LANCET variants,LANCET,F e1,1,full,750,0.696915,0.318645,0.681355,0.680123,0.016792,LANCET best LPIPS point
+Distinct5-512 / 1000,distinct5_512,LANCET variants,LANCET,K e1,1,full,750,0.700995,0.362294,0.637706,0.680123,0.020872,LANCET best clip_style point
+Distinct5-512 / 1000,distinct5_512,No-op audit,No-op,No-op,0,transfer,600,0.639921,0.000000,1.000000,0.639921,0.000000,unchanged 5x5 copy
+Distinct5-512 / 1000,distinct5_512,SaMAM curve,SaMAM,SaMAM 1250,1250,transfer,600,0.557183,0.448703,0.551297,0.639921,-0.082738,SaMAM best clip_style for this scope
+Distinct5-512 / 1000,distinct5_512,SaMAM curve,SaMAM,SaMAM 2250,2250,transfer,600,0.552252,0.360452,0.639548,0.639921,-0.087669,SaMAM best LPIPS/latest point
+Distinct5-512 / 1000,distinct5_512,LANCET variants,LANCET,F e1,1,transfer,600,0.664360,0.324528,0.675472,0.639921,0.024440,LANCET best LPIPS point
+Distinct5-512 / 1000,distinct5_512,LANCET variants,LANCET,K e1,1,transfer,600,0.671167,0.372281,0.627719,0.639921,0.031246,LANCET best clip_style point

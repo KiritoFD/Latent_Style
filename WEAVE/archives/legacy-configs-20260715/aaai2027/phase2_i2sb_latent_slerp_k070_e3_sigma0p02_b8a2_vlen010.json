@@ -1,0 +1,19 @@
+{
+  "_base": "./phase2_i2sb_clean_k070_e3_sigma0p02_b8a2_vlen010.json",
+  "bridge": {
+    "bridge_path_mode": "latent_slerp",
+    "bridge_path_slerp_eps": 0.0001
+  },
+  "training": {
+    "resume_checkpoint": "./exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k070_seed42_b12a1/epoch_0003.pt"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010",
+    "axis": "phase2_fiber_path_geometry",
+    "stage": "i2sb_latent_slerp_path",
+    "notes": "Controlled follow-up to clean absolute I2SB and negative actuation/head-adapter probes. Keep parent, tokenizer, TopoGate, solver_i2sb, endpoint absolute prediction, sigma=0.02, losses, batch/eval contract, and output heads fixed. Change only the training bridge path from Euclidean linear interpolation to latent direction slerp with linear radius, endpoint-only to avoid incorrect velocity derivatives."
+  }
+}

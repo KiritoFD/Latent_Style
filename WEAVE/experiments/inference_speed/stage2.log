@@ -1,0 +1,4 @@
+[loaded latents] (750, 4, 64, 64) torch.float16 from experiments/inference_speed/results/latents_750.pt
+[loaded DECODER only] on NVIDIA GeForce RTX 4070 Laptop GPU
+[decode] 750 imgs @bs=2: 129.183 s (172.245 ms/img, 5.8 img/s)
+[done] stage 2 complete, GPU released on exit.

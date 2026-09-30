@@ -1,0 +1,25 @@
+{
+  "_base": "./phase616_ot_vertical_scratch_b8a2_e24.json",
+  "training": {
+    "batch_size": 16,
+    "accumulation_steps": 1,
+    "num_epochs": 1,
+    "save_interval": 1,
+    "log_interval": 20,
+    "full_eval_each_epoch": false,
+    "stop_after_global_steps": 80,
+    "save_step_milestones": [20, 40, 60, 80]
+  },
+  "data": {
+    "virtual_length_multiplier": 1.25
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_ot_vertical_throughput_b16a1_vlen125_step80"
+  },
+  "ablation": {
+    "name": "phase616_ot_vertical_throughput_b16a1_vlen125_step80",
+    "axis": "phase616_throughput_probe",
+    "stage": "matched_throughput_only",
+    "notes": "Fourth matched throughput probe for the 616 OT+vertical foundation. Virtual length is increased only after batch and accumulation have been scanned."
+  }
+}

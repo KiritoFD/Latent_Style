@@ -1,0 +1,23 @@
+{
+  "_base": "tokenizer_localization_l_e1_seed42_b44_base.json",
+  "training": {
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/distinct5_512_ema_variant_l_content_adaptive_annealed_queue_e3_b44_remote/epoch_0001.pt",
+    "resume_model_strict": false,
+    "resume_include_prefixes": [],
+    "resume_ignore_prefixes": [
+      "style_tokenizer.",
+      "style_spatial_id_16"
+    ],
+    "freeze_mode": "style_branch",
+    "freeze_reinit_trainable": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_tokenizer_localization_l_e1_stylebranch_seed42_b44"
+  },
+  "ablation": {
+    "name": "aaai2027_tokenizer_localization_l_e1_stylebranch_seed42_b44",
+    "axis": "aaai2027_tokenizer_localization",
+    "stage": "stylebranch_fresh_executor_frozen",
+    "notes": "Matched localization Arm A. Load the reviewed Distinct5 L-family e1 executor, reinitialize the style-side control branch (style_tokenizer + style_spatial_id_16), and train only the style side."
+  }
+}

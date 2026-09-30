@@ -1,0 +1,17 @@
+{
+  "_base": "inmortal_knee_e13_spatial_carriergate_bodydecoder_edgegated_seed42_b8a2.json",
+  "bridge": {
+    "structure_penalty_mode": "quantile_edge_gated_anisotropic_plus_stokes",
+    "anisotropic_edge_gate_quantile": 0.8,
+    "anisotropic_edge_gate_power": 2.0
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_knee_e13_spatial_carriergate_bodydecoder_qedgegated_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "KneeE13_plus_SpatialCarrierGateBodyDecoder_plus_QuantileEdgeGatedStructureLeash",
+    "notes": "Follow-up to the edge-gated structure leash line. Replace the soft everywhere edge gate with a quantile-thresholded edge gate so anisotropic normal pressure concentrates only on the strongest content edges, leaving more flat regions available for style texture."
+  }
+}

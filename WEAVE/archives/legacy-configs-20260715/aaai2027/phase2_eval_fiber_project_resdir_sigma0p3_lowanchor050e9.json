@@ -1,0 +1,12 @@
+{
+  "_base": "./phase2_eval_fiber_project_gate_sigma0p3_lowanchor050e9.json",
+  "_comment": "Eval-only residual-direction Fiber-SDE projection on lowanchor0.50 e9. Keeps gate support and replaces isotropic highpass noise with scalar noise along the projected endpoint residual direction.",
+  "model": {
+    "i2sb_fiber_project_noise_mode": "residual_direction",
+    "i2sb_fiber_project_residual_power": 1.0,
+    "bridge_sigma": 0.3
+  },
+  "bridge": {
+    "bridge_sigma": 0.3
+  }
+}

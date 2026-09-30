@@ -1,0 +1,31 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4mid_reseed_from_e13_seed42_b8a2.json",
+  "training": {
+    "batch_size": 8,
+    "accumulation_steps": 2,
+    "num_epochs": 12,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4mid_reseed_from_e13_seed42_b8a2/epoch_0008.pt",
+    "resume_optimizer": false,
+    "resume_model_strict": false,
+    "resume_training_state": false,
+    "freeze_mode": "injection_only"
+  },
+  "model": {
+    "style_injection_mode": "decoder",
+    "style_injection_form": "spatial_carrier_gate",
+    "style_injection_scale": 1.0,
+    "style_injection_gate_log_span": 0.4054651081081644,
+    "style_injection_hidden_dim": 64,
+    "style_injection_spatial_kernel": 5,
+    "style_injection_force_highpass": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_hold4mid_e8_spatial_carriergate_decoder_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_hold4mid_e8_spatial_carriergate_decoder_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "Hold4MidE8_plus_SpatialCarrierGateDecoder",
+    "notes": "Start from Hold4Mid e8 as a geometry anchor, then train only a decoder-side spatial carrier-gate injection branch. The new branch uses style spatial priors plus source-aware local gating so style can reopen as target-specific spatial texture instead of global painterly fog."
+  }
+}

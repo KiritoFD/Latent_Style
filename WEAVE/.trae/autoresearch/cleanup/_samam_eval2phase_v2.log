@@ -1,0 +1,511 @@
+=== Phase 1: Generate all images (fp32, skip existing) ===
+/home/xy/venvs/samam312/lib/python3.12/site-packages/transformers/utils/hub.py:128: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+=== Phase 1: Inference only (81 ckpts, 150 srcs x 5 styles = 750 imgs/ckpt) ===
+START=2026-07-02T07:51:03
+[ckpt] step=250 (1/81)
+  [skip] step=250 already has 750 images
+[ckpt] step=500 (2/81)
+  [skip] step=500 already has 750 images
+[ckpt] step=750 (3/81)
+  [skip] step=750 already has 750 images
+[ckpt] step=1000 (4/81)
+  [skip] step=1000 already has 750 images
+[ckpt] step=1250 (5/81)
+  [skip] step=1250 already has 750 images
+[ckpt] step=1500 (6/81)
+  [skip] step=1500 already has 750 images
+[ckpt] step=1750 (7/81)
+  [skip] step=1750 already has 750 images
+[ckpt] step=2000 (8/81)
+  [skip] step=2000 already has 750 images
+[ckpt] step=2250 (9/81)
+  [skip] step=2250 already has 750 images
+[ckpt] step=2500 (10/81)
+  [skip] step=2500 already has 750 images
+[ckpt] step=2750 (11/81)
+  [skip] step=2750 already has 750 images
+[ckpt] step=3000 (12/81)
+  [skip] step=3000 already has 750 images
+[ckpt] step=3250 (13/81)
+  [skip] step=3250 already has 750 images
+[ckpt] step=3500 (14/81)
+  [skip] step=3500 already has 750 images
+[ckpt] step=3750 (15/81)
+  [skip] step=3750 already has 750 images
+[ckpt] step=4000 (16/81)
+  [skip] step=4000 already has 750 images
+[ckpt] step=4250 (17/81)
+  [skip] step=4250 already has 750 images
+[ckpt] step=4500 (18/81)
+  [skip] step=4500 already has 750 images
+[ckpt] step=4750 (19/81)
+  [skip] step=4750 already has 750 images
+[ckpt] step=5000 (20/81)
+  [skip] step=5000 already has 750 images
+[ckpt] step=5250 (21/81)
+  [skip] step=5250 already has 750 images
+[ckpt] step=5500 (22/81)
+  [skip] step=5500 already has 750 images
+[ckpt] step=5750 (23/81)
+  [skip] step=5750 already has 750 images
+[ckpt] step=6000 (24/81)
+  [skip] step=6000 already has 750 images
+[ckpt] step=6250 (25/81)
+  [skip] step=6250 already has 750 images
+[ckpt] step=6500 (26/81)
+  [skip] step=6500 already has 750 images
+[ckpt] step=6750 (27/81)
+  [skip] step=6750 already has 750 images
+[ckpt] step=7000 (28/81)
+  [skip] step=7000 already has 750 images
+[ckpt] step=7250 (29/81)
+/mnt/i/Github/Latent_Style/Related_Works/repos/SaMam/LOSS/losses.py:74: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  encoder.load_state_dict(torch.load(vgg_ckp))
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=7250 750 images in 195.7s (3.8 img/s)
+[ckpt] step=7500 (30/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=7500 750 images in 196.0s (3.8 img/s)
+[ckpt] step=7750 (31/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=7750 750 images in 194.7s (3.9 img/s)
+[ckpt] step=8000 (32/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=8000 750 images in 195.5s (3.8 img/s)
+[ckpt] step=8250 (33/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=8250 750 images in 196.9s (3.8 img/s)
+[ckpt] step=8500 (34/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=8500 750 images in 194.6s (3.9 img/s)
+[ckpt] step=8750 (35/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=8750 750 images in 193.4s (3.9 img/s)
+[ckpt] step=9000 (36/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=9000 750 images in 194.4s (3.9 img/s)
+[ckpt] step=9250 (37/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=9250 750 images in 194.3s (3.9 img/s)
+[ckpt] step=9500 (38/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=9500 750 images in 194.2s (3.9 img/s)
+[ckpt] step=9750 (39/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=9750 750 images in 191.9s (3.9 img/s)
+[ckpt] step=10000 (40/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=10000 750 images in 191.5s (3.9 img/s)
+[ckpt] step=10250 (41/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=10250 750 images in 195.2s (3.8 img/s)
+[ckpt] step=10500 (42/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=10500 750 images in 193.8s (3.9 img/s)
+[ckpt] step=10750 (43/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=10750 750 images in 193.2s (3.9 img/s)
+[ckpt] step=11000 (44/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=11000 750 images in 191.0s (3.9 img/s)
+[ckpt] step=11250 (45/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=11250 750 images in 195.3s (3.8 img/s)
+[ckpt] step=11500 (46/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=11500 750 images in 193.8s (3.9 img/s)
+[ckpt] step=11750 (47/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=11750 750 images in 194.7s (3.9 img/s)
+[ckpt] step=12000 (48/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=12000 750 images in 194.8s (3.9 img/s)
+[ckpt] step=12250 (49/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=12250 750 images in 191.0s (3.9 img/s)
+[ckpt] step=12500 (50/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=12500 750 images in 196.9s (3.8 img/s)
+[ckpt] step=12750 (51/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=12750 750 images in 191.6s (3.9 img/s)
+[ckpt] step=13000 (52/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=13000 750 images in 196.4s (3.8 img/s)
+[ckpt] step=13250 (53/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=13250 750 images in 194.5s (3.9 img/s)
+[ckpt] step=13500 (54/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=13500 750 images in 192.0s (3.9 img/s)
+[ckpt] step=13750 (55/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=13750 750 images in 194.1s (3.9 img/s)
+[ckpt] step=14000 (56/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=14000 750 images in 194.2s (3.9 img/s)
+[ckpt] step=14250 (57/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=14250 750 images in 194.9s (3.8 img/s)
+[ckpt] step=14500 (58/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=14500 750 images in 194.5s (3.9 img/s)
+[ckpt] step=14750 (59/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=14750 750 images in 193.2s (3.9 img/s)
+[ckpt] step=15000 (60/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=15000 750 images in 193.9s (3.9 img/s)
+[ckpt] step=15250 (61/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=15250 750 images in 192.6s (3.9 img/s)
+[ckpt] step=15500 (62/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=15500 750 images in 190.7s (3.9 img/s)
+[ckpt] step=15750 (63/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=15750 750 images in 194.2s (3.9 img/s)
+[ckpt] step=16000 (64/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=16000 750 images in 191.7s (3.9 img/s)
+[ckpt] step=16250 (65/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=16250 750 images in 194.2s (3.9 img/s)
+[ckpt] step=16500 (66/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=16500 750 images in 192.4s (3.9 img/s)
+[ckpt] step=16750 (67/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=16750 750 images in 193.2s (3.9 img/s)
+[ckpt] step=17000 (68/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=17000 750 images in 194.4s (3.9 img/s)
+[ckpt] step=17250 (69/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=17250 750 images in 190.6s (3.9 img/s)
+[ckpt] step=17500 (70/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=17500 750 images in 190.8s (3.9 img/s)
+[ckpt] step=17750 (71/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=17750 750 images in 192.0s (3.9 img/s)
+[ckpt] step=18000 (72/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=18000 750 images in 191.7s (3.9 img/s)
+[ckpt] step=18250 (73/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=18250 750 images in 193.5s (3.9 img/s)
+[ckpt] step=18500 (74/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=18500 750 images in 193.7s (3.9 img/s)
+[ckpt] step=18750 (75/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=18750 750 images in 196.4s (3.8 img/s)
+[ckpt] step=19000 (76/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=19000 750 images in 192.0s (3.9 img/s)
+[ckpt] step=19250 (77/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=19250 750 images in 190.9s (3.9 img/s)
+[ckpt] step=19500 (78/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=19500 750 images in 193.6s (3.9 img/s)
+[ckpt] step=19750 (79/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=19750 750 images in 192.8s (3.9 img/s)
+[ckpt] step=20000 (80/81)
+-----------init SaMam model-----------
+inference by mamba-ssm, quick
+upsample: 8
+  [gen] step=20000 750 images in 194.6s (3.9 img/s)
+[ckpt] step=1000000000000 (81/81)
+  [skip] step=1000000000000 already has 750 images
+END=2026-07-02T10:41:28
+Phase 1 done: 81 checkpoints, 10225.5s total
+PHASE1_DONE=2026-07-02T10:42:35+08:00
+
+=== Phase 2: Evaluate all metrics (80 ckpts) ===
+/home/xy/venvs/samam312/lib/python3.12/site-packages/transformers/utils/hub.py:128: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+/home/xy/venvs/samam312/lib/python3.12/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/xy/venvs/samam312/lib/python3.12/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=AlexNet_Weights.IMAGENET1K_V1`. You can also use `weights=AlexNet_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+/home/xy/venvs/samam312/lib/python3.12/site-packages/lpips/lpips.py:107: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  self.load_state_dict(torch.load(model_path, map_location='cpu'), strict=False)
+Setting up [LPIPS] perceptual loss: trunk [alex], v[0.1], spatial [off]
+Loading model from: /home/xy/venvs/samam312/lib/python3.12/site-packages/lpips/weights/v0.1/alex.pth
+=== Phase 2: Metric eval only (81 checkpoints with images) ===
+START=2026-07-02T10:44:09
+[ckpt] step=-1 (1/81)
+/mnt/i/Github/Latent_Style/SchrodingerBridge/tools/samam_distinct5_scratch/eval_samam_metrics_phase2.py:99: UserWarning: The use of `x.T` on tensors of dimension other than 2 to reverse their shape is deprecated and it will throw an error in a future release. Consider `x.mT` to transpose batches of matrices or `x.permute(*torch.arange(x.ndim - 1, -1, -1))` to reverse the dimensions of a tensor. (Triggered internally at ../aten/src/ATen/native/TensorShape.cpp:3697.)
+  clip_content = float((gen_feat @ src_feat_map[src_path].T).mean().item())
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_000250/images", "metric_wall_seconds": 38.8851432800293, "count": 750.0, "content_lpips": 0.8440774428248405, "clip_style": 0.5207783486843109, "clip_content": 0.5727502273321152}
+[ckpt] step=-1 (2/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_000500/images", "metric_wall_seconds": 23.429329872131348, "count": 750.0, "content_lpips": 0.6280488184988499, "clip_style": 0.5241018586158752, "clip_content": 0.5746467917760213}
+[ckpt] step=-1 (3/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_000750/images", "metric_wall_seconds": 23.382206201553345, "count": 750.0, "content_lpips": 0.5980934802691141, "clip_style": 0.547359759569168, "clip_content": 0.6264258389075598}
+[ckpt] step=-1 (4/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_001000/images", "metric_wall_seconds": 22.947287797927856, "count": 750.0, "content_lpips": 0.5677376045882702, "clip_style": 0.5547686262925466, "clip_content": 0.6645519711971283}
+[ckpt] step=-1 (5/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_001250/images", "metric_wall_seconds": 23.05501079559326, "count": 750.0, "content_lpips": 0.5413550369640191, "clip_style": 0.5547952148516972, "clip_content": 0.6893067779541016}
+[ckpt] step=-1 (6/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_001500/images", "metric_wall_seconds": 23.09778332710266, "count": 750.0, "content_lpips": 0.5015614359180133, "clip_style": 0.5712138640880585, "clip_content": 0.7433263400793075}
+[ckpt] step=-1 (7/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_001750/images", "metric_wall_seconds": 22.947937965393066, "count": 750.0, "content_lpips": 0.48212621435523034, "clip_style": 0.5798253739277521, "clip_content": 0.7864279450178147}
+[ckpt] step=-1 (8/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_002000/images", "metric_wall_seconds": 22.85260558128357, "count": 750.0, "content_lpips": 0.4563133438626925, "clip_style": 0.5854934819539388, "clip_content": 0.8064291960795721}
+[ckpt] step=-1 (9/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_002250/images", "metric_wall_seconds": 23.248960971832275, "count": 750.0, "content_lpips": 0.4414028548399607, "clip_style": 0.5846588104565938, "clip_content": 0.8187657732168834}
+[ckpt] step=-1 (10/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_002500/images", "metric_wall_seconds": 22.96474838256836, "count": 750.0, "content_lpips": 0.4069113528529803, "clip_style": 0.5855800704956055, "clip_content": 0.8354245305856068}
+[ckpt] step=-1 (11/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_002750/images", "metric_wall_seconds": 23.41161584854126, "count": 750.0, "content_lpips": 0.39813925643761955, "clip_style": 0.5835031396945317, "clip_content": 0.845780995130539}
+[ckpt] step=-1 (12/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_003000/images", "metric_wall_seconds": 23.154751539230347, "count": 750.0, "content_lpips": 0.3803373959958553, "clip_style": 0.5867551719745, "clip_content": 0.8588504807154338}
+[ckpt] step=-1 (13/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_003250/images", "metric_wall_seconds": 23.258160829544067, "count": 750.0, "content_lpips": 0.36627221725384396, "clip_style": 0.5850458963314692, "clip_content": 0.865444620291392}
+[ckpt] step=-1 (14/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_003500/images", "metric_wall_seconds": 23.30444860458374, "count": 750.0, "content_lpips": 0.35437329068779944, "clip_style": 0.5814080706437429, "clip_content": 0.8693573599656423}
+[ckpt] step=-1 (15/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_003750/images", "metric_wall_seconds": 23.20071816444397, "count": 750.0, "content_lpips": 0.3623853837052981, "clip_style": 0.5798533288240433, "clip_content": 0.8645819784005483}
+[ckpt] step=-1 (16/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_004000/images", "metric_wall_seconds": 23.212385892868042, "count": 750.0, "content_lpips": 0.3423645428518454, "clip_style": 0.5789350344340006, "clip_content": 0.8648310543696086}
+[ckpt] step=-1 (17/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_004250/images", "metric_wall_seconds": 22.815470218658447, "count": 750.0, "content_lpips": 0.32738753509521484, "clip_style": 0.5845801489750544, "clip_content": 0.8671219572226206}
+[ckpt] step=-1 (18/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_004500/images", "metric_wall_seconds": 23.549453020095825, "count": 750.0, "content_lpips": 0.3156151226957639, "clip_style": 0.5790002873341242, "clip_content": 0.8706627485752105}
+[ckpt] step=-1 (19/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_004750/images", "metric_wall_seconds": 23.239062547683716, "count": 750.0, "content_lpips": 0.3117503691315651, "clip_style": 0.5834355814854304, "clip_content": 0.8828742113113404}
+[ckpt] step=-1 (20/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_005000/images", "metric_wall_seconds": 23.210896015167236, "count": 750.0, "content_lpips": 0.33944524091482164, "clip_style": 0.5872521897951762, "clip_content": 0.8768007152080536}
+[ckpt] step=-1 (21/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_005250/images", "metric_wall_seconds": 23.612935781478882, "count": 750.0, "content_lpips": 0.32374968580901625, "clip_style": 0.5902558132012685, "clip_content": 0.878570285320282}
+[ckpt] step=-1 (22/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_005500/images", "metric_wall_seconds": 23.34532070159912, "count": 750.0, "content_lpips": 0.3207660944710175, "clip_style": 0.58644673482577, "clip_content": 0.8746773668924968}
+[ckpt] step=-1 (23/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_005750/images", "metric_wall_seconds": 23.204928398132324, "count": 750.0, "content_lpips": 0.34886421702305476, "clip_style": 0.5916352550983429, "clip_content": 0.871736031293869}
+[ckpt] step=-1 (24/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_006000/images", "metric_wall_seconds": 23.7232506275177, "count": 750.0, "content_lpips": 0.3398060147513946, "clip_style": 0.591700133840243, "clip_content": 0.867826324224472}
+[ckpt] step=-1 (25/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_006250/images", "metric_wall_seconds": 23.162352323532104, "count": 750.0, "content_lpips": 0.3465055528829495, "clip_style": 0.5922598816951116, "clip_content": 0.8664939475854238}
+[ckpt] step=-1 (26/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_006500/images", "metric_wall_seconds": 23.19453501701355, "count": 750.0, "content_lpips": 0.35180715151627856, "clip_style": 0.5925401193300883, "clip_content": 0.8737245022455852}
+[ckpt] step=-1 (27/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_006750/images", "metric_wall_seconds": 23.06067967414856, "count": 750.0, "content_lpips": 0.3277455757558346, "clip_style": 0.5890177741845449, "clip_content": 0.8749679631392161}
+[ckpt] step=-1 (28/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_007000/images", "metric_wall_seconds": 23.174957036972046, "count": 750.0, "content_lpips": 0.32091208057602244, "clip_style": 0.5904715350866317, "clip_content": 0.8757487408320109}
+[ckpt] step=-1 (29/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_007250/images", "metric_wall_seconds": 23.02425718307495, "count": 750.0, "content_lpips": 0.30777390823264916, "clip_style": 0.5908225988944371, "clip_content": 0.8788734440803527}
+[ckpt] step=-1 (30/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_007500/images", "metric_wall_seconds": 22.803940296173096, "count": 750.0, "content_lpips": 0.31982811095317204, "clip_style": 0.585666629711787, "clip_content": 0.8739246640205384}
+[ckpt] step=-1 (31/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_007750/images", "metric_wall_seconds": 22.774391651153564, "count": 750.0, "content_lpips": 0.31162483745316666, "clip_style": 0.5867748843431473, "clip_content": 0.8750722264448801}
+[ckpt] step=-1 (32/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_008000/images", "metric_wall_seconds": 22.584917783737183, "count": 750.0, "content_lpips": 0.3176810904145241, "clip_style": 0.5901444813807806, "clip_content": 0.8747756920655568}
+[ckpt] step=-1 (33/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_008250/images", "metric_wall_seconds": 22.769243478775024, "count": 750.0, "content_lpips": 0.31377910993496577, "clip_style": 0.5892530060211817, "clip_content": 0.8802353491783143}
+[ckpt] step=-1 (34/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_008500/images", "metric_wall_seconds": 22.809487342834473, "count": 750.0, "content_lpips": 0.29755493191878, "clip_style": 0.5873879820505779, "clip_content": 0.8881300613085429}
+[ckpt] step=-1 (35/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_008750/images", "metric_wall_seconds": 22.67755889892578, "count": 750.0, "content_lpips": 0.29781999757885935, "clip_style": 0.585662769595782, "clip_content": 0.8813567725817363}
+[ckpt] step=-1 (36/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_009000/images", "metric_wall_seconds": 22.785795211791992, "count": 750.0, "content_lpips": 0.2918247400522232, "clip_style": 0.5879768402179082, "clip_content": 0.8849078468481699}
+[ckpt] step=-1 (37/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_009250/images", "metric_wall_seconds": 22.82308840751648, "count": 750.0, "content_lpips": 0.2916712150623401, "clip_style": 0.5878741894960403, "clip_content": 0.8843389374415079}
+[ckpt] step=-1 (38/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_009500/images", "metric_wall_seconds": 22.91081929206848, "count": 750.0, "content_lpips": 0.29505319783091544, "clip_style": 0.5892586077451706, "clip_content": 0.8866087715625763}
+[ckpt] step=-1 (39/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_009750/images", "metric_wall_seconds": 22.66063666343689, "count": 750.0, "content_lpips": 0.303714345206817, "clip_style": 0.5879127248128255, "clip_content": 0.8850398497581482}
+[ckpt] step=-1 (40/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_010000/images", "metric_wall_seconds": 22.69505023956299, "count": 750.0, "content_lpips": 0.29133147533237935, "clip_style": 0.5858051155010859, "clip_content": 0.8831208074092864}
+[ckpt] step=-1 (41/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_010250/images", "metric_wall_seconds": 22.727007150650024, "count": 750.0, "content_lpips": 0.30296009952326614, "clip_style": 0.5859908550182978, "clip_content": 0.8742733520666758}
+[ckpt] step=-1 (42/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_010500/images", "metric_wall_seconds": 22.62661337852478, "count": 750.0, "content_lpips": 0.2971768531352282, "clip_style": 0.5873952272335689, "clip_content": 0.8745137603282929}
+[ckpt] step=-1 (43/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_010750/images", "metric_wall_seconds": 22.809346675872803, "count": 750.0, "content_lpips": 0.27915471079945564, "clip_style": 0.5837172402143478, "clip_content": 0.8809193041324616}
+[ckpt] step=-1 (44/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_011000/images", "metric_wall_seconds": 22.638341188430786, "count": 750.0, "content_lpips": 0.2899555242111286, "clip_style": 0.5832414529720942, "clip_content": 0.8770666943391164}
+[ckpt] step=-1 (45/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_011250/images", "metric_wall_seconds": 28.44682478904724, "count": 750.0, "content_lpips": 0.2795111436545849, "clip_style": 0.5877785038948059, "clip_content": 0.8871426786581675}
+[ckpt] step=-1 (46/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_011500/images", "metric_wall_seconds": 23.048848867416382, "count": 750.0, "content_lpips": 0.26766243324677147, "clip_style": 0.5879237633943558, "clip_content": 0.8959953889846802}
+[ckpt] step=-1 (47/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_011750/images", "metric_wall_seconds": 23.354326248168945, "count": 750.0, "content_lpips": 0.2652806064883868, "clip_style": 0.5853813979228337, "clip_content": 0.885369323571523}
+[ckpt] step=-1 (48/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_012000/images", "metric_wall_seconds": 23.50592803955078, "count": 750.0, "content_lpips": 0.2756026993095875, "clip_style": 0.585863113284111, "clip_content": 0.891981023311615}
+[ckpt] step=-1 (49/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_012250/images", "metric_wall_seconds": 24.655802011489868, "count": 750.0, "content_lpips": 0.2807988687256972, "clip_style": 0.5845044269959132, "clip_content": 0.8819102247556051}
+[ckpt] step=-1 (50/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_012500/images", "metric_wall_seconds": 22.863086700439453, "count": 750.0, "content_lpips": 0.25815705279509227, "clip_style": 0.5861302107572556, "clip_content": 0.8964504872957866}
+[ckpt] step=-1 (51/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_012750/images", "metric_wall_seconds": 25.633426904678345, "count": 750.0, "content_lpips": 0.2807492220501105, "clip_style": 0.583912777463595, "clip_content": 0.8822606966495514}
+[ckpt] step=-1 (52/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_013000/images", "metric_wall_seconds": 23.121073246002197, "count": 750.0, "content_lpips": 0.26665202229221663, "clip_style": 0.5877200320164363, "clip_content": 0.8973875727653503}
+[ckpt] step=-1 (53/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_013250/images", "metric_wall_seconds": 24.84892725944519, "count": 750.0, "content_lpips": 0.2637880308479071, "clip_style": 0.5845656214555105, "clip_content": 0.8928884582519532}
+[ckpt] step=-1 (54/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_013500/images", "metric_wall_seconds": 22.70938229560852, "count": 750.0, "content_lpips": 0.2563063723842303, "clip_style": 0.5803008363644282, "clip_content": 0.8950740973949433}
+[ckpt] step=-1 (55/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_013750/images", "metric_wall_seconds": 22.90175724029541, "count": 750.0, "content_lpips": 0.26198651076108215, "clip_style": 0.5860475383996964, "clip_content": 0.892590453863144}
+[ckpt] step=-1 (56/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_014000/images", "metric_wall_seconds": 22.98664665222168, "count": 750.0, "content_lpips": 0.2639113309085369, "clip_style": 0.5829080765247345, "clip_content": 0.8892438104947408}
+[ckpt] step=-1 (57/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_014250/images", "metric_wall_seconds": 23.98387098312378, "count": 750.0, "content_lpips": 0.259144643470645, "clip_style": 0.586478925983111, "clip_content": 0.8917453452746074}
+[ckpt] step=-1 (58/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_014500/images", "metric_wall_seconds": 24.715868711471558, "count": 750.0, "content_lpips": 0.25131811917821567, "clip_style": 0.5814734466870626, "clip_content": 0.8967587847709656}
+[ckpt] step=-1 (59/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_014750/images", "metric_wall_seconds": 23.82090663909912, "count": 750.0, "content_lpips": 0.2483273509591818, "clip_style": 0.5813364714781444, "clip_content": 0.8959606278737386}
+[ckpt] step=-1 (60/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_015000/images", "metric_wall_seconds": 23.411516904830933, "count": 750.0, "content_lpips": 0.26773632887005805, "clip_style": 0.5829802968502045, "clip_content": 0.895825672229131}
+[ckpt] step=-1 (61/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_015250/images", "metric_wall_seconds": 22.720151662826538, "count": 750.0, "content_lpips": 0.24684397921959558, "clip_style": 0.5791956132650375, "clip_content": 0.8985314536094665}
+[ckpt] step=-1 (62/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_015500/images", "metric_wall_seconds": 23.212552309036255, "count": 750.0, "content_lpips": 0.25582179382940134, "clip_style": 0.580329916159312, "clip_content": 0.8905026267369588}
+[ckpt] step=-1 (63/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_015750/images", "metric_wall_seconds": 22.85942554473877, "count": 750.0, "content_lpips": 0.24515519283960263, "clip_style": 0.585734459400177, "clip_content": 0.9005758271217347}
+[ckpt] step=-1 (64/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_016000/images", "metric_wall_seconds": 22.92950701713562, "count": 750.0, "content_lpips": 0.23234311839441457, "clip_style": 0.5771141802072525, "clip_content": 0.9041780138015747}
+[ckpt] step=-1 (65/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_016250/images", "metric_wall_seconds": 22.823705911636353, "count": 750.0, "content_lpips": 0.23193718883395195, "clip_style": 0.5819681299527486, "clip_content": 0.8995260711510976}
+[ckpt] step=-1 (66/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_016500/images", "metric_wall_seconds": 23.02214026451111, "count": 750.0, "content_lpips": 0.2582489027629296, "clip_style": 0.5799262362321218, "clip_content": 0.8966153434117635}
+[ckpt] step=-1 (67/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_016750/images", "metric_wall_seconds": 23.219327926635742, "count": 750.0, "content_lpips": 0.23545837959398827, "clip_style": 0.5805771132707596, "clip_content": 0.9064261087576548}
+[ckpt] step=-1 (68/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_017000/images", "metric_wall_seconds": 22.984347820281982, "count": 750.0, "content_lpips": 0.25368615469833217, "clip_style": 0.5803532710870107, "clip_content": 0.894088008483251}
+[ckpt] step=-1 (69/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_017250/images", "metric_wall_seconds": 22.987140655517578, "count": 750.0, "content_lpips": 0.23561384286731482, "clip_style": 0.5790465739568075, "clip_content": 0.9000417109330495}
+[ckpt] step=-1 (70/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_017500/images", "metric_wall_seconds": 22.926318407058716, "count": 750.0, "content_lpips": 0.24456705956409375, "clip_style": 0.5816881914536158, "clip_content": 0.9005478827953338}
+[ckpt] step=-1 (71/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_017750/images", "metric_wall_seconds": 23.009571313858032, "count": 750.0, "content_lpips": 0.2694084180196126, "clip_style": 0.5839423935015996, "clip_content": 0.8953117873668671}
+[ckpt] step=-1 (72/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_018000/images", "metric_wall_seconds": 22.999356985092163, "count": 750.0, "content_lpips": 0.23608767035851877, "clip_style": 0.5794778939088185, "clip_content": 0.8978312185605367}
+[ckpt] step=-1 (73/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_018250/images", "metric_wall_seconds": 22.98982334136963, "count": 750.0, "content_lpips": 0.23973188455899558, "clip_style": 0.580147306839625, "clip_content": 0.9033992911974589}
+[ckpt] step=-1 (74/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_018500/images", "metric_wall_seconds": 22.935205698013306, "count": 750.0, "content_lpips": 0.23660346879065036, "clip_style": 0.5794969551960627, "clip_content": 0.8984600154558817}
+[ckpt] step=-1 (75/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_018750/images", "metric_wall_seconds": 23.044968605041504, "count": 750.0, "content_lpips": 0.2419088754703601, "clip_style": 0.5826802523136139, "clip_content": 0.9043782280286153}
+[ckpt] step=-1 (76/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_019000/images", "metric_wall_seconds": 22.921244859695435, "count": 750.0, "content_lpips": 0.2398177939852079, "clip_style": 0.5802350601355235, "clip_content": 0.9005237360000611}
+[ckpt] step=-1 (77/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_019250/images", "metric_wall_seconds": 22.831586122512817, "count": 750.0, "content_lpips": 0.2674334083944559, "clip_style": 0.5785079059998194, "clip_content": 0.8941657889684042}
+[ckpt] step=-1 (78/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_019500/images", "metric_wall_seconds": 22.7546284198761, "count": 750.0, "content_lpips": 0.2223002499639988, "clip_style": 0.5787086550394694, "clip_content": 0.9011933921178182}
+[ckpt] step=-1 (79/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_019750/images", "metric_wall_seconds": 22.616019010543823, "count": 750.0, "content_lpips": 0.24818740132947764, "clip_style": 0.5831006257534027, "clip_content": 0.8996896879673004}
+[ckpt] step=-1 (80/81)
+{"step": -1, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/step_020000/images", "metric_wall_seconds": 22.623285055160522, "count": 750.0, "content_lpips": 0.24344345115870236, "clip_style": 0.5816369869709015, "clip_content": 0.9047136178811391}
+[ckpt] step=1000000000000 (81/81)
+{"step": 1000000000000, "image_dir": "/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/last/images", "metric_wall_seconds": 23.439921379089355, "count": 750.0, "content_lpips": 0.32091208057602244, "clip_style": 0.5904715350866317, "clip_content": 0.8757487408320109}
+END=2026-07-02T11:15:45
+Phase 2 done: 81 checkpoints, 1932.9s total
+csv=/mnt/i/Github/Latent_Style/Related_Works/baseline_pipeline/results/samam_distinct5_512_scratch_7k_250eval_remote/curve_eval_hf_750_batched/curve_metrics.csv
+PHASE2_DONE=2026-07-02T11:15:47+08:00
+ALL_DONE

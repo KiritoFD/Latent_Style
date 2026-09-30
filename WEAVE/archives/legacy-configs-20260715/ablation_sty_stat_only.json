@@ -1,0 +1,23 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "hf_stat_loss_enabled": true,
+    "hf_stat_weight": 2.0
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/stat_only"
+  },
+  "ablation": {
+    "name": "stat_only",
+    "axis": "style_injection",
+    "stage": "712_sty_inject_ablation",
+    "notes": "只开统计矩损失, 不改model. 测试stat loss本身对baseline的影响."
+  }
+}

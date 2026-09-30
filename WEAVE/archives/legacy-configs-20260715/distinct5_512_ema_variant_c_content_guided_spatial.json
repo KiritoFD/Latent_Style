@@ -1,0 +1,16 @@
+{
+  "_base": "distinct5_512_ema_variant_a_class_prototypes.json",
+  "model": {
+    "style_spatial_mode": "content_guided",
+    "style_spatial_content_hidden_dim": 96
+  },
+  "checkpoint": {
+    "save_dir": "./exp/distinct5_512_ema_variant_c_content_guided_spatial_b80"
+  },
+  "ablation": {
+    "name": "distinct5_512_ema_variant_c_content_guided_spatial",
+    "axis": "distinct5_512_representation",
+    "stage": "variant_c",
+    "notes": "Class prototype tokenizer plus content-guided spatial routing. The 16x16 content feature summary adjusts prototype-map weights per image."
+  }
+}

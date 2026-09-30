@@ -1,0 +1,25 @@
+{
+  "curve_csv": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_smoe_translator_k070_e3_seed42_b12a1/full_eval/clip_lpips_curve.csv",
+  "row_count": 3,
+  "best_epoch": "epoch_0001",
+  "best_index": 0,
+  "best_transfer_epoch": "epoch_0001",
+  "best_all_pairs_epoch": "epoch_0001",
+  "pareto_epochs": [
+    "epoch_0001",
+    "epoch_0002",
+    "epoch_0003"
+  ],
+  "last_pareto_epoch": "epoch_0003",
+  "newest_epoch": "epoch_0003",
+  "since_best": 2,
+  "since_last_pareto": 0,
+  "best_in_newest_2": false,
+  "tail_flat": true,
+  "tail_window": 4,
+  "flat_eps_style": 0.005,
+  "flat_eps_lpips": 0.018,
+  "patience": 4,
+  "criterion": "joint_transfer_allpairs_pareto",
+  "converged": false
+}

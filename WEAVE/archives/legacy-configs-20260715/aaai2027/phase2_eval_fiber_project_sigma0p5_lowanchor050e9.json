@@ -1,0 +1,31 @@
+{
+  "_comment": "Eval-only Orthogonal Fiber-SDE probe on lowanchor0.50 e9. Do not reinterpret the trained endpoint head; only enable hard endpoint/noise projection and change inference bridge sigma.",
+  "model": {
+    "solver_family": "solver_i2sb",
+    "transport_prediction_mode": "endpoint",
+    "bridge_sigma": 0.5,
+    "i2sb_fiber_project_endpoint": true,
+    "i2sb_fiber_project_noise": true,
+    "i2sb_fiber_project_kernel": 5
+  },
+  "bridge": {
+    "bridge_sigma": 0.5
+  },
+  "full_eval": {
+    "only_lpips_clip_style": true,
+    "transfer_only": true,
+    "max_src_samples": 10,
+    "generation_batch_size": 8,
+    "metric_batch_size": 16,
+    "target_chunk_size": 5,
+    "vae_decode_batch_size": 16,
+    "vae_onnx_decoder": "../eval_cache/vae_onnx/ema_b16_32/decoder.onnx",
+    "keep_generated_on_device": true,
+    "source_latent_cache": true,
+    "delta_observability": true,
+    "hf_clip_skip_processor": true,
+    "save_generated_images": false,
+    "save_summary_grid": false,
+    "num_steps": 8
+  }
+}

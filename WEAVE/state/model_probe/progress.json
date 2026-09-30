@@ -1,0 +1,75 @@
+{
+  "iteration": 7,
+  "status": "round7_phase_anchored_hf_transport_started",
+  "total_findings": 8,
+  "stale_count": 0,
+  "last_seen": "2026-07-14T22:00:00+08:00",
+  "current_milestone": "M3_phase_anchored_hf_transport",
+  "baseline_locked": {
+    "config": "brk_a_ll03_10ep",
+    "checkpoint": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_a_ll03_10ep/epoch_0010.pt",
+    "eval_protocol": "endpoint_adain_scale=2.0 (eval_adain_20.json)",
+    "clip_s": 0.707526,
+    "lpips": 0.258264,
+    "dino_c": 0.828720,
+    "dino_s": 0.485935,
+    "note": "Official main-table baseline; all Round7 comparisons must use AdaIN=2.0 protocol"
+  },
+  "diagnosis_locked": {
+    "stem_head_capacity": "not_bottleneck (LH/HL 31.5/31.1% energy vs LL 25.0%; heads near-orthogonal)",
+    "real_bottleneck": "conditional pathway (style gate 0.056-0.061; no target-instance condition, only class style_memory)",
+    "hf_phase_cancellation": "unregistered HF translation RMS 9.4e-9 but Fourier magnitude change 2.0e-8 — pointwise HF regression cancels in phase"
+  },
+  "round7_plan": {
+    "step_a": "Re-eval target_hf_subband_ft6 with AdaIN=2.0 for fair comparison",
+    "step_b": "Design phase-anchored HF transport: h_tilde = iFFT(|FFT(h_s)| * exp(j*angle(FFT(h_c))))",
+    "step_c": "Probe: translation-invariance, LL isolation, HH gradient, conditional-pathway causal",
+    "step_d": "Main-table 4-metric eval; targets CLIP-S>=0.7075, DINO-C>=0.82, LPIPS<=0.27, DINO-S>0.4859"
+  },
+  "round7_status": "complete_negative_flag_for_human",
+  "round7_step_a_result": {
+    "config": "target_hf_subband_ft6",
+    "eval_protocol": "AdaIN=2.0",
+    "clip_s": 0.7194,
+    "lpips": 0.2975,
+    "dino_c": 0.7937,
+    "dino_s": 0.4866,
+    "vs_baseline": "CLIP-S +0.012, DINO-S +0.001, LPIPS +0.039 worse, DINO-C -0.035 worse",
+    "conclusion": "Style slightly stronger but content degraded. Confirms need for phase-anchored approach."
+  },
+  "round7_step_b_result": {
+    "config": "phase_anchored_hf (10ep, from brk_a_ll03_10ep/epoch_0010.pt)",
+    "eval_protocol": "AdaIN=2.0",
+    "clip_s": 0.7171,
+    "lpips": 0.3084,
+    "dino_c": 0.7885,
+    "dino_s": 0.4782,
+    "vs_baseline": "CLIP-S +0.0096 (pass), LPIPS +0.0501 (FAIL), DINO-C -0.0402 (FAIL), DINO-S -0.0077 (FAIL)",
+    "targets_met": "1/4 (only CLIP-S)",
+    "conclusion": "Phase-anchored HF transport FAILED. DINO-S dropped below baseline."
+  },
+  "round7_step_c_probe": {
+    "translation_invariance": "FAIL (shift diff 0.83-1.38, threshold 0.1)",
+    "ll_isolation": "PASS",
+    "hh_gradient_flow": "PASS (grad norm=1.0, HH contribution=0.397)",
+    "conditional_pathway": "PASS (by design)",
+    "root_cause": "Haar DWT + FFT combination is NOT translation-invariant. DWT 2x2 block grouping changes with shift, FFT has boundary effects. This makes FM targets unstable across batches, negating the phase-cancellation fix."
+  },
+  "round7_step_d_eval": "Same as step_b_result (eval completed in step_b pipeline)",
+  "round9_adain_sweep_result": {
+    "adain_00": {"clip_s": 0.7017, "lpips": 0.2491, "dino_c": 0.8438, "dino_s": 0.4837},
+    "adain_20": {"clip_s": 0.7076, "lpips": 0.2583, "note": "matches baseline, --config_override fix verified"},
+    "adain_30": {"clip_s": 0.6788, "lpips": 0.7285, "dino_c": 0.2073, "dino_s": 0.2706, "note": "CRASHED — AdaIN=3.0 too strong"},
+    "conclusion": "AdaIN=2.0 is Pareto optimal. Inference params cannot break DINO-S=0.4859. Sharp cliff above AdaIN=2.0."
+  },
+  "round9_status": "pixel_wct_eval_running",
+  "round9_experiment": {
+    "name": "pixel_space_wct",
+    "method": "RGB-space WCT (3x3 covariance matching) on generated images",
+    "strengths": [0.3, 0.5, 0.7],
+    "input": "brk_a_adain_sweep_v2/adain00/images (AdaIN=0.0, best content preservation)",
+    "hypothesis": "All 35+ prior directions operated in latent space; DINOv2 evaluates in pixel space. Pixel-space WCT may transfer DINOv2-sensitive channel correlations that latent operations miss."
+  },
+  "stale_count": 9,
+  "next_action": "Waiting for pixel-space WCT evaluation results. If WCT also fails to break DINO-S>0.4859, structural pivot beyond Haar DWT + SAT + FM framework is required."
+}

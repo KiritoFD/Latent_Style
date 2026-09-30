@@ -1,0 +1,39 @@
+{
+  "protocol": "Random20 manifest restricted to Distinct5 styles; fixed Distinct5 target exemplar; full scope; canonical 256px LPIPS",
+  "rows": [
+    {
+      "reference_index": 0,
+      "pairs": 750,
+      "lpips": 0.7760030031204224,
+      "dino_c": 0.2147858887910843
+    },
+    {
+      "reference_index": 1,
+      "pairs": 750,
+      "lpips": 0.7820014357566833,
+      "dino_c": 0.24552710354328156
+    },
+    {
+      "reference_index": 2,
+      "pairs": 750,
+      "lpips": 0.7833065390586853,
+      "dino_c": 0.18911811709403992
+    },
+    {
+      "reference_index": 3,
+      "pairs": 750,
+      "lpips": 0.7522188425064087,
+      "dino_c": 0.20338143408298492
+    },
+    {
+      "reference_index": 4,
+      "pairs": 750,
+      "lpips": 0.7623385190963745,
+      "dino_c": 0.24198360741138458
+    }
+  ],
+  "lpips_mean": 0.7711736679077148,
+  "lpips_std": 0.013463978405976755,
+  "dino_c_mean": 0.21895923018455504,
+  "dino_c_std": 0.02442616620418634
+}

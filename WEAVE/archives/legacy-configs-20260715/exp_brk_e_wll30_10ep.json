@@ -1,0 +1,23 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "structure_aligned_target": true,
+    "spectral_w_ll": 3.0
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 10,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_e_wll30_10ep"
+  },
+  "ablation": {
+    "name": "brk_e_wll30_10ep",
+    "axis": "dino_s_break_wll_liberation",
+    "stage": "brk_round1",
+    "notes": "w_ll=3.0 (10x baseline 0.3) + SAT + 10 epochs. Aggressive LL liberation. Risk: may over-transport LL and damage content structure (DINO-C drop). Tests if strong LL supervision can push DINO-S past 0.485."
+  }
+}

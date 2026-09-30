@@ -1,0 +1,12 @@
+{
+  "_comment": "Phase616 converged checkpoint eval-only style overdrive bracket. Use when the 1.10 probe still looks style-starved and we want a stronger inference-side ceiling test.",
+  "model": {
+    "style_strength_max": 1.35
+  },
+  "full_eval": {
+    "style_strength": 1.35,
+    "only_lpips_clip_style": true,
+    "save_generated_images": false,
+    "save_summary_grid": false
+  }
+}

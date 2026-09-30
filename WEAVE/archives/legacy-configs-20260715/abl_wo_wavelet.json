@@ -1,0 +1,21 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "contract_family": "620_spatial_bridge",
+    "lowpass_mode": "avg_pool"
+  },
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 24
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/abl_wo_wavelet",
+    "resume_checkpoint": ""
+  },
+  "ablation": {
+    "name": "abl_wo_wavelet",
+    "axis": "architecture",
+    "stage": "destructive_ablation",
+    "notes": "Switch from 620_spectral_ode to 620_spatial_bridge (no Haar DWT decomposition). Tests the paper's claim that wavelet decoupling is necessary. Must train from scratch (incompatible architecture)."
+  }
+}

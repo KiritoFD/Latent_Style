@@ -1,0 +1,16 @@
+{
+  "_base": "./phase2_actuation_delta_basis_s030_k070_e3_b32bf16_vlen010.json",
+  "model": {
+    "style_delta_rank": 16,
+    "style_delta_scale": 0.30
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_actuation_delta_basis_r16_s030_k070_e3_b32bf16_vlen010",
+    "axis": "phase2_fiber_actuation_bottleneck",
+    "stage": "actuation_delta_basis_capacity_sweep",
+    "notes": "Controlled follow-up after S030 scale-only plateau. Keep parent, tokenizer, solver, losses, highpass, style_delta_scale=0.30, freeze_mode=injection_only, batch, and training-time transfer eval fixed; change only style_delta_rank from 4 to 16 to test whether output-side fiber section capacity is the bottleneck."
+  }
+}

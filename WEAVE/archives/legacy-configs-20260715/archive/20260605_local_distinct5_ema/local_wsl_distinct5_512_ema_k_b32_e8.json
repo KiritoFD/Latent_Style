@@ -1,0 +1,32 @@
+{
+  "_base": "../../distinct5_512_ema_variant_k_content_adaptive_vq_queue_e3.json",
+  "training": {
+    "seed": 42,
+    "batch_size": 32,
+    "num_epochs": 8,
+    "save_interval": 1,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "use_tqdm": true,
+    "log_interval": 20,
+    "numeric_debug": false,
+    "async_checkpoint_save": true,
+    "torch_compile": false,
+    "save_step_milestones": [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 60],
+    "full_eval_batch_size": 4,
+    "full_eval_target_chunk_size": 1,
+    "full_eval_vae_decode_batch_size": 2,
+    "full_eval_each_epoch": true,
+    "full_eval_defer_until_training_end": true,
+    "full_eval_profile_timing": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/local_wsl_distinct5_512_ema_k_b32_e8"
+  },
+  "ablation": {
+    "name": "local_wsl_distinct5_512_ema_k_b32_e8",
+    "axis": "local_wsl_distinct5_ema_curve",
+    "stage": "variant_k_e8",
+    "notes": "Local WSL RTX 4070 Laptop Distinct5-512 K-family EMA run for same-machine time-vs-quality calibration. Batch 32, eight epochs, deferred full eval for every saved checkpoint."
+  }
+}

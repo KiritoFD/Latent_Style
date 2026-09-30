@@ -1,0 +1,8 @@
+{
+    "identity_256": {
+        "gen_dir": "/mnt/i/exp_256_photo2art/identity_256/images"
+    },
+    "seedream_256": {
+        "gen_dir": "/mnt/i/Github/Latent_Style/seedream45_api/protocol_a_800/images"
+    }
+}

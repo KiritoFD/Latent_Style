@@ -1,0 +1,25 @@
+{
+  "definition": "Style separability is D_inter / D_intra - 1. For each of the ten style pairs, D_inter is their mean cross-style distance and D_intra is the average within-style distance. Zero indicates no separation.",
+  "dataset": "Distinct5 test split",
+  "num_images": 150,
+  "vae": "stabilityai/sd-vae-ft-ema",
+  "latent_posterior": "mean",
+  "rows": [
+    {
+      "loss": "pixel_mse",
+      "values": [0.05222535, 0.28159440, 0.05817008, 0.14778388, 0.13139689, 0.24634922, 0.02990294, 0.64480388, 0.04121470, 0.45665526]
+    },
+    {
+      "loss": "latent_mse",
+      "values": [0.02576768, 0.21107244, 0.02781785, 0.04729939, 0.15982163, 0.11679411, 0.01026654, 0.36137962, 0.09848320, 0.16281903]
+    },
+    {
+      "loss": "latent_swd",
+      "values": [0.04904926, 0.35745490, 0.07269895, 0.14907861, 0.29865301, 0.25169706, 0.04541969, 0.52280915, 0.29167974, 0.47869265]
+    },
+    {
+      "loss": "vgg_gram",
+      "values": [0.15580952, 0.28015900, 0.19559598, 0.06427765, 0.20475245, 0.14773977, 0.18924224, 0.12136245, 0.32383502, 0.38503933]
+    }
+  ]
+}

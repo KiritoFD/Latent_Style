@@ -1,0 +1,10 @@
+﻿python : usage: local_train_and_eval.py [-h] --config CONFIG [--smoke-only]
+At line:15 char:3696
++ ... Out-Null }; python tools/local_train_and_eval.py --config configs/630 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (usage: local_tr... [--smoke-only]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+                               [--skip-train] [--skip-eval]
+                               [--checkpoint CHECKPOINT] [--output OUTPUT]
+local_train_and_eval.py: error: unrecognized arguments: --skip-smoke

@@ -1,0 +1,12 @@
+{
+  "_base": "./phase2_eval_i2sb_noise_probe_lowanchor050e9_base.json",
+  "_comment": "Matched style-covariant colored-noise candidate at sigma=1.2.",
+  "model": {
+    "bridge_sigma": 1.2,
+    "i2sb_noise_family": "style_covariant"
+  },
+  "bridge": {
+    "bridge_sigma": 1.2,
+    "i2sb_noise_family": "style_covariant"
+  }
+}

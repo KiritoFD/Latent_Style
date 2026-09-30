@@ -1,0 +1,21 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/d10a_dim48_15ep",
+    "resume_checkpoint": ""
+  },
+  "model": {
+    "base_dim": 48
+  },
+  "training": {
+    "batch_size": 96,
+    "num_epochs": 15,
+    "patience": 2
+  },
+  "ablation": {
+    "name": "d10a_dim48_15ep",
+    "axis": "capacity_reduction",
+    "stage": "d10_disentangle",
+    "notes": "D10a: Content capacity reduction (base_dim 64->48). Inverse of D8b (dim 64->96 FAILED: DINO-sty=0.4565 -0.020). Hypothesis: D8 proved more capacity -> more content memorization -> less style reliance -> lower DINO-sty. Inverse: less capacity -> less content memorization -> more style reliance -> higher DINO-sty? Risk: content preservation may drop (1-LPIPS). 48/4heads=12 head_dim, valid. Structural pivot: changes content-style capacity balance, not loss weight or architecture topology."
+  }
+}

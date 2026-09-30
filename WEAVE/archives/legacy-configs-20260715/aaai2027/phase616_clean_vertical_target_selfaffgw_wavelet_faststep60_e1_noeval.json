@@ -1,0 +1,14 @@
+{
+  "_base": "./phase616_clean_vertical_target_selfaffgw_wavelet_faststep60_e1.json",
+  "training": {
+    "full_eval_each_epoch": false
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_vertical_target_selfaffgw_wavelet_faststep60_e1_noeval"
+  },
+  "ablation": {
+    "name": "phase616_clean_vertical_target_selfaffgw_wavelet_faststep60_e1_noeval",
+    "stage": "self_affinity_gw_pure_vertical_flow_wavelet_fast_noeval",
+    "notes": "Fast stage-1 remote control. Keep the wavelet vertical-target probe unchanged, but skip epoch-end full eval so the staged OT rebuild batch remains throughput-oriented."
+  }
+}

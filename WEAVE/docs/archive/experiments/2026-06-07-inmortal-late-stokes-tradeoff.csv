@@ -1,0 +1,6 @@
+experiment,clip_style,content_lpips,family_group,selection,full_clip_style,full_content_lpips,reading
+inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue,0.7289178653558095,0.6210744250833334,pattn_anchor,epoch_0011,0.7351596157550813,0.611331816,"Best pure Pattn continuation anchor before late-Stokes repair."
+inmortal_xpred_kmanifold_pattn_stokes_seed42_b16,0.7192763841152191,0.6221591451833334,stokes_from_scratch,epoch_0003,0.7256521624724069,0.6138432296666667,"Base from-scratch Stokes packet; cleaner LPIPS tradeoff than Aniso, but weaker than Pattn anchor."
+inmortal_xpred_kmanifold_pattn_stokes_seed42_b16_e12_continue,0.7111518693963687,0.5653205801999999,stokes_from_scratch,epoch_0009,0.7218620393276215,0.5553514326266666,"Longer from-scratch Stokes continuation; strongest LPIPS point in the family, but style falls too far."
+inmortal_xpred_kmanifold_pattn_stokes_from_pattn_seed42_b16,0.7274343500534693,0.6032513947166667,late_stokes_finetune,epoch_0013,0.7355936773618064,0.5915051698266667,"Late weak-Stokes 0.05 fine-tune; strongest LPIPS-balanced near-frontier point."
+inmortal_xpred_kmanifold_pattn_stokes002_from_pattn_seed42_b16,0.7306720416744552,0.6182822015833332,late_stokes_finetune,epoch_0013,0.7372151756286620,0.6069087232000000,"Late weaker-Stokes 0.02 fine-tune; strongest raw-style point in the late-Stokes family."

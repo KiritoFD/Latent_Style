@@ -1,0 +1,12 @@
+{
+  "_comment": "Eval-only topology-release screen from k070 epoch_0003. Only semantic_self_topology_blend is lowered from the trained 0.7 setting; no training.",
+  "model": {
+    "semantic_self_topology_gate": true,
+    "semantic_self_topology_blend": 0.3
+  },
+  "full_eval": {
+    "only_lpips_clip_style": true,
+    "save_generated_images": false,
+    "save_summary_grid": false
+  }
+}

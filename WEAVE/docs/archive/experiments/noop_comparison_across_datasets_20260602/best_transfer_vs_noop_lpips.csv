@@ -1,0 +1,10 @@
+dataset,method,label,clip_style,content_lpips,style_gain_vs_noop
+Legacy256 / overfit50,No-op,No-op,0.616694,0.000000,0.000000
+Legacy256 / overfit50,SaMAM,SaMAM 15000,0.673892,0.445060,0.057198
+Legacy256 / overfit50,LANCET,S-add K-1 C-0 W-20 Col-0 e8,0.692537,0.471155,0.075843
+WikiArt512-5style / 3600,No-op,No-op,0.773026,0.000000,0.000000
+WikiArt512-5style / 3600,SaMAM,SaMAM 5000,0.784589,0.283310,0.011563
+WikiArt512-5style / 3600,LANCET,local WSL hist b32 e8,0.785264,0.355736,0.012238
+Distinct5-512 / 1000,No-op,No-op,0.639921,0.000000,0.000000
+Distinct5-512 / 1000,SaMAM,SaMAM 1250,0.557183,0.448703,-0.082738
+Distinct5-512 / 1000,LANCET,K e1,0.671167,0.372281,0.031246

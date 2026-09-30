@@ -1,0 +1,27 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_b16a1_vlen010_e6.json",
+  "training": {
+    "num_epochs": 1,
+    "save_interval": 1,
+    "log_interval": 10,
+    "full_eval_each_epoch": true,
+    "full_eval_output_subdir": "full_eval_transfer_probe60",
+    "full_eval_max_src_samples": 48,
+    "full_eval_max_ref_compare": 12,
+    "full_eval_max_ref_cache": 24,
+    "stop_after_global_steps": 60,
+    "save_step_milestones": [60]
+  },
+  "data": {
+    "virtual_length_multiplier": 0.05
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_selfaffgw_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_selfaffgw_faststep60_e1",
+    "axis": "phase616_ot_probe_fast",
+    "stage": "clean_ot_self_affinity_gw_fast_control",
+    "notes": "Fast matched 616 OT probe control. Keeps pure_vertical_flow and unbalanced Sinkhorn fixed, but shortens the lane to one epoch / 60 steps / one lightweight transfer eval so OT conclusions arrive before long training latency dominates."
+  }
+}

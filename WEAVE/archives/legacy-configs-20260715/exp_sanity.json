@@ -1,0 +1,17 @@
+{
+  "_base": "../config.json",
+  "model": {
+    "style_strength_default": 1.5
+  },
+  "bridge": {
+    "terminal_swd_weight": 2.0,
+    "terminal_num_steps": 8
+  },
+  "training": {
+    "num_epochs": 8,
+    "save_interval": 1
+  },
+  "checkpoint": {
+    "save_dir": "./exp/exp_sanity"
+  }
+}

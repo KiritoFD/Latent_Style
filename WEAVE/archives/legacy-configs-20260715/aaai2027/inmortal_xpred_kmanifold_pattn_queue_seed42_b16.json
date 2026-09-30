@@ -1,0 +1,20 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_seed42_b16.json",
+  "bridge": {
+    "terminal_swd_aux_weight": 0.5
+  },
+  "data": {
+    "pairing_cache_dual_target_mix": 0.5,
+    "pairing_cache_dual_target_topk": 1,
+    "pairing_cache_aux_target_topk": 1
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_queue_seed42_b16"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_queue_seed42_b16",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_plus_Queue",
+    "notes": "Strong-family queue escalation. Keep the best current endpoint-transport plus cross-attention proximal family and add the fixed queue-smoothing bundle to test whether target-variance reduction can lower LPIPS without surrendering the current style frontier."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "_base": "../refactor_clean_baseline.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/ablation_v2/b03_sigma_0"
+  },
+  "ablation": {
+    "name": "b03_sigma_0",
+    "axis": "ablation_v2",
+    "stage": "comprehensive_extreme",
+    "notes": "Extreme: sigma=0 (no noise injection)"
+  },
+  "bridge": {
+    "bridge_sigma": 0.0
+  }
+}

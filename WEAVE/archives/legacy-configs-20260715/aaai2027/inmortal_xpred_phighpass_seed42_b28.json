@@ -1,0 +1,25 @@
+{
+  "_base": "inmortal_xpred_bary_seed42_b16.json",
+  "training": {
+    "batch_size": 28
+  },
+  "model": {
+    "proximal_mode": "highpass_residual",
+    "proximal_hidden_channels": 64,
+    "proximal_num_blocks": 2,
+    "proximal_highpass_kernel": 5,
+    "proximal_residual_energy_weight": 0.02,
+    "proximal_force_highpass": true,
+    "proximal_bind_terminal_losses": true,
+    "record_base_endpoint_metrics": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_phighpass_seed42_b28"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_phighpass_seed42_b28",
+    "axis": "aaai2027_inmortal_ceiling_push",
+    "stage": "XPred_plus_Phighpass",
+    "notes": "Second direct repair attempt for the x-prediction ceiling line. Keep endpoint prediction and barycentric target smoothing, then attach a constrained high-pass proximal residual to recover brushstroke detail without fully bypassing transport."
+  }
+}

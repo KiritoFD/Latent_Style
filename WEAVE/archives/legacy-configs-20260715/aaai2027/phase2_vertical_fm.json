@@ -1,0 +1,14 @@
+{
+  "_comment": "Pure Vertical Flow Matching from 616/design.md. mu_base=const (structure frozen), velocity=vertical only.",
+  "bridge": {
+    "bridge_path_mode": "vertical",
+    "bridge_vertical_base_stride": 2,
+    "objective_mode": "omf",
+    "w_flow": 1.0,
+    "w_kinetic": 0.85,
+    "kinetic_penalty_mode": "manifold_adaptive_split",
+    "bridge_sigma": 0.0,
+    "terminal_swd_weight": 18.0,
+    "semantic_swd_num_projections": 64
+  }
+}

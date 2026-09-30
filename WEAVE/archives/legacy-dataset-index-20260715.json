@@ -1,0 +1,27 @@
+{
+  "_comment": "Dataset location index for portable configs. Fields using '$index:KEY' in config JSON are resolved to the first existing path here. Local (G:) and remote (I:) each get their own copy of this file with different path ordering.",
+  "samam_512_train": [
+    "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train",
+    "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train"
+  ],
+  "samam_512_pairing": [
+    "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt"
+  ],
+  "samam_512_packed": [
+    "I:/datasets/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/packed",
+    "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train/.latent_cache/packed"
+  ],
+  "samam_512_test": [
+    "I:/datasets/wikiart_distinct5_samam_512_classview/test",
+    "G:/GitHub/Latent_Style/Dataset/distinct5_512/test"
+  ],
+  "eval_cache": [
+    "I:/Github/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache"
+  ],
+  "hf_cache": [
+    "C:/Users/Administrator/.cache/huggingface/hub",
+    "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache/hf"
+  ]
+}

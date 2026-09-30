@@ -1,0 +1,22 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "bridge": {
+    "single_step_swd_weight": 20.0,
+    "w_endpoint_content": 0.5
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/d9b_swd20_ep05_15ep",
+    "resume_checkpoint": ""
+  },
+  "training": {
+    "batch_size": 96,
+    "grad_clip_norm": 1.0,
+    "learning_rate": 2e-4
+  },
+  "ablation": {
+    "name": "d9b_swd20_ep05_15ep",
+    "axis": "M2_loss_reweighting_double",
+    "stage": "M2_loss_reweighting_D9b",
+    "notes": "D9b: Loss reweighting - double push. single_step_swd_weight 12->20 (+67%), w_endpoint_content 1.0->0.5 (-50%). Theory: D9a only increases style weight. D9b also DECREASES content weight, creating a double push toward style. This is the most aggressive style prioritization. Risk: may destroy content too much. But user said: prioritize CLIP-S and DINO-sty, don't care about MUSIQ. If DINO-sty reaches 0.49+ with acceptable 1-LPIPS (>0.55), this is a win. bs=96."
+  }
+}

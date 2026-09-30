@@ -1,0 +1,10 @@
+import json
+c = json.load(open(r"I:\Github\Latent_Style\SchrodingerBridge\exp\710_b0_weave\config.json"))
+m = c.get("model", {})
+print("endpoint_adain_scale:", m.get("endpoint_adain_scale", "NOT_SET"))
+print("endpoint_high_scale:", m.get("endpoint_high_scale", "NOT_SET"))
+print("enable_hh_head:", m.get("enable_hh_head", "NOT_SET"))
+print("endpoint_adain_mode:", m.get("endpoint_adain_mode", "NOT_SET"))
+print("solver_family:", m.get("solver_family", "NOT_SET"))
+b = c.get("bridge", {})
+print("objective_mode:", b.get("objective_mode", "NOT_SET"))

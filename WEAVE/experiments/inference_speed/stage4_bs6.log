@@ -1,0 +1,3 @@
+[loaded] 750 latents, shape=(4, 64, 64), batch=6
+[ORT] providers=['CUDAExecutionProvider', 'CPUExecutionProvider'] fixed_batch=6
+[sanity] out shape=(6, 3, 512, 512) dtype=torch.float16

@@ -1,0 +1,701 @@
+# sde_i2sb_sigma_0p25 Remote Run Log
+
+- Family config:
+  - `G:\GitHub\Latent_Style\SchrodingerBridge\configs\aaai2027\round2_pure_sde\aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2.json`
+- Current active config:
+  - `G:\GitHub\Latent_Style\SchrodingerBridge\configs\aaai2027\round2_pure_sde\followon\tok_pure_latent_spatial\aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_c25clean.launch.json`
+- Current active run:
+  - `aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_c25clean`
+- Current active run dir:
+  - `./exp/inmortal-exp/aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_c25clean`
+- Warm-start parent:
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_tok_pure_latent_spatial_seed42_b8a2_c11/epoch_0002.pt`
+- Contract:
+  - `tokenizer_family = pure_latent_spatial`
+  - `transport_prediction_mode = endpoint`
+  - `solver_family = solver_i2sb`
+  - `bridge.objective_mode = i2sb_endpoint`
+  - `semantic_supervision_family = legacy_terminal_swd`
+  - `style_spatial_mode = disabled`
+  - DINO retired from the active lane
+  - preferred band `9.0-10.8 GiB`
+  - hard stop `11.0 GiB`
+
+## Historical Calibration: `b28c1`
+
+- start:
+  - `2026-06-12 14:10:37 +08:00`
+- epoch 1 end:
+  - `2026-06-12 14:27:08 +08:00`
+- epoch 1 log summary:
+  - `loss = 0.3802`
+  - `flow = 0.0987`
+  - `ot = 0.1305`
+  - `tswd = 0.0156`
+- trainer log peak:
+  - `6.56 / 9.97 GB`
+- runtime guard:
+  - `RUNTIME_UNDER_BAND_WARN used=8082 MiB`
+  - no hard-cap stop observed
+
+## Historical Eval State: `b28c1`
+
+- `epoch_0001.pt` saved:
+  - `2026-06-12 14:27:08 +08:00`
+- first settled eval:
+  - completed at `2026-06-12 14:31:00 +08:00`
+  - transfer:
+    - `clip_style = 0.708330`
+    - `content_lpips = 0.726471`
+  - all-pairs:
+    - `clip_style = 0.709705`
+    - `content_lpips = 0.719245`
+  - eval timing:
+    - `wall_total = 211.77s`
+    - `eval_total = 30.20s`
+    - `generation = 115.59s`
+    - `vae_decode = 54.43s`
+- resume evidence:
+  - training restored to CUDA and resumed into `Epoch 2/24`
+  - later GPU sample:
+    - `10644 MiB`
+    - below the `11.0 GiB` hard cap
+
+## Historical Retry: `b26c2`
+
+- `b28c1` recorded the first settled `sigma=0.25` point and dominated the recorded `sigma=0.5 / b28c4` point on both `transfer` and `all_pairs`, but it failed after eval+resume:
+  - `2026-06-12 14:36:23 +08:00`
+  - `RUNTIME_GUARD used=11540 MiB cap=11000 MiB`
+- leaner retry:
+  - batch:
+    - `26`
+  - health check:
+    - `7263 MiB`
+    - accepted as under-band calibration
+- `b26c2 epoch_0001`:
+  - trainer log:
+    - `loss = 0.3876`
+    - `flow = 0.1042`
+    - `ot = 0.1221`
+    - `tswd = 0.0157`
+    - `peak = 6.10 / 7.91 GB`
+  - first settled eval:
+    - completed at `2026-06-12 14:57:42 +08:00`
+    - transfer:
+      - `clip_style = 0.706973`
+      - `content_lpips = 0.707056`
+    - all-pairs:
+      - `clip_style = 0.709407`
+      - `content_lpips = 0.700522`
+    - eval timing:
+      - `wall_total = 212.27s`
+      - `eval_total = 32.32s`
+      - `generation = 114.00s`
+      - `vae_decode = 54.40s`
+  - resume evidence:
+    - training restored to CUDA and resumed into `Epoch 2/24`
+    - later GPU sample:
+      - `9538-9552 MiB`
+      - below the `11.0 GiB` hard cap
+  - failure after later resume growth:
+    - `2026-06-12 15:00:30 +08:00`
+    - `RUNTIME_GUARD used=11193 MiB cap=11000 MiB`
+
+## Legacy-Snapshot Lane: `b24c3`
+
+- batch:
+  - `24`
+- health check:
+  - `6368 MiB`
+  - accepted as under-band calibration
+- first settled eval:
+  - `epoch_0001.pt` saved at `2026-06-12 15:27:00 +08:00`
+  - completed at `2026-06-12 15:31:16 +08:00`
+  - transfer:
+    - `clip_style = 0.717461`
+    - `content_lpips = 0.679334`
+  - all-pairs:
+    - `clip_style = 0.721461`
+    - `content_lpips = 0.671537`
+  - eval timing:
+    - `wall_total = 217.91s`
+    - `eval_total = 30.80s`
+    - `generation = 117.74s`
+    - `vae_decode = 56.92s`
+- resume evidence:
+  - training restored to CUDA and resumed into `Epoch 2/24`
+  - observed GPU samples:
+    - `8114 MiB`
+    - `8459 MiB`
+    - `9227 MiB`
+  - current sample is back inside the preferred `9.0-10.8 GiB` band
+- current read:
+  - `b24c3 epoch_0001` is the strongest `sigma=0.25` first point so far
+  - better style than `b28c1`
+  - better LPIPS than both `b28c1` and `b26c2`
+ - `epoch_0002` settled and regressed:
+   - transfer:
+     - `clip_style = 0.705420`
+     - `content_lpips = 0.728524`
+   - all-pairs:
+     - `clip_style = 0.707059`
+     - `content_lpips = 0.721498`
+ - lane status:
+   - stopped after `epoch_0002`
+   - reason:
+     - old snapshot predating the clean-mainline rewrite
+     - `epoch_0002` regressed versus `epoch_0001`
+
+## Clean Calibration: `clean24`
+
+- launch time:
+  - `2026-06-12 16:05:32 +08:00`
+- batch:
+  - `24`
+- warm-start parent:
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_tok_pure_latent_spatial_seed42_b8a2_c11/epoch_0002.pt`
+- clean contract highlights:
+  - `style_tokenizer = null`
+  - `tokenizer_content_adaptive = false`
+  - `use_diffeomorphic_stroke = false`
+  - `style_injection_mode = none`
+- health:
+  - first health check `6827 MiB`
+  - current sampled GPU `6763 MiB`
+  - under-band, so this lane was stopped before the first retained checkpoint
+
+## Clean Calibration: `clean32`
+
+- launch time:
+  - `2026-06-12 16:12:13 +08:00`
+- batch:
+  - `32`
+- warm-start parent:
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_tok_pure_latent_spatial_seed42_b8a2_c11/epoch_0002.pt`
+- clean contract highlights:
+  - `style_tokenizer = null`
+  - `tokenizer_content_adaptive = false`
+  - `use_diffeomorphic_stroke = false`
+  - `style_injection_mode = none`
+- health:
+  - first health check `8724 MiB`
+  - later sampled GPU `9316 MiB`
+  - then `RUNTIME_UNDER_BAND_WARN used=8391 MiB`
+  - finally `RUNTIME_GUARD used=11031 MiB cap=11000 MiB`
+- lane status:
+  - stopped before `epoch_0001`
+  - role:
+    - upper calibration bracket for the true clean packet
+
+## Clean Calibration: `clean30`
+
+- launch time:
+  - `2026-06-12 16:23:14 +08:00`
+- batch:
+  - `30`
+- warm-start parent:
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_tok_pure_latent_spatial_seed42_b8a2_c11/epoch_0002.pt`
+- clean contract highlights:
+  - `style_tokenizer = null`
+  - `tokenizer_content_adaptive = false`
+  - `use_diffeomorphic_stroke = false`
+  - `style_injection_mode = none`
+- first settled eval:
+  - `epoch_0001`
+  - completed at `2026-06-12 16:43:02 +08:00`
+  - transfer:
+    - `clip_style = 0.713563`
+    - `content_lpips = 0.682533`
+  - all-pairs:
+    - `clip_style = 0.717004`
+    - `content_lpips = 0.674513`
+  - eval timing:
+    - `wall_total = 211.97s`
+    - `eval_total = 33.76s`
+    - `generation = 107.07s`
+    - `vae_decode = 58.71s`
+- read:
+  - this is the first true clean retained checkpoint
+  - it is slightly weaker than legacy `b24c3 epoch_0001` on both style and LPIPS
+- post-eval failure:
+  - `2026-06-12 16:43:36 +08:00`
+  - `RUNTIME_GUARD used=11473 MiB cap=11000 MiB`
+- lane status:
+  - stopped after the first settled clean point
+
+## Clean Calibration: `clean28`
+
+- launch time:
+  - `2026-06-12 16:48:13 +08:00`
+- batch:
+  - `28`
+- warm-start parent:
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_tok_pure_latent_spatial_seed42_b8a2_c11/epoch_0002.pt`
+- clean contract highlights:
+  - `style_tokenizer = null`
+  - `tokenizer_content_adaptive = false`
+  - `use_diffeomorphic_stroke = false`
+  - `style_injection_mode = none`
+- first settled eval:
+  - `epoch_0001`
+  - completed at `2026-06-12 17:07:55 +08:00`
+  - transfer:
+    - `clip_style = 0.710131`
+    - `content_lpips = 0.720336`
+  - all-pairs:
+    - `clip_style = 0.711888`
+    - `content_lpips = 0.712437`
+  - eval timing:
+    - `wall_total = 208.18s`
+    - `eval_total = 32.38s`
+    - `generation = 105.19s`
+    - `vae_decode = 58.57s`
+- read:
+  - weaker than both `clean30 epoch_0001` and legacy `b24c3 epoch_0001`
+- post-eval failure:
+  - `2026-06-12 17:13:26 +08:00`
+  - `RUNTIME_GUARD used=11029 MiB cap=11000 MiB`
+
+## Clean Calibration: `clean27`
+
+- batch:
+  - `27`
+- lane status:
+  - no retained checkpoint
+  - exited during `epoch_1`
+- role:
+  - conservative rerun after `clean30` crossed the hard cap during the resume-to-epoch-2 phase
+
+## Decision
+
+- `b26c2 epoch_0001` is a new structure-friendlier Pareto point within `sigma=0.25`:
+  - slightly weaker style than `b28c1 epoch_0001`
+  - materially better LPIPS than `b28c1 epoch_0001`
+- it still dominates the recorded `sigma=0.5 / b28c4 epoch_0001` point on both style and LPIPS.
+- `b26c2` is not promotable because it still crossed the hard cap after eval+resume.
+- `b24c3` is preserved as the best legacy-snapshot first point, but it is no longer the active evidence lane.
+- `clean24` served only as a clean under-band calibration check and was intentionally replaced.
+- `clean32` proved the true clean packet can touch the formal band, but it exceeded the `11.0 GiB` cap before the first retained checkpoint.
+- `clean30` produced the first true clean retained checkpoint, but it is still weaker than the best legacy-snapshot point and it also exceeded the hard cap after eval+resume.
+- `clean28` is weaker than `clean30` and also exceeded the hard cap after eval+resume.
+- `clean27` failed before the first retained checkpoint.
+- conclusion:
+  - the pure clean `sigma_0p25` family is fully implemented and empirically audited
+  - it is not yet promotable over the legacy-snapshot frontier
+  - active remote work has now returned to this family as `c26clean`
+
+## Active Relaunch: `c26clean`
+
+- launch time:
+  - `2026-06-12 19:33:47 +08:00`
+- batch:
+  - `26`
+- warm-start parent:
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_tok_pure_latent_spatial_seed42_b8a2_c11/epoch_0002.pt`
+- contract:
+  - true clean packet
+  - `style_tokenizer = null`
+  - `tokenizer_family = pure_latent_spatial`
+  - `solver_family = solver_i2sb`
+  - `bridge.objective_mode = i2sb_endpoint`
+  - `bridge.loss_type = mse`
+  - `use_diffeomorphic_stroke = false`
+  - `style_injection_mode = none`
+- health:
+  - `30s` check `7246 MiB`
+  - accepted as a safe calibration lane
+- next gate:
+  - determine whether `batch=26` can keep the stronger clean `sigma_0p25` family alive through `epoch_1 -> eval -> epoch_2`
+
+## `c26clean` Result
+
+- `epoch_0001`:
+  - completed at `2026-06-12 19:52:22 +08:00`
+  - transfer:
+    - `clip_style = 0.707839`
+    - `content_lpips = 0.700847`
+  - all-pairs:
+    - `clip_style = 0.710743`
+    - `content_lpips = 0.694716`
+  - eval timing:
+    - `wall_total = 196.97s`
+    - `eval_total = 31.36s`
+    - `generation = 99.38s`
+    - `vae_decode = 54.45s`
+- epoch-1 train summary:
+  - `loss = 0.3872`
+  - `flow = 0.1041`
+  - `terminal_swd = 0.0157`
+  - `peak = 5.67 / 7.59 GiB`
+- read:
+  - dominates the earlier clean `b26c2 epoch_0001`
+  - dominates `b28c1 epoch_0001` on `all_pairs`
+  - still below the legacy-snapshot `b24c3 epoch_0001`
+- post-eval resume:
+  - resumed into `Epoch 2`
+  - later hit:
+    - `RUNTIME_GUARD used=11048 MiB cap=11000 MiB`
+  - exit time:
+    - `2026-06-12 19:55:03 +08:00`
+
+## Decision
+
+- `c26clean` becomes the strongest audited true-clean `sigma_0p25` point so far
+- it is preserved as the clean-family frontier
+- it is still not promotable over the legacy snapshot because the first point remains weaker
+- next action:
+  - relaunch the same family at `batch=25`
+  - keep the objective of preserving this first-point quality while surviving the post-eval resume phase
+
+## Active Relaunch: `c25clean`
+
+- launch time:
+  - `2026-06-12 19:57:48 +08:00`
+- batch:
+  - `25`
+- warm-start parent:
+  - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_tok_pure_latent_spatial_seed42_b8a2_c11/epoch_0002.pt`
+- health:
+  - `30s` check `7324 MiB`
+  - later sample around `8060 MiB`
+- early train read:
+  - first logged step:
+    - `loss = 0.3467`
+    - `flow = 0.1163`
+    - `ot = 0.1141`
+    - `tswd = 0.0128`
+- next gate:
+  - compare `c25clean epoch_0001` against `c26clean epoch_0001`
+  - verify whether the one-step batch reduction avoids the `epoch_2` resume explosion
+
+## `c25clean` Interim Result
+
+- `epoch_0001`:
+  - completed at `2026-06-12 20:16:53 +08:00`
+  - transfer:
+    - `clip_style = 0.695893`
+    - `content_lpips = 0.692449`
+  - all-pairs:
+    - `clip_style = 0.698727`
+    - `content_lpips = 0.687063`
+  - eval timing:
+    - `wall_total = 213.36s`
+    - `eval_total = 35.35s`
+    - `generation = 107.55s`
+    - `vae_decode = 58.12s`
+- comparison to `c26clean`:
+  - style is lower
+  - LPIPS is slightly better
+- survival read after eval:
+  - resumed into `Epoch 2`
+  - has already passed the earlier `c26clean` failure window
+  - current sampled GPU is about `8.6 GiB`
+  - current progress is around the middle of `Epoch 2`
+- status:
+  - this lane is still alive
+  - no hard-cap event has been observed yet
+  - it has already progressed well past the point where `c26clean` failed
+  - it is currently the only audited clean `sigma_0p25` retry that has demonstrated stable post-eval continuation
+- `epoch_0002`:
+  - completed at `2026-06-12 20:36:40 +08:00`
+  - transfer:
+    - `clip_style = 0.695618`
+    - `content_lpips = 0.713485`
+  - all-pairs:
+    - `clip_style = 0.697447`
+    - `content_lpips = 0.707836`
+  - eval timing:
+    - `wall_total = 205.75s`
+    - `eval_total = 31.01s`
+    - `generation = 105.49s`
+    - `vae_decode = 57.40s`
+- epoch-2 read:
+  - the line stayed alive through the second retained checkpoint
+  - but `epoch_0002` regressed versus `epoch_0001`
+- current status:
+  - the run is now alive in `Epoch 7`
+  - latest remote tail check shows it in the early part of `Epoch 7`
+  - recent sampled GPU is about `8.4-10.0 GiB`, with the latest check around `9.3 GiB`
+- `epoch_0003`:
+  - completed at `2026-06-12 20:56:27 +08:00`
+  - transfer:
+    - `clip_style = 0.702414`
+    - `content_lpips = 0.688288`
+  - all-pairs:
+    - `clip_style = 0.706047`
+    - `content_lpips = 0.681563`
+  - eval timing:
+    - `wall_total = 210.22s`
+    - `eval_total = 33.44s`
+    - `generation = 106.95s`
+    - `vae_decode = 57.59s`
+- epoch-3 read:
+  - `epoch_0003` dominates `epoch_0001` and `epoch_0002`
+  - it becomes the new best active clean point in this family
+  - the line has now survived through `Epoch 4` startup without a hard-cap event
+- `epoch_0004`:
+  - completed at `2026-06-12 21:15:33 +08:00`
+  - transfer:
+    - `clip_style = 0.685473`
+    - `content_lpips = 0.691670`
+  - all-pairs:
+    - `clip_style = 0.689208`
+    - `content_lpips = 0.684116`
+  - eval timing:
+    - `wall_total = 202.02s`
+    - `eval_total = 31.93s`
+    - `generation = 102.65s`
+    - `vae_decode = 55.54s`
+- epoch-4 read:
+  - the line stayed alive through yet another `train -> eval -> resume` cycle
+  - `epoch_0004` regressed versus `epoch_0003`
+  - so the current best active clean point remains `epoch_0003`
+- `epoch_0005`:
+  - completed at `2026-06-12 21:34:33 +08:00`
+  - transfer:
+    - `clip_style = 0.687858`
+    - `content_lpips = 0.677851`
+  - all-pairs:
+    - `clip_style = 0.691396`
+    - `content_lpips = 0.672367`
+  - eval timing:
+    - `wall_total = 199.81s`
+    - `eval_total = 30.08s`
+    - `generation = 102.63s`
+    - `vae_decode = 55.57s`
+- epoch-5 read:
+  - style is still below `epoch_0003`
+  - LPIPS improves materially versus `epoch_0003` and `epoch_0004`
+  - this creates a new LPIPS-friendlier Pareto compromise point for the active clean line
+- latest status after `epoch_0005`:
+  - the lane had survived five retained `train -> eval -> resume` cycles
+  - `epoch_0003` was still the best active clean style point at that time
+  - `epoch_0005` had become the best active LPIPS-side compromise point
+- `epoch_0006`:
+  - completed at `2026-06-12 21:53:38 +08:00`
+  - transfer:
+    - `clip_style = 0.706113`
+    - `content_lpips = 0.703783`
+  - all-pairs:
+    - `clip_style = 0.708914`
+    - `content_lpips = 0.695658`
+  - eval timing:
+    - `wall_total = 201.64s`
+    - `eval_total = 32.07s`
+    - `generation = 102.21s`
+    - `vae_decode = 55.53s`
+- epoch-6 read:
+  - style recovers sharply and becomes the best active-lane style / all-pairs point
+  - LPIPS regresses materially versus `epoch_0003` and `epoch_0005`
+  - this is a new Pareto point inside the surviving lane rather than a clean dominance point
+- latest status update:
+  - the lane has now survived six retained `train -> eval -> resume` cycles
+  - `epoch_0006` is the best active-lane style point
+  - `epoch_0005` remains the best LPIPS-side compromise point
+  - `c26clean epoch_0001` still remains the strongest first-point clean reference
+  - the run is currently alive in `Epoch 7` without a new hard-cap event
+- `epoch_0007`:
+  - completed at `2026-06-12 22:12:45 +08:00`
+  - transfer:
+    - `clip_style = 0.701821`
+    - `content_lpips = 0.683235`
+  - all-pairs:
+    - `clip_style = 0.704904`
+    - `content_lpips = 0.675067`
+  - eval timing:
+    - `wall_total = 201.73s`
+    - `eval_total = 31.88s`
+    - `generation = 102.45s`
+    - `vae_decode = 55.51s`
+- epoch-7 read:
+  - style gives back part of the `epoch_0006` spike
+  - LPIPS improves substantially versus `epoch_0006`, but not enough to beat the `epoch_0005` LPIPS-side point
+  - this creates a new middle Pareto point between `epoch_0005` and `epoch_0006`
+- latest status update:
+  - the lane has now survived seven retained `train -> eval -> resume` cycles
+  - `epoch_0006` remains the best active-lane style point
+  - `epoch_0005` remains the best LPIPS-side compromise point
+  - `epoch_0007` is now the middle compromise point on the active frontier
+  - `c26clean epoch_0001` still remains the strongest first-point clean reference
+  - post-eval restore has already resumed cleanly into `Epoch 8`
+- `epoch_0008`:
+  - completed at `2026-06-12 22:32:01 +08:00`
+  - transfer:
+    - `clip_style = 0.702774`
+    - `content_lpips = 0.696028`
+  - all-pairs:
+    - `clip_style = 0.705178`
+    - `content_lpips = 0.687747`
+  - eval timing:
+    - `wall_total = 205.01s`
+    - `eval_total = 30.75s`
+    - `generation = 105.01s`
+    - `vae_decode = 57.38s`
+- epoch-8 read:
+  - style improves slightly versus `epoch_0007`
+  - LPIPS regresses versus `epoch_0007`, but remains better than the style-heavy `epoch_0006`
+  - this adds another Pareto point between the `epoch_0007` middle compromise and the `epoch_0006` style peak
+- latest status update:
+  - the lane has now survived eight retained `train -> eval -> resume` cycles
+  - `epoch_0006` remains the best active-lane style point
+  - `epoch_0005` remains the best LPIPS-side compromise point at this stage
+  - `epoch_0007` and `epoch_0008` now form the middle of the active frontier
+  - `c26clean epoch_0001` remains the strongest first-point clean reference, but it no longer singularly dominates the newest active-lane compromises
+  - no active clean point has yet beaten legacy `b24c3 epoch_0001`
+  - post-eval restore has already resumed cleanly into `Epoch 9`
+- current live tail:
+  - `Epoch 9/24` training summary:
+    - `loss = 0.3679`
+    - `flow = 0.0946`
+    - `ot = 0.1175`
+    - `tswd = 0.0152`
+    - `peak = 5.46 / 8.23 GB`
+  - `epoch_0009.pt` has been saved
+  - full eval for `epoch_0009` is currently running
+- `epoch_0009`:
+  - completed at `2026-06-12 22:51:42 +08:00`
+  - transfer:
+    - `clip_style = 0.699348`
+    - `content_lpips = 0.671750`
+  - all-pairs:
+    - `clip_style = 0.702985`
+    - `content_lpips = 0.664514`
+  - eval timing:
+    - `wall_total = 206.55s`
+    - `eval_total = 32.87s`
+    - `generation = 104.17s`
+    - `vae_decode = 57.42s`
+- epoch-9 read:
+  - style gives back some of the `epoch_0008` recovery
+  - LPIPS improves materially enough to dominate the old `epoch_0005` LPIPS endpoint
+  - this becomes the new low-LPIPS extreme of the active frontier
+- latest status update:
+  - the lane has now survived nine retained `train -> eval -> resume` cycles
+  - `epoch_0006` remains the best active-lane style point
+  - `epoch_0009` is now the best LPIPS-side compromise point
+  - `epoch_0007` and `epoch_0008` remain the middle frontier points
+  - `c26clean epoch_0001` remains the strongest first-point clean reference, but it no longer singularly dominates the newest active-lane compromises
+  - no active clean point has yet beaten legacy `b24c3 epoch_0001`
+  - post-eval restore has already resumed cleanly into `Epoch 10`
+- current live tail:
+  - `Epoch 10/24` training summary:
+    - `loss = 0.3675`
+    - `flow = 0.0955`
+    - `ot = 0.1182`
+    - `tswd = 0.0151`
+    - `peak = 5.46 / 8.39 GB`
+- `epoch_0010`:
+  - completed at `2026-06-12 23:13:30 +08:00`
+  - transfer:
+    - `clip_style = 0.704837`
+    - `content_lpips = 0.642300`
+  - all-pairs:
+    - `clip_style = 0.709871`
+    - `content_lpips = 0.634044`
+  - eval timing:
+    - `wall_total = 303.70s`
+    - `eval_total = 38.74s`
+    - `generation = 189.98s`
+    - `vae_decode = 58.03s`
+- epoch-10 read:
+  - style rebounds strongly from `epoch_0009`
+  - LPIPS improves again rather than regressing
+  - this becomes the strongest all-pairs compromise point on the active line and the new low-LPIPS extreme
+- `Epoch 11/24` training summary:
+  - `loss = 0.3687`
+  - `flow = 0.0954`
+  - `ot = 0.1179`
+  - `tswd = 0.0152`
+  - `peak = 5.43 / 8.29 GB`
+- `epoch_0011`:
+  - completed at `2026-06-12 23:36:01 +08:00`
+  - transfer:
+    - `clip_style = 0.700018`
+    - `content_lpips = 0.673689`
+  - all-pairs:
+    - `clip_style = 0.703090`
+    - `content_lpips = 0.665864`
+  - eval timing:
+    - `wall_total = 310.15s`
+    - `eval_total = 37.18s`
+    - `generation = 198.92s`
+    - `vae_decode = 58.09s`
+- epoch-11 read:
+  - regresses on both style and LPIPS versus `epoch_0010`
+  - remains slightly LPIPS-better than legacy `b24c3 epoch_0001`, but loses more style than the active frontier endpoints
+  - does not create a new Pareto point
+- latest status update:
+  - the lane has now survived eleven retained `train -> eval -> resume` cycles
+  - `epoch_0006` remains the best active transfer-style point
+  - `epoch_0010` is now the best active all-pairs / LPIPS-side compromise point
+  - `epoch_0007`, `epoch_0008`, and `epoch_0009` remain the interior frontier points
+  - `c26clean epoch_0001` remains the strongest first-point clean reference, but it no longer singularly dominates the newest active-lane compromises
+  - no active clean point has yet beaten legacy `b24c3 epoch_0001`
+  - post-eval restore has already resumed cleanly into `Epoch 12`
+
+## Fallback Infra
+
+- new tool:
+  - `G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\run_remote_round2_family_segmented.py`
+  - `G:\GitHub\Latent_Style\SchrodingerBridge\tools\experiments\launch_round2_family_segmented_detached.py`
+- purpose:
+  - run one epoch per fresh remote training process
+  - then launch remote full eval as a separate process
+  - avoid the in-process `eval -> restore -> epoch_2` memory spike if it recurs
+- current decision:
+  - keep `c25clean` running on the plain lane for now
+  - switch to segmented only if this line later repeats the old resume-time failure mode
+
+## Runtime-Fix Relaunch: `rtfix`
+
+- reason:
+  - the old launch family was started before the bridge-runtime contract fix
+  - `solver_i2sb` training-time integration paths were therefore not yet receiving `bridge_sigma` from the `bridge` section
+  - this downgraded the old `c25clean` lane from paper-facing evidence to historical runtime context
+- corrected launch:
+  - run name:
+    - `aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_rtfix`
+  - config:
+    - `G:\GitHub\Latent_Style\SchrodingerBridge\configs\aaai2027\round2_pure_sde\followon\tok_pure_latent_spatial\aaai2027_round2_sde_i2sb_sigma_0p25_seed42_b8a2_from_tok_pure_latent_spatial_epoch_0002_rtfix.launch.json`
+  - warm-start parent:
+    - `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round2_tok_pure_latent_spatial_seed42_b8a2_c11/epoch_0002.pt`
+  - batch:
+    - `25`
+- compatibility note:
+  - relaunch initially failed on strict resume because the tokenizer parent checkpoint still carried compatibility-only `style_tokenizer.*` weights plus old optional style-injection heads
+  - local code was then patched so pure-latent resume pruning also strips compatibility tokenizer keys and disabled optional modules before strict load
+  - the second launch resumed cleanly from the tokenizer parent
+- early health:
+  - 20s launch check:
+    - `6821 MiB`
+    - accepted as under-band calibration
+  - later live sample:
+    - `7105 MiB`
+- later warmup samples:
+  - `8617 MiB`
+  - `9285 MiB`
+- current state:
+  - active remote process is the `rtfix` lane
+  - it has already completed `Epoch 1/24`
+  - the corrected lane eventually warmed into the formal `9.x GiB` band without another relaunch
+  - first retained checkpoint is now settled
+- `epoch_0001`:
+  - completed at `2026-06-13 00:23:10 +08:00`
+  - transfer:
+    - `clip_style = 0.724444`
+    - `content_lpips = 0.712723`
+  - all-pairs:
+    - `clip_style = 0.724472`
+    - `content_lpips = 0.707551`
+  - eval timing:
+    - `wall_total = 259.72s`
+    - `eval_total = 36.06s`
+    - `generation = 154.83s`
+    - `vae_decode = 54.81s`
+- epoch-1 read:
+  - corrected runtime immediately produces the strongest measured `sigma_0p25` style point so far
+  - it now beats legacy `b24c3 epoch_0001` on both transfer and all-pairs style
+  - LPIPS is still materially worse than legacy, so this is a style-heavy frontier point, not a global win yet
+- latest status update:
+  - post-eval restore resumed cleanly into `Epoch 2`
+  - the lane was then stopped manually because `LPIPS 0.7+` is now treated as an immediate fail-stop condition

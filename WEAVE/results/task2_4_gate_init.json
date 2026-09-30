@@ -1,0 +1,95 @@
+[
+  {
+    "name": "620_ablation_gate_init005_smoke",
+    "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_gate_init005_smoke.json",
+    "status": "ok",
+    "train_wall_sec": 255.49433159828186,
+    "epochs": {
+      "epoch_0001": {
+        "status": "ok",
+        "clip_style": 0.7019613680839538,
+        "clip_content": 0.0,
+        "content_lpips": 0.3413072075066667,
+        "clip_s_delta_idt": -0.136761416832606,
+        "transfer_clip_style": 0.6677710138758022,
+        "transfer_content_lpips": 0.34297373401666664,
+        "idt_clip_style": 0.8387227849165599,
+        "idt_content_lpips": 0.3346411014666667,
+        "wfi_score": 0.3757420740527357,
+        "wfi_contrast_ratio": 3.743488136370587,
+        "wfi_dynamic_range": 43.99232987976074,
+        "wfi_saturation": 0.24453755567967891,
+        "wfi_brightness": 0.49953180277347564,
+        "wfi_entropy": 6.976992185153966,
+        "wfi_transfer_score": 0.36960099825117315,
+        "wfi_idt_score": 0.42077662993086123,
+        "source_wfi_score": null,
+        "checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\620_spatial_bridge\\620_ablation_gate_init005_smoke\\epoch_0001.pt",
+        "eval_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\620_spatial_bridge\\620_ablation_gate_init005_smoke\\full_eval_wfi\\epoch_0001",
+        "eval_wall_sec": 168.6172149181366
+      }
+    }
+  },
+  {
+    "name": "620_ablation_gate_init03_smoke",
+    "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_gate_init03_smoke.json",
+    "status": "ok",
+    "train_wall_sec": 256.3541841506958,
+    "epochs": {
+      "epoch_0001": {
+        "status": "ok",
+        "clip_style": 0.702167245944341,
+        "clip_content": 0.0,
+        "content_lpips": 0.34457987863999995,
+        "clip_s_delta_idt": -0.13734584848086043,
+        "transfer_clip_style": 0.667830783824126,
+        "transfer_content_lpips": 0.34692328738333333,
+        "idt_clip_style": 0.8395130944252014,
+        "idt_content_lpips": 0.3352062436666666,
+        "wfi_score": 0.39081996056974067,
+        "wfi_contrast_ratio": 3.4617578950778625,
+        "wfi_dynamic_range": 43.82545124053955,
+        "wfi_saturation": 0.23759838514526685,
+        "wfi_brightness": 0.5182543799877167,
+        "wfi_entropy": 6.973393431692608,
+        "wfi_transfer_score": 0.38469578966078527,
+        "wfi_idt_score": 0.4357305472354136,
+        "source_wfi_score": null,
+        "checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\620_spatial_bridge\\620_ablation_gate_init03_smoke\\epoch_0001.pt",
+        "eval_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\620_spatial_bridge\\620_ablation_gate_init03_smoke\\full_eval_wfi\\epoch_0001",
+        "eval_wall_sec": 174.13227009773254
+      }
+    }
+  },
+  {
+    "name": "620_ablation_gate_init05_smoke",
+    "config": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\configs\\ablations\\620_ablation_gate_init05_smoke.json",
+    "status": "ok",
+    "train_wall_sec": 262.92201709747314,
+    "epochs": {
+      "epoch_0001": {
+        "status": "ok",
+        "clip_style": 0.7022019809881848,
+        "clip_content": 0.0,
+        "content_lpips": 0.34147803002666666,
+        "clip_s_delta_idt": -0.13665199812253317,
+        "transfer_clip_style": 0.6680389814575513,
+        "transfer_content_lpips": 0.34347547826666663,
+        "idt_clip_style": 0.8388539791107178,
+        "idt_content_lpips": 0.33348823706666664,
+        "wfi_score": 0.383308696862288,
+        "wfi_contrast_ratio": 3.5739300647827523,
+        "wfi_dynamic_range": 43.623798908233645,
+        "wfi_saturation": 0.24640005660802125,
+        "wfi_brightness": 0.5074061665137609,
+        "wfi_entropy": 6.969584355605647,
+        "wfi_transfer_score": 0.3771694176964912,
+        "wfi_idt_score": 0.42833007741146406,
+        "source_wfi_score": null,
+        "checkpoint": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\620_spatial_bridge\\620_ablation_gate_init05_smoke\\epoch_0001.pt",
+        "eval_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\exp\\620_spatial_bridge\\620_ablation_gate_init05_smoke\\full_eval_wfi\\epoch_0001",
+        "eval_wall_sec": 187.96329474449158
+      }
+    }
+  }
+]

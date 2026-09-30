@@ -1,0 +1,1 @@
+    return emb[:, :dim]

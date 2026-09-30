@@ -1,0 +1,14 @@
+docs: sync baseline/exp READMEs with verified v5 data + state files
+
+- docs/README.md: 更新文档树结构
+- docs/baseline/README.md: SaMam 真实值 0.5816/0.2434 数据完整性核查
+- docs/exp/ckpt_deletion_log_m26.md: M26 ckpt 删除日志路径更新
+- .trae/autoresearch/paper_v2/state/: 新建 AAAI 2027 v2 论文重写 task state
+  - task_spec.md: 任务规格 + 验证数据 (T11 903K params, 185s, 0.7213/0.2868)
+  - progress.json: M1-M2 completed, M3 in_progress
+
+验证数据源:
+- T11 train.log: 2026-07-02 00:39:44 → 00:42:49 = 3 min 5 sec (RTX 3060)
+- T11 summary.json: CLIP-S=0.72128, LPIPS=0.28683
+- T11 model params: 903,248 (from train.log line 33)
+- SaMam 真实值: 0.5816/0.2434 (v5 修正, step 20000)

@@ -1,0 +1,17 @@
+{
+  "_base": "./phase616_clean_stats_probe_control_none_faststep60_e1.json",
+  "model": {
+    "transport_stats_mode": "normalized_solver",
+    "transport_stats_bank_path": "/mnt/i/wikiarts_5_full_notest_latents_ema/train/.latent_cache/style_stats_bank.pt",
+    "transport_stats_bank_required": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_stats_probe_normalized_solver_faststep60_e1"
+  },
+  "ablation": {
+    "name": "phase616_clean_stats_probe_normalized_solver_faststep60_e1",
+    "axis": "phase616_stats_probe_fast",
+    "stage": "clean_stats_normalized_solver",
+    "notes": "Matched phase616 stats-track probe B. Normalize the source latent into a zero-mean/unit-std solver track, keep OT and pure_vertical_flow fixed, then restore target style-bank stats at the end. This is the first clean test of the global stats lane described in docs/616/design.md."
+  }
+}

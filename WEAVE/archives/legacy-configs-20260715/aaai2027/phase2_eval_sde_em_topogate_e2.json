@@ -1,0 +1,19 @@
+{
+  "_comment": "Eval-only: SDE-EM style inference on topogate ckpt. Uses solver_unsb_cycle with stochastic noise injection and content correction.",
+  "model": {
+    "solver_family": "solver_unsb_cycle",
+    "solver_corrector_steps": 2,
+    "solver_corrector_step_size": 0.06,
+    "solver_corrector_mode": "latent_lowpass",
+    "solver_corrector_lowpass_kernel": 5,
+    "solver_stochastic_noise_scale": 0.015
+  },
+  "training": {
+    "num_epochs": 0,
+    "full_eval_each_epoch": true,
+    "full_eval_only_lpips_clip_style": true,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/exp/aaai2027_phase2_vel_tok32_safe_semantic_topogate_k085_appalign_seed42_b12a1/epoch_0002.pt",
+    "resume_model_strict": false,
+    "resume_training_state": false
+  }
+}

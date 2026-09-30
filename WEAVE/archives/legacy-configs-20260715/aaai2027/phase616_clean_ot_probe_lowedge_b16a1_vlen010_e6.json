@@ -1,0 +1,49 @@
+{
+  "_base": "./phase616_cleanbase_i2sb_k085_b8a2_e24.json",
+  "bridge": {
+    "coupling_solver": "sinkhorn_unbalanced",
+    "coupling_structure_cost_mode": "lowedge",
+    "coupling_structure_cost_weight": 0.35,
+    "coupling_structure_lowpass_kernel": 9,
+    "coupling_structure_edge_weight": 1.0,
+    "sinkhorn_unbalanced_tau_src": 1.0,
+    "sinkhorn_unbalanced_tau_tgt": 1.0,
+    "training_target_projection_mode": "pure_vertical_flow",
+    "training_target_projection_kernel": 5,
+    "training_target_projection_low_anchor": 1.0,
+    "training_target_projection_low_mode": "all"
+  },
+  "training": {
+    "batch_size": 16,
+    "accumulation_steps": 1,
+    "num_epochs": 6,
+    "save_interval": 1,
+    "log_interval": 10,
+    "full_eval_output_subdir": "full_eval_transfer_fast10",
+    "full_eval_transfer_only": true,
+    "full_eval_each_epoch": true,
+    "full_eval_profile_timing": true,
+    "full_eval_delta_observability": true,
+    "full_eval_in_process": true,
+    "full_eval_runtime_model_cache": true,
+    "full_eval_keep_generated_on_device": true,
+    "full_eval_source_latent_cache": true,
+    "numeric_debug": true,
+    "numeric_debug_interval": 50,
+    "numeric_debug_dump_limit": 400,
+    "gpu_monitor_enabled": true,
+    "gpu_monitor_interval_sec": 2.0
+  },
+  "data": {
+    "virtual_length_multiplier": 0.10
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_lowedge_b16a1_vlen010_e6"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_lowedge_b16a1_vlen010_e6",
+    "axis": "phase616_ot_probe",
+    "stage": "clean_ot_lowedge_control",
+    "notes": "Matched fast control for 616 OT repair. Phase616 clean base plus unbalanced Sinkhorn, lowedge structure cost, and pure vertical target projection. Uses b16a1 and vlen=0.10 to keep epoch wall time in-band while preserving the OT/target-geometry mechanism under test."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_stokes_seed42_b16.json",
+  "training": {
+    "num_epochs": 12,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_inmortal_xpred_kmanifold_pattn_stokes_seed42_b16/epoch_0008.pt",
+    "resume_optimizer": true,
+    "resume_model_strict": true,
+    "resume_training_state": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_pattn_stokes_seed42_b16_e12_continue"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_stokes_seed42_b16_e12_continue",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_plus_Stokes_longer",
+    "notes": "Longer-training continuation for the Stokes tradeoff family. Resume from the 8-epoch packet because LPIPS kept improving through the tail and 8 epochs should not be treated as convergence."
+  }
+}

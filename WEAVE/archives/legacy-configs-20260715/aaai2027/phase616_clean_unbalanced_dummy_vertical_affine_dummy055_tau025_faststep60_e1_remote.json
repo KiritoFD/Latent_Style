@@ -1,0 +1,16 @@
+{
+  "_base": "./phase616_clean_unbalanced_dummy_vertical_affine_dummy055_faststep60_e1_remote.json",
+  "bridge": {
+    "sinkhorn_unbalanced_tau_src": 0.25,
+    "sinkhorn_unbalanced_tau_tgt": 0.25
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_unbalanced_dummy_vertical_affine_dummy055_tau025_faststep60_e1_remote"
+  },
+  "ablation": {
+    "name": "phase616_clean_unbalanced_dummy_vertical_affine_dummy055_tau025_faststep60_e1_remote",
+    "axis": "phase616_ot_rebuild_stage2",
+    "stage": "affine_vertical_dummy055_tau025_fast_probe",
+    "notes": "Stage-2 stricter partial-OT probe. Keep the higher dummy cost and tighten the unbalanced Sinkhorn marginals so the solver cannot shed most mass unless the mismatch is truly strong."
+  }
+}

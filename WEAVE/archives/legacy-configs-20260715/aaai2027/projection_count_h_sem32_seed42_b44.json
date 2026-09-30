@@ -1,0 +1,18 @@
+{
+  "_base": "mainline_h_seed42_b44_base.json",
+  "training": {
+    "num_epochs": 2
+  },
+  "bridge": {
+    "semantic_swd_num_projections": 32
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_projection_count_h_sem32_seed42_b44"
+  },
+  "ablation": {
+    "name": "aaai2027_projection_count_h_sem32_seed42_b44",
+    "axis": "aaai2027_projection_count_sensitivity",
+    "stage": "h_semantic_projection_count_control",
+    "notes": "Cheap reviewer control for SA-SWD projection-count sensitivity. Keep the paper-facing H-family train/eval contract fixed and keep terminal_swd_axis_source=semantic, but reduce semantic_swd_num_projections from the reviewed default 64 to 32 for a short two-epoch packet."
+  }
+}

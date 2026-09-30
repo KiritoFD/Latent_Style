@@ -1,0 +1,51 @@
+experiment_id,dataset,method,family,solver,mode,batch,epoch,transfer_clip_style,transfer_lpips,full_clip_style,full_lpips,epoch_time_s,wall_total_s,samples_per_sec,cuda_peak_gb,status,notes
+distinct5_512-1000perstyle__IDT__no_op,distinct5-512/1000-per-style,IDT,reference,identity,identity,0,0,0.6801,0.0000,0.6801,0.0000,0,0,0,0,keep,不变图像参考锚点
+distinct5_512-1000perstyle__LBM__H_e1,distinct5-512/1000-per-style,LBM,H/hard-explore-queue,euler,endpoint,44,1,0.6653,0.3281,0.6974,0.3213,0,73.2,0,9.6,keep,最佳LPIPS单epoch;tokenizer=direct_atom_residual;content_adaptive_vq_queue
+distinct5_512-1000perstyle__LBM__H_e2,distinct5-512/1000-per-style,LBM,H/hard-explore-queue,euler,endpoint,44,2,0.6684,0.3561,0.6994,0.3484,0,136.0,0,9.6,keep,平衡的style/content点; e2比e1 style更高但LPIPS也更高
+distinct5_512-1000perstyle__LBM__K_e1,distinct5-512/1000-per-style,LBM,K/content-adaptive-vq,euler,endpoint,44,1,0.6712,0.3723,0.7010,0.3623,0,72.5,0,9.6,keep,最高raw style点;tokenizer=content_adaptive_vq_queue
+distinct5_512-1000perstyle__LBM__F_e1,distinct5-512/1000-per-style,LBM,F/annealed-prototype-ot,euler,endpoint,44,1,0.6644,0.3245,0.6969,0.3186,0,73.0,0,9.6,keep,紧凑LPIPS锚点;delta_idt_transfer=+0.0244
+distinct5_512-1000perstyle__LBM__K_longer_e5,distinct5-512/1000-per-style,LBM,K/longer-8ep,euler,endpoint,44,5,0.6670,0.3588,0.6969,0.3504,332.7,332.7,0,9.1,drop,负结果--e1始终比e5+更好
+distinct5_512-1000perstyle__LBM__tokenizer_loc_L_e1_stylebranch,distinct5-512/1000-per-style,LBM,L/style-branch,?,?,44,3,0.6580,0.3202,0.6906,0.3196,0,0,0,?,hold,tokenizer定位实验:仅更新style分支
+distinct5_512-1000perstyle__LBM__tokenizer_loc_L_e1_executoronly,distinct5-512/1000-per-style,LBM,L/executor-only,?,?,44,3,0.6646,0.3294,0.6963,0.3218,0,0,0,?,keep,tokenizer定位实验:executor刷新更强(+0.025 delta_idt)
+distinct5_512-1000perstyle__SaMAM__step3000,distinct5-512/1000-per-style,SaMAM,baseline,SSM,segmented,6,3000,0.6646,0.3271,0.6978,0.3221,36755,36755,0,8.0,keep,最强LPIPS baseline; latent风格迁移后与LBM持平
+distinct5_512-1000perstyle__SaMAM__step2250,distinct5-512/1000-per-style,SaMAM,baseline,SSM,segmented,6,2250,0.5523,0.3605,0.5811,0.3538,27413,27413,0,8.0,keep,论文安全锚点;负delta_idt(-0.088)
+distinct5_512-1000perstyle__SaMST__e5,distinct5-512/1000-per-style,SaMST,baseline,OMF,velocity,1,5,0.6989,0.6335,0.7276,0.6271,6958,6958,0,?,keep,最高raw style;LPIPS严重;~116min train
+distinct5_512-1000perstyle__SaMST__e15,distinct5-512/1000-per-style,SaMST,baseline,OMF,velocity,2,15,0.6957,0.6319,0.7247,0.6255,20835,20835,0,?,keep,饱和SaMST点;~347min
+distinct5_512-1000perstyle__SaMAM_latent__step1500_fast,distinct5-512/1000-per-style,SaMAM-latent,latent_baseline,SSM,segmented,1,1500,0.6547,0.1635,0.6920,0.1634,0,0,0,?,keep,极早期但LPIPS极好;需关注
+distinct5_512-1000perstyle__SaMST_latent__b1050_fast,distinct5-512/1000-per-style,SaMST-latent,latent_baseline,OMF,velocity,1,1050,0.6820,0.8318,0.6826,0.8320,0,0,0,?,keep,最佳latent SaMST;但LPIPS崩溃
+distinct5_512-1000perstyle__SaMST_latent__b50_fast,distinct5-512/1000-per-style,SaMST-latent,latent_baseline,OMF,velocity,1,50,0.6104,0.7296,0.6104,0.7296,106.6,106.6,0,10.7,drop,结构崩溃;零方向输出
+distinct5_512-1000perstyle__SaMST_latent__b300_fast,distinct5-512/1000-per-style,SaMST-latent,latent_baseline,OMF,velocity,1,300,0.6104,0.7296,0.6104,0.7296,558.3,558.3,0,10.7,drop,与b50相同全部崩溃;更长训练无帮助
+inmortal_k_spatial_b16_e1,distinct5-512/full,LBM,imm-k-spatial,euler,velocity,16,1,0.6782,0.3425,0.7097,0.3344,187.6,187.6,26.6,8.5,drop,kinetic spatial split;未提升style天花板
+inmortal_k_spatial_b16_e6,distinct5-512/full,LBM,imm-k-spatial,euler,velocity,16,6,0.6787,0.3505,0.7094,0.3416,183.5,1107.1,27.2,8.5,drop,最佳epoch;稳定但style不高
+inmortal_k_manifold_b16_e1,distinct5-512/full,LBM,imm-k-manifold,euler,velocity,16,1,0.6779,0.3346,0.7090,0.3276,186.0,186.0,26.8,8.3,hold,manifold-adaptive kinetic;LPIPS比spatial好
+inmortal_k_manifold_b16_e6,distinct5-512/full,LBM,imm-k-manifold,euler,velocity,16,6,0.6789,0.3349,0.7106,0.3261,264.3,1390.1,18.9,8.3,hold,最佳epoch;content-preserving略好于spatial
+inmortal_k_spectral_b12_e2,distinct5-512/full,LBM,imm-k-spectral,euler,velocity,12,2,0.6788,0.3637,0.7101,0.3522,199.9,425.7,25.0,6.5,hold,spectral split;最佳transfer style
+inmortal_xpred_bary_b16_e5,distinct5-512/full,LBM,imm-xpred-bary,euler,endpoint,16,5,0.7255,0.6149,0.7319,0.6074,108.1,543.9,46.2,3.2,hold,style天花板可达0.73;LPIPS弱
+inmortal_xpred_bary_b40_e7,distinct5-512/full,LBM,imm-xpred-bary,euler,endpoint,40,7,0.7244,0.7178,0.7271,0.7106,93.2,665.9,53.6,7.4,drop,大batch下LPIPS更差
+inmortal_xpred_kmanifold_b32_e7,distinct5-512/full,LBM,imm-xpred-kmanifold,euler,endpoint,32,7,0.7259,0.6863,0.7284,0.6790,164.7,1254.0,30.3,6.0,keep,最强raw style;LPIPS远未达到0.30
+inmortal_xpred_phighpass_b28_e6,distinct5-512/full,LBM,imm-xpred-phighpass,euler,endpoint,28,6,0.6803,0.7748,0.6805,0.7703,111.7,966.4,44.6,5.3,drop,轻量highpass proximal;明显比kmanifold弱
+inmortal_xpred_kmanifold_phighpass_b32_e6,distinct5-512/full,LBM,imm-xpred-kmanifold-phighpass,euler,endpoint,32,6,0.6657,0.7878,0.6657,0.7829,113.9,659.4,43.8,5.9,drop,combo反而更差--kmanifold+highpass双重退化
+inmortal_xpred_kmanifold_pmod_b32_e7,distinct5-512/full,LBM,imm-xpred-kmanifold-pmod,euler,endpoint,32,7,0.7153,0.7305,0.7161,0.7244,96.8,676.8,51.6,6.1,hold,modulation优于highpass;但仍落后kmanifold
+inmortal_xpred_kmanifold_pattn_b16_e1,distinct5-512/full,LBM,imm-pattn-base,euler,endpoint,16,1,0.6617,0.7574,0.6630,0.7533,134.6,134.6,37.1,8.0,keep,cross-attn proximal;e1 style低但开始收敛
+inmortal_xpred_kmanifold_pattn_b16_e6,distinct5-512/full,LBM,imm-pattn-base,euler,endpoint,16,6,0.7289,0.6370,0.7338,0.6278,130.5,788.9,38.3,8.0,keep,首个突破xpred-kmanifold的proximal族;双指标提升
+inmortal_xpred_kmanifold_pattn_b16_e12_e11,distinct5-512/full,LBM,imm-pattn-longer,euler,endpoint,16,11,0.7289,0.6211,0.7352,0.6113,139.1,420.9,35.9,8.1,keep,延长训练:style持平,LPIPS改善-0.016
+inmortal_xpred_kmanifold_pattn_stokes_b16_e3,distinct5-512/full,LBM,imm-pattn-stokes-base,euler,endpoint,16,3,0.7193,0.6222,0.7257,0.6138,131.1,398.0,38.1,8.0,hold,Stokes修复;比Aniso温和;LPIPS导向tradeoff族
+inmortal_xpred_kmanifold_pattn_stokes_b16_e12_e9,distinct5-512/full,LBM,imm-pattn-stokes-longer,euler,endpoint,16,9,0.7112,0.5653,0.7219,0.5554,142.6,142.6,35.0,8.1,hold,LPIPS持续下降到0.565;但style降到0.711
+inmortal_xpred_kmanifold_pattn_stokes002_from_e13_b16_e13,distinct5-512/full,LBM,imm-pattn-stokes002-finetune,euler,endpoint,16,13,0.7307,0.6183,0.7372,0.6069,139.5,282.2,35.8,8.1,keep,较弱的Stokes微调;新raw style前线(+0.003 style)
+inmortal_xpred_kmanifold_pattn_stokes_from_e13_b16_e13,distinct5-512/full,LBM,imm-pattn-stokes-finetune,euler,endpoint,16,13,0.7274,0.6033,0.7356,0.5915,139.5,282.5,35.8,8.1,keep,最佳LPIPS前线;style仅降-0.0015 LPIPS降-0.018
+inmortal_xpred_kmanifold_pattn_aniso_b16_e1,distinct5-512/full,LBM,imm-pattn-aniso,euler,endpoint,16,1,0.7136,0.5931,0.7184,0.5878,145.2,145.2,34.4,8.0,drop,各向异性太激进;后期退化
+inmortal_xpred_kmanifold_pattn_queue_b16_e6,distinct5-512/full,LBM,imm-pattn-queue,euler,endpoint,16,6,0.7278,0.6359,0.7327,0.6270,137.8,844.5,36.2,8.0,hold,Queue平滑变体;在pattn带内
+inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_e13_b8a2_e13,distinct5-512/full,LBM,imm-succ-ansisstokes-queue,euler,endpoint,8,13,0.7102,0.4603,0.7303,0.4559,189.4,381.9,26.4,4.2,keep,最强低LPIPS继承线;style低于pattn基部但LPIPS大幅改善
+inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamp_reseed_b8a2_e3,distinct5-512/full,LBM,imm-succ-clamp-reseed,euler,endpoint,8,3,0.7022,0.4867,0.7183,0.4814,?,?,?,?,keep,Hard clamp修复;双轴超过transfer参考
+inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamprelease_reseed_b8a2_e3,distinct5-512/full,LBM,imm-succ-clamprelease-reseed,euler,endpoint,8,3,0.7007,0.4754,0.7183,0.4701,?,?,?,?,keep,Clamp release改善fixed clamp的LPIPS
+inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4wide_b8a2_e3,distinct5-512/full,LBM,imm-succ-hold4wide,euler,endpoint,8,3,0.7009,0.4726,0.7189,0.4671,?,?,?,?,keep,4轮hold后释放;小幅改善LPIPS
+inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4mid_b8a2_e8,distinct5-512/full,LBM,imm-succ-hold4mid,euler,endpoint,8,8,0.6679,0.2877,0.7014,0.2878,?,?,?,?,hold,极低LPIPS plateau ~0.668/0.288;style受限
+inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4slowmid_b8a2_e12,distinct5-512/full,LBM,imm-succ-hold4slowmid,euler,endpoint,8,12,0.6673,0.2898,0.7009,0.2898,?,?,?,?,hold,与hold4mid几乎相同;无改善
+inmortal_xpred_kmanifold_pattn_stokes003_b4a2_e12,distinct5-512/full,LBM,imm-pattn-stokes003-b4a2,euler,endpoint,4,12,0.7152,0.5876,0.7232,0.5788,1543.2,1543.2,3.2,2.1,hold,batch4 strong Stokes;速度极慢但质量接近b16
+wikiart_stress1__LBM__F_e1,wikiart/stress1-1000per,LBM,F/annealed-prototype-ot,euler,endpoint,44,1,0.6997,0.3286,0.7221,0.3244,0,60.0,0,?,keep,固定规则split1;delta_idt_transfer=+0.0139
+wikiart_stress1__IDT__no_op,wikiart/stress1-1000per,IDT,reference,identity,identity,0,0,0.6858,0.0000,0.7147,0.0000,0,53.7,0,0,keep,split1 IDT参考
+wikiart_stress2__LBM__F_e1,wikiart/stress2-1000per,LBM,F/annealed-prototype-ot,euler,endpoint,44,1,0.7241,0.3194,0.7406,0.3188,0,60.0,0,?,keep,固定规则split2;delta_idt_transfer=+0.0073
+wikiart_stress2__IDT__no_op,wikiart/stress2-1000per,IDT,reference,identity,identity,0,0,0.7168,0.0000,0.7393,0.0000,0,54.0,0,0,keep,split2 IDT参考
+legacy256__LBM__historical_clean_epoch7,legacy256/50-50,LBM,S-add/kin1_col0,euler,velocity,16,7,0.0,0.0,0.7161,0.4514,0,310.0,0,?,keep,历史论文点;legacy256全750图
+legacy256__SaMST__strict_epoch20,legacy256/50-50,SaMST,strict,OMF,velocity,?,20,0.0,0.0,0.7194,0.4664,0,6769.0,0,?,keep,最近的高效历史baseline
+legacy256__StyleID__strict,legacy256/50-50,StyleID,strict,AdaIN?,?,?,?,0.0,0.0,0.7597,0.7497,0,0,0,?,keep,最高style但LPIPS最差(0.75)

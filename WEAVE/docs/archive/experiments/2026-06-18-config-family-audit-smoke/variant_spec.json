@@ -1,0 +1,15 @@
+{
+  "variants": [
+    {
+      "name": "2026-06-18-stage1-lowrank-rerun-audit",
+      "overrides": {
+        "bridge.bridge_path_mode": "linear",
+        "bridge.coupling_cost_composition": "structure_only",
+        "bridge.coupling_structure_cost_mode": "self_affinity_gw",
+        "bridge.coupling_structure_cost_weight": 1.0,
+        "bridge.sinkhorn_unbalanced_tau_src": 1.0,
+        "bridge.sinkhorn_unbalanced_tau_tgt": 1.0
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "_base": "./phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010.json",
+  "training": {
+    "num_epochs": 28
+  },
+  "ablation": {
+    "name": "phase2_i2sb_latent_slerp_k070_e3_sigma0p02_b8a2_vlen010",
+    "axis": "phase2_fiber_path_geometry",
+    "stage": "i2sb_latent_slerp_path_tail_e28",
+    "notes": "Continuation-only config using the same save_dir and local-latest resume. Extends the formal latent-slerp tail from e24 to e28 because e22 created an LPIPS-only Pareto point; no mechanism, parent, data, loss, solver, or eval-contract change."
+  }
+}

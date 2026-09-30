@@ -1,0 +1,28 @@
+{
+  "_base": "./phase2_actuation_predec_section_k070_e3_b16a2bf16_vlen010.json",
+  "bridge": {
+    "w_generated_delta_diversity": 0.08,
+    "generated_delta_diversity_margin": 0.20
+  },
+  "training": {
+    "num_epochs": 18,
+    "full_eval_in_process": true,
+    "full_eval_runtime_model_cache": true,
+    "full_eval_metric_batch_size": 50,
+    "full_eval_vae_decode_batch_size": 16,
+    "full_eval_vae_onnx_decoder": "../eval_cache/vae_onnx/ema_b16_32/decoder.onnx",
+    "full_eval_hf_clip_skip_processor": true,
+    "full_eval_source_latent_cache": true,
+    "full_eval_delta_observability": true,
+    "full_eval_lpips_chunk_size": 16
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase2_actuation_predec_diversity_k070_e3_b16a2bf16_vlen010"
+  },
+  "ablation": {
+    "name": "phase2_actuation_predec_diversity_k070_e3_b16a2bf16_vlen010",
+    "axis": "phase2_fiber_actuation_bottleneck",
+    "stage": "actuation_predec_section_delta_diversity",
+    "notes": "Controlled follow-up after pre-decoder section and proximal texture closures. Keep parent, tokenizer, solver, TopoGate, predec_section mechanism, freeze_mode=injection_only, b16a2 bf16 throughput lane, and fast10 transfer eval fixed. Change only the training objective by adding generated_delta_diversity loss to directly penalize cross-style generated-delta collinearity diagnosed in fiber.md; judge by transfer CLIP-S first, LPIPS budget second, and generated-delta offdiag cosine as mechanism observability."
+  }
+}

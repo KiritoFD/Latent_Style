@@ -1,0 +1,16 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_faststep60_e1.json",
+  "bridge": {
+    "coupling_cost_composition": "structure_only",
+    "coupling_target_mode": "sample"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_selfaffgw_structureonly_sample_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_selfaffgw_structureonly_sample_faststep60_e1_authoritative",
+    "axis": "phase616_ot_probe_clean_2x2",
+    "stage": "clean_ot_selfaffgw_structureonly_sample_authoritative_candidate",
+    "notes": "Authoritative 616 OT 2x2 row B. Change only OT cost composition from mixed to structure_only while keeping the retained self_affinity_gw descriptor and stochastic sampled target geometry fixed."
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "_base": "630_local_t11_stochastic_dwt_p08.json",
+  "checkpoint": {
+    "save_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/t11evo/t11e_g_alpha06",
+    "resume_checkpoint": ""
+  },
+  "data": {
+    "data_root": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train",
+    "pairing_cache_path": "",
+    "latent_cache_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512_latents_ema/train/.latent_cache/packed"
+  },
+  "model": {
+    "style_extrap_alpha": 0.6
+  },
+  "training": {
+    "batch_size": 32,
+    "num_epochs": 10,
+    "patience": 3,
+    "full_eval_each_epoch": false,
+    "test_image_dir": "G:/GitHub/Latent_Style/Dataset/distinct5_512/test",
+    "full_eval_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache",
+    "full_eval_clip_hf_cache_dir": "G:/GitHub/Latent_Style/SchrodingerBridge/exp/eval_cache/hf"
+  },
+  "ablation": {
+    "name": "t11e_g_alpha06",
+    "axis": "alpha_only",
+    "stage": "t11evo_r2",
+    "notes": "R2: T11 baseline + ONLY alpha 0.4->0.6. Push extrapolation harder. Isolate alpha effect."
+  }
+}

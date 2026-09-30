@@ -1,0 +1,25 @@
+{
+  "_base": "exp_probe_target_latent_fusion.json",
+  "training": {
+    "seed": 42,
+    "num_epochs": 15,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false,
+    "save_interval": 3,
+    "resume_checkpoint": "I:/Github/Latent_Style/SchrodingerBridge/exp/dino_s_break/brk_a_ll03_10ep/epoch_0010.pt",
+    "resume_prefer_local_checkpoint": false,
+    "resume_model_strict": false,
+    "resume_optimizer": false,
+    "resume_training_state": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/model_probe/target_latent_fusion_ft15"
+  },
+  "ablation": {
+    "name": "probe_target_latent_fusion_ft15",
+    "axis": "model_probe",
+    "stage": "probe_guided_style_path_long_ft",
+    "notes": "Longer warm-start run from brk_a_ll03_10ep with only target latent token fusion enabled. Save every 3 epochs for internal-probe and DINO-S curve checks."
+  }
+}

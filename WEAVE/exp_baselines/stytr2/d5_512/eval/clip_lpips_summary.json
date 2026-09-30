@@ -1,0 +1,15 @@
+{
+  "n_all": 750,
+  "n_off_diagonal": 600,
+  "clip_style_global": 0.709144242088,
+  "lpips_global": 0.5956654235124588,
+  "off_clip_style": 0.6797235354284445,
+  "off_lpips": 0.6225162403533856,
+  "clip_style_eval_identity_by_target_style": {
+    "Early_Renaissance": 0.7129091425736745,
+    "Impressionism": 0.718779943784078,
+    "Minimalism": 0.7662723294893901,
+    "Rococo": 0.6417193414767584,
+    "Ukiyo_e": 0.7060404531160991
+  }
+}

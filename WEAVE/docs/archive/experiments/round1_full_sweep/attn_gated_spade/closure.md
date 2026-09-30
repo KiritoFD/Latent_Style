@@ -1,0 +1,48 @@
+# attn_gated_spade Closure
+
+- Status: `reviewing`
+- Formal closure read:
+  - the early failed openings remain part of the calibration record:
+    - `batch_size = 13`
+      - rejected at health check as `under_band`
+    - `batch_size = 19`
+      - produced retained/eval evidence only through `epoch_0022`
+      - later lost the train pid during `epoch 23`
+  - the canonical formal lane is the segmented `batch=20` continuation path from `epoch_0022`
+  - retained checkpoints and settled fast-eval now exist through:
+    - `epoch_0030`
+  - all retained checkpoints now have remote-side `CLIP-S + LPIPS`
+  - convergence authority read at closure:
+    - `row_count = 30`
+    - `last_pareto_epoch = epoch_0026`
+    - `since_last_pareto = 4`
+    - `tail_flat = True`
+    - `patience = 4`
+    - `converged = True`
+- Best settled reads:
+  - best transfer `CLIP-S`:
+    - `epoch_0001`
+    - transfer `0.6929 / 0.4501`
+  - best transfer `LPIPS`:
+    - `epoch_0022`
+    - transfer `0.6910 / 0.4252`
+  - best all-pairs `CLIP-S`:
+    - `epoch_0011`
+    - full `0.7172 / 0.4220`
+  - best all-pairs `LPIPS` frontier extension:
+    - `epoch_0026`
+    - full `0.7142 / 0.4215`
+- Tail read after the last Pareto point:
+  - `epoch_0027`
+    - transfer `0.6890 / 0.4350`
+  - `epoch_0028`
+    - transfer `0.6906 / 0.4299`
+  - `epoch_0029`
+    - transfer `0.6878 / 0.4346`
+  - `epoch_0030`
+    - transfer `0.6889 / 0.4282`
+- Closure decision:
+  - this family is now formally closed for round-1 training
+  - useful paper-facing evidence is the full settled curve through `epoch_0030`
+  - promote the family into `reviewing` for shortlisted `IntroStyle / DINO / frozen VLM`
+  - do not spend more 3060 train time on this line until stage-close review contradicts the fast curve

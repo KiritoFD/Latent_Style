@@ -1,0 +1,6 @@
+setting,seed,probe_batch,selected_epoch,rho_step,dino_s,clip_s,lpips,dino_c
+canonical,42,4,4,0.1504,0.4915,0.7126,0.2596,0.8103
+seed7,7,4,4,0.2257,0.4910,0.7140,0.2668,0.8076
+seed123,123,4,3,0.5597,0.4862,0.7144,0.2552,0.8040
+probe_b2,42,2,4,0.2299,,,,
+probe_b8_relative,42,8,4,0.5329,,,,

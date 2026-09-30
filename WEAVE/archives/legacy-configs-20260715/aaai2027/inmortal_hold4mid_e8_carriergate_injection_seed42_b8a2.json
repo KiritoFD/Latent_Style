@@ -1,0 +1,29 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4mid_reseed_from_e13_seed42_b8a2.json",
+  "training": {
+    "batch_size": 8,
+    "accumulation_steps": 2,
+    "num_epochs": 12,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4mid_reseed_from_e13_seed42_b8a2/epoch_0008.pt",
+    "resume_optimizer": false,
+    "resume_model_strict": false,
+    "resume_training_state": false,
+    "freeze_mode": "injection_only"
+  },
+  "model": {
+    "style_injection_mode": "body_decoder",
+    "style_injection_form": "carrier_gate",
+    "style_injection_scale": 1.0,
+    "style_injection_gate_log_span": 0.4054651081081644,
+    "style_injection_hidden_dim": 64
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_hold4mid_e8_carriergate_injection_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_hold4mid_e8_carriergate_injection_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "Hold4MidE8_plus_CarrierGateInjection",
+    "notes": "Next-round style-reopening packet. Start from the Hold4Mid e8 geometry anchor and train only the existing carrier-gate style injection modules so style can reopen without retraining the whole transport field."
+  }
+}

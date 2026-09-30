@@ -1,0 +1,34 @@
+{
+  "_base": "../../wikiart512_ema_direct_atom_residual_calib.json",
+  "training": {
+    "batch_size": 32,
+    "num_epochs": 8,
+    "save_interval": 1,
+    "num_workers": 0,
+    "persistent_workers": false,
+    "use_tqdm": true,
+    "log_interval": 20,
+    "numeric_debug": false,
+    "fused_adamw": false,
+    "async_checkpoint_save": true,
+    "torch_compile": false,
+    "full_eval_batch_size": 8,
+    "full_eval_target_chunk_size": 5,
+    "full_eval_vae_decode_batch_size": 16
+  },
+  "data": {
+    "data_root": "/mnt/f/wikiart_latents_512_ema",
+    "virtual_length_multiplier": 0.2,
+    "preload_to_gpu": false,
+    "latent_cache_mode": "packed",
+    "latent_cache_dir": "/mnt/f/wikiart_latents_512_ema/.latent_cache"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/timing_20260602/lancet_from_scratch_b32_e8_vlen020"
+  },
+  "ablation": {
+    "name": "local_wsl_wikiart512_timing_from_scratch_vlen020_20260602",
+    "axis": "local_wsl_longer_train_timing",
+    "notes": "Ten-times-longer timing run than the 0.02 virtual-length smoke: WikiArt512 EMA latents, 5 styles, virtual_length_multiplier=0.2, 8 epochs, batch 32."
+  }
+}

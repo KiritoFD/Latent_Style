@@ -1,0 +1,20 @@
+{
+  "_base": "local_wsl_distinct5_512_ema_k_b16_step2min.json",
+  "training": {
+    "test_image_dir": "F:/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "G:/GitHub/Latent_Style/eval_cache",
+    "full_eval_clip_hf_cache_dir": "G:/GitHub/Latent_Style/eval_cache/hf"
+  },
+  "data": {
+    "data_root": "F:/wikiart_distinct5_samam_512_latents_ema/train",
+    "pairing_cache_path": "F:/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt",
+    "latent_cache_dir": "F:/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/local_wsl_distinct5_512_ema_k_b16_step2min_vramprobe"
+  },
+  "ablation": {
+    "name": "local_wsl_distinct5_512_ema_k_b16_step2min_vramprobe",
+    "notes": "Local same-cost LBM VRAM probe cloned from the reviewed step-350 packet; used only to retain peak training memory on the RTX 4070 laptop."
+  }
+}

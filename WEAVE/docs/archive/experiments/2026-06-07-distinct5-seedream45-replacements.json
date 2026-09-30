@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "source_dataset": "Distinct5 512 real test",
+  "model": "doubao-seedream-4-5-251128",
+  "provider": "windhub.cc",
+  "reason": "Platform moderation blocked six original source images with InputImageSensitiveContentDetected across all five target styles.",
+  "replacements": {
+    "Early_Renaissance__domenico-ghirlandaio_the-nativity-1.jpg": "Early_Renaissance__andrea-del-castagno_giovanni-boccaccio.jpg",
+    "Early_Renaissance__domenico-veneziano_not-detected-269819.jpg": "Early_Renaissance__andrea-del-castagno_portrait-of-a-gentleman.jpg",
+    "Early_Renaissance__giovanni-bellini_virgin-and-child-1488.jpg": "Early_Renaissance__andrea-del-verrocchio_portrait-of-a-woman.jpg",
+    "Early_Renaissance__sandro-botticelli_inferno-canto-xviii-1480(1).jpg": "Early_Renaissance__andrea-mantegna_portrait-of-a-man.jpg",
+    "Rococo__benjamin-west_the-angel-of-the-lord-announcing-the-resurrection-1805.jpg": "Rococo__allan-ramsay_self-portrait.jpg",
+    "Ukiyo_e__utagawa-kunisada_not_detected_240333.jpg": "Ukiyo_e__hiroshige_view-of-fuji.jpg"
+  }
+}

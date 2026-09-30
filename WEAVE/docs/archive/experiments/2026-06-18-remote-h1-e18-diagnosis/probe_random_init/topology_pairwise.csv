@@ -1,0 +1,5 @@
+probe_family,left_variant,right_variant,forward_same_target_mean_abs
+topology_pair,gate0_blend0,gate0_blend1,0.0
+topology_pair,gate1_blend0,gate1_blend05,0.020915409550070763
+topology_pair,gate1_blend0,gate1_blend1,0.031597238034009933
+topology_pair,gate0_blend1,gate1_blend1,0.031597238034009933

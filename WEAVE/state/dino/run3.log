@@ -1,0 +1,34 @@
+Found 750 generated images in results\R5-WikiArt\cut (recursive)
+Content roots: ['datasets\\wikiart20_test', 'datasets\\wikiart5_test\\test']
+Loading facebook/dinov2-small on cuda...
+Precomputing style references...
+  Abstract_Expressionism: 30 refs
+  Art_Nouveau_Modern: 30 refs
+  Baroque: 30 refs
+  Color_Field_Painting: 30 refs
+  Cubism: 30 refs
+  Early_Renaissance: 30 refs
+  Expressionism: 30 refs
+  Fauvism: 30 refs
+  High_Renaissance: 30 refs
+  Impressionism: 30 refs
+  Mannerism_Late_Renaissance: 30 refs
+  Minimalism: 30 refs
+  Naive_Art_Primitivism: 30 refs
+  Northern_Renaissance: 30 refs
+  Pop_Art: 30 refs
+  Post_Impressionism: 30 refs
+  Rococo: 30 refs
+  Romanticism: 30 refs
+  Symbolism: 30 refs
+  Ukiyo_e: 30 refs
+  100/750 parsed=100 style=100 content=100 skip=0
+  200/750 parsed=200 style=200 content=200 skip=0
+  300/750 parsed=300 style=300 content=300 skip=0
+  400/750 parsed=400 style=400 content=400 skip=0
+  500/750 parsed=500 style=500 content=500 skip=0
+  600/750 parsed=600 style=600 content=600 skip=0
+  700/750 parsed=700 style=700 content=700 skip=0
+
+DINO-con=0.7949 DINO-sty=0.4410 DINO-str=0.0240 (style_n=750, content_n=750, skip=0)
+Saved state\dino\R5-WikiArt__cut.json

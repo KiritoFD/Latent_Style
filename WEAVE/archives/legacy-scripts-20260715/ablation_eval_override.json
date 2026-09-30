@@ -1,0 +1,10 @@
+{
+    "bridge": {
+        "objective_mode": "flow_matching"
+    },
+    "training": {
+        "test_image_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+        "full_eval_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache",
+        "full_eval_clip_hf_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache/hf"
+    }
+}

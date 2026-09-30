@@ -1,0 +1,38 @@
+[loaded latents] (750, 4, 64, 64) torch.float16
+[loaded DECODER only] scaling_factor=0.18215
+[compile] torch.compile(mode=max-autotune) requested, caches -> G:\GitHub\Latent_Style\WEAVE\experiments\inference_speed\.compile_cache
+W0715 18:25:48.563000 147464 site-packages\torch\_inductor\utils.py:1731] [0/0] Not enough SMs to use max_autotune_gemm mode
+C:\Users\xy\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\_inductor\select_algorithm.py:3686: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  current_out_size = out_base.storage().size()
+Autotune Choices Stats:
+{"num_choices": 2, "num_triton_choices": 0, "best_kernel": "bias_addmm", "best_time": 0.03174399957060814}
+AUTOTUNE addmm(32768x4, 32768x4, 4x4)
+strides: [0, 1], [4, 1], [1, 4]
+dtypes: torch.float16, torch.float16, torch.float16
+  bias_addmm 0.0317 ms 100.0% 
+  addmm 0.0439 ms 72.3% 
+SingleProcess AUTOTUNE benchmarking takes 0.2600 seconds and 0.0005 seconds precompiling for 2 choices
+Autotune Choices Stats:
+{"num_choices": 2, "num_triton_choices": 0, "best_kernel": "bias_addmm", "best_time": 0.4852159917354584}
+AUTOTUNE addmm(32768x512, 32768x512, 512x512)
+strides: [0, 1], [512, 1], [1, 512]
+dtypes: torch.float16, torch.float16, torch.float16
+  bias_addmm 0.4852 ms 100.0% 
+  addmm 0.6400 ms 75.8% 
+SingleProcess AUTOTUNE benchmarking takes 0.1360 seconds and 0.0000 seconds precompiling for 2 choices
+Autotune Choices Stats:
+{"num_choices": 2, "num_triton_choices": 0, "best_kernel": "bias_addmm", "best_time": 3.349152088165283}
+AUTOTUNE addmm(524288x256, 524288x512, 512x256)
+strides: [0, 1], [512, 1], [1, 512]
+dtypes: torch.float16, torch.float16, torch.float16
+  bias_addmm 3.3492 ms 100.0% 
+  addmm 5.5081 ms 60.8% 
+SingleProcess AUTOTUNE benchmarking takes 0.2013 seconds and 0.0000 seconds precompiling for 2 choices
+Autotune Choices Stats:
+{"num_choices": 2, "num_triton_choices": 0, "best_kernel": "bias_addmm", "best_time": 7.611392021179199}
+AUTOTUNE addmm(2097152x128, 2097152x256, 256x128)
+strides: [0, 1], [256, 1], [1, 256]
+dtypes: torch.float16, torch.float16, torch.float16
+  bias_addmm 7.6114 ms 100.0% 
+  addmm 12.6280 ms 60.3% 
+SingleProcess AUTOTUNE benchmarking takes 0.4122 seconds and 0.0000 seconds precompiling for 2 choices

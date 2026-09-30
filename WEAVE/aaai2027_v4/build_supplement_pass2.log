@@ -1,0 +1,383 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex)
+ restricted \write18 enabled.
+entering extended mode
+(./supplement.tex
+LaTeX2e <2025-11-01>
+L3 programming layer <2026-01-19>
+(c:/texlive/2026/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+(c:/texlive/2026/texmf-dist/tex/latex/base/size10.clo))
+(c:/texlive/2026/texmf-dist/tex/latex/geometry/geometry.sty
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/keyval.sty)
+(c:/texlive/2026/texmf-dist/tex/generic/iftex/ifvtex.sty
+(c:/texlive/2026/texmf-dist/tex/generic/iftex/iftex.sty)))
+(c:/texlive/2026/texmf-dist/tex/latex/base/fontenc.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/base/inputenc.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/lm/lmodern.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/microtype/microtype.sty
+(c:/texlive/2026/texmf-dist/tex/latex/etoolbox/etoolbox.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/microtype/microtype-pdftex.def)
+(c:/texlive/2026/texmf-dist/tex/latex/microtype/microtype.cfg))
+(c:/texlive/2026/texmf-dist/tex/latex/booktabs/booktabs.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/tools/longtable.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/tools/array.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/tools/tabularx.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/graphicx.sty
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/graphics.sty
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/trig.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics-cfg/graphics.cfg)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics-def/pdftex.def)))
+(c:/texlive/2026/texmf-dist/tex/latex/caption/caption.sty
+(c:/texlive/2026/texmf-dist/tex/latex/caption/caption3.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/caption/ltcaption.sty))
+(c:/texlive/2026/texmf-dist/tex/latex/xcolor/xcolor.sty
+(c:/texlive/2026/texmf-dist/tex/latex/graphics-cfg/color.cfg)
+(c:/texlive/2026/texmf-dist/tex/latex/graphics/mathcolor.ltx))
+(c:/texlive/2026/texmf-dist/tex/latex/enumitem/enumitem.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/hyperref/hyperref.sty
+(c:/texlive/2026/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty)
+(c:/texlive/2026/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty)
+(c:/texlive/2026/texmf-dist/tex/generic/pdfescape/pdfescape.sty
+(c:/texlive/2026/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty)
+(c:/texlive/2026/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty
+(c:/texlive/2026/texmf-dist/tex/generic/infwarerr/infwarerr.sty)))
+(c:/texlive/2026/texmf-dist/tex/latex/hycolor/hycolor.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/hyperref/nameref.sty
+(c:/texlive/2026/texmf-dist/tex/latex/refcount/refcount.sty)
+(c:/texlive/2026/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty
+(c:/texlive/2026/texmf-dist/tex/latex/kvoptions/kvoptions.sty)))
+(c:/texlive/2026/texmf-dist/tex/generic/stringenc/stringenc.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/hyperref/pd1enc.def)
+(c:/texlive/2026/texmf-dist/tex/generic/intcalc/intcalc.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/hyperref/puenc.def)
+(c:/texlive/2026/texmf-dist/tex/latex/url/url.sty)
+(c:/texlive/2026/texmf-dist/tex/generic/bitset/bitset.sty
+(c:/texlive/2026/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty)))
+(c:/texlive/2026/texmf-dist/tex/latex/hyperref/hpdftex.def
+(c:/texlive/2026/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty
+(c:/texlive/2026/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty)))
+(c:/texlive/2026/texmf-dist/tex/latex/listings/listings.sty
+(c:/texlive/2026/texmf-dist/tex/latex/listings/lstpatch.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/listings/lstmisc.sty)
+(c:/texlive/2026/texmf-dist/tex/latex/listings/listings.cfg))
+==> First Aid for listings.sty no longer applied!
+    Expected:
+        2024/09/23 1.10c (Carsten Heinz)
+    but found:
+        2025/11/14 1.11b (Carsten Heinz)
+    so I'm assuming it got fixed.
+(c:/texlive/2026/texmf-dist/tex/latex/lm/t1lmr.fd)
+(c:/texlive/2026/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def)
+(./supplement.aux)
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+(c:/texlive/2026/texmf-dist/tex/latex/microtype/mt-cmr.cfg)
+(c:/texlive/2026/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (c:/texlive/2026/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+(c:/texlive/2026/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg))
+(./supplement.out) (./supplement.out)
+(c:/texlive/2026/texmf-dist/tex/latex/lm/ot1lmr.fd)
+(c:/texlive/2026/texmf-dist/tex/latex/lm/omllmm.fd)
+(c:/texlive/2026/texmf-dist/tex/latex/lm/omslmsy.fd)
+(c:/texlive/2026/texmf-dist/tex/latex/lm/omxlmex.fd)
+(c:/texlive/2026/texmf-dist/tex/latex/lm/t1lmtt.fd)
+(c:/texlive/2026/texmf-dist/tex/latex/lm/ts1lmr.fd)
+Underfull \hbox (badness 10000) in paragraph at lines 79--80
+[]\T1/lmtt/m/n/10 aaai2027_v4/fig_data/method_probes.json\T1/lmr/m/n/10 (+20) :
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 81--82
+[]\T1/lmtt/m/n/10 exp/dino_s_break/brk_a_ll03_10ep/config.json\T1/lmr/m/n/10 (+
+20) :
+
+Overfull \hbox (103.38216pt too wide) in paragraph at lines 82--83
+[]\T1/lmtt/m/n/10 exp/dino_s_break/brk_a_ll03_10ep/logs/training_20260712_21412
+9.csv\T1/lmr/m/n/10 (-20) :
+
+Overfull \hbox (82.38222pt too wide) in paragraph at lines 83--84
+[]\T1/lmtt/m/n/10 exp/model_probe/inf_timing/generation_only_timing_summary.jso
+n\T1/lmr/m/n/10 (-20) :
+
+Underfull \hbox (badness 10000) in paragraph at lines 86--89
+[]\T1/lmr/m/n/10 (+20) All paths above are rel-a-tive to ei-ther
+
+Underfull \hbox (badness 10000) in paragraph at lines 118--118
+[]|\T1/lmr/m/n/10 (+20) Remote
+
+Underfull \hbox (badness 10000) in paragraph at lines 118--118
+[]|\T1/lmr/m/n/10 (+20) Paper-facing
+
+Underfull \hbox (badness 10000) in paragraph at lines 118--118
+[]|\T1/lmtt/m/n/10 dino_s_break\T1/lmr/m/n/10 (+20) , \T1/lmtt/m/n/10 main_tabl
+e\T1/lmr/m/n/10 (+20) ,
+
+Underfull \hbox (badness 10000) in paragraph at lines 118--118
+\T1/lmtt/m/n/10 bench_all_3060\T1/lmr/m/n/10 (+20) , \T1/lmtt/m/n/10 other5_eva
+l\T1/lmr/m/n/10 (+20) ,
+
+Underfull \hbox (badness 3428) in paragraph at lines 118--118
+\T1/lmr/m/n/10 (+20) sub-mis-sion ta-bles, tim-ing, and
+
+Underfull \hbox (badness 10000) in paragraph at lines 118--118
+[]|\T1/lmr/m/n/10 (+20) Mechanism
+
+Underfull \hbox (badness 10000) in paragraph at lines 118--118
+\T1/lmr/m/n/10 (+20) and in-fra
+
+Underfull \hbox (badness 10000) in paragraph at lines 118--118
+[]|\T1/lmtt/m/n/10 model_probe\T1/lmr/m/n/10 (+20) , \T1/lmtt/m/n/10 infra_diag
+\T1/lmr/m/n/10 (+20) ,
+
+Underfull \hbox (badness 10000) in paragraph at lines 118--118
+\T1/lmtt/m/n/10 infra_infer_bench\T1/lmr/m/n/10 (+20) , \T1/lmtt/m/n/10 infra_o
+pt\T1/lmr/m/n/10 (+20) ,
+
+Underfull \hbox (badness 10000) in paragraph at lines 118--118
+\T1/lmr/m/n/10 (+20) speed, target-HF routes, and
+
+Underfull \hbox (badness 2237) in paragraph at lines 118--118
+[]|\T1/lmr/m/n/10 (+20) Ablation di-
+
+Underfull \hbox (badness 1147) in paragraph at lines 118--118
+[]|\T1/lmtt/m/n/10 ablation_*\T1/lmr/m/n/10 (+20) , \T1/lmtt/m/n/10 abl_*\T1/lm
+r/m/n/10 (+20) , \T1/lmtt/m/n/10 sty_inject\T1/lmr/m/n/10 (+20) ,
+
+Underfull \hbox (badness 10000) in paragraph at lines 118--118
+[]|\T1/lmr/m/n/10 (+20) Historical
+
+Underfull \hbox (badness 1194) in paragraph at lines 118--118
+\T1/lmtt/m/n/10 hp_*\T1/lmr/m/n/10 (+20) , \T1/lmtt/m/n/10 evo_*\T1/lmr/m/n/10 
+(+20) , and refac-tor runs.
+
+Overfull \hbox (2.48387pt too wide) in paragraph at lines 125--135
+ [] 
+[1{c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{c:/texlive/202
+6/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{c:/texlive/2026/texmf-dist/fonts/enc
+/dvips/lm/lm-ts1.enc} <./supplement_figures/fig_exp_inventory.pdf>]
+Underfull \hbox (badness 10000) in paragraph at lines 170--170
+[]|\T1/lmr/m/n/8 (+20) Aggregated mechanism-probe
+
+Underfull \hbox (badness 6510) in paragraph at lines 170--170
+[]|$\T1/lmtt/m/n/8 method _ probes _ run .
+
+Underfull \hbox (badness 10000) in paragraph at lines 170--170
+[]|$\T1/lmtt/m/n/8 method _ probe _
+
+Underfull \hbox (badness 10000) in paragraph at lines 170--170
+[]|$\T1/lmtt/m/n/8 method _ probe _
+
+Underfull \hbox (badness 10000) in paragraph at lines 170--170
+[]|$\T1/lmtt/m/n/8 swd _ loss _
+
+Underfull \hbox (badness 10000) in paragraph at lines 170--170
+[]|$\T1/lmtt/m/n/8 curve _ metrics _ hf .
+
+Underfull \hbox (badness 10000) in paragraph at lines 237--237
+[]|$\T1/lmtt/m/n/8 <[]DATA _ ROOT >[] /wikiart _
+
+Underfull \hbox (badness 10000) in paragraph at lines 237--237
+\T1/lmtt/m/n/8 distinct5 _ samam _ 512 _
+
+Underfull \hbox (badness 10000) in paragraph at lines 237--237
+[]|$\T1/lmtt/m/n/8 <[]DATA _ ROOT >[] /wikiart _
+
+Underfull \hbox (badness 10000) in paragraph at lines 237--237
+\T1/lmtt/m/n/8 distinct5 _ samam _ 512 _
+
+Underfull \hbox (badness 10000) in paragraph at lines 237--237
+\T1/lmtt/m/n/8 latents _ ema / train /
+
+Underfull \hbox (badness 10000) in paragraph at lines 237--237
+[]|$\T1/lmtt/m/n/8 <[]DATA _ ROOT >[] /wikiart _
+
+Underfull \hbox (badness 10000) in paragraph at lines 237--237
+\T1/lmtt/m/n/8 distinct5 _ samam _ 512 _
+
+Underfull \hbox (badness 10000) in paragraph at lines 237--237
+[]|$\T1/lmtt/m/n/8 <[]DATA _ ROOT >[] /wikiart _
+
+Underfull \hbox (badness 8038) in paragraph at lines 237--237
+\T1/lmtt/m/n/8 distinct5 _ 512 _ images /
+[2{c:/texlive/2026/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}{c:/texlive/2026/tex
+mf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{c:/texlive/2026/texmf-dist/fonts/enc/
+dvips/lm/lm-mathit.enc}]
+Overfull \hbox (50.85703pt too wide) in paragraph at lines 283--296
+ [] 
+
+Underfull \hbox (badness 10000) in paragraph at lines 298--303
+[]\T1/lmr/m/n/10 (+20) The soft-ware stack fol-lows
+
+Overfull \hbox (23.71672pt too wide) in paragraph at lines 313--336
+ [] 
+
+Underfull \hbox (badness 2035) in paragraph at lines 343--348
+\T1/lmr/m/n/10 (+20) while the high-frequency tar-get uses the target-style
+[3 <./supplement_figures/fig_repro_pipeline.pdf> <./supplement_figures/fig_data
+set_boards.pdf>]
+Overfull \hbox (1.03828pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 model.contract_family| 
+
+Overfull \hbox (5.28828pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 model.num_hires_blocks| 
+
+Underfull \hbox (badness 10000) in paragraph at lines 378--378
+[]|\T1/lmr/m/n/8 (+20) High-resolution block
+
+Overfull \hbox (13.78828pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 model.num_decoder_blocks| 
+
+Overfull \hbox (18.03828pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 model.endpoint_adain_mode| 
+
+Overfull \hbox (3.361pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 spatial_fiber| 
+
+Underfull \hbox (badness 10000) in paragraph at lines 378--378
+[]|\T1/lmr/m/n/8 (+20) Endpoint style-statistics
+
+Overfull \hbox (13.78828pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 model.style_extrap_alpha| 
+
+Overfull \hbox (1.03828pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 bridge.objective_mode| 
+
+Overfull \hbox (3.361pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 flow_matching| 
+
+Overfull \hbox (5.28828pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 bridge.t_sampling_mode| 
+
+Underfull \hbox (badness 2469) in paragraph at lines 378--378
+[]|\T1/lmr/m/n/8 (+20) Time sam-pling dis-tri-bu-
+
+Overfull \hbox (22.28828pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 bridge.bridge_noise_window| 
+
+Overfull \hbox (73.28828pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 bridge.training_target_projection_mode| 
+
+Underfull \hbox (badness 10000) in paragraph at lines 378--378
+[]|\T1/lmr/m/n/8 (+20) Target con-struc-tion in
+
+Overfull \hbox (35.03828pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 bridge.spectral_w_ll/lh/hl/hh| 
+
+Overfull \hbox (3.18166pt too wide) in paragraph at lines 378--378
+[]|\T1/lmr/m/n/8 (-20) 0.3/1.0/1.0/2.0| 
+
+Overfull \hbox (9.53828pt too wide) in paragraph at lines 378--378
+[]|\T1/lmtt/m/n/8 bridge.ll_partial_alpha| 
+
+Underfull \hbox (badness 10000) in paragraph at lines 444--444
+[]|$\T1/lmtt/m/n/8 src / utils / run _
+
+Overfull \hbox (48.95337pt too wide) in paragraph at lines 472--486
+ [] 
+
+Underfull \vbox (badness 2150) has occurred while \output is active [4 <./suppl
+ement_figures/fig_training_audit.pdf>]
+Overfull \hbox (30.30145pt too wide) in paragraph at lines 498--506
+ [] 
+
+Underfull \hbox (badness 10000) in paragraph at lines 530--531
+[]|\T1/lmr/m/n/10 (+20) Peak av-er-age of
+
+Underfull \hbox (badness 10000) in paragraph at lines 531--532
+\T1/lmr/m/n/10 (+20) em-pha-siz-ing max
+
+Overfull \hbox (29.55353pt too wide) in paragraph at lines 525--534
+ [] 
+
+Underfull \hbox (badness 1048) in paragraph at lines 566--568
+ []\T1/lmr/bx/n/10 (+20) DINO-C.[] \T1/lmr/m/n/10 (+20) DINO-C mea-sures con-te
+nt preser-va-tion as
+[5 <./supplement_figures/fig_timing_breakdown.pdf>]
+Underfull \hbox (badness 10000) in paragraph at lines 732--732
+[]|\T1/lmr/m/n/8 (+20) Generated by copy-
+
+Underfull \hbox (badness 1137) in paragraph at lines 732--732
+[]|\T1/lmr/m/n/8 (+20) CUT / SaMST /
+
+Underfull \hbox (badness 5622) in paragraph at lines 732--732
+[]|\T1/lmr/m/n/8 (+20) Locally trained or re-
+
+Underfull \hbox (badness 4492) in paragraph at lines 732--732
+\T1/lmr/m/n/8 (+20) evaluated where check-
+
+Underfull \hbox (badness 10000) in paragraph at lines 732--732
+[]|\T1/lmr/m/n/8 (+20) SD-Turbo /
+
+Underfull \hbox (badness 2205) in paragraph at lines 732--732
+\T1/lmr/m/n/8 (+20) StyleAligned / Z-
+
+Underfull \hbox (badness 10000) in paragraph at lines 732--732
+[]|\T1/lmr/m/n/8 (+20) frozen-backbone
+
+Underfull \hbox (badness 5711) in paragraph at lines 732--732
+[]|\T1/lmr/m/n/8 (+20) Large pre-trained back-
+
+Underfull \hbox (badness 3148) in paragraph at lines 732--732
+\T1/lmr/m/n/8 (+20) bones; no task-specific
+
+Underfull \hbox (badness 1789) in paragraph at lines 732--732
+\T1/lmr/m/n/8 (+20) held; met-rics are com-
+
+Underfull \hbox (badness 2134) in paragraph at lines 732--732
+\T1/lmr/m/n/8 (+20) ing records come from
+
+Underfull \vbox (badness 10000) has occurred while \output is active [6 <./supp
+lement_figures/fig_d5_metric_heatmap.pdf> <./supplement_figures/fig_d5_tradeoff
+.pdf>]
+Overfull \hbox (175.37863pt too wide) detected at line 743
+\OML/lmm/m/it/10 WEAVE[] \OT1/lmr/m/n/10 = [] + [] + []\OML/lmm/m/it/10 :
+
+Underfull \vbox (badness 10000) has occurred while \output is active
+Underfull \hbox (badness 10000) in paragraph at lines 755--755
+[]|$\T1/lmtt/m/n/8 target _ hf _
+
+Underfull \hbox (badness 1762) in paragraph at lines 755--756
+\T1/lmr/m/n/8 (+20) tent col-lapse from
+
+Underfull \hbox (badness 10000) in paragraph at lines 757--757
+[]|$\T1/lmtt/m/n/8 target _ hf _
+
+Underfull \hbox (badness 5893) in paragraph at lines 757--758
+[]|\T1/lmr/m/n/8 (+20) Best cur-rent sub-
+
+Underfull \hbox (badness 10000) in paragraph at lines 758--758
+[]|$\T1/lmtt/m/n/8 target _ hf _
+
+Underfull \hbox (badness 10000) in paragraph at lines 759--759
+[]|$\T1/lmtt/m/n/8 target _ hf _
+
+Underfull \hbox (badness 10000) in paragraph at lines 759--759
+\T1/lmtt/m/n/8 content _ anchor _
+
+Overfull \hbox (41.92302pt too wide) in paragraph at lines 751--763
+ [] 
+
+Underfull \vbox (badness 10000) has occurred while \output is active [7 <./supp
+lement_figures/fig_cost_quality.pdf>] [8 <./supplement_figures/fig_probe_mechan
+isms.pdf>]
+Underfull \hbox (badness 10000) in paragraph at lines 897--898
+[]\T1/lmr/m/n/10 (+20) Run \T1/lmtt/m/n/10 python src/run.py --config
+
+Underfull \hbox (badness 10000) in paragraph at lines 898--900
+[]\T1/lmr/m/n/10 (+20) Verify \T1/lmtt/m/n/10 epoch_0005.pt\T1/lmr/m/n/10 (+20)
+ , \T1/lmtt/m/n/10 epoch_0010.pt\T1/lmr/m/n/10 (+20) , frozen
+
+Underfull \hbox (badness 2922) in paragraph at lines 898--900
+\T1/lmtt/m/n/10 config.json\T1/lmr/m/n/10 (+20) , copied source snap-shot, and 
+train-
+
+! Package longtable Error: longtable not in 1-column mode.
+
+See the longtable package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.913 \begin{longtable}
+                       {p{0.34\linewidth}p{0.19\linewidth}p{0.37\linewidth}}
+!  ==> Fatal error occurred, no output PDF file produced!
+Transcript written on supplement.log.

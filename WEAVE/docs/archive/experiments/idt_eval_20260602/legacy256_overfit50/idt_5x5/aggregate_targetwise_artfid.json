@@ -1,0 +1,107 @@
+{
+  "output_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\idt_eval_20260602\\legacy256_overfit50\\idt_5x5",
+  "test_dir": "G:\\GitHub\\Latent_Style\\Dataset\\legacy256_overfit50\\test",
+  "generated_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\idt_eval_20260602\\legacy256_overfit50\\idt_5x5\\images",
+  "metrics_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\docs\\experiments\\idt_eval_20260602\\legacy256_overfit50\\idt_5x5\\metrics.csv",
+  "wall_seconds": 95.93703549999918,
+  "full": {
+    "count": 750,
+    "target_count": 5,
+    "valid_target_count": 5,
+    "per_target": [
+      {
+        "target_style": "Hayao",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 187.47753115528826,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 188.47753115528826
+      },
+      {
+        "target_style": "cezanne",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 173.6432732257259,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 174.6432732257259
+      },
+      {
+        "target_style": "monet",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 174.71325130264566,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 175.71325130264566
+      },
+      {
+        "target_style": "photo",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 184.23680037089946,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 185.23680037089946
+      },
+      {
+        "target_style": "vangogh",
+        "count": 150,
+        "ref_count": 30,
+        "art_fid_fid": 188.51616332295282,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 189.51616332295282
+      }
+    ],
+    "aggregate_art_fid_fid": 181.7174038755024,
+    "aggregate_art_fid_content_lpips": 0.0,
+    "aggregate_art_fid": 182.7174038755024
+  },
+  "transfer": {
+    "count": 600,
+    "target_count": 5,
+    "valid_target_count": 5,
+    "per_target": [
+      {
+        "target_style": "Hayao",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 274.4176677833384,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 275.4176677833384
+      },
+      {
+        "target_style": "cezanne",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 251.5972533667917,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 252.5972533667917
+      },
+      {
+        "target_style": "monet",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 249.22751064873876,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 250.22751064873876
+      },
+      {
+        "target_style": "photo",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 262.3545192910577,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 263.3545192910577
+      },
+      {
+        "target_style": "vangogh",
+        "count": 120,
+        "ref_count": 30,
+        "art_fid_fid": 285.2865055034474,
+        "art_fid_content_lpips": 0.0,
+        "art_fid": 286.2865055034474
+      }
+    ],
+    "aggregate_art_fid_fid": 264.57669131867476,
+    "aggregate_art_fid_content_lpips": 0.0,
+    "aggregate_art_fid": 265.57669131867476
+  }
+}

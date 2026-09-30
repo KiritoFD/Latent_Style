@@ -1,0 +1,24 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "bridge": {
+    "w_style_contrastive": 8.0,
+    "style_contrastive_margin": 0.05,
+    "style_contrastive_projections": 64,
+    "single_step_swd_weight": 0.0,
+    "single_step_edge_weight": 0.0,
+    "w_endpoint_content": 0.0
+  },
+  "training": {
+    "num_epochs": 5,
+    "batch_size": 24
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/abl_contrastive_swd"
+  },
+  "ablation": {
+    "name": "abl_contrastive_swd",
+    "axis": "loss_function",
+    "stage": "destructive_ablation",
+    "notes": "Style-contrastive SWD: replaces legacy SWD (redundant with FM). Enforces same-style distribution consistency + cross-style separation (hinge margin). This is the ONLY distribution constraint FM cannot provide. Legacy SWD/edge/endpoint_content all disabled (weights=0)."
+  }
+}

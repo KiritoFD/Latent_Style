@@ -1,0 +1,34 @@
+{
+  "_base": "../distinct5_512_ema_variant_l_content_adaptive_annealed_queue_e3.json",
+  "training": {
+    "seed": 42,
+    "batch_size": 44,
+    "num_epochs": 3,
+    "save_interval": 1,
+    "resume_training_state": false,
+    "resume_optimizer": false,
+    "test_image_dir": "/mnt/i/wikiart_distinct5_samam_512_classview/test",
+    "full_eval_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache",
+    "full_eval_clip_hf_cache_dir": "/mnt/i/Github/Latent_Style/eval_cache/hf",
+    "full_eval_batch_size": 4,
+    "full_eval_vae_decode_batch_size": 4
+  },
+  "data": {
+    "data_root": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train",
+    "latent_cache_dir": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache",
+    "pairing_cache_path": "/mnt/i/wikiart_distinct5_samam_512_latents_ema/train/.latent_cache/prototype_pairing_top8.pt"
+  },
+  "full_eval": {
+    "batch_size": 4,
+    "vae_decode_batch_size": 4
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_tokenizer_localization_l_e1_seed42_b44_base"
+  },
+  "ablation": {
+    "name": "aaai2027_tokenizer_localization_l_e1_seed42_b44_base",
+    "axis": "aaai2027_tokenizer_localization",
+    "stage": "tokenizer_localization_l_e1_seed42_b44_base",
+    "notes": "AAAI 2027 tokenizer localization base on Distinct5-512. Uses the reviewed L-family e1 successor as the shared initialization surface for matched fresh-style-branch vs fresh-executor arms."
+  }
+}

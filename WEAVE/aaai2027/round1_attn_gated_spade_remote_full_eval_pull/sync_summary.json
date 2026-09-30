@@ -1,0 +1,216 @@
+{
+  "family_id": "attn_gated_spade",
+  "run_name": "aaai2027_round1_attn_gated_spade_seed42_b8a2",
+  "remote_run_dir": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_gated_spade_seed42_b8a2",
+  "eval_subdir": "full_eval_fast_snapshot",
+  "remote_scan": {
+    "run_dir": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_gated_spade_seed42_b8a2",
+    "eval_root": "/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_attn_gated_spade_seed42_b8a2/full_eval_fast_snapshot",
+    "epochs": [
+      {
+        "epoch": "epoch_0001",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0002",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0003",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0004",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0005",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0006",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0007",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0008",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0009",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0010",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0011",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0012",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0013",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0014",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0015",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0016",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0017",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0018",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0019",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0020",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0021",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      },
+      {
+        "epoch": "epoch_0022",
+        "has_metrics": true,
+        "has_summary": true,
+        "image_count": 0
+      }
+    ],
+    "processes": {
+      "train": [],
+      "fast_eval": [],
+      "posttrain_eval": []
+    }
+  },
+  "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_gated_spade_remote_full_eval_pull\\clip_lpips_curve.csv",
+  "convergence_json": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_gated_spade_remote_full_eval_pull\\round1_convergence.json",
+  "best_transfer_style": {
+    "epoch": "epoch_0001",
+    "full_clip_style": "0.7158449338674545",
+    "full_content_lpips": "0.44641429182666664",
+    "transfer_clip_style": "0.6928889000912506",
+    "transfer_content_lpips": "0.4500801226499999",
+    "wall_total_seconds": "96.43440545900012",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_gated_spade_remote_full_eval_pull\\epoch_0001\\summary.json"
+  },
+  "best_transfer_lpips": {
+    "epoch": "epoch_0022",
+    "full_clip_style": "0.7155702382723491",
+    "full_content_lpips": "0.42199304124000003",
+    "transfer_clip_style": "0.6909810468554497",
+    "transfer_content_lpips": "0.4252276106833334",
+    "wall_total_seconds": "91.85431428599986",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_gated_spade_remote_full_eval_pull\\epoch_0022\\summary.json"
+  },
+  "best_full_style": {
+    "epoch": "epoch_0011",
+    "full_clip_style": "0.7172146239280701",
+    "full_content_lpips": "0.4220474964933334",
+    "transfer_clip_style": "0.6925215511520704",
+    "transfer_content_lpips": "0.42542994641666665",
+    "wall_total_seconds": "92.48774616899937",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_gated_spade_remote_full_eval_pull\\epoch_0011\\summary.json"
+  },
+  "latest": {
+    "epoch": "epoch_0022",
+    "full_clip_style": "0.7155702382723491",
+    "full_content_lpips": "0.42199304124000003",
+    "transfer_clip_style": "0.6909810468554497",
+    "transfer_content_lpips": "0.4252276106833334",
+    "wall_total_seconds": "91.85431428599986",
+    "summary_path": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_gated_spade_remote_full_eval_pull\\epoch_0022\\summary.json"
+  },
+  "convergence": {
+    "curve_csv": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\aaai2027\\round1_attn_gated_spade_remote_full_eval_pull\\clip_lpips_curve.csv",
+    "row_count": 22,
+    "best_epoch": "epoch_0001",
+    "best_index": 0,
+    "best_transfer_clip_epoch": "epoch_0001",
+    "best_transfer_lpips_epoch": "epoch_0022",
+    "best_allpairs_clip_epoch": "epoch_0011",
+    "best_allpairs_lpips_epoch": "epoch_0022",
+    "pareto_epochs": [
+      "epoch_0001",
+      "epoch_0002",
+      "epoch_0004",
+      "epoch_0008",
+      "epoch_0009",
+      "epoch_0010",
+      "epoch_0011",
+      "epoch_0022"
+    ],
+    "last_pareto_epoch": "epoch_0022",
+    "newest_epoch": "epoch_0022",
+    "since_best": 21,
+    "since_last_pareto": 0,
+    "best_in_newest_2": true,
+    "tail_flat": true,
+    "patience": 4,
+    "criterion": "joint_transfer_allpairs_pareto",
+    "converged": false
+  }
+}

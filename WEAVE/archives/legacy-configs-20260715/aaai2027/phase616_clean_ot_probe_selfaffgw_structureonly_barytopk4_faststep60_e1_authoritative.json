@@ -1,0 +1,17 @@
+{
+  "_base": "./phase616_clean_ot_probe_selfaffgw_faststep60_e1.json",
+  "bridge": {
+    "coupling_cost_composition": "structure_only",
+    "coupling_target_mode": "barycentric_topk",
+    "coupling_barycentric_topk": 4
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_probe_selfaffgw_structureonly_barytopk4_faststep60_e1_authoritative"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_probe_selfaffgw_structureonly_barytopk4_faststep60_e1_authoritative",
+    "axis": "phase616_ot_probe_clean_2x2",
+    "stage": "clean_ot_selfaffgw_structureonly_barytopk4_authoritative_candidate",
+    "notes": "Authoritative 616 OT 2x2 row D. Combine structure_only OT with deterministic barycentric_topk=4 target geometry so the 616 metric-mismatch claim is tested without mixed appearance cost or sampled-target stochasticity."
+  }
+}

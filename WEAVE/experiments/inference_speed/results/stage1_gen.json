@@ -1,0 +1,11 @@
+{
+  "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+  "model_params": 873680,
+  "num_images": 750,
+  "batch": 32,
+  "config": "steps=1, euler, bf16",
+  "latent_gen_sec": 2.806,
+  "latent_gen_ms_per_img": 3.741,
+  "images_per_sec": 267.3,
+  "latents_path": "experiments\\inference_speed\\results\\latents_750.pt"
+}

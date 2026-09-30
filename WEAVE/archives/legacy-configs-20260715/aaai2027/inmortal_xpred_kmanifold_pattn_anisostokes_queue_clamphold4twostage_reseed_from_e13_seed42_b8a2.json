@@ -1,0 +1,31 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2.json",
+  "training": {
+    "batch_size": 8,
+    "accumulation_steps": 2,
+    "num_epochs": 20,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_from_pattn_seed42_b8a2/epoch_0013.pt",
+    "resume_optimizer": false,
+    "resume_model_strict": true,
+    "resume_training_state": false
+  },
+  "model": {
+    "proximal_clamp_ratio": 1.10,
+    "proximal_clamp_ratio_mid": 1.30,
+    "proximal_clamp_ratio_end": 1.60,
+    "proximal_clamp_schedule": "hold_two_stage",
+    "proximal_clamp_hold_epochs": 4,
+    "proximal_clamp_release_epochs": 4,
+    "proximal_clamp_mid_hold_epochs": 4,
+    "proximal_clamp_second_release_epochs": 8
+  },
+  "checkpoint": {
+    "save_dir": "./exp/inmortal-exp/aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4twostage_reseed_from_e13_seed42_b8a2"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_anisostokes_queue_clamphold4twostage_reseed_from_e13_seed42_b8a2",
+    "axis": "aaai2027_inmortal_next_round_style_rescue",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_then_AnisoStokesQueueClampHold4TwoStageReseed",
+    "notes": "Next-round two-stage late-reopening packet. Preserve the strong 4-epoch hold, release first into a controlled 1.30 mid band, hold that geometry basin, then reopen late toward 1.60 so style can recover only after geometry has already stabilized."
+  }
+}

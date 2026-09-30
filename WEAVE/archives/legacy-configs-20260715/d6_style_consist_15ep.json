@@ -1,0 +1,19 @@
+{
+  "_base": "hp_simple_swd12_15ep.json",
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/d6_style_consist_15ep",
+    "resume_checkpoint": ""
+  },
+  "bridge": {
+    "w_style_consistency": 1.0
+  },
+  "training": {
+    "batch_size": 96
+  },
+  "ablation": {
+    "name": "d6_style_consist_15ep",
+    "axis": "M2_intrinsic_style_consistency",
+    "stage": "M2_architecture_additive_D6",
+    "notes": "D6: Intrinsic style consistency loss. Encodes z_hat1 (predicted endpoint) through model.intrinsic_style_cnn to extract gen_style_global, then matches via cosine similarity to ref_style_global (from style_latent). Creates DIRECT style gradient signal that SWD's marginal distribution matching does not provide. Uses only model-internal features (no DINO/CLIP → no prior contamination). Does NOT modify velocity head (avoids style-free zone). Root cause: SWD only matches distributions, style feature similarity is not directly optimized → DINO-sty capped at 0.476. w_style_consistency=1.0 (moderate, ~1/12 of SWD weight). Based on hp_simple_swd12_15ep + D1 Gram w=1.0 (adopted as base). Goal: DINO-sty >= 0.49, CLIP-S >= 0.715."
+  }
+}

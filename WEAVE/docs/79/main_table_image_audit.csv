@@ -1,0 +1,40 @@
+dataset,method,clip_s,lpips,musiq,table_source,image_evidence,manifest_status,image_root
+D5-512,Identity,0.693,0.000,58.31,I:\results\tables\main_table.csv,duplicate_or_extra_nested,duplicate_or_extra_nested,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\identity
+P2A-256,Identity,0.663,0.000,56.83,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\identity
+R5-WikiArt,Identity,0.731,0.000,54.61,I:\results\tables\main_table.csv,no_local_packet,,
+D5-512,AdaIN,0.668,0.743,53.55,I:\results\tables\main_table.csv,duplicate_or_extra_nested,duplicate_or_extra_nested,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\adain
+P2A-256,AdaIN,0.666,0.736,41.23,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\adain
+R5-WikiArt,AdaIN,0.728,0.680,51.16,I:\results\tables\main_table.csv,no_local_packet,,
+D5-512,WCT (VGG19),0.706,0.635,21.68,I:\results\tables\main_table.csv,duplicate_or_extra_nested,duplicate_or_extra_nested,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\wct
+P2A-256,WCT (VGG19),0.688,0.738,40.33,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\wct
+R5-WikiArt,WCT (VGG19),0.731,0.688,53.39,I:\results\tables\main_table.csv,no_local_packet,,
+D5-512,SD-Turbo,0.693,0.003,60.72,I:\results\tables\main_table.csv,duplicate_or_extra_nested,duplicate_or_extra_nested,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\sdturbo
+P2A-256,SD-Turbo,0.674,0.603,52.19,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\sdturbo
+R5-WikiArt,SD-Turbo,0.767,0.449,63.23,I:\results\tables\main_table.csv,nonstandard_over_750_and_name_mismatch,nonstandard_over_750_and_name_mismatch,G:\GitHub\Latent_Style\SchrodingerBridge\results\R5-WikiArt\sdturbo
+D5-512,IP-Adapter,0.829,0.636,50.51,I:\results\tables\main_table.csv,no_local_packet,,
+P2A-256,IP-Adapter,0.671,0.755,36.15,I:\results\tables\main_table.csv,no_local_packet,,
+R5-WikiArt,IP-Adapter,0.818,0.696,53.26,I:\results\tables\main_table.csv,no_local_packet,,
+D5-512,StyleAligned,0.780,0.869,62.49,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\stylealigned
+P2A-256,StyleAligned,0.768,0.786,58.74,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\stylealigned
+R5-WikiArt,StyleAligned,0.824,0.829,64.68,I:\results\tables\main_table.csv,clean_750_copied_to_R5-WikiArt,clean_750_copied_from_R5-512,G:\GitHub\Latent_Style\SchrodingerBridge\results\R5-WikiArt\stylealigned
+D5-512,Z-STAR,0.784,0.347,54.35,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\zstar
+P2A-256,Z-STAR,0.786,0.332,45.65,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\zstar
+R5-WikiArt,Z-STAR,0.822,0.384,51.24,I:\results\tables\main_table.csv,clean_750_copied_to_R5-WikiArt,clean_750_copied_from_R5-512,G:\GitHub\Latent_Style\SchrodingerBridge\results\R5-WikiArt\zstar
+D5-512,StyleShot,0.787,0.765,62.24,I:\results\tables\main_table.csv,incomplete,incomplete,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\styleshot
+P2A-256,StyleShot,0.774,0.713,40.00,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\styleshot
+R5-WikiArt,StyleShot,0.787,0.795,45.24,I:\results\tables\main_table.csv,incomplete_copied_to_R5-WikiArt,incomplete_copied_from_R5-512,G:\GitHub\Latent_Style\SchrodingerBridge\results\R5-WikiArt\styleshot
+D5-512,CUT,0.714,0.374,41.79,I:\results\tables\main_table.csv,duplicate_or_extra_nested,duplicate_or_extra_nested,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\cut
+P2A-256,CUT,0.754,0.494,52.95,I:\results\tables\main_table.csv,missing_images,missing_images,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\cut
+R5-WikiArt,CUT,0.710,0.620,41.79,I:\results\tables\main_table.csv,legacy_name_mismatch_d5_styles,legacy_name_mismatch_d5_styles,G:\GitHub\Latent_Style\SchrodingerBridge\results\R5-WikiArt\cut
+D5-512,SaMST,0.618,0.749,29.71,I:\results\tables\main_table.csv,duplicate_or_extra_nested,duplicate_or_extra_nested,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\samst
+P2A-256,SaMST,0.709,0.398,40.73,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\samst
+R5-WikiArt,SaMST,0.667,0.612,66.65,I:\results\tables\main_table.csv,legacy_name_mismatch_d5_styles,legacy_name_mismatch_d5_styles,G:\GitHub\Latent_Style\SchrodingerBridge\results\R5-WikiArt\samst
+D5-512,SaMam,0.582,0.243,51.17,I:\results\tables\main_table.csv,duplicate_or_extra_nested,duplicate_or_extra_nested,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\samam
+P2A-256,SaMam,0.677,0.205,50.03,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\samam
+R5-WikiArt,SaMam,0.712,0.227,52.89,I:\results\tables\main_table.csv,legacy_name_mismatch_d5_styles,legacy_name_mismatch_d5_styles,G:\GitHub\Latent_Style\SchrodingerBridge\results\R5-WikiArt\samam
+D5-512,Seedream 4.5,0.720,0.477,69.51,I:\results\tables\main_table.csv,duplicate_or_extra_nested,duplicate_or_extra_nested,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\seedream
+P2A-256,Seedream 4.5,0.752,0.227,64.00,I:\results\tables\main_table.csv,missing_images,missing_images,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\seedream
+R5-WikiArt,Seedream 4.5,0.742,0.486,70.36,I:\results\tables\main_table.csv,incomplete_nested_and_name_mismatch,incomplete_nested_and_name_mismatch,G:\GitHub\Latent_Style\SchrodingerBridge\results\R5-WikiArt\seedream
+D5-512,Ours (WEAVE),0.715,0.382,54.50,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\D5-512\weave
+P2A-256,Ours (WEAVE),0.683,0.203,45.68,I:\results\tables\main_table.csv,clean_750,clean_750,G:\GitHub\Latent_Style\SchrodingerBridge\results\P256\weave
+R5-WikiArt,Ours (WEAVE),0.743,0.290,44.24,I:\results\tables\main_table.csv,no_local_packet,,

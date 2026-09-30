@@ -1,0 +1,18 @@
+{
+  "_base": "inmortal_xpred_kmanifold_pattn_seed42_b16.json",
+  "training": {
+    "num_epochs": 12,
+    "resume_checkpoint": "/mnt/i/Github/Latent_Style/SchrodingerBridge/exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16/epoch_0008.pt",
+    "resume_optimizer": true,
+    "resume_model_strict": true,
+    "resume_training_state": true
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue"
+  },
+  "ablation": {
+    "name": "aaai2027_inmortal_xpred_kmanifold_pattn_seed42_b16_e12_continue",
+    "stage": "XPred_plus_Kmanifold_plus_Pattn_longer",
+    "notes": "Same-family continuation packet after the first promoted cross-attention proximal frontier. Resume from the 8-epoch winner and extend budget to 12 epochs to test whether LPIPS keeps falling while style stays in the promoted band."
+  }
+}

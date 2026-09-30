@@ -1,0 +1,46 @@
+{
+  "date": "2026-06-16",
+  "host": "remote-wsl-ubuntu-26.04",
+  "repo": "/mnt/i/Github/Latent_Style/SchrodingerBridge",
+  "run_dir": "exp/aaai2027_phase2_i2sb_residual_k070_e3_sigma0p02_b8a2_vlen010",
+  "output_dir": "full_eval_fast10_batchprobe_cached",
+  "command_mode": "python run_evaluation.py <run_dir> --batch_in_process --runtime_model_cache",
+  "scope": "transfer_only fast10, 2 retained checkpoints, no generated PNG, no summary grid",
+  "baseline_bad_batch_probe_sec": 305.95,
+  "fixed_batch_probe_sec": 63.42,
+  "speedup_vs_bad_probe": 4.824976348155156,
+  "cache_hits_observed_on_second_checkpoint": [
+    "VAE ONNX decoder enabled from runtime cache",
+    "LPIPS Loaded (runtime cache)",
+    "CLIP Loaded (runtime cache)"
+  ],
+  "post_process_gpu": {
+    "memory_used_mb": 128,
+    "memory_total_mb": 12288,
+    "utilization_gpu_percent": 4,
+    "power_w": 13.24
+  },
+  "epoch_metrics": [
+    {
+      "epoch": "epoch_0001",
+      "wall_total_sec": 26.176353533999645,
+      "eval_total_sec": 9.621812937999493,
+      "lancet_generation_sec": 5.4623066279964405,
+      "vae_decode_sec": 8.42930120400706,
+      "eval_metrics_loop_sec": 3.661026274996402,
+      "transfer_clip_style": 0.6758274361491204,
+      "transfer_content_lpips": 0.3126960315
+    },
+    {
+      "epoch": "epoch_0002",
+      "wall_total_sec": 19.207887354001286,
+      "eval_total_sec": 4.854457417000958,
+      "lancet_generation_sec": 4.85883108300186,
+      "vae_decode_sec": 7.82810428400262,
+      "eval_metrics_loop_sec": 3.3850230450043455,
+      "transfer_clip_style": 0.6737269893288612,
+      "transfer_content_lpips": 0.308771033045
+    }
+  ],
+  "decision": "Use subprocess-isolated eval for training-time convergence checks; use batch_in_process plus runtime_model_cache only for offline all-ckpt sweeps."
+}

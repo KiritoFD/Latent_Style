@@ -1,0 +1,53 @@
+# solver_pc Remote Scalar Read
+
+Updated: `2026-06-11T10:52:38.777390`
+
+- Run name: `aaai2027_round1_solver_pc_seed42_b8a2`
+- Remote run dir: `/mnt/i/Github/Latent_Style/exp/inmortal-exp/aaai2027_round1_solver_pc_seed42_b8a2`
+- Retained checkpoints: `36`
+- Latest checkpoint: `epoch_0036.pt`
+- Remote eval files currently visible: `72`
+- Eval files:
+  - `full_eval_fast_snapshot/clip_lpips_curve.csv`
+  - `full_eval_fast_snapshot/epoch_0001/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0001/summary.json`
+  - `full_eval_fast_snapshot/epoch_0002/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0002/summary.json`
+  - `full_eval_fast_snapshot/epoch_0003/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0003/summary.json`
+  - `full_eval_fast_snapshot/epoch_0004/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0004/summary.json`
+  - `full_eval_fast_snapshot/epoch_0005/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0005/summary.json`
+  - `full_eval_fast_snapshot/epoch_0006/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0006/summary.json`
+  - `full_eval_fast_snapshot/epoch_0007/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0007/summary.json`
+  - `full_eval_fast_snapshot/epoch_0008/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0008/summary.json`
+  - `full_eval_fast_snapshot/epoch_0009/metrics.csv`
+  - `full_eval_fast_snapshot/epoch_0009/summary.json`
+  - `full_eval_fast_snapshot/epoch_0010/metrics.csv`
+- Pulled remote logs:
+  - [training_20260611_065730.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_scalars/training_20260611_065730.csv)
+  - [training_20260611_070206.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_scalars/training_20260611_070206.csv)
+  - [training_20260611_070355.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_scalars/training_20260611_070355.csv)
+  - [training_20260611_104223.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_scalars/training_20260611_104223.csv)
+- Latest remote training CSV row:
+  - `epoch=36`
+  - `loss=7.837399005889893`
+  - `terminal_swd=3.796875`
+  - `samples_per_sec=27.687571444301`
+  - `cuda_peak_allocated_gb=7.046947956085205`
+  - `cuda_peak_reserved_gb=8.30859375`
+- Latest runtime watcher sample:
+  - `epoch=36/36`
+  - `step=509/590`
+  - `loss=7.7953`
+  - `tswd=4.3438`
+  - `VRAM=10344/12288 MiB`
+  - `band_status=in_band`
+- Training curve: [training_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_scalars/training_curve.png)
+- Runtime curve: [runtime_curve.png](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_scalars/runtime_curve.png)
+- Runtime CSV: [runtime_curve.csv](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_scalars/runtime_curve.csv)
+- Summary JSON: [summary.json](G:/GitHub/Latent_Style/SchrodingerBridge/aaai2027/round1_solver_pc_remote_scalars/summary.json)

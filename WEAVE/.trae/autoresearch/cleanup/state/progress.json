@@ -1,0 +1,35 @@
+{
+  "iteration": 5,
+  "status": "all_completed",
+  "stale_count": 0,
+  "deleted_dirs": 86,
+  "moved_dirs": 71,
+  "bytes_freed": 10768391356,
+  "current_milestone": "none",
+  "last_update": "2026-07-03T09:00:00+08:00",
+  "milestones": {
+    "M1_remote_delete": "completed",
+    "M2_remote_reorg": "completed",
+    "M3_remote_docs": "completed",
+    "M4_local_explore": "completed",
+    "M5_local_reorg": "completed",
+    "M6_local_dataset": "completed",
+    "M7_local_docs": "completed",
+    "M8_alignment": "completed",
+    "M9_readme": "completed"
+  },
+  "project_summary": {
+    "remote_cleanup": {"deleted_dirs": 86, "bytes_freed": 10768391356, "reorganized_dirs": 71},
+    "local_cleanup": {"deleted_dirs": 84, "bytes_freed": 27500000000, "reorganized_dirs": 113},
+    "docs_written": ["docs/exp/remote_experiments.md", "docs/exp/local_experiments.md", "docs/exp/README.md"],
+    "docs_aligned_v4": [
+      "docs/72/07_related_works.md", "docs/72/03_experiments.md",
+      "docs/72/05_conclusions.md", "docs/72/04_design_ideas.md", "docs/72/README.md",
+      "docs/630/phase4i10_probe_breakthrough.md", "docs/630/phase4i11_per_subband_wct.md",
+      "docs/630/phase4i_structural_breakthrough.md"
+    ],
+    "key_truth_source": "exp/exp_baselines/baseline_v2/eval/unified_results.json",
+    "samam_final_v4": {"clip_style": 0.7175, "content_lpips": 0.2423, "step": 3000, "pipeline": "FC-SB unified"},
+    "key_finding": "SaMam LPIPS=0.2423 优于 T11 的 0.2868, T11 不再 DUAL BEAT SaMam"
+  }
+}

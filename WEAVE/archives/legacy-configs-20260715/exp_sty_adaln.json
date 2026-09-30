@@ -1,0 +1,23 @@
+{
+  "_base": "710_b0_weave_d5.json",
+  "model": {
+    "style_adaln_enabled": true,
+    "style_velocity_head_enabled": false
+  },
+  "training": {
+    "seed": 42,
+    "num_epochs": 5,
+    "batch_size": 96,
+    "channels_last": true,
+    "gpu_monitor_enabled": false
+  },
+  "checkpoint": {
+    "save_dir": "I:/Github/Latent_Style/SchrodingerBridge/exp/sty_inject/adaln"
+  },
+  "ablation": {
+    "name": "sty_adaln",
+    "axis": "style_injection",
+    "stage": "712_sty_inject",
+    "notes": "方向2 only: Style-AdaLN. time_adaln -> time_style_adaln(concat[time,style_pooled]). 零初始化保证初始等价baseline."
+  }
+}

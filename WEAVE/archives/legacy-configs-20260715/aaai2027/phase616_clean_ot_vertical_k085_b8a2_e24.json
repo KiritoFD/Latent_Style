@@ -1,0 +1,28 @@
+{
+  "_base": "./phase616_cleanbase_i2sb_k085_b8a2_e24.json",
+  "bridge": {
+    "ot_cost_mode": "l2",
+    "coupling_solver": "sinkhorn_unbalanced",
+    "coupling_cost_composition": "structure_only",
+    "coupling_structure_cost_mode": "self_affinity_gw",
+    "coupling_structure_cost_weight": 1.0,
+    "coupling_structure_lowpass_kernel": 9,
+    "coupling_structure_edge_weight": 1.0,
+    "coupling_target_mode": "barycentric_full",
+    "sinkhorn_unbalanced_tau_src": 1.0,
+    "sinkhorn_unbalanced_tau_tgt": 1.0,
+    "training_target_projection_mode": "pure_vertical_flow",
+    "training_target_projection_kernel": 5,
+    "training_target_projection_low_anchor": 1.0,
+    "training_target_projection_low_mode": "all"
+  },
+  "checkpoint": {
+    "save_dir": "./exp/aaai2027_phase616_clean_ot_vertical_k085_b8a2_e24"
+  },
+  "ablation": {
+    "name": "phase616_clean_ot_vertical_k085_b8a2_e24",
+    "axis": "phase616_foundation_clean",
+    "stage": "ot_unbalanced_plus_pure_vertical_flow_cleanbase",
+    "notes": "Phase616 clean-base OT foundation lane. Reuse the canonical clean I2SB base, then add structure-aware OT cost, unbalanced Sinkhorn, and pure vertical target projection without reintroducing appalign or other retired heuristic branches."
+  }
+}

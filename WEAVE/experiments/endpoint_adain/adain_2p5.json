@@ -1,0 +1,6 @@
+{
+  "_base": "../../inference.json",
+  "model": {
+    "endpoint_adain_scale": 2.5
+  }
+}
