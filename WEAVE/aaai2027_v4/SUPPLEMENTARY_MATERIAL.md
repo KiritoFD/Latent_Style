@@ -1,3 +1,8 @@
+> **Stale (2026-09-30):** the S4 "Ours" row below (0.4859 / 0.7075 / 0.2583 / 0.8287) is the old base
+> model `brk_a_ll03_10ep`, not the submitted model (0.4918 / 0.7128 / 0.2595 / 0.8102). Use
+> `supplement.tex` here, or the ICME supplement `../icme2027/weave_supp.tex`, and
+> `../../docs/experiments/02_results_of_record.md` for provenance.
+
 # Supplementary Material for WEAVE
 
 **Status:** submission-facing supplement map aligned with the current AAAI v4 paper.

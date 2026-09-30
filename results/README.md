@@ -1,3 +1,7 @@
+> **已过期（2026-09-30）**：本目录的主表早于当前 DINO-S 口径，下文引用的 `SchrodingerBridge/aaai2027_v4/paper.tex`
+> 与 `eval_protocol_750/` 也已不是当前位置。当前主表数据源：`WEAVE/icme2027/data/main_table.csv`；
+> 索引：`docs/experiments/README.md`。
+
 # results/ — 论文主表与标准协议评测集（本地 + 远程同步）
 
 本目录集中存放 AAAI-2027 (WEAVE) 论文的**主表**与**标准协议评测图**，

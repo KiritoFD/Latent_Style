@@ -35,7 +35,13 @@ The canonical files are:
 
 ## Current Baseline
 
-The clean 15-epoch reproduction selected epoch 6:
+> This section describes the **base model** (873,680 parameters, `config.json` alone).
+> The paper model adds the oriented target-HF route via
+> `experiments/architecture/hf_oriented_internal_early_stop.json` (1,037,087 parameters, internal
+> stop at epoch 4: DINO-S 0.4918 / CLIP-S 0.7128 / LPIPS 0.2595 / DINO-C 0.8102). Provenance of
+> every paper number: `../docs/experiments/02_results_of_record.md`.
+
+The clean 15-epoch base-model reproduction selected epoch 6:
 
 | DINO-S | CLIP-S | LPIPS | DINO-C |
 |---:|---:|---:|---:|
@@ -47,6 +53,8 @@ used.
 
 ## Documentation
 
+- `../docs/experiments/README.md`: repository-wide experiment index and results of record (start here).
+- `icme2027/`: current ICME paper and supplement; `aaai2027_v4/`: frozen AAAI 2027 submission.
 - `docs/713/SUBMISSION_HANDOFF_2026-07-15.md`: current repository, remote, method, and experiment handoff.
 - `docs/reproduction/baseline_reproduction.md`: baseline protocol and full per-epoch provenance.
 - `docs/reproduction/root_layout_equivalence.md`: old-to-root implementation equivalence.

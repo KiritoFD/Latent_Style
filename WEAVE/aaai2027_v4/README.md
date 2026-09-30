@@ -1,5 +1,8 @@
 # WEAVE — AAAI 2027 paper bundle (`aaai2027_v4`)
 
+> Frozen as submitted. The ICME rewrite lives in `../icme2027/`; known corrections to Table 1
+> are listed in `../../docs/experiments/06_known_issues.md` (A1–A5).
+
 This folder is **self-contained**: it holds the LaTeX source, the style/class
 files, the bibliography, the figures, and the figure-generation scripts with
 their bundled inputs. Copying this folder alone is enough to compile the paper
