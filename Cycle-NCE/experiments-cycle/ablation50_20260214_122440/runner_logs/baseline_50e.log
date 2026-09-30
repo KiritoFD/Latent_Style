@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 11, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+CWD: /mnt/i/Github/Latent_Style/Cycle-NCE/src
+Command:
+/home/xy/miniconda3/bin/python /mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py --config /mnt/i/Github/Latent_Style/Cycle-NCE/experiments-cycle/ablation50_20260214_122440/configs/baseline_50e.json
+

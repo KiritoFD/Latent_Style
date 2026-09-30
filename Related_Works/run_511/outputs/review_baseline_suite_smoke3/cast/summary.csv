@@ -1,2 +1,0 @@
-batch_size,checkpoint_dir,elapsed_sec,log_path,n_epochs,returncode,stage,status
-1,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke3\cast\checkpoints\run511_cast,3.648,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke3\cast\logs\cast_train.log,1,1,train,failed

@@ -1,5 +1,0 @@
-name,train_status,train_rc,checkpoint_epoch_0020,eval_status,eval_rc,batch_summary_exists
-S-add__K-3_C-2_W-10_Col-15,OK,0,YES,OK,0,YES
-S-norm_K-3_C-2_W-10_Col-15,OK,0,YES,OK,0,YES
-S-add__K-5_C-5_W-15_Col-15,OK,0,YES,OK,0,YES
-S-norm_K-5_C-5_W-15_Col-15,OK,0,YES,OK,0,YES

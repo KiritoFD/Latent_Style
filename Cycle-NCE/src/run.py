@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import inspect
 import json
 import logging
 import os
@@ -27,43 +26,36 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 _ALLOWED_LOSS_KEYS = {
-    "w_color",
-    "w_oob",
-    "oob_threshold",
-    "w_repulsive",
-    "repulsive_margin",
-    "repulsive_temperature",
-    "repulsive_mode",
-    "w_swd",
-    "w_swd_unified",
-    "w_swd_micro",
-    "w_swd_macro",
-    "swd_use_high_freq",
-    "swd_hf_weight_ratio",
+    "w_semigroup",
+    "semigroup_loss_type",
+    "semigroup_lowpass_strength",
+    "semigroup_split_min",
+    "semigroup_split_max",
+    "semigroup_teacher_no_grad",
+    "semigroup_target_detach",
+    "semigroup_subset_ratio",
+    "semigroup_max_samples",
+    "semigroup_every_n_steps",
+    "semigroup_pool_size",
+    "semigroup_num_steps",
+    "w_delta_tv",
+    "w_delta_l2",
+    "w_output_tv",
+    "w_stroke_gram",
+    "w_color_moment",
     "w_identity",
-    "idr",
-    "swd_patch_sizes",
-    "swd_num_projections",
-    "swd_projection_chunk_size",
-    "swd_distance_mode",
-    "swd_cdf_num_bins",
-    "swd_cdf_tau",
-    "swd_cdf_sample_size",
-    "swd_cdf_bin_chunk_size",
-    "swd_cdf_sample_chunk_size",
-    "swd_batch_size",
+    "stroke_patch_sizes",
+    "stroke_patch_randomize",
+    "color_patch_size",
+    "train_num_steps_min",
+    "train_num_steps_max",
+    "train_step_size_min",
+    "train_step_size_max",
+    "train_style_strength_min",
+    "train_style_strength_max",
 }
 _FORBIDDEN_LOSS_KEYS = {"w_distill", "distill_low_only", "distill_cross_domain_only", "w_code", "style_loss_source"}
-_LOSS_WEIGHT_KEYS = (
-    "w_swd",
-    "w_swd_unified",
-    "w_swd_micro",
-    "w_swd_macro",
-    "w_repulsive",
-    "w_color",
-    "w_oob",
-    "w_identity",
-)
+_LOSS_WEIGHT_KEYS = ("w_semigroup", "w_stroke_gram", "w_color_moment", "w_identity", "w_delta_tv", "w_delta_l2", "w_output_tv")
 
 
 def _set_seed(seed: int) -> None:
@@ -80,8 +72,8 @@ def _configure_cuda_allocator(config: dict) -> None:
     train_cfg = config.get("training", {})
     alloc_conf = str(train_cfg.get("cuda_alloc_conf", "")).strip()
     if not alloc_conf:
-        # Stable fallback for platforms where expandable_segments is unsupported.
-        alloc_conf = "max_split_size_mb:128,garbage_collection_threshold:0.8"
+        # Keep allocator policy conservative to reduce fragmentation under long runs.
+        alloc_conf = "expandable_segments:True"
     current = os.environ.get("PYTORCH_ALLOC_CONF", "").strip()
     if current:
         logger.info("Use existing PYTORCH_ALLOC_CONF=%s", current)
@@ -182,61 +174,19 @@ def _seed_worker(worker_id: int) -> None:
     torch.set_num_threads(1)
 
 
-def _resolve_num_workers(config: dict, *, preload_to_gpu: bool = False, dataset_bytes: int = 0) -> int:
+def _resolve_num_workers(config: dict, *, preload_to_gpu: bool = False) -> int:
     train_cfg = config.get("training", {})
     if preload_to_gpu:
         return 0
-
-    def _resolve_windows_mp_mode() -> str:
-        raw = train_cfg.get("windows_allow_multiprocess_dataloader", "auto")
-        if isinstance(raw, bool):
-            return "on" if raw else "off"
-        mode = str(raw).strip().lower()
-        if mode in {"on", "off", "auto"}:
-            return mode
-        return "auto"
-
-    def _resolve_windows_auto_workers(requested_workers: int) -> int:
-        mode = _resolve_windows_mp_mode()
-        if mode == "off":
-            return 0
-        if mode == "on":
-            return max(0, int(requested_workers))
-
-        # auto: conservative enable only when dataset footprint is small enough.
-        ds_gb = float(max(0, int(dataset_bytes))) / float(1024**3)
-        limit_gb = float(train_cfg.get("windows_auto_mp_dataset_limit_gb", 0.75))
-        max_workers = max(1, int(train_cfg.get("windows_auto_mp_max_workers", 2)))
-        if ds_gb <= limit_gb:
-            chosen = max(1, min(int(requested_workers), max_workers))
-            logger.info(
-                "Windows DataLoader auto mode: use num_workers=%d (requested=%d, dataset=%.2fGB, limit=%.2fGB).",
-                chosen,
-                requested_workers,
-                ds_gb,
-                limit_gb,
-            )
-            return chosen
-        logger.warning(
-            "Windows DataLoader auto mode: force num_workers=0 for stability "
-            "(requested=%d, dataset=%.2fGB > limit %.2fGB).",
-            requested_workers,
-            ds_gb,
-            limit_gb,
-        )
-        return 0
-
     requested = train_cfg.get("num_workers")
     if requested is not None:
         requested = int(requested)
         if requested >= 0:
-            if os.name == "nt" and requested > 0:
-                return _resolve_windows_auto_workers(requested)
             return requested
     cpu_count = os.cpu_count() or 4
-    # -1/None means auto.
+    # -1/None means auto. Keep Windows worker count conservative for stability.
     if os.name == "nt":
-        return _resolve_windows_auto_workers(2)
+        return max(4, min(8, cpu_count // 2))
     return max(2, min(8, cpu_count // 2))
 
 def _validate_loss_config(config: dict) -> None:
@@ -286,15 +236,7 @@ def main() -> None:
     logger.info("Seed: %d", seed)
 
     data_cfg = config.get("data", {})
-    loss_cfg = config.get("loss", {})
-    if "idr" in loss_cfg and "identity_ratio" not in data_cfg:
-        idr_val = float(loss_cfg.get("idr", 0.0))
-        # idr <= 0 means "no forced override": keep dataset's natural sampling ratio.
-        if idr_val > 0.0:
-            config.setdefault("data", {})
-            config["data"]["identity_ratio"] = idr_val
-            data_cfg = config.get("data", {})
-    dataset_kwargs = dict(
+    dataset = AdaCUTLatentDataset(
         data_root=data_cfg.get("data_root", "../../latents"),
         style_subdirs=data_cfg.get("style_subdirs", ["photo", "monet", "vangogh", "cezanne"]),
         allow_hflip=bool(data_cfg.get("allow_hflip", True)),
@@ -304,20 +246,6 @@ def main() -> None:
         virtual_length_multiplier=int(data_cfg.get("virtual_length_multiplier", 4)),
         device=str(device),
     )
-    identity_ratio = data_cfg.get("identity_ratio", None)
-    if "identity_ratio" in inspect.signature(AdaCUTLatentDataset.__init__).parameters:
-        dataset_kwargs["identity_ratio"] = identity_ratio
-    elif identity_ratio is not None:
-        logger.warning(
-            "Dataset class does not support identity_ratio; falling back to dataset natural sampling. "
-            "Please sync dataset.py and run.py to the same revision."
-        )
-    dataset = AdaCUTLatentDataset(**dataset_kwargs)
-    dataset_bytes = 0
-    try:
-        dataset_bytes = int(dataset._estimate_dataset_bytes())  # type: ignore[attr-defined]
-    except Exception:
-        dataset_bytes = 0
     style_count = len(dataset.style_subdirs)
     model_style_count = int(config.get("model", {}).get("num_styles", style_count))
     if model_style_count != style_count:
@@ -331,7 +259,7 @@ def main() -> None:
         config["model"]["num_styles"] = style_count
 
     preload_to_gpu = bool(getattr(dataset, "preload_to_gpu", False))
-    num_workers = _resolve_num_workers(config, preload_to_gpu=preload_to_gpu, dataset_bytes=dataset_bytes)
+    num_workers = _resolve_num_workers(config, preload_to_gpu=preload_to_gpu)
     pin_memory_default = (device.type == "cuda") and (not preload_to_gpu)
     pin_memory = bool(config.get("training", {}).get("pin_memory", pin_memory_default))
     persistent_workers = bool(config.get("training", {}).get("persistent_workers", True))
@@ -365,35 +293,42 @@ def main() -> None:
 
     trainer = AdaCUTTrainer(config=config, device=device, config_path=str(config_path))
 
-    epoch = int(trainer.start_epoch)
-    while epoch <= int(trainer.num_epochs):
+    for epoch in range(trainer.start_epoch, trainer.num_epochs + 1):
         dataset.set_epoch(epoch)
         metrics = trainer.train_epoch(dataloader, epoch)
         trainer.step_scheduler()
         trainer.log_epoch(epoch, metrics)
 
         logger.info(
-            "Epoch %d/%d | loss=%.4f swd=%.4f rep=%.4f color=%.4f idt=%.4f idr=%.2f isr=%.3f aent=%.3f amax=%.3f warn=%.0f lr=%.2e data=%.1fs comp=%.1fs",
+            "Epoch %d/%d | loss=%.4f sgram=%.4f cmoment=%.4f dtv=%.4f dl2=%.4f steps=%.1f h=%.2f s=%.2f lr=%.2e data=%.1fs comp=%.1fs",
             epoch,
             trainer.num_epochs,
             metrics["loss"],
-            metrics.get("swd", 0.0),
-            metrics.get("repulsive", 0.0),
-            metrics.get("color", 0.0),
-            metrics.get("identity", 0.0),
-            metrics.get("identity_ratio", 0.0),
-            metrics.get("id_swd_ratio", 0.0),
-            metrics.get("attn_entropy", 0.0),
-            metrics.get("attn_max_prob", 0.0),
-            metrics.get("health_warning_count", 0.0),
+            metrics.get("stroke_gram", 0.0),
+            metrics.get("color_moment", 0.0),
+            metrics.get("delta_tv", 0.0),
+            metrics.get("delta_l2", 0.0),
+            metrics.get("train_num_steps", 0.0),
+            metrics.get("train_step_size", 0.0),
+            metrics.get("train_style_strength", 0.0),
             metrics["lr"],
             metrics.get("data_time_sec", 0.0),
             metrics.get("compute_time_sec", 0.0),
         )
 
+        ckpt_path = None
         if epoch % trainer.save_interval == 0 or epoch == trainer.num_epochs:
-            trainer.save_checkpoint(epoch, metrics)
-        epoch += 1
+            ckpt_path = trainer.save_checkpoint(epoch, metrics)
+
+        do_full_eval = False
+        if trainer.full_eval_interval > 0 and (epoch % trainer.full_eval_interval == 0):
+            do_full_eval = True
+        if trainer.run_full_eval_on_last_epoch and (epoch == trainer.num_epochs):
+            do_full_eval = True
+        if do_full_eval:
+            if ckpt_path is None:
+                ckpt_path = trainer.save_checkpoint(epoch, metrics)
+            trainer.run_full_evaluation(epoch, checkpoint_path=ckpt_path)
 
     logger.info("Training completed.")
 

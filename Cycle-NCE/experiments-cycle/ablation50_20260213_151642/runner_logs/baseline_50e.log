@@ -1,0 +1,15 @@
+2026-02-13 15:16:46,412 - INFO - Device: cuda
+2026-02-13 15:16:46,412 - INFO - Seed: 42
+2026-02-13 15:16:46,412 - INFO - Loading latent dataset from ../../latent-256
+Traceback (most recent call last):
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 275, in <module>
+    main()
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 160, in main
+    dataset = AdaCUTLatentDataset(
+              ^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/dataset.py", line 86, in __init__
+    raise RuntimeError(f"No latent files found in {style_dir}")
+RuntimeError: No latent files found in ../../latent-256/photo
+Command:
+/home/xy/miniconda3/envs/cu128/bin/python /mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py --config /mnt/i/Github/Latent_Style/Cycle-NCE/experiments-cycle/ablation50_20260213_151642/configs/baseline_50e.json
+

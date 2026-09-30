@@ -1,2 +1,0 @@
-batch_size,checkpoint_dir,elapsed_sec,log_path,max_iter,returncode,stage,status
-1,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke3\aespa\checkpoints\aespa,7.199,G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke3\aespa\logs\aespa_train.log,1,1,train,failed

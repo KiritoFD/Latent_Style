@@ -1,8 +1,0 @@
-[
-  {
-    "name": "h1_linear_fm",
-    "overrides": {
-      "bridge.bridge_path_mode": "linear"
-    }
-  }
-]

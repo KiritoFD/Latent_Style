@@ -1,2 +1,0 @@
-batch_size,checkpoint_dir,elapsed_sec,log_path,max_iter,returncode,stage,status
-1,G:\GitHub\Latent_Style\run_511\outputs\aesfa_timing_probe\checkpoints\aesfa,3.947,G:\GitHub\Latent_Style\run_511\outputs\aesfa_timing_probe\logs\aesfa_train.log,1,1,train,failed

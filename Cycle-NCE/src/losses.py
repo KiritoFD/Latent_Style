@@ -1,5 +1,6 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
+import random
 from contextlib import contextmanager
 from typing import Dict
 
@@ -8,285 +9,121 @@ import torch.nn.functional as F
 
 try:
     from .model import LatentAdaCUT
-except ImportError:
+except ImportError:  # pragma: no cover
     from model import LatentAdaCUT
 
 
-_DEFAULT_SD15_PSEUDO_RGB_FACTORS: tuple[tuple[float, ...], ...] = (
-    (0.298, 0.207, 0.208, 0.206),
-    (0.187, 0.286, 0.173, 0.262),
-    (-0.158, 0.189, 0.264, 0.225),
-)
-_RGB_TO_YUV_MATRIX: tuple[tuple[float, ...], ...] = (
-    (0.299, 0.587, 0.114),
-    (-0.147, -0.289, 0.436),
-    (0.615, -0.515, -0.100),
-)
+def calc_gram_matrix(x: torch.Tensor) -> torch.Tensor:
+    b, c, h, w = x.shape
+    feat = x.reshape(b, c, h * w)
+    feat = feat - feat.mean(dim=2, keepdim=True)
+    feat = feat / (feat.std(dim=2, keepdim=True, unbiased=False) + 1e-6)
+    return feat.bmm(feat.transpose(1, 2)) / max(h * w, 1)
 
 
-def exponential_oob_loss(z: torch.Tensor, threshold: float = 3.0) -> torch.Tensor:
-    excess = F.relu(z.abs() - float(threshold))
-    return (torch.exp(excess) - 1.0).mean()
+def calc_gram_loss_per_sample(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    gx = calc_gram_matrix(x)
+    gy = calc_gram_matrix(y)
+    return (gx - gy).pow(2).mean(dim=(1, 2))
 
 
-def soft_repulsive_loss(
-    pred: torch.Tensor,
-    content: torch.Tensor,
-    margin: float = 0.5,
-    temperature: float = 0.1,
-    dist_mode: str = "l1",
-) -> torch.Tensor:
-    mode = str(dist_mode).strip().lower()
-    if mode == "mse":
-        diff = ((pred - content) ** 2).mean(dim=1)
-    else:
-        diff = (pred - content).abs().mean(dim=1)
-    tau = max(float(temperature), 1e-4)
-    penalty = F.softplus((pred.new_tensor(float(margin)) - diff) / tau) * tau
-    return penalty.mean(dim=(1, 2))
+def _lowpass(x: torch.Tensor) -> torch.Tensor:
+    return F.avg_pool2d(x, kernel_size=2, stride=2)
 
 
-def _masked_l1_mean(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-    return ((pred - target).abs().mean(dim=(1, 2, 3)) * mask.float()).sum() / mask.float().sum().clamp_min(1.0)
-
-
-def _masked_mse_mean(pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-    return (((pred - target) ** 2).mean(dim=(1, 2, 3)) * mask.float()).sum() / mask.float().sum().clamp_min(1.0)
-
-
-def calc_spatial_agnostic_color_loss(
-    pred: torch.Tensor,
-    target: torch.Tensor,
-) -> torch.Tensor:
-    pred_f32 = pred.float()
-    target_f32 = target.float()
-    if pred_f32.shape[1] != 4 or target_f32.shape[1] != 4:
-        raise ValueError(
-            f"YUV color loss expects 4 latent channels, got pred={pred_f32.shape[1]} target={target_f32.shape[1]}"
-        )
-    latent_yuv_factors = pred_f32.new_tensor(_RGB_TO_YUV_MATRIX) @ pred_f32.new_tensor(_DEFAULT_SD15_PSEUDO_RGB_FACTORS)
-    pred_yuv = torch.einsum("bc...,dc->bd...", pred_f32, latent_yuv_factors)
-    target_yuv = torch.einsum("bc...,dc->bd...", target_f32, latent_yuv_factors)
-    pred_mean = pred_yuv.mean(dim=(-2, -1))
-    target_mean = target_yuv.mean(dim=(-2, -1))
-    pred_std = pred_yuv.std(dim=(-2, -1))
-    target_std = target_yuv.std(dim=(-2, -1))
-    loss_brightness = F.mse_loss(pred_mean[:, 0], target_mean[:, 0])
-    loss_contrast = F.mse_loss(pred_std[:, 0], target_std[:, 0])
-    loss_tint = F.mse_loss(pred_mean[:, 1:], target_mean[:, 1:])
-    loss_saturation = F.mse_loss(pred_std[:, 1:], target_std[:, 1:])
-    return loss_brightness + loss_contrast + loss_tint + loss_saturation
-
-
-def calc_swd_loss(
-    x: torch.Tensor,
-    y: torch.Tensor,
-    style_ids: torch.Tensor,
-    patch_sizes: list[int],
-    num_projections: int = 256,
-    projection_chunk_size: int = 0,
-    distance_mode: str = "cdf",
-    cdf_num_bins: int = 64,
-    cdf_tau: float = 0.01,
-    cdf_sample_size: int = 256,
-    cdf_bin_chunk_size: int = 16,
-    cdf_sample_chunk_size: int = 128,
-    projection_bank: Dict[int, torch.Tensor] | None = None,
-) -> torch.Tensor:
-    del style_ids
-    x = x.contiguous()
-    y = y.contiguous()
-    device = x.device
-    total_loss = torch.tensor(0.0, device=device, dtype=torch.float32)
-    c_total = int(x.shape[1])
-    chunk = int(projection_chunk_size)
-    if chunk <= 0 or chunk >= num_projections:
-        chunk = num_projections
-    mode = str(distance_mode).lower()
-    use_cdf = mode in {"cdf", "softcdf", "cdf_soft"}
-    cdf_bins = max(8, int(cdf_num_bins))
-    tau = max(1e-5, float(cdf_tau))
-    sample_size = max(32, int(cdf_sample_size))
-    bin_chunk = max(1, int(cdf_bin_chunk_size))
-    sample_chunk = max(32, int(cdf_sample_chunk_size))
-
-    for p in patch_sizes:
-        if projection_bank is not None and p in projection_bank:
-            rand_weights = projection_bank[p]
-        else:
-            rand_weights = torch.randn(num_projections, c_total, p, p, device=device, dtype=x.dtype)
-            rand_weights = F.normalize(rand_weights.view(num_projections, -1), p=2, dim=1).view_as(rand_weights)
-
-        patch_loss = torch.tensor(0.0, device=device, dtype=torch.float32)
-        for start in range(0, num_projections, chunk):
-            end = min(num_projections, start + chunk)
-            w = rand_weights[start:end]
-            x_proj = F.conv2d(x, w, padding=p // 2).view(x.shape[0], end - start, -1)
-            y_proj = F.conv2d(y, w, padding=p // 2).view(y.shape[0], end - start, -1)
-            swd_chunk, _ = _swd_distance_from_projected(
-                x_proj,
-                y_proj,
-                use_cdf=use_cdf,
-                cdf_bins=cdf_bins,
-                tau=tau,
-                sample_size=sample_size,
-                bin_chunk=bin_chunk,
-                sample_chunk=sample_chunk,
-                sample_idx=None,
-            )
-            patch_loss = patch_loss + swd_chunk * ((end - start) / float(num_projections))
-        total_loss += patch_loss
-    return total_loss / max(len(patch_sizes), 1)
-
-
-def _swd_distance_from_projected(
-    x_proj: torch.Tensor,
-    y_proj: torch.Tensor,
-    *,
-    use_cdf: bool,
-    cdf_bins: int,
-    tau: float,
-    sample_size: int,
-    bin_chunk: int,
-    sample_chunk: int,
-    sample_idx: torch.Tensor | None,
-) -> tuple[torch.Tensor, torch.Tensor | None]:
-    del bin_chunk
-    if not use_cdf:
-        x_sorted, _ = torch.sort(x_proj, dim=2)
-        y_sorted, _ = torch.sort(y_proj, dim=2)
-        return F.l1_loss(x_sorted, y_sorted), sample_idx
-
-    n_pts = int(x_proj.shape[-1])
-    if n_pts > sample_size:
-        if sample_idx is None:
-            sample_idx = torch.randint(0, n_pts, (sample_size,), device=x_proj.device)
-        x_proj = x_proj.index_select(2, sample_idx)
-        y_proj = y_proj.index_select(2, sample_idx)
-        n_pts = int(x_proj.shape[-1])
-
-    min_val = torch.minimum(x_proj.amin().detach(), y_proj.amin().detach())
-    max_val = torch.maximum(x_proj.amax().detach(), y_proj.amax().detach())
-    span = (max_val - min_val).clamp_min(1e-6)
-    dx = span / float(cdf_bins - 1)
-    grid = torch.linspace(min_val, max_val, cdf_bins, device=x_proj.device, dtype=x_proj.dtype)
-    g = grid.view(1, 1, 1, cdf_bins)
-    bsz, n_proj, _ = x_proj.shape
-    acc_x = torch.zeros((bsz, n_proj, cdf_bins), device=x_proj.device, dtype=x_proj.dtype)
-    acc_y = torch.zeros((bsz, n_proj, cdf_bins), device=x_proj.device, dtype=x_proj.dtype)
-    for n0 in range(0, n_pts, sample_chunk):
-        n1 = min(n_pts, n0 + sample_chunk)
-        px = x_proj[:, :, n0:n1].unsqueeze(-1)
-        py = y_proj[:, :, n0:n1].unsqueeze(-1)
-        acc_x = acc_x + torch.sigmoid((g - px) / tau).sum(dim=2)
-        acc_y = acc_y + torch.sigmoid((g - py) / tau).sum(dim=2)
-    cdf_x = acc_x / float(n_pts)
-    cdf_y = acc_y / float(n_pts)
-    swd_chunk = (cdf_x - cdf_y).abs().sum(dim=-1).mean() * dx
-    return swd_chunk, sample_idx
+def _tv_per_sample(x: torch.Tensor) -> torch.Tensor:
+    if x.numel() == 0:
+        return x.new_zeros((x.shape[0],))
+    tv_x = (x[:, :, :, 1:] - x[:, :, :, :-1]).abs().mean(dim=(1, 2, 3))
+    tv_y = (x[:, :, 1:, :] - x[:, :, :-1, :]).abs().mean(dim=(1, 2, 3))
+    return tv_x + tv_y
 
 
 class AdaCUTObjective:
     def __init__(self, config: Dict) -> None:
         loss_cfg = config.get("loss", {})
-        legacy_w_swd = float(loss_cfg.get("w_swd", 0.0))
-        self.w_swd_unified = float(loss_cfg.get("w_swd_unified", 0.0))
-        self.w_swd_micro = float(loss_cfg.get("w_swd_micro", 1.0 if legacy_w_swd <= 0.0 else 1.0))
-        self.w_swd_macro = float(loss_cfg.get("w_swd_macro", 10.0 if legacy_w_swd <= 0.0 else legacy_w_swd))
-        self.swd_use_high_freq = bool(loss_cfg.get("swd_use_high_freq", False))
-        self.swd_hf_weight_ratio = max(0.0, float(loss_cfg.get("swd_hf_weight_ratio", 1.0)))
-        self.swd_patch_sizes = [int(p) for p in loss_cfg.get("swd_patch_sizes", [3, 5])]
-        self.swd_num_projections = int(loss_cfg.get("swd_num_projections", 256))
-        self.swd_projection_chunk_size = int(loss_cfg.get("swd_projection_chunk_size", 64))
-        self.swd_distance_mode = str(loss_cfg.get("swd_distance_mode", "cdf")).lower()
-        self.swd_cdf_num_bins = int(loss_cfg.get("swd_cdf_num_bins", 64))
-        self.swd_cdf_tau = float(loss_cfg.get("swd_cdf_tau", 0.01))
-        self.swd_cdf_sample_size = int(loss_cfg.get("swd_cdf_sample_size", 256))
-        self.swd_cdf_bin_chunk_size = int(loss_cfg.get("swd_cdf_bin_chunk_size", 16))
-        self.swd_cdf_sample_chunk_size = int(loss_cfg.get("swd_cdf_sample_chunk_size", 128))
-        self.swd_batch_size = int(loss_cfg.get("swd_batch_size", 0))
-        self.w_identity = float(loss_cfg.get("w_identity", 2.0))
-        self.w_repulsive = float(loss_cfg.get("w_repulsive", 0.0))
-        self.repulsive_margin = float(loss_cfg.get("repulsive_margin", 0.5))
-        self.repulsive_temperature = float(loss_cfg.get("repulsive_temperature", 0.1))
-        self.repulsive_mode = str(loss_cfg.get("repulsive_mode", "l1")).strip().lower()
-        self.w_color = float(loss_cfg.get("w_color", 0.0))
-        self.w_oob = float(loss_cfg.get("w_oob", 0.0))
-        self.oob_threshold = float(loss_cfg.get("oob_threshold", 3.0))
-        self.nsight_nvtx = bool(config.get("training", {}).get("nsight_nvtx", False))
-        self._projection_cache: Dict[tuple[int, int, int, str, str, str], torch.Tensor] = {}
-        self._sobel_kernel_cache: Dict[tuple[int, str, str], tuple[torch.Tensor, torch.Tensor]] = {}
+        train_cfg = config.get("training", {})
 
-    def _get_projection_bank(
-        self,
-        channels: int,
+        self.w_delta_tv = float(loss_cfg.get("w_delta_tv", 0.0))
+        self.w_delta_l2 = float(loss_cfg.get("w_delta_l2", 0.0))
+        self.w_output_tv = float(loss_cfg.get("w_output_tv", 0.0))
+        self.w_stroke_gram = float(loss_cfg.get("w_stroke_gram", 0.0))
+        self.w_color_moment = float(loss_cfg.get("w_color_moment", 0.0))
+        self.w_identity = float(loss_cfg.get("w_identity", 0.0))
+        self.w_semigroup = float(loss_cfg.get("w_semigroup", 0.0))
+
+        self.semigroup_loss_type = str(loss_cfg.get("semigroup_loss_type", "l1")).lower()
+        if self.semigroup_loss_type not in {"l1", "mse"}:
+            self.semigroup_loss_type = "l1"
+        self.semigroup_lowpass_strength = float(loss_cfg.get("semigroup_lowpass_strength", 0.5))
+        self.semigroup_lowpass_strength = max(0.0, min(1.0, self.semigroup_lowpass_strength))
+        self.semigroup_split_min = float(loss_cfg.get("semigroup_split_min", 0.3))
+        self.semigroup_split_max = float(loss_cfg.get("semigroup_split_max", 0.7))
+        self.semigroup_teacher_no_grad = bool(loss_cfg.get("semigroup_teacher_no_grad", True))
+        self.semigroup_target_detach = bool(loss_cfg.get("semigroup_target_detach", True))
+        self.semigroup_subset_ratio = float(loss_cfg.get("semigroup_subset_ratio", 0.25))
+        self.semigroup_subset_ratio = max(0.0, min(1.0, self.semigroup_subset_ratio))
+        self.semigroup_max_samples = max(0, int(loss_cfg.get("semigroup_max_samples", 0)))
+        self.semigroup_every_n_steps = max(1, int(loss_cfg.get("semigroup_every_n_steps", 1)))
+        self.semigroup_pool_size = max(0, int(loss_cfg.get("semigroup_pool_size", 8)))
+        self.semigroup_num_steps = max(1, int(loss_cfg.get("semigroup_num_steps", 1)))
+        self.semigroup_split_min = max(0.0, min(1.0, self.semigroup_split_min))
+        self.semigroup_split_max = max(0.0, min(1.0, self.semigroup_split_max))
+        if self.semigroup_split_max < self.semigroup_split_min:
+            self.semigroup_split_min, self.semigroup_split_max = self.semigroup_split_max, self.semigroup_split_min
+        self._compute_calls = 0
+
+        self.train_num_steps_min = max(1, int(loss_cfg.get("train_num_steps_min", 1)))
+        self.train_num_steps_max = max(1, int(loss_cfg.get("train_num_steps_max", self.train_num_steps_min)))
+        if self.train_num_steps_max < self.train_num_steps_min:
+            self.train_num_steps_min, self.train_num_steps_max = self.train_num_steps_max, self.train_num_steps_min
+
+        self.train_step_size_min = float(loss_cfg.get("train_step_size_min", 1.0))
+        self.train_step_size_max = float(loss_cfg.get("train_step_size_max", self.train_step_size_min))
+        if self.train_step_size_max < self.train_step_size_min:
+            self.train_step_size_min, self.train_step_size_max = self.train_step_size_max, self.train_step_size_min
+
+        self.train_style_strength_min = float(loss_cfg.get("train_style_strength_min", 1.0))
+        self.train_style_strength_max = float(loss_cfg.get("train_style_strength_max", self.train_style_strength_min))
+        self.train_style_strength_min = max(0.0, min(1.0, self.train_style_strength_min))
+        self.train_style_strength_max = max(0.0, min(1.0, self.train_style_strength_max))
+        if self.train_style_strength_max < self.train_style_strength_min:
+            self.train_style_strength_min, self.train_style_strength_max = self.train_style_strength_max, self.train_style_strength_min
+        self.profile_loss_vram = bool(train_cfg.get("profile_loss_vram", False))
+        self.nsight_nvtx = bool(train_cfg.get("nsight_nvtx", False))
+
+    @staticmethod
+    def _sample_range(low: float, high: float) -> float:
+        if high <= low + 1e-12:
+            return float(low)
+        return float(random.uniform(low, high))
+
+    @staticmethod
+    def _sample_int_range(low: int, high: int) -> int:
+        low_i = int(low)
+        high_i = int(high)
+        if high_i <= low_i:
+            return low_i
+        return int(random.randint(low_i, high_i))
+
+    @staticmethod
+    def _apply_model(
+        model: LatentAdaCUT,
+        x: torch.Tensor,
         *,
-        device: torch.device,
-        dtype: torch.dtype,
-        mask_mode: str = "none",
-    ) -> Dict[int, torch.Tensor]:
-        bank: Dict[int, torch.Tensor] = {}
-        mode = str(mask_mode).strip().lower()
-        for p in self.swd_patch_sizes:
-            key = (int(channels), int(p), int(self.swd_num_projections), str(device), str(dtype), mode)
-            w = self._projection_cache.get(key)
-            if w is None:
-                with torch.no_grad():
-                    w = torch.randn(self.swd_num_projections, channels, p, p, device=device, dtype=dtype)
-                    if mode == "luma_chroma_masked" and channels >= 2:
-                        luma_count = max(1, min(self.swd_num_projections - 1, int(self.swd_num_projections * 0.6)))
-                        w[:luma_count, 1:, :, :] = 0.0
-                        w[luma_count:, 0:1, :, :] = 0.0
-                    w = F.normalize(w.view(self.swd_num_projections, -1), p=2, dim=1).view_as(w)
-                self._projection_cache[key] = w
-            bank[p] = w
-        return bank
+        style_id: torch.Tensor,
+        step_size: float,
+        style_strength: float,
+        num_steps: int,
+    ) -> torch.Tensor:
+        steps = max(1, int(num_steps))
+        if steps > 1:
+            return model.integrate(x, style_id=style_id, num_steps=steps, step_size=step_size, style_strength=style_strength)
+        return model(x, style_id=style_id, step_size=step_size, style_strength=style_strength)
 
-    def _get_sobel_kernels(
-        self,
-        channels: int,
-        *,
-        device: torch.device,
-        dtype: torch.dtype,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        key = (int(channels), str(device), str(dtype))
-        cached = self._sobel_kernel_cache.get(key)
-        if cached is not None:
-            return cached
-        kx = torch.tensor(
-            [[-1.0, 0.0, 1.0], [-2.0, 0.0, 2.0], [-1.0, 0.0, 1.0]],
-            device=device,
-            dtype=dtype,
-        )
-        ky = torch.tensor(
-            [[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]],
-            device=device,
-            dtype=dtype,
-        )
-        wx = kx.view(1, 1, 3, 3).expand(channels, 1, 3, 3).contiguous()
-        wy = ky.view(1, 1, 3, 3).expand(channels, 1, 3, 3).contiguous()
-        self._sobel_kernel_cache[key] = (wx, wy)
-        return wx, wy
-
-    def _compute_fused_hf_feature(self, z: torch.Tensor) -> torch.Tensor:
-        wx, wy = self._get_sobel_kernels(int(z.shape[1]), device=z.device, dtype=z.dtype)
-        gx = F.conv2d(z, wx, padding=1, groups=int(z.shape[1]))
-        gy = F.conv2d(z, wy, padding=1, groups=int(z.shape[1]))
-        mag = torch.sqrt(gx.pow(2) + gy.pow(2) + 1e-8)
-        return mag / (mag.mean(dim=(2, 3), keepdim=True) + 1e-5)
-
-    def _select_xid_indices(self, xid_mask: torch.Tensor) -> torch.Tensor:
-        valid = torch.nonzero(xid_mask, as_tuple=False).squeeze(1)
-        if valid.numel() == 0 or self.swd_batch_size <= 0 or valid.numel() == self.swd_batch_size:
-            return valid
-        if valid.numel() > self.swd_batch_size:
-            pick = torch.randint(0, valid.numel(), (self.swd_batch_size,), device=valid.device)
-            return valid.index_select(0, pick)
-        pad = torch.randint(0, valid.numel(), (self.swd_batch_size - valid.numel(),), device=valid.device)
-        return torch.cat([valid, valid.index_select(0, pad)], dim=0)
-
+    @staticmethod
     @contextmanager
-    def _nvtx_range(self, name: str, enabled: bool):
+    def _nvtx_range(name: str, enabled: bool):
         if not enabled:
             yield
             return
@@ -296,171 +133,8 @@ class AdaCUTObjective:
         finally:
             try:
                 torch.cuda.nvtx.range_pop()
-            except Exception:
+            except Exception:  # pragma: no cover
                 pass
-
-    def _compute_swd_term(
-        self,
-        pred: torch.Tensor,
-        target_style: torch.Tensor,
-        target_style_id: torch.Tensor,
-        xid_idx: torch.Tensor | None,
-    ) -> torch.Tensor | None:
-        if xid_idx is None or xid_idx.numel() == 0:
-            return None
-
-        swd_x = pred.index_select(0, xid_idx)
-        swd_y = target_style.index_select(0, xid_idx)
-        indexed_style_ids = target_style_id.index_select(0, xid_idx)
-        swd_x_norm = F.instance_norm(swd_x, eps=1e-3)
-        swd_y_norm = F.instance_norm(swd_y, eps=1e-3)
-
-        if self.w_swd_unified > 0.0:
-            bank_unified = self._get_projection_bank(
-                int(swd_x_norm.shape[1]),
-                device=pred.device,
-                dtype=pred.dtype,
-                mask_mode="luma_chroma_masked",
-            )
-            loss_unified = calc_swd_loss(
-                swd_x_norm,
-                swd_y_norm,
-                indexed_style_ids,
-                self.swd_patch_sizes,
-                self.swd_num_projections,
-                projection_chunk_size=self.swd_projection_chunk_size,
-                distance_mode=self.swd_distance_mode,
-                cdf_num_bins=self.swd_cdf_num_bins,
-                cdf_tau=self.swd_cdf_tau,
-                cdf_sample_size=self.swd_cdf_sample_size,
-                projection_bank=bank_unified,
-            )
-            return loss_unified * self.w_swd_unified
-
-        if self.w_swd_micro <= 0.0 and self.w_swd_macro <= 0.0:
-            return None
-
-        if swd_x_norm.shape[1] >= 2:
-            x_struct = swd_x_norm[:, :2, :, :]
-            y_struct = swd_y_norm[:, :2, :, :]
-        else:
-            x_struct = swd_x_norm
-            y_struct = swd_y_norm
-
-        loss_micro = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
-        if self.w_swd_micro > 0.0:
-            micro_patches = [p for p in self.swd_patch_sizes if p <= 3]
-            x_hp = x_struct - F.avg_pool2d(x_struct, kernel_size=5, stride=1, padding=2)
-            y_hp = y_struct - F.avg_pool2d(y_struct, kernel_size=5, stride=1, padding=2)
-            # Keep raw high-pass energy so SWD can see true local mean/variance shifts.
-            x_micro_base = x_hp
-            y_micro_base = y_hp
-            if self.swd_use_high_freq:
-                hf_x = self._compute_fused_hf_feature(x_micro_base)
-                with torch.no_grad():
-                    hf_y = self._compute_fused_hf_feature(y_micro_base)
-                ratio = max(0.0, float(self.swd_hf_weight_ratio))
-                x_micro = torch.cat([x_micro_base, hf_x * ratio], dim=1)
-                y_micro = torch.cat([y_micro_base, hf_y * ratio], dim=1)
-            else:
-                x_micro = x_micro_base
-                y_micro = y_micro_base
-
-            if micro_patches:
-                bank_micro = self._get_projection_bank(
-                    int(x_micro.shape[1]),
-                    device=pred.device,
-                    dtype=pred.dtype,
-                )
-                loss_micro = calc_swd_loss(
-                    x_micro,
-                    y_micro,
-                    indexed_style_ids,
-                    micro_patches,
-                    self.swd_num_projections,
-                    projection_chunk_size=self.swd_projection_chunk_size,
-                    distance_mode=self.swd_distance_mode,
-                    cdf_num_bins=self.swd_cdf_num_bins,
-                    cdf_tau=self.swd_cdf_tau,
-                    cdf_sample_size=self.swd_cdf_sample_size,
-                    projection_bank=bank_micro,
-                )
-
-        loss_macro = torch.tensor(0.0, device=pred.device, dtype=torch.float32)
-        if self.w_swd_macro > 0.0:
-            macro_patches = [p for p in self.swd_patch_sizes if p >= 11]
-            if macro_patches:
-                x_color_lp = F.avg_pool2d(swd_x_norm, kernel_size=5, stride=1, padding=2)
-                y_color_lp = F.avg_pool2d(swd_y_norm, kernel_size=5, stride=1, padding=2)
-                x_macro = x_color_lp
-                y_macro = y_color_lp
-                bank_macro = self._get_projection_bank(
-                    int(x_macro.shape[1]),
-                    device=pred.device,
-                    dtype=pred.dtype,
-                )
-                loss_macro = calc_swd_loss(
-                    x_macro,
-                    y_macro,
-                    indexed_style_ids,
-                    macro_patches,
-                    self.swd_num_projections,
-                    projection_chunk_size=self.swd_projection_chunk_size,
-                    distance_mode=self.swd_distance_mode,
-                    cdf_num_bins=self.swd_cdf_num_bins,
-                    cdf_tau=self.swd_cdf_tau,
-                    cdf_sample_size=self.swd_cdf_sample_size,
-                    projection_bank=bank_macro,
-                )
-
-        return loss_micro * self.w_swd_micro + loss_macro * self.w_swd_macro
-
-    def _compute_color_term(
-        self,
-        pred: torch.Tensor,
-        target_style: torch.Tensor,
-        xid_idx: torch.Tensor | None,
-    ) -> torch.Tensor | None:
-        if xid_idx is None or xid_idx.numel() == 0 or self.w_color <= 0.0:
-            return None
-        pred_color = pred.float().index_select(0, xid_idx)
-        target_color = target_style.float().index_select(0, xid_idx)
-        return calc_spatial_agnostic_color_loss(
-            pred_color,
-            target_color,
-        )
-
-    def _compute_identity_term(
-        self,
-        pred: torch.Tensor,
-        content: torch.Tensor,
-        id_mask: torch.Tensor,
-    ) -> torch.Tensor | None:
-        if self.w_identity <= 0.0:
-            return None
-
-        pred_blur = F.avg_pool2d(pred, kernel_size=3, stride=1, padding=1)
-        content_blur = F.avg_pool2d(content, kernel_size=3, stride=1, padding=1)
-        pred_struct = F.instance_norm(pred_blur, eps=1e-3)
-        content_struct = F.instance_norm(content_blur, eps=1e-3)
-        return F.l1_loss(pred_struct, content_struct)
-
-    def _compute_repulsive_term(
-        self,
-        pred: torch.Tensor,
-        content: torch.Tensor,
-        xid_mask: torch.Tensor,
-    ) -> torch.Tensor | None:
-        if self.w_repulsive <= 0.0 or not xid_mask.any():
-            return None
-        repulsive_per_sample = soft_repulsive_loss(
-            pred,
-            content,
-            margin=self.repulsive_margin,
-            temperature=self.repulsive_temperature,
-            dist_mode=self.repulsive_mode,
-        )
-        return (repulsive_per_sample * xid_mask.float()).sum() / xid_mask.float().sum().clamp_min(1.0)
 
     def compute(
         self,
@@ -469,64 +143,316 @@ class AdaCUTObjective:
         target_style: torch.Tensor,
         target_style_id: torch.Tensor,
         source_style_id: torch.Tensor | None = None,
-        pred_override: torch.Tensor | None = None,
+        debug_timing: bool = False,
     ) -> Dict[str, torch.Tensor]:
-        nvtx_enabled = bool(self.nsight_nvtx and content.is_cuda)
-        id_mask = torch.zeros_like(target_style_id, dtype=torch.bool) if source_style_id is None else (source_style_id.long() == target_style_id.long())
-        xid_mask = ~id_mask
-        id_ratio = id_mask.float().mean()
+        stage = "init"
+        try:
+            nvtx_enabled = bool(self.nsight_nvtx and content.is_cuda)
+            mem_metrics: Dict[str, float] = {}
+            mem_enabled = bool(self.profile_loss_vram and content.is_cuda)
+            mem_prev_alloc = 0.0
+            mem_base_peak = 0.0
+            if mem_enabled:
+                mem_prev_alloc = float(torch.cuda.memory_allocated(content.device) / (1024**2))
+                mem_base_peak = float(torch.cuda.max_memory_allocated(content.device) / (1024**2))
+            timing_metrics: Dict[str, float] = {}
+            timing_enabled = bool(debug_timing and content.is_cuda)
+            timing_prev_event = None
+            if timing_enabled:
+                timing_prev_event = torch.cuda.Event(enable_timing=True)
+                timing_prev_event.record()
 
-        if pred_override is None:
+            def _mem_mark(s: str) -> None:
+                nonlocal mem_prev_alloc
+                if not mem_enabled:
+                    return
+                cur_alloc = float(torch.cuda.memory_allocated(content.device) / (1024**2))
+                cur_peak = float(torch.cuda.max_memory_allocated(content.device) / (1024**2))
+                mem_metrics[f"loss_vram_{s}_alloc_mb"] = cur_alloc
+                mem_metrics[f"loss_vram_{s}_delta_mb"] = cur_alloc - mem_prev_alloc
+                mem_metrics[f"loss_vram_{s}_peak_from_start_mb"] = cur_peak - mem_base_peak
+                mem_prev_alloc = cur_alloc
+
+            def _time_mark(s: str) -> None:
+                nonlocal timing_prev_event
+                if not timing_enabled or timing_prev_event is None:
+                    return
+                cur_event = torch.cuda.Event(enable_timing=True)
+                cur_event.record()
+                cur_event.synchronize()
+                timing_metrics[f"loss_time_{s}_ms"] = float(timing_prev_event.elapsed_time(cur_event))
+                timing_prev_event = cur_event
+
+            stage = "sample_hparams"
+            train_num_steps = self._sample_int_range(self.train_num_steps_min, self.train_num_steps_max)
+            train_step_size = self._sample_range(self.train_step_size_min, self.train_step_size_max)
+            train_style_strength = self._sample_range(self.train_style_strength_min, self.train_style_strength_max)
+            self._compute_calls += 1
+
+            stage = "prepare_inputs"
+            content_f32 = content.float()
+            target_style_f32 = target_style.float()
+            if source_style_id is None:
+                id_mask = torch.zeros_like(target_style_id, dtype=torch.bool)
+            else:
+                id_mask = source_style_id.long() == target_style_id.long()
+            xid_mask = ~id_mask
+            id_ratio = id_mask.float().mean()
+            xid_mask_f = xid_mask.float()
+
+            def _masked_mean(per_sample: torch.Tensor, mask_f: torch.Tensor) -> torch.Tensor:
+                if per_sample.ndim != 1:
+                    per_sample = per_sample.reshape(per_sample.shape[0], -1).mean(dim=1)
+                denom = mask_f.sum().clamp_min(1.0)
+                return (per_sample * mask_f).sum() / denom
+
+            need_style_feat = bool(self.w_stroke_gram > 0.0 or self.w_color_moment > 0.0)
+            use_projector = bool(getattr(model, "loss_projector_use", False))
+            if use_projector and need_style_feat and hasattr(model, "project_loss_features"):
+                with torch.no_grad():
+                    target_style_feat = model.project_loss_features(target_style_f32).float()
+            else:
+                target_style_feat = target_style_f32
+
+            stage = "pred"
             with self._nvtx_range("loss/pred", nvtx_enabled):
-                pred = model(
+                pred_student = self._apply_model(
+                    model,
                     content,
                     style_id=target_style_id,
-                    step_size=1.0,
-                    style_strength=1.0,
-                    target_style_latent=target_style,
+                    step_size=train_step_size,
+                    style_strength=train_style_strength,
+                    num_steps=train_num_steps,
                 )
-        else:
-            pred = pred_override
+            pred_student_f32 = pred_student.float()
+            if use_projector and need_style_feat and hasattr(model, "project_loss_features"):
+                pred_feat = model.project_loss_features(pred_student_f32).float()
+            else:
+                pred_feat = pred_student_f32
+            _mem_mark("pred")
+            _time_mark("pred")
 
-        content_cast = content.to(dtype=pred.dtype)
-        target_cast = target_style.to(dtype=pred.dtype)
-        total = torch.tensor(0.0, device=content.device)
-        metrics = {"identity_ratio": id_ratio.detach()}
-        xid_idx = self._select_xid_indices(xid_mask) if xid_mask.any() else None
+            stage = "style"
+            loss_stroke_gram = torch.tensor(0.0, device=content.device, dtype=torch.float32)
+            loss_color_moment = torch.tensor(0.0, device=content.device, dtype=torch.float32)
+            with self._nvtx_range("loss/style", nvtx_enabled):
+                if self.w_stroke_gram > 0.0 or self.w_color_moment > 0.0:
+                    if self.w_stroke_gram > 0.0:
+                        loss_stroke_gram = _masked_mean(calc_gram_loss_per_sample(pred_feat, target_style_feat), xid_mask_f)
+                    if self.w_color_moment > 0.0:
+                        pred_mu = pred_feat.mean(dim=(2, 3))
+                        tgt_mu = target_style_feat.mean(dim=(2, 3))
+                        pred_std = pred_feat.std(dim=(2, 3), unbiased=False)
+                        tgt_std = target_style_feat.std(dim=(2, 3), unbiased=False)
+                        moment_per_sample = (pred_mu - tgt_mu).abs().mean(dim=1) + (pred_std - tgt_std).abs().mean(dim=1)
+                        loss_color_moment = _masked_mean(moment_per_sample, xid_mask_f)
+            _mem_mark("style")
+            _time_mark("style")
 
-        ls = self._compute_swd_term(pred, target_cast, target_style_id, xid_idx)
-        if ls is not None:
-            total = total + ls
-            metrics["swd"] = ls.detach()
-            metrics["_swd_raw"] = ls
+            stage = "identity"
+            with self._nvtx_range("loss/identity", nvtx_enabled):
+                if self.w_identity > 0.0 and bool(id_mask.any().item()):
+                    id_per_sample = (pred_student_f32 - content_f32).abs().mean(dim=(1, 2, 3))
+                    loss_identity = _masked_mean(id_per_sample, id_mask.float())
+                else:
+                    loss_identity = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+            _mem_mark("identity")
+            _time_mark("identity")
 
-        lcol = self._compute_color_term(pred, target_cast, xid_idx)
-        if lcol is not None:
-            lcol_weighted = self.w_color * lcol
-            total = total + lcol_weighted
-            metrics["color"] = lcol_weighted.detach()
-            metrics["_color_raw"] = lcol
+            stage = "delta"
+            with self._nvtx_range("loss/delta", nvtx_enabled):
+                delta = None
+                if self.w_delta_tv > 0.0 or self.w_delta_l2 > 0.0:
+                    delta = pred_student_f32 - content_f32
+                if self.w_delta_tv > 0.0:
+                    loss_delta_tv = _tv_per_sample(delta).mean()
+                else:
+                    loss_delta_tv = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+                if self.w_delta_l2 > 0.0:
+                    loss_delta_l2 = delta.pow(2).mean()
+                else:
+                    loss_delta_l2 = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+                if self.w_output_tv > 0.0:
+                    loss_output_tv = _tv_per_sample(pred_student_f32).mean()
+                else:
+                    loss_output_tv = torch.tensor(0.0, device=content.device, dtype=content.dtype)
+            _mem_mark("delta")
+            _time_mark("delta")
 
-        if self.w_oob > 0.0:
-            loob = exponential_oob_loss(pred, threshold=self.oob_threshold)
-            loob_weighted = self.w_oob * loob
-            total = total + loob_weighted
-            metrics["oob"] = loob_weighted.detach()
-            metrics["_oob_raw"] = loob
+            stage = "semigroup"
+            loss_semigroup = torch.tensor(0.0, device=content.device, dtype=torch.float32)
+            semigroup_applied = False
+            with self._nvtx_range("loss/semigroup", nvtx_enabled):
+                semigroup_enabled_this_step = (self._compute_calls % self.semigroup_every_n_steps == 0)
+                if self.w_semigroup > 0.0 and train_style_strength > 1e-6 and semigroup_enabled_this_step:
+                    semigroup_applied = True
+                    bs = int(content.shape[0])
+                    sub_bs = max(1, int(round(bs * self.semigroup_subset_ratio))) if self.semigroup_subset_ratio > 0.0 else 0
+                    if self.semigroup_max_samples > 0:
+                        sub_bs = min(sub_bs, self.semigroup_max_samples)
+                    if sub_bs >= bs:
+                        sem_idx = None
+                    elif sub_bs <= 0:
+                        sem_idx = torch.empty((0,), device=content.device, dtype=torch.long)
+                    else:
+                        sem_idx = torch.randperm(bs, device=content.device)[:sub_bs]
 
-        lrepel = self._compute_repulsive_term(pred, content_cast, xid_mask)
-        if lrepel is not None:
-            lrepel_weighted = self.w_repulsive * lrepel
-            total = total + lrepel_weighted
-            metrics["repulsive"] = lrepel_weighted.detach()
-            metrics["_repulsive_raw"] = lrepel
+                    if sem_idx is not None and sem_idx.numel() == 0:
+                        _mem_mark("semigroup")
+                        _time_mark("semigroup")
+                        total = (
+                            self.w_stroke_gram * loss_stroke_gram
+                            + self.w_color_moment * loss_color_moment
+                            + self.w_identity * loss_identity
+                            + self.w_delta_tv * loss_delta_tv
+                            + self.w_delta_l2 * loss_delta_l2
+                            + self.w_output_tv * loss_output_tv
+                            + self.w_semigroup * loss_semigroup
+                        )
+                        _mem_mark("total")
+                        _time_mark("total")
+                        out = {
+                            "loss": total,
+                            "stroke_gram": loss_stroke_gram.detach(),
+                            "color_moment": loss_color_moment.detach(),
+                            "identity": loss_identity.detach(),
+                            "identity_ratio": id_ratio.detach(),
+                            "delta_tv": loss_delta_tv.detach(),
+                            "delta_l2": loss_delta_l2.detach(),
+                            "output_tv": loss_output_tv.detach(),
+                            "semigroup": loss_semigroup.detach(),
+                            "semigroup_applied": torch.tensor(0.0, device=content.device),
+                            "train_num_steps": torch.tensor(float(train_num_steps), device=content.device),
+                            "train_step_size": torch.tensor(float(train_step_size), device=content.device),
+                            "train_style_strength": torch.tensor(float(train_style_strength), device=content.device),
+                        }
+                        if mem_enabled:
+                            for k, v in mem_metrics.items():
+                                out[k] = torch.tensor(v, device=content.device)
+                        if timing_enabled:
+                            for k, v in timing_metrics.items():
+                                out[k] = torch.tensor(v, device=content.device)
+                        return out
 
-        lid = self._compute_identity_term(pred, content_cast, id_mask)
-        if lid is not None:
-            lid_weighted = self.w_identity * lid
-            total = total + lid_weighted
-            metrics["identity"] = lid_weighted.detach()
-            metrics["_identity_raw"] = lid
+                    if sem_idx is None:
+                        sem_content = content
+                        sem_target_style_id = target_style_id
+                    else:
+                        sem_content = content.index_select(0, sem_idx)
+                        sem_target_style_id = target_style_id.index_select(0, sem_idx)
 
-        metrics["loss"] = total
-        return metrics
+                    split_u = self._sample_range(self.semigroup_split_min, self.semigroup_split_max)
+                    a_strength = train_style_strength * split_u
+                    b_strength = train_style_strength - a_strength
+                    if self.semigroup_target_detach:
+                        with torch.no_grad():
+                            z_ab = self._apply_model(
+                                model,
+                                sem_content,
+                                style_id=sem_target_style_id,
+                                step_size=train_step_size,
+                                style_strength=train_style_strength,
+                                num_steps=self.semigroup_num_steps,
+                            )
+                    else:
+                        z_ab = self._apply_model(
+                            model,
+                            sem_content,
+                            style_id=sem_target_style_id,
+                            step_size=train_step_size,
+                            style_strength=train_style_strength,
+                            num_steps=self.semigroup_num_steps,
+                        )
+                    if self.semigroup_teacher_no_grad:
+                        with torch.no_grad():
+                            z_a = self._apply_model(
+                                model,
+                                sem_content,
+                                style_id=sem_target_style_id,
+                                step_size=train_step_size,
+                                style_strength=a_strength,
+                                num_steps=self.semigroup_num_steps,
+                            )
+                    else:
+                        z_a = self._apply_model(
+                            model,
+                            sem_content,
+                            style_id=sem_target_style_id,
+                            step_size=train_step_size,
+                            style_strength=a_strength,
+                            num_steps=self.semigroup_num_steps,
+                        )
+                    z_a_b = self._apply_model(
+                        model,
+                        z_a,
+                        style_id=sem_target_style_id,
+                        step_size=train_step_size,
+                        style_strength=b_strength,
+                        num_steps=self.semigroup_num_steps,
+                    )
+                    if self.semigroup_pool_size > 0:
+                        z_ab_eval = F.adaptive_avg_pool2d(
+                            z_ab.float(),
+                            output_size=(self.semigroup_pool_size, self.semigroup_pool_size),
+                        )
+                        z_a_b_eval = F.adaptive_avg_pool2d(
+                            z_a_b.float(),
+                            output_size=(self.semigroup_pool_size, self.semigroup_pool_size),
+                        )
+                    else:
+                        z_ab_eval = z_ab.float()
+                        z_a_b_eval = z_a_b.float()
+                    if self.semigroup_loss_type == "mse":
+                        sem_raw = (z_a_b_eval - z_ab_eval).pow(2).mean(dim=(1, 2, 3))
+                    else:
+                        sem_raw = (z_a_b_eval - z_ab_eval).abs().mean(dim=(1, 2, 3))
+                    if self.semigroup_lowpass_strength > 0.0:
+                        sem_lp_a = _lowpass(z_a_b_eval)
+                        sem_lp_b = _lowpass(z_ab_eval)
+                        if self.semigroup_loss_type == "mse":
+                            sem_low = (sem_lp_a - sem_lp_b).pow(2).mean(dim=(1, 2, 3))
+                        else:
+                            sem_low = (sem_lp_a - sem_lp_b).abs().mean(dim=(1, 2, 3))
+                        sem_raw = (1.0 - self.semigroup_lowpass_strength) * sem_raw + self.semigroup_lowpass_strength * sem_low
+                    loss_semigroup = sem_raw.mean()
+            _mem_mark("semigroup")
+            _time_mark("semigroup")
+
+            stage = "total"
+            with self._nvtx_range("loss/total", nvtx_enabled):
+                total = (
+                    self.w_stroke_gram * loss_stroke_gram
+                    + self.w_color_moment * loss_color_moment
+                    + self.w_identity * loss_identity
+                    + self.w_delta_tv * loss_delta_tv
+                    + self.w_delta_l2 * loss_delta_l2
+                    + self.w_output_tv * loss_output_tv
+                    + self.w_semigroup * loss_semigroup
+                )
+            _mem_mark("total")
+            _time_mark("total")
+
+            out = {
+                "loss": total,
+                "stroke_gram": loss_stroke_gram.detach(),
+                "color_moment": loss_color_moment.detach(),
+                "identity": loss_identity.detach(),
+                "identity_ratio": id_ratio.detach(),
+                "delta_tv": loss_delta_tv.detach(),
+                "delta_l2": loss_delta_l2.detach(),
+                "output_tv": loss_output_tv.detach(),
+                "semigroup": loss_semigroup.detach(),
+                "semigroup_applied": torch.tensor(1.0 if semigroup_applied else 0.0, device=content.device),
+                "train_num_steps": torch.tensor(float(train_num_steps), device=content.device),
+                "train_step_size": torch.tensor(float(train_step_size), device=content.device),
+                "train_style_strength": torch.tensor(float(train_style_strength), device=content.device),
+            }
+            if mem_enabled:
+                for k, v in mem_metrics.items():
+                    out[k] = torch.tensor(v, device=content.device)
+            if timing_enabled:
+                for k, v in timing_metrics.items():
+                    out[k] = torch.tensor(v, device=content.device)
+            return out
+        except RuntimeError as exc:
+            raise RuntimeError(f"AdaCUTObjective.compute failed at stage='{stage}': {exc}") from exc

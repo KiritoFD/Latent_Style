@@ -1,5 +1,0 @@
-index,name,config_path,run_dir,eval_dir,learning_rate,num_epochs,save_interval,virtual_length_multiplier,skip_routing_mode,w_kinetic,w_cycle,terminal_swd_weight,w_color,swd_use_high_freq,w_low_freq
-0,S-add__K-3_C-2_W-10_Col-15,pareto_probe_4/S-add__K-3_C-2_W-10_Col-15.json,./exp/pareto_probe_4/S-add__K-3_C-2_W-10_Col-15,./exp/pareto_probe_4/S-add__K-3_C-2_W-10_Col-15/full_eval,5e-05,20,1,0.5,add_proj,3.0,2.0,10.0,15.0,False,0.0
-1,S-norm_K-3_C-2_W-10_Col-15,pareto_probe_4/S-norm_K-3_C-2_W-10_Col-15.json,./exp/pareto_probe_4/S-norm_K-3_C-2_W-10_Col-15,./exp/pareto_probe_4/S-norm_K-3_C-2_W-10_Col-15/full_eval,5e-05,20,1,0.5,normalized,3.0,2.0,10.0,15.0,False,0.0
-2,S-add__K-5_C-5_W-15_Col-15,pareto_probe_4/S-add__K-5_C-5_W-15_Col-15.json,./exp/pareto_probe_4/S-add__K-5_C-5_W-15_Col-15,./exp/pareto_probe_4/S-add__K-5_C-5_W-15_Col-15/full_eval,5e-05,20,1,0.5,add_proj,5.0,5.0,15.0,15.0,False,0.0
-3,S-norm_K-5_C-5_W-15_Col-15,pareto_probe_4/S-norm_K-5_C-5_W-15_Col-15.json,./exp/pareto_probe_4/S-norm_K-5_C-5_W-15_Col-15,./exp/pareto_probe_4/S-norm_K-5_C-5_W-15_Col-15/full_eval,5e-05,20,1,0.5,normalized,5.0,5.0,15.0,15.0,False,0.0

@@ -1,8 +1,0 @@
-
-
-=== CMD ===
-C:\Program Files\python\python.exe train.py --content_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke\stytr2\work\stytr2\train_content --style_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke\stytr2\work\stytr2\train_style --vgg G:\GitHub\Latent_Style\Related_Works\run_511\repos\StyTR-2\experiments\vgg_normalised.pth --save_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke\stytr2\checkpoints\stytr2 --log_dir G:\GitHub\Latent_Style\Related_Works\run_511\outputs\review_baseline_suite_smoke\stytr2\tb_logs\stytr2 --max_iter 1 --batch_size 1 --n_threads 0 --save_model_interval 1
-Traceback (most recent call last):
-  File "train.py", line 3, in <module>
-    import torch
-ModuleNotFoundError: No module named 'torch'

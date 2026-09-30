@@ -1,0 +1,17 @@
+/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Wrote per-sample metrics: /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/experiments/E1_p2/validation/epoch_0001/metrics_per_sample.csv
+Wrote summary: /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/experiments/E1_p2/validation/epoch_0001/summary.json
+Wrote decision flags: /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/experiments/E1_p2/validation/epoch_0001/decision_flags.json
+\n\n===== [2026-02-07 19:19:39] CMD: /home/xy/miniconda3/envs/cu128/bin/python /mnt/g/GitHub/Latent_Style/Thermal/src/utils/run_swd_validation.py --checkpoint /mnt/g/GitHub/Latent_Style/Thermal/unet_lite/epoch_0100.pt --manifest /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/evalset/manifest.json --output /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/experiments/E1_p2/validation/epoch_0001 --seed 42 --max_control 1 --max_identity 1 --baseline_summary /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/experiments/E0_no_swd/validation/epoch_0001/summary.json =====\n/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Wrote per-sample metrics: /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/experiments/E1_p2/validation/epoch_0001/metrics_per_sample.csv
+Wrote summary: /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/experiments/E1_p2/validation/epoch_0001/summary.json
+Wrote decision flags: /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/experiments/E1_p2/validation/epoch_0001/decision_flags.json
+
+
+===== [2026-02-07 19:21:54] CMD: /home/xy/miniconda3/envs/cu128/bin/python /mnt/g/GitHub/Latent_Style/Thermal/src/utils/run_swd_validation.py --checkpoint /mnt/g/GitHub/Latent_Style/Thermal/unet_lite/epoch_0100.pt --manifest /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/evalset/manifest.json --output /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/experiments/E1_p2/validation/epoch_0001 --seed 42 --max_control 1 --max_identity 1 --baseline_summary /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix_resume_smoke/experiments/E0_no_swd/validation/epoch_0001/summary.json =====

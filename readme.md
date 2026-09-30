@@ -1,7 +1,3 @@
-> **当前项目入口（2026-09-30）**：本仓库的当前方法是 **WEAVE**（`WEAVE/`），ICME 论文在 `WEAVE/icme2027/`，
-> 全部实验数据的索引与数据源说明在 [`docs/experiments/README.md`](docs/experiments/README.md)。
-> 下文 SA-Flow 是项目最早期的方案，仅作历史记录（见 `docs/experiments/05_history_timeline.md`）。
-
 # SA-Flow: Latent Space Style Transfer via Optimal Transport Flow Matching
 
 SA-Flow（Style-Aware Flow）是一个面向 **非配对数据（Unpaired Data）** 的高效风格迁移框架。本项目利用 Flow Matching 在 **VAE 潜空间** 构建确定性传输路径，并采用 **Two-Stage** 策略：

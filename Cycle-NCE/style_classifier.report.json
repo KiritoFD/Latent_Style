@@ -1,0 +1,53 @@
+{
+  "basic": {
+    "acc": 0.9546027779579163,
+    "macro_recall": 0.9625806212425232,
+    "macro_f1": 0.9365487098693848,
+    "recall_per_class": [
+      0.9485530257225037,
+      0.9766082167625427
+    ],
+    "precision_per_class": [
+      0.9932659864425659,
+      0.839195966720581
+    ],
+    "f1_per_class": [
+      0.9703947305679321,
+      0.9027026295661926
+    ],
+    "min_recall": 0.9485530257225037,
+    "recall_std": 0.014027595520019531,
+    "confusion_matrix": [
+      [
+        590,
+        32
+      ],
+      [
+        4,
+        167
+      ]
+    ]
+  },
+  "calibration": {
+    "ece": 0.014238350093364716,
+    "mean_confidence": 0.9573351144790649
+  },
+  "invariance": {
+    "top1_agreement": 0.990625,
+    "mean_kl": 0.008534006588160992
+  },
+  "teacher_usable": true,
+  "fail_reasons": [],
+  "temperature_scaling": {
+    "enabled": true,
+    "temperature": 1.168862223625183,
+    "nll_raw": 0.16275018453598022,
+    "nll_calibrated": 0.15965266525745392,
+    "ece_raw": 0.014238350093364716,
+    "ece_calibrated": 0.01509254053235054,
+    "mean_confidence_raw": 0.9573351144790649,
+    "mean_confidence_calibrated": 0.9452935457229614
+  },
+  "teacher_usable_calibrated": true,
+  "fail_reasons_calibrated": []
+}

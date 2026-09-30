@@ -1,0 +1,85 @@
+{
+  "checkpoint": "../monet-vangogh-cezanne/epoch_0050.pt",
+  "timestamp": "2026-02-03 18:38:01",
+  "matrix_breakdown": {
+    "monet": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.5503535062074661,
+        "style_lpips": 0.7434480627377827,
+        "content_lpips": 0.4049328039999999,
+        "clip_content": 0.8815272546666667
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.7347917874654134,
+        "style_lpips": 0.7047500431537628,
+        "content_lpips": 0.40686310133333337,
+        "clip_content": 0.8727104566666667
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6909652551015218,
+        "style_lpips": 0.7599255720774333,
+        "content_lpips": 0.4084868253333333,
+        "clip_content": 0.8752441673333334
+      }
+    },
+    "cezanne": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.5099465429782868,
+        "style_lpips": 0.7453402658303578,
+        "content_lpips": 0.40892035600000004,
+        "clip_content": 0.8526923936666667
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.67178569038709,
+        "style_lpips": 0.7240497032801311,
+        "content_lpips": 0.40117923000000005,
+        "clip_content": 0.8593188633333334
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6593175073464711,
+        "style_lpips": 0.7581808110078175,
+        "content_lpips": 0.4032619246666666,
+        "clip_content": 0.8507322633333333
+      }
+    },
+    "vangogh": {
+      "monet": {
+        "count": 30,
+        "clip_style": 0.5259323457876841,
+        "style_lpips": 0.7708281219005585,
+        "content_lpips": 0.40630951566666673,
+        "clip_content": 0.8772161459999998
+      },
+      "cezanne": {
+        "count": 30,
+        "clip_style": 0.6911441723505656,
+        "style_lpips": 0.7321689168612162,
+        "content_lpips": 0.4043036566666666,
+        "clip_content": 0.8689521866666667
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6982253114382426,
+        "style_lpips": 0.7296882291634877,
+        "content_lpips": 0.4013737936666667,
+        "clip_content": 0.8714129539999999
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.6353496018383238,
+      "content_lpips": 0.4063575632777778
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.0,
+      "valid": false
+    }
+  }
+}

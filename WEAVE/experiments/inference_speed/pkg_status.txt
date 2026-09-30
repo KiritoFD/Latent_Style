@@ -1,4 +1,0 @@
-GPU python procs: 0
-onnx 1.21.0
-ort 1.26.0 ['AzureExecutionProvider', 'CPUExecutionProvider']
-System.Object[]

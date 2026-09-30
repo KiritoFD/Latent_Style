@@ -1,0 +1,95 @@
+{
+  "checkpoint": "/mnt/g/GitHub/Latent_Style/Cycle-NCE/style_ablation-50/bundle_all_style_paths_off/epoch_0050.pt",
+  "timestamp": "2026-02-14 16:38:33",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.635242560505867,
+        "style_lpips": 0.7525793290138245,
+        "content_lpips": 0.2900463834,
+        "clip_content": 0.9035768732000001,
+        "classifier_acc": 0.96
+      },
+      "Hayao": {
+        "count": 50,
+        "clip_style": 0.4736539399623871,
+        "style_lpips": 0.7974703705310822,
+        "content_lpips": 0.290086729,
+        "clip_content": 0.903826273,
+        "classifier_acc": 0.04
+      }
+    },
+    "Hayao": {
+      "photo": {
+        "count": 50,
+        "clip_style": 0.4091018229722977,
+        "style_lpips": 0.8046613454818725,
+        "content_lpips": 0.19776229932,
+        "clip_content": 0.9446550094000001,
+        "classifier_acc": 0.08
+      },
+      "Hayao": {
+        "count": 50,
+        "clip_style": 0.7197138965129852,
+        "style_lpips": 0.7285139811038971,
+        "content_lpips": 0.19777792292000002,
+        "clip_content": 0.9446339105999999,
+        "classifier_acc": 0.92
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.44137788146734236,
+      "content_lpips": 0.24392451416,
+      "classifier_acc": 0.06
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.4736539399623871,
+      "valid": true,
+      "classifier_acc": 0.04
+    }
+  },
+  "classification_report": {
+    "Hayao": {
+      "precision": 0.5,
+      "recall": 0.48,
+      "f1-score": 0.4897959183673469,
+      "support": 100.0
+    },
+    "photo": {
+      "precision": 0.5,
+      "recall": 0.52,
+      "f1-score": 0.5098039215686274,
+      "support": 100.0
+    },
+    "accuracy": 0.5,
+    "macro avg": {
+      "precision": 0.5,
+      "recall": 0.5,
+      "f1-score": 0.49979991996798717,
+      "support": 200.0
+    },
+    "weighted avg": {
+      "precision": 0.5,
+      "recall": 0.5,
+      "f1-score": 0.49979991996798717,
+      "support": 200.0
+    }
+  },
+  "detailed_style_metrics": {
+    "Hayao": {
+      "precision": 0.5,
+      "recall": 0.48,
+      "f1_score": 0.4897959183673469,
+      "support": 100
+    },
+    "photo": {
+      "precision": 0.5,
+      "recall": 0.52,
+      "f1_score": 0.5098039215686274,
+      "support": 100
+    }
+  }
+}

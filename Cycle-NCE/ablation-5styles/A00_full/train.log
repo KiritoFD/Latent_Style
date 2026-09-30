@@ -1,0 +1,230 @@
+CMD: I:\Github\Latent_Style\Cycle-NCE\.venv\Scripts\python.exe I:\Github\Latent_Style\Cycle-NCE\src\run.py --config I:\Github\Latent_Style\Cycle-NCE\ablation-5styles\A00_full\config.json
+
+2026-02-16 11:43:19,220 - INFO - Active losses: w_semigroup, w_stroke_gram, w_color_moment, w_identity, w_delta_tv, w_delta_l2, w_output_tv
+2026-02-16 11:43:19,240 - INFO - Set PYTORCH_ALLOC_CONF=expandable_segments:True
+2026-02-16 11:43:19,257 - INFO - Device: cuda
+2026-02-16 11:43:19,257 - INFO - Seed: 42
+2026-02-16 11:43:19,257 - INFO - Loading latent dataset from ..\..\latent-256
+2026-02-16 11:43:22,389 - INFO -   style=photo id=0 count=6187
+2026-02-16 11:43:23,258 - INFO -   style=Hayao id=1 count=1752
+2026-02-16 11:43:23,712 - INFO -   style=monet id=2 count=972
+2026-02-16 11:43:24,122 - INFO -   style=cezanne id=3 count=850
+2026-02-16 11:43:24,401 - INFO -   style=vangogh id=4 count=600
+I:\Github\Latent_Style\Cycle-NCE\src\dataset.py:135: UserWarning: expandable_segments not supported on this platform (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\c10/cuda/CUDAAllocatorConfig.h:39.)
+  gpu_tensors[style_id] = stack.to(device=target_device, non_blocking=False)
+2026-02-16 11:43:24,563 - INFO - Dataset preloaded to cuda: 0.16GB across 5 style pools.
+2026-02-16 11:43:24,566 - INFO - DataLoader | batch=192 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-16 11:43:24,765 - INFO - Model params: 24,319,044
+2026-02-16 11:43:24,766 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=False backend=off mode=off fullgraph=False cudagraphs=off gc_collect_interval=0 loss_timing_interval=0 strict_batch_sanity=True strict_batch_sanity_interval=1 cuda_sync_debug=False profiler=False alloc_conf=expandable_segments:True
+2026-02-16 11:43:24,766 - INFO - Nsight | nvtx=False cuda_profile=False capture_start_step=10 capture_steps=50
+2026-02-16 11:43:26,138 - INFO - Precision | amp=True amp_dtype=fp16 grad_scaler=True fused_adamw=True prefer_fp16_on_rtx30=True
+2026-02-16 11:43:26,138 - INFO - GPU | name=NVIDIA Graphics Device capability=8.6 vram_gb=12.00 rtx30=False
+2026-02-16 11:43:26,141 - INFO - No checkpoint found, start from scratch.
+2026-02-16 11:45:07,714 - INFO - epoch 1 step 100/161 | loss=4.4418 semigroup=0.0081 sgram=0.0406 cmoment=0.1623 idt=0.0214 idr=0.20 dtv=0.0087 dl2=0.0074 otv=1.2385 steps=1.0 h=1.00 s=0.77 | data 8.9ms comp 642.8ms | 0.99 it/s eta 61.7s
+2026-02-16 11:45:52,766 - INFO - Epoch 1/100 | loss=4.3516 sgram=0.0394 cmoment=0.1594 dtv=0.0114 dl2=0.0123 steps=1.0 h=1.00 s=0.77 lr=2.00e-04 data=1.4s comp=87.1s
+2026-02-16 11:47:07,091 - INFO - epoch 2 step 100/161 | loss=3.9308 semigroup=0.0376 sgram=0.0345 cmoment=0.1494 idt=0.0257 idr=0.19 dtv=0.0248 dl2=0.0369 otv=1.2401 steps=1.0 h=1.00 s=0.78 | data 8.9ms comp 366.5ms | 1.35 it/s eta 45.1s
+2026-02-16 11:47:52,297 - INFO - Epoch 2/100 | loss=3.8453 sgram=0.0337 cmoment=0.1474 dtv=0.0279 dl2=0.0432 steps=1.0 h=1.00 s=0.78 lr=2.00e-04 data=1.4s comp=59.6s
+2026-02-16 11:49:06,737 - INFO - epoch 3 step 100/161 | loss=3.5308 semigroup=0.0683 sgram=0.0309 cmoment=0.1398 idt=0.0200 idr=0.20 dtv=0.0428 dl2=0.0751 otv=1.2414 steps=1.0 h=1.00 s=0.79 | data 8.8ms comp 367.4ms | 1.35 it/s eta 45.2s
+2026-02-16 11:49:51,928 - INFO - Epoch 3/100 | loss=3.4875 sgram=0.0305 cmoment=0.1387 dtv=0.0449 dl2=0.0795 steps=1.0 h=1.00 s=0.79 lr=2.00e-04 data=1.4s comp=59.6s
+2026-02-16 11:51:05,990 - INFO - epoch 4 step 100/161 | loss=3.2917 semigroup=0.0837 sgram=0.0285 cmoment=0.1328 idt=0.0191 idr=0.20 dtv=0.0580 dl2=0.1038 otv=1.2438 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 365.4ms | 1.36 it/s eta 45.0s
+2026-02-16 11:51:51,192 - INFO - Epoch 4/100 | loss=3.2681 sgram=0.0283 cmoment=0.1323 dtv=0.0617 dl2=0.1094 steps=1.0 h=1.00 s=0.77 lr=2.00e-04 data=1.4s comp=59.4s
+2026-02-16 11:53:05,506 - INFO - epoch 5 step 100/161 | loss=3.1572 semigroup=0.0980 sgram=0.0274 cmoment=0.1301 idt=0.0158 idr=0.20 dtv=0.0725 dl2=0.1304 otv=1.2444 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 366.7ms | 1.35 it/s eta 45.1s
+2026-02-16 11:53:50,705 - INFO - Epoch 5/100 | loss=3.1455 sgram=0.0274 cmoment=0.1297 dtv=0.0748 dl2=0.1332 steps=1.0 h=1.00 s=0.78 lr=1.99e-04 data=1.4s comp=59.6s
+2026-02-16 11:55:04,788 - INFO - epoch 6 step 100/161 | loss=3.0898 semigroup=0.1062 sgram=0.0268 cmoment=0.1280 idt=0.0148 idr=0.20 dtv=0.0824 dl2=0.1471 otv=1.2465 steps=1.0 h=1.00 s=0.78 | data 8.8ms comp 365.6ms | 1.36 it/s eta 45.0s
+2026-02-16 11:55:49,983 - INFO - Epoch 6/100 | loss=3.0989 sgram=0.0269 cmoment=0.1285 dtv=0.0835 dl2=0.1495 steps=1.0 h=1.00 s=0.78 lr=1.99e-04 data=1.4s comp=59.5s
+2026-02-16 11:57:04,050 - INFO - epoch 7 step 100/161 | loss=3.0566 semigroup=0.1111 sgram=0.0266 cmoment=0.1275 idt=0.0135 idr=0.20 dtv=0.0891 dl2=0.1559 otv=1.2457 steps=1.0 h=1.00 s=0.76 | data 8.7ms comp 365.3ms | 1.36 it/s eta 45.0s
+2026-02-16 11:57:49,217 - INFO - Epoch 7/100 | loss=3.0346 sgram=0.0264 cmoment=0.1269 dtv=0.0910 dl2=0.1579 steps=1.0 h=1.00 s=0.76 lr=1.98e-04 data=1.4s comp=59.4s
+2026-02-16 11:59:03,313 - INFO - epoch 8 step 100/161 | loss=2.9800 semigroup=0.1188 sgram=0.0258 cmoment=0.1249 idt=0.0134 idr=0.20 dtv=0.0993 dl2=0.1743 otv=1.2472 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 365.7ms | 1.36 it/s eta 45.0s
+2026-02-16 11:59:48,473 - INFO - Epoch 8/100 | loss=2.9754 sgram=0.0257 cmoment=0.1246 dtv=0.1008 dl2=0.1764 steps=1.0 h=1.00 s=0.78 lr=1.98e-04 data=1.4s comp=59.4s
+2026-02-16 12:01:02,527 - INFO - epoch 9 step 100/161 | loss=2.9211 semigroup=0.1207 sgram=0.0253 cmoment=0.1232 idt=0.0125 idr=0.20 dtv=0.1086 dl2=0.1895 otv=1.2485 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 365.5ms | 1.36 it/s eta 44.9s
+2026-02-16 12:01:47,806 - INFO - Epoch 9/100 | loss=2.9143 sgram=0.0253 cmoment=0.1236 dtv=0.1092 dl2=0.1903 steps=1.0 h=1.00 s=0.78 lr=1.97e-04 data=1.4s comp=59.5s
+2026-02-16 12:03:01,817 - INFO - epoch 10 step 100/161 | loss=2.9159 semigroup=0.1218 sgram=0.0254 cmoment=0.1234 idt=0.0113 idr=0.19 dtv=0.1132 dl2=0.1959 otv=1.2487 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 365.3ms | 1.36 it/s eta 44.9s
+2026-02-16 12:03:46,894 - INFO - Epoch 10/100 | loss=2.9081 sgram=0.0254 cmoment=0.1235 dtv=0.1135 dl2=0.1960 steps=1.0 h=1.00 s=0.78 lr=1.96e-04 data=1.4s comp=59.4s
+2026-02-16 12:05:00,790 - INFO - epoch 11 step 100/161 | loss=2.8567 semigroup=0.1290 sgram=0.0248 cmoment=0.1217 idt=0.0111 idr=0.20 dtv=0.1183 dl2=0.2034 otv=1.2487 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 364.7ms | 1.36 it/s eta 44.8s
+2026-02-16 12:05:45,866 - INFO - Epoch 11/100 | loss=2.8609 sgram=0.0248 cmoment=0.1216 dtv=0.1198 dl2=0.2040 steps=1.0 h=1.00 s=0.78 lr=1.95e-04 data=1.4s comp=59.3s
+2026-02-16 12:06:59,742 - INFO - epoch 12 step 100/161 | loss=2.8629 semigroup=0.1265 sgram=0.0250 cmoment=0.1221 idt=0.0099 idr=0.20 dtv=0.1219 dl2=0.2090 otv=1.2485 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 364.5ms | 1.36 it/s eta 44.8s
+2026-02-16 12:07:44,805 - INFO - Epoch 12/100 | loss=2.8447 sgram=0.0248 cmoment=0.1217 dtv=0.1230 dl2=0.2086 steps=1.0 h=1.00 s=0.78 lr=1.94e-04 data=1.4s comp=59.3s
+2026-02-16 12:08:58,703 - INFO - epoch 13 step 100/161 | loss=2.8572 semigroup=0.1314 sgram=0.0249 cmoment=0.1226 idt=0.0096 idr=0.20 dtv=0.1284 dl2=0.2141 otv=1.2516 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 364.8ms | 1.36 it/s eta 44.9s
+2026-02-16 12:09:43,784 - INFO - Epoch 13/100 | loss=2.8441 sgram=0.0248 cmoment=0.1221 dtv=0.1297 dl2=0.2171 steps=1.0 h=1.00 s=0.77 lr=1.93e-04 data=1.4s comp=59.3s
+2026-02-16 12:10:57,647 - INFO - epoch 14 step 100/161 | loss=2.8238 semigroup=0.1308 sgram=0.0247 cmoment=0.1213 idt=0.0086 idr=0.20 dtv=0.1352 dl2=0.2225 otv=1.2519 steps=1.0 h=1.00 s=0.76 | data 8.7ms comp 364.6ms | 1.36 it/s eta 44.8s
+2026-02-16 12:11:42,719 - INFO - Epoch 14/100 | loss=2.8325 sgram=0.0247 cmoment=0.1213 dtv=0.1353 dl2=0.2247 steps=1.0 h=1.00 s=0.77 lr=1.92e-04 data=1.4s comp=59.3s
+2026-02-16 12:12:56,588 - INFO - epoch 15 step 100/161 | loss=2.7828 semigroup=0.1287 sgram=0.0244 cmoment=0.1196 idt=0.0082 idr=0.20 dtv=0.1384 dl2=0.2307 otv=1.2525 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 364.6ms | 1.36 it/s eta 44.8s
+2026-02-16 12:13:41,653 - INFO - Epoch 15/100 | loss=2.7750 sgram=0.0243 cmoment=0.1198 dtv=0.1392 dl2=0.2301 steps=1.0 h=1.00 s=0.77 lr=1.91e-04 data=1.4s comp=59.3s
+2026-02-16 12:14:55,526 - INFO - epoch 16 step 100/161 | loss=2.7723 semigroup=0.1343 sgram=0.0241 cmoment=0.1206 idt=0.0083 idr=0.20 dtv=0.1414 dl2=0.2312 otv=1.2529 steps=1.0 h=1.00 s=0.77 | data 8.8ms comp 364.6ms | 1.36 it/s eta 44.8s
+2026-02-16 12:15:40,602 - INFO - Epoch 16/100 | loss=2.7606 sgram=0.0240 cmoment=0.1199 dtv=0.1426 dl2=0.2338 steps=1.0 h=1.00 s=0.77 lr=1.90e-04 data=1.4s comp=59.3s
+2026-02-16 12:16:54,478 - INFO - epoch 17 step 100/161 | loss=2.7764 semigroup=0.1310 sgram=0.0242 cmoment=0.1197 idt=0.0089 idr=0.20 dtv=0.1443 dl2=0.2376 otv=1.2526 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 365.0ms | 1.36 it/s eta 44.8s
+2026-02-16 12:17:39,555 - INFO - Epoch 17/100 | loss=2.7653 sgram=0.0241 cmoment=0.1197 dtv=0.1470 dl2=0.2413 steps=1.0 h=1.00 s=0.78 lr=1.88e-04 data=1.4s comp=59.3s
+2026-02-16 12:18:53,434 - INFO - epoch 18 step 100/161 | loss=2.7110 semigroup=0.1292 sgram=0.0237 cmoment=0.1183 idt=0.0075 idr=0.20 dtv=0.1509 dl2=0.2425 otv=1.2516 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 364.5ms | 1.36 it/s eta 44.8s
+2026-02-16 12:19:38,501 - INFO - Epoch 18/100 | loss=2.7155 sgram=0.0237 cmoment=0.1185 dtv=0.1508 dl2=0.2415 steps=1.0 h=1.00 s=0.78 lr=1.87e-04 data=1.4s comp=59.3s
+2026-02-16 12:20:52,398 - INFO - epoch 19 step 100/161 | loss=2.7049 semigroup=0.1268 sgram=0.0236 cmoment=0.1185 idt=0.0068 idr=0.20 dtv=0.1578 dl2=0.2493 otv=1.2542 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 364.7ms | 1.36 it/s eta 44.9s
+2026-02-16 12:21:37,810 - INFO - Epoch 19/100 | loss=2.7088 sgram=0.0237 cmoment=0.1186 dtv=0.1571 dl2=0.2477 steps=1.0 h=1.00 s=0.77 lr=1.85e-04 data=1.4s comp=59.5s
+2026-02-16 12:22:52,050 - INFO - epoch 20 step 100/161 | loss=2.7480 semigroup=0.1260 sgram=0.0240 cmoment=0.1189 idt=0.0081 idr=0.21 dtv=0.1559 dl2=0.2501 otv=1.2536 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 366.3ms | 1.35 it/s eta 45.1s
+2026-02-16 12:23:37,340 - INFO - Epoch 20/100 | loss=2.7401 sgram=0.0240 cmoment=0.1186 dtv=0.1586 dl2=0.2548 steps=1.0 h=1.00 s=0.78 lr=1.84e-04 data=1.4s comp=59.6s
+2026-02-16 12:24:51,619 - INFO - epoch 21 step 100/161 | loss=2.7020 semigroup=0.1235 sgram=0.0235 cmoment=0.1185 idt=0.0074 idr=0.20 dtv=0.1598 dl2=0.2551 otv=1.2545 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 367.0ms | 1.35 it/s eta 45.1s
+2026-02-16 12:25:36,880 - INFO - Epoch 21/100 | loss=2.6933 sgram=0.0235 cmoment=0.1182 dtv=0.1592 dl2=0.2541 steps=1.0 h=1.00 s=0.77 lr=1.82e-04 data=1.4s comp=59.6s
+2026-02-16 12:26:51,675 - INFO - epoch 22 step 100/161 | loss=2.6592 semigroup=0.1223 sgram=0.0233 cmoment=0.1164 idt=0.0064 idr=0.20 dtv=0.1641 dl2=0.2575 otv=1.2531 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 369.3ms | 1.34 it/s eta 45.4s
+2026-02-16 12:27:35,735 - INFO - Epoch 22/100 | loss=2.6777 sgram=0.0235 cmoment=0.1171 dtv=0.1654 dl2=0.2607 steps=1.0 h=1.00 s=0.77 lr=1.80e-04 data=1.4s comp=59.3s
+2026-02-16 12:28:47,848 - INFO - epoch 23 step 100/161 | loss=2.6860 semigroup=0.1234 sgram=0.0235 cmoment=0.1171 idt=0.0072 idr=0.20 dtv=0.1704 dl2=0.2660 otv=1.2532 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 356.3ms | 1.39 it/s eta 43.8s
+2026-02-16 12:29:31,829 - INFO - Epoch 23/100 | loss=2.6771 sgram=0.0234 cmoment=0.1169 dtv=0.1707 dl2=0.2643 steps=1.0 h=1.00 s=0.77 lr=1.78e-04 data=1.4s comp=57.9s
+2026-02-16 12:30:43,879 - INFO - epoch 24 step 100/161 | loss=2.6472 semigroup=0.1194 sgram=0.0232 cmoment=0.1169 idt=0.0053 idr=0.20 dtv=0.1699 dl2=0.2641 otv=1.2545 steps=1.0 h=1.00 s=0.77 | data 8.6ms comp 356.0ms | 1.39 it/s eta 43.7s
+2026-02-16 12:31:27,802 - INFO - Epoch 24/100 | loss=2.6474 sgram=0.0233 cmoment=0.1169 dtv=0.1709 dl2=0.2633 steps=1.0 h=1.00 s=0.77 lr=1.76e-04 data=1.4s comp=57.9s
+2026-02-16 12:32:39,802 - INFO - epoch 25 step 100/161 | loss=2.6596 semigroup=0.1164 sgram=0.0233 cmoment=0.1172 idt=0.0060 idr=0.20 dtv=0.1728 dl2=0.2681 otv=1.2556 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 355.7ms | 1.40 it/s eta 43.7s
+2026-02-16 12:33:23,724 - INFO - Epoch 25/100 | loss=2.6594 sgram=0.0233 cmoment=0.1171 dtv=0.1731 dl2=0.2689 steps=1.0 h=1.00 s=0.78 lr=1.74e-04 data=1.4s comp=57.9s
+2026-02-16 12:34:35,734 - INFO - epoch 26 step 100/161 | loss=2.6501 semigroup=0.1163 sgram=0.0231 cmoment=0.1166 idt=0.0069 idr=0.20 dtv=0.1767 dl2=0.2742 otv=1.2553 steps=1.0 h=1.00 s=0.79 | data 8.8ms comp 355.7ms | 1.40 it/s eta 43.7s
+2026-02-16 12:35:19,775 - INFO - Epoch 26/100 | loss=2.6318 sgram=0.0230 cmoment=0.1162 dtv=0.1764 dl2=0.2723 steps=1.0 h=1.00 s=0.78 lr=1.72e-04 data=1.4s comp=57.9s
+2026-02-16 12:36:31,818 - INFO - epoch 27 step 100/161 | loss=2.6335 semigroup=0.1189 sgram=0.0230 cmoment=0.1163 idt=0.0061 idr=0.20 dtv=0.1772 dl2=0.2705 otv=1.2570 steps=1.0 h=1.00 s=0.77 | data 8.8ms comp 355.9ms | 1.40 it/s eta 43.7s
+2026-02-16 12:37:15,781 - INFO - Epoch 27/100 | loss=2.6489 sgram=0.0232 cmoment=0.1167 dtv=0.1794 dl2=0.2728 steps=1.0 h=1.00 s=0.77 lr=1.70e-04 data=1.4s comp=57.9s
+2026-02-16 12:38:27,833 - INFO - epoch 28 step 100/161 | loss=2.6428 semigroup=0.1108 sgram=0.0231 cmoment=0.1170 idt=0.0058 idr=0.20 dtv=0.1820 dl2=0.2767 otv=1.2569 steps=1.0 h=1.00 s=0.79 | data 8.7ms comp 355.8ms | 1.39 it/s eta 43.7s
+2026-02-16 12:39:11,796 - INFO - Epoch 28/100 | loss=2.6381 sgram=0.0231 cmoment=0.1170 dtv=0.1826 dl2=0.2770 steps=1.0 h=1.00 s=0.79 lr=1.68e-04 data=1.4s comp=57.9s
+2026-02-16 12:40:23,881 - INFO - epoch 29 step 100/161 | loss=2.5695 semigroup=0.1163 sgram=0.0225 cmoment=0.1150 idt=0.0048 idr=0.19 dtv=0.1890 dl2=0.2878 otv=1.2580 steps=1.0 h=1.00 s=0.78 | data 8.6ms comp 356.2ms | 1.39 it/s eta 43.8s
+2026-02-16 12:41:07,853 - INFO - Epoch 29/100 | loss=2.5841 sgram=0.0227 cmoment=0.1152 dtv=0.1902 dl2=0.2897 steps=1.0 h=1.00 s=0.78 lr=1.66e-04 data=1.4s comp=57.9s
+2026-02-16 12:42:19,913 - INFO - epoch 30 step 100/161 | loss=2.6331 semigroup=0.1111 sgram=0.0230 cmoment=0.1164 idt=0.0063 idr=0.20 dtv=0.1881 dl2=0.2823 otv=1.2576 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 356.0ms | 1.39 it/s eta 43.7s
+2026-02-16 12:43:03,895 - INFO - Epoch 30/100 | loss=2.6177 sgram=0.0229 cmoment=0.1161 dtv=0.1879 dl2=0.2814 steps=1.0 h=1.00 s=0.77 lr=1.63e-04 data=1.4s comp=57.9s
+2026-02-16 12:44:15,952 - INFO - epoch 31 step 100/161 | loss=2.6024 semigroup=0.1121 sgram=0.0228 cmoment=0.1156 idt=0.0051 idr=0.20 dtv=0.1911 dl2=0.2857 otv=1.2570 steps=1.0 h=1.00 s=0.77 | data 8.6ms comp 356.1ms | 1.39 it/s eta 43.7s
+2026-02-16 12:44:59,938 - INFO - Epoch 31/100 | loss=2.6013 sgram=0.0228 cmoment=0.1158 dtv=0.1916 dl2=0.2870 steps=1.0 h=1.00 s=0.77 lr=1.61e-04 data=1.4s comp=57.9s
+2026-02-16 12:46:12,037 - INFO - epoch 32 step 100/161 | loss=2.5880 semigroup=0.1134 sgram=0.0229 cmoment=0.1156 idt=0.0033 idr=0.20 dtv=0.1932 dl2=0.2836 otv=1.2567 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.3ms | 1.39 it/s eta 43.8s
+2026-02-16 12:46:55,972 - INFO - Epoch 32/100 | loss=2.5716 sgram=0.0227 cmoment=0.1149 dtv=0.1947 dl2=0.2871 steps=1.0 h=1.00 s=0.76 lr=1.58e-04 data=1.4s comp=57.9s
+2026-02-16 12:48:08,041 - INFO - epoch 33 step 100/161 | loss=2.5867 semigroup=0.1072 sgram=0.0226 cmoment=0.1151 idt=0.0054 idr=0.21 dtv=0.1956 dl2=0.2884 otv=1.2568 steps=1.0 h=1.00 s=0.79 | data 8.7ms comp 356.2ms | 1.39 it/s eta 43.7s
+2026-02-16 12:48:52,021 - INFO - Epoch 33/100 | loss=2.5853 sgram=0.0226 cmoment=0.1150 dtv=0.1964 dl2=0.2890 steps=1.0 h=1.00 s=0.78 lr=1.56e-04 data=1.4s comp=57.9s
+2026-02-16 12:50:04,069 - INFO - epoch 34 step 100/161 | loss=2.5511 semigroup=0.1076 sgram=0.0225 cmoment=0.1139 idt=0.0037 idr=0.20 dtv=0.1993 dl2=0.2931 otv=1.2587 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 355.9ms | 1.40 it/s eta 43.7s
+2026-02-16 12:50:48,003 - INFO - Epoch 34/100 | loss=2.5618 sgram=0.0226 cmoment=0.1140 dtv=0.1998 dl2=0.2927 steps=1.0 h=1.00 s=0.77 lr=1.53e-04 data=1.4s comp=57.9s
+2026-02-16 12:52:00,046 - INFO - epoch 35 step 100/161 | loss=2.5956 semigroup=0.1082 sgram=0.0228 cmoment=0.1153 idt=0.0053 idr=0.20 dtv=0.1993 dl2=0.2972 otv=1.2566 steps=1.0 h=1.00 s=0.78 | data 8.6ms comp 355.9ms | 1.40 it/s eta 43.7s
+2026-02-16 12:52:43,986 - INFO - Epoch 35/100 | loss=2.5762 sgram=0.0226 cmoment=0.1148 dtv=0.2001 dl2=0.2953 steps=1.0 h=1.00 s=0.78 lr=1.51e-04 data=1.4s comp=57.9s
+2026-02-16 12:53:56,084 - INFO - epoch 36 step 100/161 | loss=2.5799 semigroup=0.1122 sgram=0.0227 cmoment=0.1144 idt=0.0042 idr=0.20 dtv=0.2045 dl2=0.2949 otv=1.2587 steps=1.0 h=1.00 s=0.76 | data 8.8ms comp 356.3ms | 1.39 it/s eta 43.8s
+2026-02-16 12:54:40,047 - INFO - Epoch 36/100 | loss=2.5886 sgram=0.0227 cmoment=0.1147 dtv=0.2037 dl2=0.2932 steps=1.0 h=1.00 s=0.76 lr=1.48e-04 data=1.4s comp=57.9s
+2026-02-16 12:55:52,094 - INFO - epoch 37 step 100/161 | loss=2.5585 semigroup=0.1053 sgram=0.0225 cmoment=0.1147 idt=0.0037 idr=0.19 dtv=0.2073 dl2=0.3033 otv=1.2589 steps=1.0 h=1.00 s=0.78 | data 8.6ms comp 356.1ms | 1.40 it/s eta 43.7s
+2026-02-16 12:56:36,053 - INFO - Epoch 37/100 | loss=2.5543 sgram=0.0225 cmoment=0.1148 dtv=0.2093 dl2=0.3066 steps=1.0 h=1.00 s=0.78 lr=1.45e-04 data=1.4s comp=57.9s
+2026-02-16 12:57:48,141 - INFO - epoch 38 step 100/161 | loss=2.5326 semigroup=0.1023 sgram=0.0222 cmoment=0.1138 idt=0.0043 idr=0.20 dtv=0.2080 dl2=0.2985 otv=1.2598 steps=1.0 h=1.00 s=0.79 | data 8.7ms comp 356.2ms | 1.39 it/s eta 43.8s
+2026-02-16 12:58:32,096 - INFO - Epoch 38/100 | loss=2.5349 sgram=0.0222 cmoment=0.1137 dtv=0.2085 dl2=0.3003 steps=1.0 h=1.00 s=0.79 lr=1.43e-04 data=1.4s comp=57.9s
+2026-02-16 12:59:44,123 - INFO - epoch 39 step 100/161 | loss=2.5445 semigroup=0.1059 sgram=0.0225 cmoment=0.1139 idt=0.0034 idr=0.20 dtv=0.2096 dl2=0.3016 otv=1.2594 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.1ms | 1.40 it/s eta 43.7s
+2026-02-16 13:00:28,067 - INFO - Epoch 39/100 | loss=2.5366 sgram=0.0223 cmoment=0.1135 dtv=0.2097 dl2=0.3001 steps=1.0 h=1.00 s=0.77 lr=1.40e-04 data=1.4s comp=57.9s
+2026-02-16 13:01:40,122 - INFO - epoch 40 step 100/161 | loss=2.5381 semigroup=0.1027 sgram=0.0224 cmoment=0.1142 idt=0.0029 idr=0.20 dtv=0.2130 dl2=0.3070 otv=1.2588 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.1ms | 1.39 it/s eta 43.7s
+2026-02-16 13:02:24,074 - INFO - Epoch 40/100 | loss=2.5388 sgram=0.0224 cmoment=0.1142 dtv=0.2143 dl2=0.3085 steps=1.0 h=1.00 s=0.78 lr=1.37e-04 data=1.4s comp=57.9s
+2026-02-16 13:03:36,142 - INFO - epoch 41 step 100/161 | loss=2.5550 semigroup=0.1105 sgram=0.0225 cmoment=0.1145 idt=0.0037 idr=0.20 dtv=0.2141 dl2=0.3060 otv=1.2587 steps=1.0 h=1.00 s=0.76 | data 8.6ms comp 356.3ms | 1.39 it/s eta 43.7s
+2026-02-16 13:04:20,077 - INFO - Epoch 41/100 | loss=2.5466 sgram=0.0224 cmoment=0.1142 dtv=0.2159 dl2=0.3088 steps=1.0 h=1.00 s=0.77 lr=1.34e-04 data=1.4s comp=57.9s
+2026-02-16 13:05:32,127 - INFO - epoch 42 step 100/161 | loss=2.5517 semigroup=0.1007 sgram=0.0224 cmoment=0.1143 idt=0.0041 idr=0.21 dtv=0.2134 dl2=0.3029 otv=1.2593 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.0ms | 1.39 it/s eta 43.7s
+2026-02-16 13:06:16,073 - INFO - Epoch 42/100 | loss=2.5587 sgram=0.0225 cmoment=0.1146 dtv=0.2152 dl2=0.3075 steps=1.0 h=1.00 s=0.78 lr=1.32e-04 data=1.4s comp=57.9s
+2026-02-16 13:07:28,136 - INFO - epoch 43 step 100/161 | loss=2.5411 semigroup=0.1029 sgram=0.0224 cmoment=0.1140 idt=0.0036 idr=0.20 dtv=0.2196 dl2=0.3148 otv=1.2605 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.1ms | 1.39 it/s eta 43.7s
+2026-02-16 13:08:12,103 - INFO - Epoch 43/100 | loss=2.5303 sgram=0.0223 cmoment=0.1137 dtv=0.2192 dl2=0.3131 steps=1.0 h=1.00 s=0.77 lr=1.29e-04 data=1.4s comp=57.9s
+2026-02-16 13:09:24,224 - INFO - epoch 44 step 100/161 | loss=2.5518 semigroup=0.1041 sgram=0.0224 cmoment=0.1145 idt=0.0041 idr=0.19 dtv=0.2207 dl2=0.3132 otv=1.2611 steps=1.0 h=1.00 s=0.78 | data 8.6ms comp 356.4ms | 1.39 it/s eta 43.8s
+2026-02-16 13:10:08,226 - INFO - Epoch 44/100 | loss=2.5425 sgram=0.0224 cmoment=0.1140 dtv=0.2197 dl2=0.3101 steps=1.0 h=1.00 s=0.78 lr=1.26e-04 data=1.4s comp=58.0s
+2026-02-16 13:11:20,371 - INFO - epoch 45 step 100/161 | loss=2.5319 semigroup=0.1038 sgram=0.0223 cmoment=0.1142 idt=0.0033 idr=0.20 dtv=0.2234 dl2=0.3146 otv=1.2610 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.5ms | 1.39 it/s eta 43.8s
+2026-02-16 13:12:04,388 - INFO - Epoch 45/100 | loss=2.5296 sgram=0.0222 cmoment=0.1140 dtv=0.2241 dl2=0.3160 steps=1.0 h=1.00 s=0.78 lr=1.23e-04 data=1.4s comp=58.0s
+2026-02-16 13:13:16,547 - INFO - epoch 46 step 100/161 | loss=2.4989 semigroup=0.1020 sgram=0.0221 cmoment=0.1130 idt=0.0027 idr=0.20 dtv=0.2236 dl2=0.3144 otv=1.2605 steps=1.0 h=1.00 s=0.77 | data 8.6ms comp 356.5ms | 1.39 it/s eta 43.8s
+2026-02-16 13:14:00,526 - INFO - Epoch 46/100 | loss=2.5039 sgram=0.0221 cmoment=0.1132 dtv=0.2252 dl2=0.3154 steps=1.0 h=1.00 s=0.78 lr=1.20e-04 data=1.4s comp=57.9s
+2026-02-16 13:15:12,607 - INFO - epoch 47 step 100/161 | loss=2.4852 semigroup=0.1026 sgram=0.0220 cmoment=0.1130 idt=0.0021 idr=0.20 dtv=0.2266 dl2=0.3178 otv=1.2588 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.1ms | 1.39 it/s eta 43.7s
+2026-02-16 13:15:56,559 - INFO - Epoch 47/100 | loss=2.4916 sgram=0.0220 cmoment=0.1131 dtv=0.2269 dl2=0.3193 steps=1.0 h=1.00 s=0.78 lr=1.17e-04 data=1.4s comp=57.9s
+2026-02-16 13:17:08,547 - INFO - epoch 48 step 100/161 | loss=2.4894 semigroup=0.1002 sgram=0.0219 cmoment=0.1128 idt=0.0030 idr=0.21 dtv=0.2284 dl2=0.3181 otv=1.2607 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 355.9ms | 1.40 it/s eta 43.7s
+2026-02-16 13:17:52,464 - INFO - Epoch 48/100 | loss=2.4990 sgram=0.0220 cmoment=0.1132 dtv=0.2292 dl2=0.3199 steps=1.0 h=1.00 s=0.78 lr=1.14e-04 data=1.4s comp=57.9s
+2026-02-16 13:19:04,454 - INFO - epoch 49 step 100/161 | loss=2.5206 semigroup=0.0986 sgram=0.0221 cmoment=0.1135 idt=0.0039 idr=0.20 dtv=0.2335 dl2=0.3267 otv=1.2612 steps=1.0 h=1.00 s=0.78 | data 8.8ms comp 355.7ms | 1.40 it/s eta 43.7s
+2026-02-16 13:19:48,360 - INFO - Epoch 49/100 | loss=2.5112 sgram=0.0221 cmoment=0.1134 dtv=0.2325 dl2=0.3237 steps=1.0 h=1.00 s=0.78 lr=1.11e-04 data=1.4s comp=57.8s
+2026-02-16 13:21:00,344 - INFO - epoch 50 step 100/161 | loss=2.4877 semigroup=0.0978 sgram=0.0219 cmoment=0.1128 idt=0.0028 idr=0.20 dtv=0.2346 dl2=0.3250 otv=1.2615 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 355.7ms | 1.40 it/s eta 43.7s
+2026-02-16 13:21:44,256 - INFO - Epoch 50/100 | loss=2.4889 sgram=0.0219 cmoment=0.1127 dtv=0.2346 dl2=0.3241 steps=1.0 h=1.00 s=0.78 lr=1.08e-04 data=1.4s comp=57.8s
+2026-02-16 13:21:44,584 - INFO - Saved checkpoint: I:\Github\Latent_Style\Cycle-NCE\ablation-5styles\A00_full\checkpoints\epoch_0050.pt
+2026-02-16 13:21:44,592 - INFO - Running full eval for epoch 50 -> I:\Github\Latent_Style\Cycle-NCE\ablation-5styles\A00_full\checkpoints\full_eval\epoch_0050
+2026-02-16 13:23:29,111 - ERROR - Full eval failed for epoch 50 (code=3221225477). See I:\Github\Latent_Style\Cycle-NCE\ablation-5styles\A00_full\checkpoints\logs\full_eval_epoch_0050.log
+2026-02-16 13:24:40,997 - INFO - epoch 51 step 100/161 | loss=2.4560 semigroup=0.0979 sgram=0.0217 cmoment=0.1116 idt=0.0025 idr=0.20 dtv=0.2342 dl2=0.3220 otv=1.2628 steps=1.0 h=1.00 s=0.77 | data 8.9ms comp 355.6ms | 1.40 it/s eta 43.6s
+2026-02-16 13:25:24,875 - INFO - Epoch 51/100 | loss=2.4690 sgram=0.0218 cmoment=0.1119 dtv=0.2347 dl2=0.3241 steps=1.0 h=1.00 s=0.77 lr=1.05e-04 data=1.4s comp=57.8s
+2026-02-16 13:26:36,903 - INFO - epoch 52 step 100/161 | loss=2.4755 semigroup=0.0987 sgram=0.0218 cmoment=0.1125 idt=0.0026 idr=0.20 dtv=0.2329 dl2=0.3229 otv=1.2608 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 355.8ms | 1.40 it/s eta 43.7s
+2026-02-16 13:27:20,826 - INFO - Epoch 52/100 | loss=2.4778 sgram=0.0219 cmoment=0.1125 dtv=0.2345 dl2=0.3249 steps=1.0 h=1.00 s=0.77 lr=1.02e-04 data=1.4s comp=57.9s
+2026-02-16 13:28:32,855 - INFO - epoch 53 step 100/161 | loss=2.4576 semigroup=0.0957 sgram=0.0217 cmoment=0.1115 idt=0.0027 idr=0.20 dtv=0.2392 dl2=0.3283 otv=1.2613 steps=1.0 h=1.00 s=0.77 | data 8.8ms comp 355.9ms | 1.40 it/s eta 43.7s
+2026-02-16 13:29:16,877 - INFO - Epoch 53/100 | loss=2.4682 sgram=0.0218 cmoment=0.1120 dtv=0.2405 dl2=0.3302 steps=1.0 h=1.00 s=0.78 lr=9.90e-05 data=1.4s comp=58.0s
+2026-02-16 13:30:28,917 - INFO - epoch 54 step 100/161 | loss=2.4700 semigroup=0.0960 sgram=0.0218 cmoment=0.1125 idt=0.0020 idr=0.20 dtv=0.2407 dl2=0.3323 otv=1.2619 steps=1.0 h=1.00 s=0.77 | data 8.8ms comp 356.2ms | 1.40 it/s eta 43.7s
+2026-02-16 13:31:12,864 - INFO - Epoch 54/100 | loss=2.4814 sgram=0.0219 cmoment=0.1127 dtv=0.2407 dl2=0.3322 steps=1.0 h=1.00 s=0.77 lr=9.61e-05 data=1.4s comp=57.9s
+2026-02-16 13:32:24,895 - INFO - epoch 55 step 100/161 | loss=2.4511 semigroup=0.0891 sgram=0.0217 cmoment=0.1120 idt=0.0015 idr=0.20 dtv=0.2432 dl2=0.3339 otv=1.2632 steps=1.0 h=1.00 s=0.79 | data 8.7ms comp 355.9ms | 1.40 it/s eta 43.7s
+2026-02-16 13:33:08,825 - INFO - Epoch 55/100 | loss=2.4602 sgram=0.0217 cmoment=0.1120 dtv=0.2425 dl2=0.3329 steps=1.0 h=1.00 s=0.79 lr=9.31e-05 data=1.4s comp=57.9s
+2026-02-16 13:34:20,848 - INFO - epoch 56 step 100/161 | loss=2.4640 semigroup=0.0953 sgram=0.0218 cmoment=0.1125 idt=0.0016 idr=0.20 dtv=0.2439 dl2=0.3391 otv=1.2635 steps=1.0 h=1.00 s=0.77 | data 8.8ms comp 355.7ms | 1.40 it/s eta 43.7s
+2026-02-16 13:35:04,795 - INFO - Epoch 56/100 | loss=2.4626 sgram=0.0218 cmoment=0.1124 dtv=0.2447 dl2=0.3399 steps=1.0 h=1.00 s=0.77 lr=9.01e-05 data=1.4s comp=57.8s
+2026-02-16 13:36:16,875 - INFO - epoch 57 step 100/161 | loss=2.4621 semigroup=0.0936 sgram=0.0218 cmoment=0.1119 idt=0.0022 idr=0.20 dtv=0.2481 dl2=0.3396 otv=1.2633 steps=1.0 h=1.00 s=0.77 | data 8.8ms comp 356.1ms | 1.39 it/s eta 43.7s
+2026-02-16 13:37:00,848 - INFO - Epoch 57/100 | loss=2.4669 sgram=0.0217 cmoment=0.1121 dtv=0.2481 dl2=0.3395 steps=1.0 h=1.00 s=0.77 lr=8.72e-05 data=1.4s comp=57.9s
+2026-02-16 13:38:12,924 - INFO - epoch 58 step 100/161 | loss=2.4766 semigroup=0.0934 sgram=0.0219 cmoment=0.1126 idt=0.0017 idr=0.20 dtv=0.2473 dl2=0.3397 otv=1.2636 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.1ms | 1.39 it/s eta 43.7s
+2026-02-16 13:38:56,874 - INFO - Epoch 58/100 | loss=2.4914 sgram=0.0221 cmoment=0.1133 dtv=0.2473 dl2=0.3380 steps=1.0 h=1.00 s=0.77 lr=8.43e-05 data=1.4s comp=57.9s
+2026-02-16 13:40:08,958 - INFO - epoch 59 step 100/161 | loss=2.4426 semigroup=0.0913 sgram=0.0216 cmoment=0.1117 idt=0.0016 idr=0.19 dtv=0.2508 dl2=0.3415 otv=1.2640 steps=1.0 h=1.00 s=0.78 | data 8.8ms comp 356.0ms | 1.39 it/s eta 43.8s
+2026-02-16 13:40:52,922 - INFO - Epoch 59/100 | loss=2.4424 sgram=0.0216 cmoment=0.1117 dtv=0.2517 dl2=0.3434 steps=1.0 h=1.00 s=0.78 lr=8.14e-05 data=1.4s comp=57.9s
+2026-02-16 13:42:05,010 - INFO - epoch 60 step 100/161 | loss=2.4671 semigroup=0.0901 sgram=0.0219 cmoment=0.1123 idt=0.0015 idr=0.20 dtv=0.2533 dl2=0.3492 otv=1.2638 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 356.3ms | 1.39 it/s eta 43.8s
+2026-02-16 13:42:48,999 - INFO - Epoch 60/100 | loss=2.4579 sgram=0.0218 cmoment=0.1121 dtv=0.2524 dl2=0.3459 steps=1.0 h=1.00 s=0.77 lr=7.85e-05 data=1.4s comp=57.9s
+2026-02-16 13:44:01,099 - INFO - epoch 61 step 100/161 | loss=2.4360 semigroup=0.0872 sgram=0.0215 cmoment=0.1113 idt=0.0018 idr=0.20 dtv=0.2498 dl2=0.3418 otv=1.2624 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 356.2ms | 1.39 it/s eta 43.8s
+2026-02-16 13:44:45,088 - INFO - Epoch 61/100 | loss=2.4500 sgram=0.0217 cmoment=0.1120 dtv=0.2513 dl2=0.3444 steps=1.0 h=1.00 s=0.78 lr=7.56e-05 data=1.4s comp=57.9s
+2026-02-16 13:45:57,183 - INFO - epoch 62 step 100/161 | loss=2.4652 semigroup=0.0867 sgram=0.0218 cmoment=0.1127 idt=0.0014 idr=0.19 dtv=0.2548 dl2=0.3474 otv=1.2646 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 356.3ms | 1.39 it/s eta 43.8s
+2026-02-16 13:46:41,157 - INFO - Epoch 62/100 | loss=2.4522 sgram=0.0217 cmoment=0.1123 dtv=0.2543 dl2=0.3472 steps=1.0 h=1.00 s=0.78 lr=7.28e-05 data=1.4s comp=57.9s
+2026-02-16 13:47:53,223 - INFO - epoch 63 step 100/161 | loss=2.4376 semigroup=0.0884 sgram=0.0216 cmoment=0.1115 idt=0.0014 idr=0.20 dtv=0.2590 dl2=0.3539 otv=1.2640 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 356.0ms | 1.39 it/s eta 43.7s
+2026-02-16 13:48:37,177 - INFO - Epoch 63/100 | loss=2.4537 sgram=0.0218 cmoment=0.1120 dtv=0.2573 dl2=0.3506 steps=1.0 h=1.00 s=0.78 lr=7.00e-05 data=1.4s comp=57.9s
+2026-02-16 13:49:49,248 - INFO - epoch 64 step 100/161 | loss=2.4380 semigroup=0.0872 sgram=0.0216 cmoment=0.1116 idt=0.0014 idr=0.20 dtv=0.2556 dl2=0.3458 otv=1.2616 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.1ms | 1.39 it/s eta 43.7s
+2026-02-16 13:50:33,204 - INFO - Epoch 64/100 | loss=2.4399 sgram=0.0216 cmoment=0.1116 dtv=0.2570 dl2=0.3467 steps=1.0 h=1.00 s=0.77 lr=6.73e-05 data=1.4s comp=57.9s
+2026-02-16 13:51:45,258 - INFO - epoch 65 step 100/161 | loss=2.4272 semigroup=0.0868 sgram=0.0215 cmoment=0.1118 idt=0.0013 idr=0.20 dtv=0.2579 dl2=0.3503 otv=1.2647 steps=1.0 h=1.00 s=0.78 | data 8.8ms comp 356.0ms | 1.39 it/s eta 43.7s
+2026-02-16 13:52:29,262 - INFO - Epoch 65/100 | loss=2.4323 sgram=0.0215 cmoment=0.1118 dtv=0.2586 dl2=0.3502 steps=1.0 h=1.00 s=0.78 lr=6.46e-05 data=1.4s comp=57.9s
+2026-02-16 13:53:41,374 - INFO - epoch 66 step 100/161 | loss=2.4255 semigroup=0.0835 sgram=0.0215 cmoment=0.1114 idt=0.0008 idr=0.20 dtv=0.2597 dl2=0.3514 otv=1.2643 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 356.5ms | 1.39 it/s eta 43.8s
+2026-02-16 13:54:25,355 - INFO - Epoch 66/100 | loss=2.4220 sgram=0.0215 cmoment=0.1114 dtv=0.2607 dl2=0.3527 steps=1.0 h=1.00 s=0.78 lr=6.19e-05 data=1.4s comp=58.0s
+2026-02-16 13:55:37,462 - INFO - epoch 67 step 100/161 | loss=2.4118 semigroup=0.0916 sgram=0.0213 cmoment=0.1110 idt=0.0009 idr=0.19 dtv=0.2607 dl2=0.3516 otv=1.2644 steps=1.0 h=1.00 s=0.76 | data 8.7ms comp 356.2ms | 1.39 it/s eta 43.8s
+2026-02-16 13:56:21,447 - INFO - Epoch 67/100 | loss=2.4164 sgram=0.0214 cmoment=0.1111 dtv=0.2601 dl2=0.3520 steps=1.0 h=1.00 s=0.76 lr=5.92e-05 data=1.4s comp=57.9s
+2026-02-16 13:57:33,551 - INFO - epoch 68 step 100/161 | loss=2.4205 semigroup=0.0855 sgram=0.0214 cmoment=0.1114 idt=0.0010 idr=0.20 dtv=0.2605 dl2=0.3495 otv=1.2647 steps=1.0 h=1.00 s=0.77 | data 8.8ms comp 356.3ms | 1.39 it/s eta 43.8s
+2026-02-16 13:58:17,519 - INFO - Epoch 68/100 | loss=2.4171 sgram=0.0214 cmoment=0.1114 dtv=0.2619 dl2=0.3522 steps=1.0 h=1.00 s=0.77 lr=5.66e-05 data=1.4s comp=57.9s
+2026-02-16 13:59:29,634 - INFO - epoch 69 step 100/161 | loss=2.4342 semigroup=0.0851 sgram=0.0215 cmoment=0.1123 idt=0.0012 idr=0.20 dtv=0.2614 dl2=0.3559 otv=1.2651 steps=1.0 h=1.00 s=0.78 | data 8.8ms comp 356.4ms | 1.39 it/s eta 43.8s
+2026-02-16 14:00:13,626 - INFO - Epoch 69/100 | loss=2.4440 sgram=0.0216 cmoment=0.1124 dtv=0.2610 dl2=0.3535 steps=1.0 h=1.00 s=0.77 lr=5.41e-05 data=1.4s comp=58.0s
+2026-02-16 14:01:25,722 - INFO - epoch 70 step 100/161 | loss=2.4403 semigroup=0.0862 sgram=0.0216 cmoment=0.1122 idt=0.0012 idr=0.20 dtv=0.2633 dl2=0.3561 otv=1.2639 steps=1.0 h=1.00 s=0.76 | data 8.8ms comp 356.3ms | 1.39 it/s eta 43.8s
+2026-02-16 14:02:09,700 - INFO - Epoch 70/100 | loss=2.4298 sgram=0.0215 cmoment=0.1118 dtv=0.2642 dl2=0.3555 steps=1.0 h=1.00 s=0.77 lr=5.16e-05 data=1.4s comp=57.9s
+2026-02-16 14:03:21,808 - INFO - epoch 71 step 100/161 | loss=2.4030 semigroup=0.0855 sgram=0.0213 cmoment=0.1109 idt=0.0006 idr=0.19 dtv=0.2687 dl2=0.3609 otv=1.2649 steps=1.0 h=1.00 s=0.78 | data 8.8ms comp 356.3ms | 1.39 it/s eta 43.8s
+2026-02-16 14:04:05,784 - INFO - Epoch 71/100 | loss=2.4076 sgram=0.0214 cmoment=0.1109 dtv=0.2680 dl2=0.3608 steps=1.0 h=1.00 s=0.78 lr=4.92e-05 data=1.4s comp=57.9s
+2026-02-16 14:05:17,880 - INFO - epoch 72 step 100/161 | loss=2.4340 semigroup=0.0881 sgram=0.0215 cmoment=0.1127 idt=0.0006 idr=0.20 dtv=0.2667 dl2=0.3561 otv=1.2649 steps=1.0 h=1.00 s=0.75 | data 8.8ms comp 356.2ms | 1.39 it/s eta 43.8s
+2026-02-16 14:06:01,879 - INFO - Epoch 72/100 | loss=2.4324 sgram=0.0215 cmoment=0.1124 dtv=0.2674 dl2=0.3572 steps=1.0 h=1.00 s=0.76 lr=4.68e-05 data=1.4s comp=57.9s
+2026-02-16 14:07:13,984 - INFO - epoch 73 step 100/161 | loss=2.4261 semigroup=0.0839 sgram=0.0215 cmoment=0.1115 idt=0.0009 idr=0.20 dtv=0.2676 dl2=0.3587 otv=1.2655 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.0ms | 1.39 it/s eta 43.8s
+2026-02-16 14:07:57,962 - INFO - Epoch 73/100 | loss=2.4259 sgram=0.0215 cmoment=0.1116 dtv=0.2683 dl2=0.3594 steps=1.0 h=1.00 s=0.78 lr=4.44e-05 data=1.4s comp=57.9s
+2026-02-16 14:09:10,089 - INFO - epoch 74 step 100/161 | loss=2.4142 semigroup=0.0826 sgram=0.0215 cmoment=0.1112 idt=0.0004 idr=0.20 dtv=0.2705 dl2=0.3639 otv=1.2659 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.5ms | 1.39 it/s eta 43.8s
+2026-02-16 14:09:54,060 - INFO - Epoch 74/100 | loss=2.4119 sgram=0.0214 cmoment=0.1113 dtv=0.2706 dl2=0.3633 steps=1.0 h=1.00 s=0.77 lr=4.22e-05 data=1.4s comp=57.9s
+2026-02-16 14:11:06,146 - INFO - epoch 75 step 100/161 | loss=2.4261 semigroup=0.0847 sgram=0.0215 cmoment=0.1116 idt=0.0006 idr=0.20 dtv=0.2681 dl2=0.3576 otv=1.2647 steps=1.0 h=1.00 s=0.76 | data 8.7ms comp 356.1ms | 1.39 it/s eta 43.7s
+2026-02-16 14:11:50,138 - INFO - Epoch 75/100 | loss=2.4202 sgram=0.0215 cmoment=0.1113 dtv=0.2682 dl2=0.3587 steps=1.0 h=1.00 s=0.77 lr=4.00e-05 data=1.4s comp=57.9s
+2026-02-16 14:13:02,237 - INFO - epoch 76 step 100/161 | loss=2.3997 semigroup=0.0824 sgram=0.0213 cmoment=0.1109 idt=0.0005 idr=0.20 dtv=0.2704 dl2=0.3614 otv=1.2641 steps=1.0 h=1.00 s=0.76 | data 8.7ms comp 356.2ms | 1.39 it/s eta 43.8s
+2026-02-16 14:13:46,234 - INFO - Epoch 76/100 | loss=2.4056 sgram=0.0214 cmoment=0.1109 dtv=0.2714 dl2=0.3621 steps=1.0 h=1.00 s=0.77 lr=3.78e-05 data=1.4s comp=58.0s
+2026-02-16 14:14:58,349 - INFO - epoch 77 step 100/161 | loss=2.4100 semigroup=0.0842 sgram=0.0214 cmoment=0.1114 idt=0.0006 idr=0.20 dtv=0.2732 dl2=0.3649 otv=1.2657 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.3ms | 1.39 it/s eta 43.8s
+2026-02-16 14:15:42,355 - INFO - Epoch 77/100 | loss=2.4102 sgram=0.0214 cmoment=0.1113 dtv=0.2723 dl2=0.3628 steps=1.0 h=1.00 s=0.78 lr=3.57e-05 data=1.4s comp=58.0s
+2026-02-16 14:16:54,439 - INFO - epoch 78 step 100/161 | loss=2.4195 semigroup=0.0816 sgram=0.0215 cmoment=0.1117 idt=0.0003 idr=0.20 dtv=0.2706 dl2=0.3585 otv=1.2670 steps=1.0 h=1.00 s=0.76 | data 8.7ms comp 356.1ms | 1.39 it/s eta 43.7s
+2026-02-16 14:17:38,405 - INFO - Epoch 78/100 | loss=2.4109 sgram=0.0214 cmoment=0.1113 dtv=0.2715 dl2=0.3620 steps=1.0 h=1.00 s=0.77 lr=3.37e-05 data=1.4s comp=57.9s
+2026-02-16 14:18:50,553 - INFO - epoch 79 step 100/161 | loss=2.4198 semigroup=0.0793 sgram=0.0215 cmoment=0.1115 idt=0.0005 idr=0.20 dtv=0.2736 dl2=0.3642 otv=1.2657 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.4ms | 1.39 it/s eta 43.8s
+2026-02-16 14:19:34,559 - INFO - Epoch 79/100 | loss=2.4227 sgram=0.0215 cmoment=0.1116 dtv=0.2746 dl2=0.3651 steps=1.0 h=1.00 s=0.77 lr=3.18e-05 data=1.4s comp=58.0s
+2026-02-16 14:20:46,671 - INFO - epoch 80 step 100/161 | loss=2.4228 semigroup=0.0819 sgram=0.0216 cmoment=0.1112 idt=0.0003 idr=0.20 dtv=0.2769 dl2=0.3686 otv=1.2654 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 356.2ms | 1.39 it/s eta 43.8s
+2026-02-16 14:21:31,457 - INFO - Epoch 80/100 | loss=2.4145 sgram=0.0215 cmoment=0.1110 dtv=0.2768 dl2=0.3686 steps=1.0 h=1.00 s=0.78 lr=2.99e-05 data=1.4s comp=58.3s
+2026-02-16 14:22:46,247 - INFO - epoch 81 step 100/161 | loss=2.4162 semigroup=0.0799 sgram=0.0215 cmoment=0.1114 idt=0.0005 idr=0.20 dtv=0.2757 dl2=0.3647 otv=1.2661 steps=1.0 h=1.00 s=0.77 | data 8.8ms comp 368.9ms | 1.34 it/s eta 45.4s
+2026-02-16 14:23:31,712 - INFO - Epoch 81/100 | loss=2.4133 sgram=0.0214 cmoment=0.1112 dtv=0.2763 dl2=0.3658 steps=1.0 h=1.00 s=0.77 lr=2.81e-05 data=1.4s comp=59.9s
+2026-02-16 14:24:46,232 - INFO - epoch 82 step 100/161 | loss=2.3901 semigroup=0.0794 sgram=0.0212 cmoment=0.1100 idt=0.0005 idr=0.20 dtv=0.2746 dl2=0.3636 otv=1.2664 steps=1.0 h=1.00 s=0.78 | data 8.9ms comp 367.8ms | 1.35 it/s eta 45.2s
+2026-02-16 14:25:31,689 - INFO - Epoch 82/100 | loss=2.3948 sgram=0.0213 cmoment=0.1104 dtv=0.2761 dl2=0.3667 steps=1.0 h=1.00 s=0.78 lr=2.64e-05 data=1.4s comp=59.8s
+2026-02-16 14:26:46,225 - INFO - epoch 83 step 100/161 | loss=2.4124 semigroup=0.0780 sgram=0.0215 cmoment=0.1112 idt=0.0002 idr=0.20 dtv=0.2769 dl2=0.3685 otv=1.2671 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 367.8ms | 1.35 it/s eta 45.2s
+2026-02-16 14:27:31,705 - INFO - Epoch 83/100 | loss=2.4061 sgram=0.0214 cmoment=0.1110 dtv=0.2763 dl2=0.3670 steps=1.0 h=1.00 s=0.78 lr=2.48e-05 data=1.4s comp=59.8s
+2026-02-16 14:28:46,241 - INFO - epoch 84 step 100/161 | loss=2.4074 semigroup=0.0848 sgram=0.0214 cmoment=0.1112 idt=0.0004 idr=0.20 dtv=0.2782 dl2=0.3713 otv=1.2666 steps=1.0 h=1.00 s=0.76 | data 8.7ms comp 367.8ms | 1.35 it/s eta 45.2s
+2026-02-16 14:29:31,733 - INFO - Epoch 84/100 | loss=2.4116 sgram=0.0214 cmoment=0.1113 dtv=0.2787 dl2=0.3719 steps=1.0 h=1.00 s=0.77 lr=2.32e-05 data=1.4s comp=59.8s
+2026-02-16 14:30:46,246 - INFO - epoch 85 step 100/161 | loss=2.3925 semigroup=0.0776 sgram=0.0212 cmoment=0.1106 idt=0.0009 idr=0.19 dtv=0.2801 dl2=0.3727 otv=1.2674 steps=1.0 h=1.00 s=0.78 | data 8.8ms comp 367.7ms | 1.35 it/s eta 45.2s
+2026-02-16 14:31:31,708 - INFO - Epoch 85/100 | loss=2.3945 sgram=0.0212 cmoment=0.1107 dtv=0.2795 dl2=0.3724 steps=1.0 h=1.00 s=0.78 lr=2.18e-05 data=1.4s comp=59.8s
+2026-02-16 14:32:46,239 - INFO - epoch 86 step 100/161 | loss=2.3840 semigroup=0.0765 sgram=0.0212 cmoment=0.1104 idt=0.0003 idr=0.20 dtv=0.2792 dl2=0.3697 otv=1.2671 steps=1.0 h=1.00 s=0.78 | data 8.8ms comp 367.7ms | 1.35 it/s eta 45.2s
+2026-02-16 14:33:31,696 - INFO - Epoch 86/100 | loss=2.3860 sgram=0.0212 cmoment=0.1105 dtv=0.2800 dl2=0.3714 steps=1.0 h=1.00 s=0.78 lr=2.04e-05 data=1.4s comp=59.8s
+2026-02-16 14:34:46,424 - INFO - epoch 87 step 100/161 | loss=2.4108 semigroup=0.0776 sgram=0.0215 cmoment=0.1107 idt=0.0003 idr=0.20 dtv=0.2780 dl2=0.3682 otv=1.2665 steps=1.0 h=1.00 s=0.78 | data 8.8ms comp 369.1ms | 1.34 it/s eta 45.4s
+2026-02-16 14:35:31,925 - INFO - Epoch 87/100 | loss=2.3990 sgram=0.0213 cmoment=0.1104 dtv=0.2793 dl2=0.3700 steps=1.0 h=1.00 s=0.78 lr=1.90e-05 data=1.4s comp=59.9s
+2026-02-16 14:36:46,496 - INFO - epoch 88 step 100/161 | loss=2.3963 semigroup=0.0788 sgram=0.0213 cmoment=0.1110 idt=0.0003 idr=0.20 dtv=0.2787 dl2=0.3673 otv=1.2680 steps=1.0 h=1.00 s=0.76 | data 8.8ms comp 367.8ms | 1.35 it/s eta 45.3s
+2026-02-16 14:37:31,957 - INFO - Epoch 88/100 | loss=2.3977 sgram=0.0213 cmoment=0.1111 dtv=0.2800 dl2=0.3701 steps=1.0 h=1.00 s=0.77 lr=1.78e-05 data=1.4s comp=59.8s
+2026-02-16 14:38:46,507 - INFO - epoch 89 step 100/161 | loss=2.3883 semigroup=0.0755 sgram=0.0212 cmoment=0.1109 idt=0.0002 idr=0.20 dtv=0.2808 dl2=0.3714 otv=1.2657 steps=1.0 h=1.00 s=0.79 | data 8.8ms comp 367.5ms | 1.35 it/s eta 45.2s
+2026-02-16 14:39:31,972 - INFO - Epoch 89/100 | loss=2.3909 sgram=0.0212 cmoment=0.1106 dtv=0.2831 dl2=0.3757 steps=1.0 h=1.00 s=0.79 lr=1.67e-05 data=1.4s comp=59.8s
+2026-02-16 14:40:46,530 - INFO - epoch 90 step 100/161 | loss=2.3782 semigroup=0.0795 sgram=0.0211 cmoment=0.1101 idt=0.0004 idr=0.20 dtv=0.2816 dl2=0.3708 otv=1.2666 steps=1.0 h=1.00 s=0.77 | data 8.7ms comp 368.1ms | 1.35 it/s eta 45.3s
+2026-02-16 14:41:32,020 - INFO - Epoch 90/100 | loss=2.3862 sgram=0.0212 cmoment=0.1103 dtv=0.2827 dl2=0.3732 steps=1.0 h=1.00 s=0.77 lr=1.56e-05 data=1.4s comp=59.9s
+2026-02-16 14:42:46,569 - INFO - epoch 91 step 100/161 | loss=2.3953 semigroup=0.0786 sgram=0.0213 cmoment=0.1106 idt=0.0003 idr=0.20 dtv=0.2809 dl2=0.3690 otv=1.2659 steps=1.0 h=1.00 s=0.77 | data 8.8ms comp 367.8ms | 1.35 it/s eta 45.2s
+2026-02-16 14:43:32,062 - INFO - Epoch 91/100 | loss=2.3931 sgram=0.0212 cmoment=0.1107 dtv=0.2808 dl2=0.3686 steps=1.0 h=1.00 s=0.77 lr=1.46e-05 data=1.4s comp=59.8s
+2026-02-16 14:44:46,583 - INFO - epoch 92 step 100/161 | loss=2.3889 semigroup=0.0772 sgram=0.0212 cmoment=0.1106 idt=0.0004 idr=0.20 dtv=0.2824 dl2=0.3691 otv=1.2664 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 367.7ms | 1.35 it/s eta 45.2s
+2026-02-16 14:45:32,057 - INFO - Epoch 92/100 | loss=2.3866 sgram=0.0212 cmoment=0.1106 dtv=0.2839 dl2=0.3723 steps=1.0 h=1.00 s=0.77 lr=1.38e-05 data=1.4s comp=59.8s
+2026-02-16 14:46:46,594 - INFO - epoch 93 step 100/161 | loss=2.3910 semigroup=0.0794 sgram=0.0212 cmoment=0.1107 idt=0.0005 idr=0.20 dtv=0.2841 dl2=0.3777 otv=1.2679 steps=1.0 h=1.00 s=0.76 | data 8.7ms comp 367.7ms | 1.35 it/s eta 45.2s
+2026-02-16 14:47:32,030 - INFO - Epoch 93/100 | loss=2.3896 sgram=0.0212 cmoment=0.1107 dtv=0.2832 dl2=0.3753 steps=1.0 h=1.00 s=0.77 lr=1.30e-05 data=1.4s comp=59.8s
+2026-02-16 14:48:46,591 - INFO - epoch 94 step 100/161 | loss=2.4142 semigroup=0.0740 sgram=0.0215 cmoment=0.1116 idt=0.0003 idr=0.20 dtv=0.2840 dl2=0.3739 otv=1.2682 steps=1.0 h=1.00 s=0.78 | data 8.8ms comp 367.9ms | 1.35 it/s eta 45.3s
+2026-02-16 14:49:32,059 - INFO - Epoch 94/100 | loss=2.3913 sgram=0.0212 cmoment=0.1107 dtv=0.2846 dl2=0.3747 steps=1.0 h=1.00 s=0.78 lr=1.23e-05 data=1.4s comp=59.8s
+2026-02-16 14:50:46,539 - INFO - epoch 95 step 100/161 | loss=2.4066 semigroup=0.0753 sgram=0.0214 cmoment=0.1114 idt=0.0002 idr=0.21 dtv=0.2822 dl2=0.3717 otv=1.2660 steps=1.0 h=1.00 s=0.78 | data 8.7ms comp 367.5ms | 1.35 it/s eta 45.2s
+Traceback (most recent call last):
+  File "I:\Github\Latent_Style\Cycle-NCE\src\run.py", line 337, in <module>
+    main()
+    ~~~~^^
+  File "I:\Github\Latent_Style\Cycle-NCE\src\run.py", line 298, in main
+    metrics = trainer.train_epoch(dataloader, epoch)
+  File "I:\Github\Latent_Style\Cycle-NCE\src\trainer.py", line 690, in train_epoch
+    loss_dict = self.loss_fn.compute(
+        self.model,
+    ...<4 lines>...
+        debug_timing=enable_loss_timing,
+    )
+  File "I:\Github\Latent_Style\Cycle-NCE\src\losses.py", line 445, in compute
+    "semigroup_applied": torch.tensor(1.0 if semigroup_applied else 0.0, device=content.device),
+                         ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

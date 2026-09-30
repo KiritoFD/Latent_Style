@@ -171,7 +171,13 @@ def main() -> None:
     parser.add_argument("--num_steps", type=int, default=6)
     parser.add_argument("--step_size", type=float, default=0.8)
     parser.add_argument("--style_strength", type=float, default=0.75)
-    parser.add_argument("--step_schedule", type=str, default="flat")
+<<<<<<< Updated upstream
+    parser.add_argument(
+        "--step_schedule",
+        type=str,
+        default="flat",
+        help="Deprecated compatibility arg. run_evaluation.py no longer accepts this and it is ignored here.",
+    )
     parser.add_argument("--batch_size", type=int, default=20)
     parser.add_argument("--max_src_samples", type=int, default=50)
     parser.add_argument("--max_ref_compare", type=int, default=50)
@@ -181,6 +187,18 @@ def main() -> None:
     parser.add_argument("--eval_classifier_only", action="store_true")
     parser.add_argument("--reuse_generated", action=argparse.BooleanOptionalAction, default=False, help="Reuse existing generated images if present")
     parser.add_argument("--clean_generated", action=argparse.BooleanOptionalAction, default=True, help="Delete existing *_to_*.jpg before eval to force fresh generation")
+=======
+    parser.add_argument("--step_schedule", type=str, default="flat")
+    parser.add_argument("--batch_size", type=int, default=40)
+    parser.add_argument("--max_src_samples", type=int, default=50)
+    parser.add_argument("--max_ref_compare", type=int, default=50)
+    parser.add_argument("--max_ref_cache", type=int, default=100)
+    parser.add_argument("--ref_feature_batch_size", type=int, default=96)
+    parser.add_argument("--eval_disable_lpips", action="store_true")
+    parser.add_argument("--eval_classifier_only", action="store_true")
+    parser.add_argument("--reuse_generated", action=argparse.BooleanOptionalAction, default=True, help="Reuse existing generated images if present")
+    parser.add_argument("--clean_generated", action=argparse.BooleanOptionalAction, default=False, help="Delete existing *_to_*.jpg before eval to force fresh generation")
+>>>>>>> Stashed changes
     parser.add_argument("--force_regen", action="store_true")
     parser.add_argument("--skip_existing", action="store_true", help="Skip run if summary.json already exists.")
     parser.add_argument("--dry_run", action="store_true", help="Only print commands, do not execute.")
@@ -224,8 +242,11 @@ def main() -> None:
             str(args.step_size),
             "--style_strength",
             str(args.style_strength),
+<<<<<<< Updated upstream
+=======
             "--step_schedule",
             str(args.step_schedule),
+>>>>>>> Stashed changes
             "--batch_size",
             str(args.batch_size),
             "--max_src_samples",

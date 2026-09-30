@@ -1,2 +1,0 @@
-label,n_pairs,dino_structure,clip_style_all,clip_content_all,content_lpips_all,eval_dir
-SaMST_protocol_a_800,750,0.020116473196074368,0.7253123044570288,0.7751939229333332,0.53903856028,Related_Works\baseline_pipeline\results\samst\protocol_a_800

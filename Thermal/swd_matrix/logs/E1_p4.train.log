@@ -1,0 +1,104 @@
+2026-02-07 23:59:50,285 - INFO - Using device: cuda
+2026-02-07 23:59:50,286 - INFO - Using global seed: 42
+2026-02-07 23:59:50,286 - INFO - Loading 4 styles from ../../latents...
+2026-02-08 00:00:01,470 - INFO - Using device: cuda
+2026-02-08 00:00:01,470 - INFO - Using global seed: 42
+2026-02-08 00:00:01,471 - INFO - Loading 4 styles from ../../latents...
+2026-02-08 00:00:39,906 - INFO - 🚀 Pre-loading ALL latents to GPU VRAM (Zero-Copy DataLoader)
+2026-02-08 00:00:40,684 - INFO - Model architecture: unet_lite
+2026-02-08 00:00:41,660 - INFO - Model compiled with torch.compile
+2026-02-08 00:00:41,770 - INFO - Model parameters: 65,220,292
+2026-02-08 00:00:41,774 - INFO - 🎯 GeometricFreeEnergyLoss initialized (Multi-Style Mode)
+   Scales: [4]
+   Styles: 4 | Max Samples: 16384
+   Projections: 64 | Memory: ~16.0MB
+2026-02-08 00:00:41,774 - INFO - SWD setup | enabled=True warmup_ratio=0.200 band=highpass levels=['latent'] high_w=1.000 low_w=1.000 moment_w=10.000
+2026-02-08 00:00:41,775 - INFO - Style classifier guidance disabled
+2026-02-08 00:00:41,775 - INFO - Identity consistency enabled (pair_ratio=0.25, w_identity=1.0)
+2026-02-08 00:00:41,775 - INFO - Pyramid Structural Loss enabled (w=1.0, weights={'low': 4.0, 'mid': 2.0, 'high': 1.0})
+2026-02-08 00:00:41,775 - INFO - Velocity Regularization enabled (weight=0.1)
+2026-02-08 00:00:41,776 - INFO - Scheduler: Linear Warmup (10) -> Cosine Annealing (to 1e-06)
+2026-02-08 00:00:41,777 - INFO - Adaptive Loss Normalization enabled (Running Mean Scaling)
+2026-02-08 00:00:41,777 - INFO - Alpha warmup schedule: 0 -> 1.0 over 1000 steps
+2026-02-08 00:00:41,777 - INFO - Per-style loss weights: [1.0, 1.0, 1.0, 1.0]
+2026-02-08 00:00:41,781 - INFO - Full external evaluation interval: 1000000000
+2026-02-08 00:00:43,845 - INFO - Loading VAE on device: cuda
+2026-02-08 00:00:43,971 - INFO -  Loaded VAE from local HF cache: stabilityai/sd-vae-ft-mse
+2026-02-08 00:00:43,982 - INFO - No checkpoint found; starting fresh
+2026-02-08 00:00:43,984 - INFO - Building style indices cache...
+2026-02-08 00:00:43,985 - INFO -   Style 0: 6187 samples
+2026-02-08 00:00:43,985 - INFO -   Style 1: 972 samples
+2026-02-08 00:00:43,985 - INFO -   Style 2: 600 samples
+2026-02-08 00:00:43,985 - INFO -   Style 3: 850 samples
+2026-02-08 00:00:43,986 - INFO - Style indices cache built
+2026-02-08 00:00:43,986 - INFO - Estimated train steps=19300, SWD warmup steps=3860 (ratio=0.200)
+2026-02-08 00:00:43,986 - INFO - Initializing Style LUT cache for multi-style SWD...
+2026-02-08 00:00:43,987 - INFO -   Style 0: Sampled 128 images for distribution statistics.
+2026-02-08 00:00:43,988 - INFO -   Style 1: Sampled 128 images for distribution statistics.
+2026-02-08 00:00:43,989 - INFO -   Style 2: Sampled 128 images for distribution statistics.
+2026-02-08 00:00:43,989 - INFO -   Style 3: Sampled 128 images for distribution statistics.
+2026-02-08 00:00:43,994 - INFO - 🔥 Pre-computing SWD Style Cache (this may take a minute)...
+2026-02-08 00:00:43,999 - INFO -   Processing scale 4×4 (1/1)...
+2026-02-08 00:00:44,179 - INFO -     ✓ Scale 4: LUT shape torch.Size([4, 16384, 4])
+2026-02-08 00:00:44,179 - INFO - ✅ SWD Cache Initialization Complete
+2026-02-08 00:00:44,179 - INFO - Skipping initial inference snapshot (training.save_initial_inference=false)
+2026-02-08 00:00:47,995 - INFO - 🚀 Pre-loading ALL latents to GPU VRAM (Zero-Copy DataLoader)
+2026-02-08 00:00:48,757 - INFO - Model architecture: unet_lite
+2026-02-08 00:00:49,687 - INFO - Model compiled with torch.compile
+2026-02-08 00:00:49,809 - INFO - Model parameters: 65,220,292
+2026-02-08 00:00:49,809 - INFO - 🎯 GeometricFreeEnergyLoss initialized (Multi-Style Mode)
+   Scales: [4]
+   Styles: 4 | Max Samples: 16384
+   Projections: 64 | Memory: ~16.0MB
+2026-02-08 00:00:49,810 - INFO - SWD setup | enabled=True warmup_ratio=0.200 band=highpass levels=['latent'] high_w=1.000 low_w=1.000 moment_w=10.000
+2026-02-08 00:00:49,811 - INFO - Style classifier guidance disabled
+2026-02-08 00:00:49,811 - INFO - Identity consistency enabled (pair_ratio=0.25, w_identity=1.0)
+2026-02-08 00:00:49,811 - INFO - Pyramid Structural Loss enabled (w=1.0, weights={'low': 4.0, 'mid': 2.0, 'high': 1.0})
+2026-02-08 00:00:49,811 - INFO - Velocity Regularization enabled (weight=0.1)
+2026-02-08 00:00:49,812 - INFO - Scheduler: Linear Warmup (10) -> Cosine Annealing (to 1e-06)
+2026-02-08 00:00:49,812 - INFO - Adaptive Loss Normalization enabled (Running Mean Scaling)
+2026-02-08 00:00:49,813 - INFO - Alpha warmup schedule: 0 -> 1.0 over 1000 steps
+2026-02-08 00:00:49,813 - INFO - Per-style loss weights: [1.0, 1.0, 1.0, 1.0]
+2026-02-08 00:00:49,815 - INFO - Full external evaluation interval: 1000000000
+2026-02-08 00:00:51,789 - INFO - Loading VAE on device: cuda
+2026-02-08 00:00:51,939 - INFO -  Loaded VAE from local HF cache: stabilityai/sd-vae-ft-mse
+2026-02-08 00:00:51,949 - INFO - No checkpoint found; starting fresh
+2026-02-08 00:00:51,951 - INFO - Building style indices cache...
+2026-02-08 00:00:51,952 - INFO -   Style 0: 6187 samples
+2026-02-08 00:00:51,952 - INFO -   Style 1: 972 samples
+2026-02-08 00:00:51,952 - INFO -   Style 2: 600 samples
+2026-02-08 00:00:51,952 - INFO -   Style 3: 850 samples
+2026-02-08 00:00:51,952 - INFO - Style indices cache built
+2026-02-08 00:00:51,953 - INFO - Estimated train steps=9650, SWD warmup steps=1930 (ratio=0.200)
+2026-02-08 00:00:51,953 - INFO - Initializing Style LUT cache for multi-style SWD...
+2026-02-08 00:00:51,954 - INFO -   Style 0: Sampled 128 images for distribution statistics.
+2026-02-08 00:00:51,955 - INFO -   Style 1: Sampled 128 images for distribution statistics.
+2026-02-08 00:00:51,955 - INFO -   Style 2: Sampled 128 images for distribution statistics.
+2026-02-08 00:00:51,956 - INFO -   Style 3: Sampled 128 images for distribution statistics.
+2026-02-08 00:00:51,958 - INFO - 🔥 Pre-computing SWD Style Cache (this may take a minute)...
+2026-02-08 00:00:51,963 - INFO -   Processing scale 4×4 (1/1)...
+2026-02-08 00:00:52,075 - INFO -     ✓ Scale 4: LUT shape torch.Size([4, 16384, 4])
+2026-02-08 00:00:52,075 - INFO - ✅ SWD Cache Initialization Complete
+2026-02-08 00:00:52,075 - INFO - Skipping initial inference snapshot (training.save_initial_inference=false)
+2026-02-08 00:00:52,429 - INFO - v_pred_norm=0.000 v_tgt_norm=1.365
+2026-02-08 00:00:59,725 - INFO - v_pred_norm=0.000 v_tgt_norm=1.368
+2026-02-08 00:01:04,905 - INFO - v_pred_norm=0.000 v_tgt_norm=1.371
+2026-02-08 00:01:05,166 - INFO - v_pred_norm=0.001 v_tgt_norm=1.363
+2026-02-08 00:01:08,157 - INFO - v_pred_norm=0.001 v_tgt_norm=1.367
+2026-02-08 00:01:08,696 - INFO - v_pred_norm=0.002 v_tgt_norm=1.366
+2026-02-08 00:01:14,012 - INFO - v_pred_norm=0.000 v_tgt_norm=1.364
+2026-02-08 00:01:15,740 - INFO - v_pred_norm=0.001 v_tgt_norm=1.366
+2026-02-08 00:01:16,070 - INFO - v_pred_norm=0.001 v_tgt_norm=1.367
+2026-02-08 00:01:16,450 - INFO - v_pred_norm=0.002 v_tgt_norm=1.368
+2026-02-08 00:03:58,153 - INFO - Epoch 1/50 | Loss: 1.5544 | SWD: 0.0614 | MSE: 4.0000 | W_Str: 1.00 | W_Sty: 1.00 | LR: 1.09e-05
+2026-02-08 00:04:01,205 - INFO - Epoch 1/50 | Loss: 1.4869 | SWD: 0.0665 | MSE: 4.3222 | W_Str: 1.00 | W_Sty: 1.00 | LR: 1.09e-05
+2026-02-08 00:06:46,624 - INFO - Epoch 2/50 | Loss: 1.7813 | SWD: 0.1493 | MSE: 2.8687 | W_Str: 1.00 | W_Sty: 1.00 | LR: 2.08e-05
+2026-02-08 00:06:56,693 - INFO - Epoch 2/50 | Loss: 2.0321 | SWD: 0.1419 | MSE: 2.7372 | W_Str: 1.00 | W_Sty: 1.00 | LR: 2.08e-05
+
+
+===== [2026-02-07 23:59:59] CMD: /home/xy/miniconda3/envs/cu128/bin/python /mnt/g/GitHub/Latent_Style/Thermal/src/run.py --config /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix/configs/E1_p4.json =====
+2026-02-08 00:08:29,845 - INFO - Epoch 3/50 | Loss: 2.0680 | SWD: 0.2244 | MSE: 2.6433 | W_Str: 1.00 | W_Sty: 1.00 | LR: 3.07e-05
+2026-02-08 00:09:51,590 - INFO - Epoch 4/50 | Loss: 2.0309 | SWD: 0.3038 | MSE: 2.6641 | W_Str: 1.00 | W_Sty: 1.00 | LR: 4.06e-05
+
+
+===== [2026-02-07 23:59:47] CMD: /home/xy/miniconda3/envs/cu128/bin/python /mnt/g/GitHub/Latent_Style/Thermal/src/run.py --config /mnt/g/GitHub/Latent_Style/Thermal/swd_matrix/configs/E1_p4.json =====

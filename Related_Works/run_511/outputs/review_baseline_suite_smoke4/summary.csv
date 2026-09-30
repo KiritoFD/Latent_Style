@@ -1,5 +1,0 @@
-avg_sec_per_img,avg_sec_per_iter,backend,batch_size,device,effective_tflops,elapsed_sec,end_to_end_img_per_sec,flops,generated_images,infer_elapsed_sec,infer_status,launcher_elapsed_sec,launcher_rc,macs,method,params,peak_reserved_mb,peak_vram_mb,preflight_error,preflight_status,profile_error,profile_status,throughput_img_per_sec,train_elapsed_sec,train_status
-0.08165847333333053,0.08165847333333053,,1,cuda,,2.4497541999999157,0.16693933424593502,,5,29.951,ok,35.853,0,,stytr2,,440.0,408.654296875,,ok,,ok,12.24612657057636,5.582,ok
-,,,,,,,0.107452935614201,,5,46.532,ok,70.396,0,,cast,,,,,ok,FileNotFoundError: [Errno 2] No such file or directory: 'G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke4\\cast\\checkpoints\\run511_cast\\latest_net_AE.pth',blocked,,23.541,ok
-0.007479633333332458,0.007479633333332458,,1,cuda,,0.22438899999997375,,,0,2.182,failed,7.418,1,,aesfa,,2238.0,2211.94091796875,,ok,,ok,133.6963933169786,4.824,ok
-,,,,,,,,,0,6.309,failed,17.149,1,,aespa,,,,,ok,AttributeError: 'NoneType' object has no attribute 'modules',blocked,,10.404,ok

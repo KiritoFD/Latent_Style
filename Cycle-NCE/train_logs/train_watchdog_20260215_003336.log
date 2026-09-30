@@ -1,0 +1,30 @@
+[INFO] watchdog started at 2026-02-15 00:33:36
+[INFO] cwd=/mnt/i/Github/Latent_Style/Cycle-NCE/src
+[INFO] log=/mnt/i/Github/Latent_Style/Cycle-NCE/src/../train_logs/train_watchdog_20260215_003336.log
+[INFO] launch train at 2026-02-15 00:33:36
+2026-02-15 00:33:38,528 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:33:38,569 - INFO - Set PYTORCH_ALLOC_CONF=expandable_segments:True
+2026-02-15 00:33:38,569 - INFO - Device: cuda
+2026-02-15 00:33:38,569 - INFO - Seed: 42
+2026-02-15 00:33:38,589 - INFO - CUDA GPU: NVIDIA Graphics Device | cc=8.6 | vram=12.0 GB
+2026-02-15 00:33:38,589 - INFO - Loading latent dataset from ../../latent-256
+[WARN] train crashed with exit=143; restart in 10s
+[INFO] launch train at 2026-02-15 00:33:54
+2026-02-15 00:33:55,709 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:33:56,018 - INFO - Set PYTORCH_ALLOC_CONF=expandable_segments:True
+2026-02-15 00:33:56,018 - INFO - Device: cuda
+2026-02-15 00:33:56,018 - INFO - Seed: 42
+2026-02-15 00:33:56,088 - INFO - CUDA GPU: NVIDIA Graphics Device | cc=8.6 | vram=12.0 GB
+2026-02-15 00:33:56,088 - INFO - Loading latent dataset from ../../latent-256
+2026-02-15 00:34:21,322 - INFO -   style=photo id=0 count=6187
+2026-02-15 00:34:28,890 - INFO -   style=Hayao id=1 count=1752
+2026-02-15 00:34:29,148 - INFO - Preloaded all latents to GPU: cuda
+2026-02-15 00:34:29,156 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-15 00:34:31,241 - INFO - torch.compile enabled (backend=inductor mode=reduce-overhead fullgraph=False cudagraphs=on cache=/mnt/i/Github/Latent_Style/Cycle-NCE/full_300-adagn+map16-statloss/torch_compile_cache)
+2026-02-15 00:34:31,241 - INFO - Model params: 8,378,244
+2026-02-15 00:34:31,241 - INFO - Infra | gpu=NVIDIA Graphics Device channels_last=True tf32=True cudnn_benchmark=True grad_ckpt=False compile=True backend=inductor mode=reduce-overhead fullgraph=False cudagraphs=on
+2026-02-15 00:34:31,242 - INFO - Precision | amp=True amp_dtype=bf16 grad_scaler=False fused_adamw=True foreach_adamw=False
+2026-02-15 00:34:31,247 - INFO - No checkpoint found, start from scratch.
+Epoch 1/300:   0%|          | 0/148 [00:00<?, ?it/s]/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py:77: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):
+W0215 00:34:46.773000 2657 site-packages/torch/_inductor/utils.py:1613] [0/0] Not enough SMs to use max_autotune_gemm mode

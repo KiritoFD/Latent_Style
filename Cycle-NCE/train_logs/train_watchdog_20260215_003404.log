@@ -1,0 +1,101 @@
+[INFO] watchdog started at 2026-02-15 00:34:04
+[INFO] cwd=/mnt/i/Github/Latent_Style/Cycle-NCE/src
+[INFO] log=/mnt/i/Github/Latent_Style/Cycle-NCE/src/../train_logs/train_watchdog_20260215_003404.log
+[INFO] launch train at 2026-02-15 00:34:04
+2026-02-15 00:34:06,053 - INFO - Active losses: w_struct, w_cycle, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2
+2026-02-15 00:34:06,093 - INFO - Set PYTORCH_ALLOC_CONF=expandable_segments:True
+2026-02-15 00:34:06,093 - INFO - Device: cuda
+2026-02-15 00:34:06,093 - INFO - Seed: 42
+2026-02-15 00:34:06,112 - INFO - CUDA GPU: NVIDIA Graphics Device | cc=8.6 | vram=12.0 GB
+2026-02-15 00:34:06,112 - INFO - Loading latent dataset from ../../latent-256
+2026-02-15 00:34:32,015 - INFO -   style=photo id=0 count=6187
+2026-02-15 00:34:38,999 - INFO -   style=Hayao id=1 count=1752
+2026-02-15 00:34:39,218 - INFO - Preloaded all latents to GPU: cuda
+2026-02-15 00:34:39,224 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-15 00:34:41,462 - INFO - torch.compile enabled (backend=inductor mode=reduce-overhead fullgraph=False cudagraphs=on cache=/mnt/i/Github/Latent_Style/Cycle-NCE/full_300-adagn+map16-statloss/torch_compile_cache)
+2026-02-15 00:34:41,462 - INFO - Model params: 8,378,244
+2026-02-15 00:34:41,462 - INFO - Infra | gpu=NVIDIA Graphics Device channels_last=True tf32=True cudnn_benchmark=True grad_ckpt=False compile=True backend=inductor mode=reduce-overhead fullgraph=False cudagraphs=on
+2026-02-15 00:34:41,463 - INFO - Precision | amp=True amp_dtype=bf16 grad_scaler=False fused_adamw=True foreach_adamw=False
+2026-02-15 00:34:41,467 - INFO - No checkpoint found, start from scratch.
+Epoch 1/300:   0%|          | 0/148 [00:00<?, ?it/s]2026-02-15 00:34:44,350 - WARNING - CUDA OOM at epoch=1 step=1, skipping batch (reduce batch_size if frequent).
+Epoch 1/300:   1%|          | 1/148 [00:02<07:03,  2.88s/it]2026-02-15 00:34:44,410 - WARNING - CUDA OOM at epoch=1 step=2, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:44,460 - WARNING - CUDA OOM at epoch=1 step=3, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:44,515 - WARNING - CUDA OOM at epoch=1 step=4, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:44,564 - WARNING - CUDA OOM at epoch=1 step=5, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:44,614 - WARNING - CUDA OOM at epoch=1 step=6, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:44,665 - WARNING - CUDA OOM at epoch=1 step=7, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:44,717 - WARNING - CUDA OOM at epoch=1 step=8, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:44,770 - WARNING - CUDA OOM at epoch=1 step=9, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:44,821 - WARNING - CUDA OOM at epoch=1 step=10, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:44,871 - WARNING - CUDA OOM at epoch=1 step=11, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:44,922 - WARNING - CUDA OOM at epoch=1 step=12, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:44,973 - WARNING - CUDA OOM at epoch=1 step=13, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,023 - WARNING - CUDA OOM at epoch=1 step=14, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,072 - WARNING - CUDA OOM at epoch=1 step=15, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,122 - WARNING - CUDA OOM at epoch=1 step=16, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,175 - WARNING - CUDA OOM at epoch=1 step=17, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,238 - WARNING - CUDA OOM at epoch=1 step=18, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,294 - WARNING - CUDA OOM at epoch=1 step=19, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,346 - WARNING - CUDA OOM at epoch=1 step=20, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,397 - WARNING - CUDA OOM at epoch=1 step=21, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,449 - WARNING - CUDA OOM at epoch=1 step=22, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,500 - WARNING - CUDA OOM at epoch=1 step=23, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,551 - WARNING - CUDA OOM at epoch=1 step=24, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,603 - WARNING - CUDA OOM at epoch=1 step=25, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,655 - WARNING - CUDA OOM at epoch=1 step=26, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,705 - WARNING - CUDA OOM at epoch=1 step=27, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,756 - WARNING - CUDA OOM at epoch=1 step=28, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,808 - WARNING - CUDA OOM at epoch=1 step=29, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,865 - WARNING - CUDA OOM at epoch=1 step=30, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,915 - WARNING - CUDA OOM at epoch=1 step=31, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:45,964 - WARNING - CUDA OOM at epoch=1 step=32, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,016 - WARNING - CUDA OOM at epoch=1 step=33, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,071 - WARNING - CUDA OOM at epoch=1 step=34, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,123 - WARNING - CUDA OOM at epoch=1 step=35, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,179 - WARNING - CUDA OOM at epoch=1 step=36, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,243 - WARNING - CUDA OOM at epoch=1 step=37, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,300 - WARNING - CUDA OOM at epoch=1 step=38, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,352 - WARNING - CUDA OOM at epoch=1 step=39, skipping batch (reduce batch_size if frequent).
+Epoch 1/300:  26%|██▋       | 39/148 [00:04<00:11,  9.63it/s]2026-02-15 00:34:46,410 - WARNING - CUDA OOM at epoch=1 step=40, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,460 - WARNING - CUDA OOM at epoch=1 step=41, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,513 - WARNING - CUDA OOM at epoch=1 step=42, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,565 - WARNING - CUDA OOM at epoch=1 step=43, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,615 - WARNING - CUDA OOM at epoch=1 step=44, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,666 - WARNING - CUDA OOM at epoch=1 step=45, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,716 - WARNING - CUDA OOM at epoch=1 step=46, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,766 - WARNING - CUDA OOM at epoch=1 step=47, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,816 - WARNING - CUDA OOM at epoch=1 step=48, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,866 - WARNING - CUDA OOM at epoch=1 step=49, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,917 - WARNING - CUDA OOM at epoch=1 step=50, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:46,967 - WARNING - CUDA OOM at epoch=1 step=51, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,016 - WARNING - CUDA OOM at epoch=1 step=52, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,067 - WARNING - CUDA OOM at epoch=1 step=53, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,116 - WARNING - CUDA OOM at epoch=1 step=54, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,169 - WARNING - CUDA OOM at epoch=1 step=55, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,234 - WARNING - CUDA OOM at epoch=1 step=56, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,286 - WARNING - CUDA OOM at epoch=1 step=57, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,337 - WARNING - CUDA OOM at epoch=1 step=58, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,388 - WARNING - CUDA OOM at epoch=1 step=59, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,440 - WARNING - CUDA OOM at epoch=1 step=60, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,494 - WARNING - CUDA OOM at epoch=1 step=61, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,548 - WARNING - CUDA OOM at epoch=1 step=62, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,598 - WARNING - CUDA OOM at epoch=1 step=63, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,650 - WARNING - CUDA OOM at epoch=1 step=64, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,703 - WARNING - CUDA OOM at epoch=1 step=65, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,754 - WARNING - CUDA OOM at epoch=1 step=66, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,805 - WARNING - CUDA OOM at epoch=1 step=67, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,856 - WARNING - CUDA OOM at epoch=1 step=68, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,908 - WARNING - CUDA OOM at epoch=1 step=69, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:47,958 - WARNING - CUDA OOM at epoch=1 step=70, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:48,009 - WARNING - CUDA OOM at epoch=1 step=71, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:48,059 - WARNING - CUDA OOM at epoch=1 step=72, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:48,110 - WARNING - CUDA OOM at epoch=1 step=73, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:48,162 - WARNING - CUDA OOM at epoch=1 step=74, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:48,215 - WARNING - CUDA OOM at epoch=1 step=75, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:48,266 - WARNING - CUDA OOM at epoch=1 step=76, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:48,316 - WARNING - CUDA OOM at epoch=1 step=77, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:48,367 - WARNING - CUDA OOM at epoch=1 step=78, skipping batch (reduce batch_size if frequent).
+Epoch 1/300:  53%|█████▎    | 78/148 [00:06<00:05, 13.69it/s]2026-02-15 00:34:48,419 - WARNING - CUDA OOM at epoch=1 step=79, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:48,471 - WARNING - CUDA OOM at epoch=1 step=80, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:48,526 - WARNING - CUDA OOM at epoch=1 step=81, skipping batch (reduce batch_size if frequent).
+2026-02-15 00:34:48,577 - WARNING - CUDA OOM at epoch=1 step=82, skipping batch (reduce batch_size if frequent).

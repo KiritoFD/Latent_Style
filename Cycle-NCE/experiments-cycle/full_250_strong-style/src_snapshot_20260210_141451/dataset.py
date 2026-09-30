@@ -1,0 +1,174 @@
+from __future__ import annotations
+
+import logging
+import random
+from pathlib import Path
+from typing import Dict, List, Sequence
+
+import numpy as np
+import torch
+from torch.utils.data import Dataset
+
+logger = logging.getLogger(__name__)
+
+
+def _load_latent_file(path: Path) -> torch.Tensor:
+    if path.suffix.lower() == ".pt":
+        obj = torch.load(path, map_location="cpu", weights_only=False)
+        if isinstance(obj, dict):
+            obj = obj.get("latent", obj)
+        latent = torch.as_tensor(obj).float()
+    elif path.suffix.lower() == ".npy":
+        latent = torch.from_numpy(np.load(path)).float()
+    else:
+        raise ValueError(f"Unsupported latent format: {path}")
+
+    if latent.ndim == 4 and latent.shape[0] == 1:
+        latent = latent.squeeze(0)
+    if latent.ndim != 3:
+        raise ValueError(f"Expected latent shape [C,H,W], got {tuple(latent.shape)} from {path}")
+    return latent
+
+
+class AdaCUTLatentDataset(Dataset):
+    """
+    Unpaired latent dataset:
+    - content from `content_style`
+    - style target sampled randomly from non-content styles
+    """
+
+    def __init__(
+        self,
+        data_root: str,
+        style_subdirs: Sequence[str],
+        content_style: str = "photo",
+        allow_hflip: bool = True,
+        preload_to_gpu: bool = False,
+        virtual_length_multiplier: int = 1,
+        device: str = "cpu",
+    ) -> None:
+        self.data_root = Path(data_root)
+        self.style_subdirs = list(style_subdirs)
+        self.allow_hflip = bool(allow_hflip)
+        self.preload_to_gpu = bool(preload_to_gpu)
+        self.device = device
+        self.epoch = 0
+        
+        # Cache for pre-computed indices to remove CPU overhead in __getitem__
+        self._cache_content_style_ids = None
+        self._cache_content_rands = None
+        self._cache_target_style_ids = None
+        self._cache_target_rands = None
+        self._cache_flip_content = None
+        self._cache_flip_target = None
+
+        if not self.style_subdirs:
+            raise ValueError("style_subdirs cannot be empty")
+        self.bidirectional_content = str(content_style).lower() in {"any", "all", "*"}
+        if (not self.bidirectional_content) and (content_style not in self.style_subdirs):
+            raise ValueError(f"content_style={content_style} not in style_subdirs={self.style_subdirs}")
+
+        if self.bidirectional_content:
+            self.content_style_id = -1
+            self.transfer_style_ids = list(range(len(self.style_subdirs)))
+        else:
+            self.content_style_id = self.style_subdirs.index(content_style)
+            self.transfer_style_ids = [i for i in range(len(self.style_subdirs)) if i != self.content_style_id]
+            if not self.transfer_style_ids:
+                raise ValueError("At least one non-content style is required")
+
+        self.style_tensors: Dict[int, torch.Tensor] = {}
+        logger.info("Loading latent dataset from %s", self.data_root)
+        for style_id, subdir in enumerate(self.style_subdirs):
+            style_dir = self.data_root / subdir
+            files = sorted(style_dir.glob("*.pt")) + sorted(style_dir.glob("*.npy"))
+            if not files:
+                raise RuntimeError(f"No latent files found in {style_dir}")
+            latents = [_load_latent_file(p) for p in files]
+            stack = torch.stack(latents, dim=0)
+            self.style_tensors[style_id] = stack
+            logger.info("  style=%s id=%d count=%d", subdir, style_id, stack.shape[0])
+
+        if self.bidirectional_content:
+            total_count = sum(int(t.shape[0]) for t in self.style_tensors.values())
+            self.content_count = max(1, total_count)
+        else:
+            self.content_count = int(self.style_tensors[self.content_style_id].shape[0])
+        self.length = max(1, self.content_count * max(1, int(virtual_length_multiplier)))
+
+        if self.preload_to_gpu:
+            if not torch.cuda.is_available():
+                logger.warning("preload_to_gpu=True but CUDA unavailable, fallback to CPU")
+            else:
+                for style_id in self.style_tensors:
+                    self.style_tensors[style_id] = self.style_tensors[style_id].to(device)
+                logger.info("Preloaded all latents to GPU: %s", device)
+
+    def set_epoch(self, epoch: int) -> None:
+        self.epoch = int(epoch)
+        
+        # Optimization: Pre-compute all random indices for the epoch using vectorized operations.
+        # This eliminates the heavy overhead of instantiating random.Random() per sample.
+        N = self.length
+        g = torch.Generator()
+        g.manual_seed((self.epoch + 1) * 1000003)
+        
+        n_styles = len(self.style_subdirs)
+        
+        if self.bidirectional_content:
+            self._cache_content_style_ids = torch.randint(0, n_styles, (N,), generator=g)
+            # Target must be different from content. (id + offset) % n where offset in [1, n-1]
+            offset = torch.randint(1, n_styles, (N,), generator=g)
+            self._cache_target_style_ids = (self._cache_content_style_ids + offset) % n_styles
+        else:
+            # Content style is fixed, but we still need random target
+            self._cache_content_style_ids = None # Not used
+            
+            n_transfers = len(self.transfer_style_ids)
+            t_idx = torch.randint(0, n_transfers, (N,), generator=g)
+            transfer_tensor = torch.tensor(self.transfer_style_ids, dtype=torch.long)
+            self._cache_target_style_ids = transfer_tensor[t_idx]
+
+        # Random floats for selecting index within the chosen style
+        self._cache_content_rands = torch.rand(N, generator=g)
+        self._cache_target_rands = torch.rand(N, generator=g)
+
+        if self.allow_hflip:
+            self._cache_flip_content = torch.rand(N, generator=g) < 0.5
+            self._cache_flip_target = torch.rand(N, generator=g) < 0.5
+        else:
+            self._cache_flip_content = None
+            self._cache_flip_target = None
+
+    def __len__(self) -> int:
+        return self.length
+
+    def _maybe_flip(self, x: torch.Tensor, do_flip: torch.Tensor | None, idx: int) -> torch.Tensor:
+        if do_flip is not None and do_flip[idx]:
+            return torch.flip(x, dims=[-1])
+        return x
+
+    def __getitem__(self, index: int) -> Dict[str, torch.Tensor]:
+        # Ultra-lightweight getitem using pre-computed indices
+        if self.bidirectional_content:
+            content_style_id = int(self._cache_content_style_ids[index])
+            target_style_id = int(self._cache_target_style_ids[index])
+        else:
+            content_style_id = self.content_style_id
+            target_style_id = int(self._cache_target_style_ids[index])
+
+        c_pool = self.style_tensors[content_style_id]
+        t_pool = self.style_tensors[target_style_id]
+
+        c_idx = int(self._cache_content_rands[index] * c_pool.shape[0]) if self.bidirectional_content else (index % self.content_count)
+        t_idx = int(self._cache_target_rands[index] * t_pool.shape[0])
+
+        content = self._maybe_flip(c_pool[c_idx], self._cache_flip_content, index)
+        target_style = self._maybe_flip(t_pool[t_idx], self._cache_flip_target, index)
+
+        return {
+            "content": content,
+            "target_style": target_style,
+            "target_style_id": torch.tensor(target_style_id, dtype=torch.long),
+            "content_style_id": torch.tensor(content_style_id, dtype=torch.long),
+        }

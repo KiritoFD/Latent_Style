@@ -1,0 +1,3 @@
+variant	category	config_path	run_dir	note
+baseline	baseline	G:\GitHub\Latent_Style\Cycle-NCE\ablation_smoke_codeoff\configs\baseline.json	G:\GitHub\Latent_Style\Cycle-NCE\ablation_smoke_codeoff\baseline	Base config
+loss_w_code_off	loss_single	G:\GitHub\Latent_Style\Cycle-NCE\ablation_smoke_codeoff\configs\loss_w_code_off.json	G:\GitHub\Latent_Style\Cycle-NCE\ablation_smoke_codeoff\loss_w_code_off	Disable w_code from 6.0

@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py", line 1039, in <module>
+    main() 
+    ^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py", line 387, in main
+    raise ValueError(f"Test directory not found: {test_dir}")
+ValueError: Test directory not found: ../../style_data/overfit50
+Auto full-eval | save_dir=/mnt/i/Github/Latent_Style/Cycle-NCE/style_ablation-50/loss_no_stroke_gram
+Auto full-eval | interval=0 run_last=False num_epochs=50
+Auto full-eval | pending: [50]
+
+[Auto] Running epoch 50: epoch_0050.pt
+Traceback (most recent call last):
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py", line 1039, in <module>
+    main() 
+    ^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py", line 363, in main
+    _auto_run_missing_full_eval(args)
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py", line 321, in _auto_run_missing_full_eval
+    subprocess.run(cmd, check=True)
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/home/xy/miniconda3/envs/cu128/bin/python', '/mnt/i/Github/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py', '--checkpoint', '/mnt/i/Github/Latent_Style/Cycle-NCE/style_ablation-50/loss_no_stroke_gram/epoch_0050.pt', '--output', '/mnt/i/Github/Latent_Style/Cycle-NCE/style_ablation-50/loss_no_stroke_gram/full_eval/epoch_0050', '--cache_dir', '../eval_cache', '--num_steps', '15', '--step_size', '1.0', '--max_src_samples', '30', '--max_ref_compare', '50', '--max_ref_cache', '256', '--ref_feature_batch_size', '64', '--batch_size', '20', '--classifier_path', '../../style_classifier.pt', '--image_classifier_path', '../../artifacts/eval_classifier/eval_style_image_classifier.pt', '--classifier_classes', '', '--style_ref_mode', 'none', '--style_ref_count', '8', '--style_ref_seed', '2026']' returned non-zero exit status 1.
+Command: /home/xy/miniconda3/envs/cu128/bin/python /mnt/i/Github/Latent_Style/Cycle-NCE/src/utils/run_evaluation.py --config /mnt/i/Github/Latent_Style/Cycle-NCE/style_ablation-50/configs/loss_no_stroke_gram.json
+

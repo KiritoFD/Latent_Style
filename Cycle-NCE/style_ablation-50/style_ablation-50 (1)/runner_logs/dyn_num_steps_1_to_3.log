@@ -1,0 +1,79 @@
+CWD: /mnt/i/Github/Latent_Style/Cycle-NCE/src
+Command:
+/home/xy/miniconda3/envs/cu128/bin/python /mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py --config /mnt/i/Github/Latent_Style/Cycle-NCE/style_ablation-50/configs/dyn_num_steps_1_to_3.json
+
+Start: 2026-02-14T12:26:28.961269
+
+2026-02-14 12:26:32,099 - INFO - Device: cuda
+2026-02-14 12:26:32,099 - INFO - Seed: 42
+2026-02-14 12:26:32,099 - INFO - Loading latent dataset from ../../latent-256
+2026-02-14 12:26:56,958 - INFO -   style=photo id=0 count=6187
+2026-02-14 12:27:04,098 - INFO -   style=Hayao id=1 count=1752
+2026-02-14 12:27:04,476 - INFO - Preloaded all latents to GPU: cuda
+2026-02-14 12:27:04,490 - INFO - DataLoader | batch=160 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-14 12:27:04,595 - INFO - Model params: 9,003,273
+2026-02-14 12:27:04,595 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=False mode=off
+2026-02-14 12:27:05,824 - INFO - Precision | amp=True amp_dtype=bf16 grad_scaler=False fused_adamw=True
+2026-02-14 12:27:05,829 - INFO - No checkpoint found, start from scratch.
+
+Epoch 1/50:   0%|          | 0/148 [00:00<?, ?it/s]
+Epoch 1/50:   0%|          | 0/148 [00:05<?, ?it/s]
+Traceback (most recent call last):
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 275, in <module>
+    main()
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 218, in main
+    metrics = trainer.train_epoch(dataloader, epoch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/trainer.py", line 389, in train_epoch
+    loss_dict = self.loss_fn.compute(
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py", line 364, in compute
+    pred_student = self._apply_model(
+                   ^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/losses.py", line 299, in _apply_model
+    return model.integrate(
+           ^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/model.py", line 726, in integrate
+    delta = self._predict_delta(
+            ^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/model.py", line 671, in _predict_delta
+    h = self._run_style_blocks(
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/model.py", line 258, in _run_style_blocks
+    out = self._run_block(block, out, style_code)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/model.py", line 248, in _run_block
+    return block(h, style_code)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/model.py", line 51, in forward
+    h = self.conv1(h)
+        ^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/conv.py", line 548, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/nn/modules/conv.py", line 543, in _conv_forward
+    return F.conv2d(
+           ^^^^^^^^^
+torch.AcceleratorError: CUDA error: unknown error
+Search for `cudaErrorUnknown' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+
+
+End: 2026-02-14T12:27:12.982157
+Exit code: 1
+Duration: 0:00:44.020888

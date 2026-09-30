@@ -1,8 +1,0 @@
-AdaIN training: max_iter=50, batch_size=4, device=cuda, vgg=IMAGENET1K_V1
-iter 1/50  loss_c=6.133279  loss_s=6.0291  total=66.4245  lr=0.000100
-iter 10/50  loss_c=9.099352  loss_s=4.3477  total=52.5768  lr=0.000100
-iter 20/50  loss_c=10.819010  loss_s=3.3297  total=44.1159  lr=0.000100
-iter 30/50  loss_c=7.690590  loss_s=5.6666  total=64.3571  lr=0.000100
-iter 40/50  loss_c=6.799713  loss_s=2.4972  total=31.7715  lr=0.000100
-iter 50/50  loss_c=8.237158  loss_s=4.9441  total=57.6780  lr=0.000100
-Saved checkpoint: G:\GitHub\Latent_Style\run_511\outputs\adain_vgg19_smoke\checkpoints\adain\decoder.pth

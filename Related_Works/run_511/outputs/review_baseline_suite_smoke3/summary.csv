@@ -1,5 +1,0 @@
-avg_sec_per_img,avg_sec_per_iter,backend,batch_size,device,effective_tflops,elapsed_sec,end_to_end_img_per_sec,flops,generated_images,infer_elapsed_sec,infer_status,launcher_elapsed_sec,launcher_rc,macs,method,params,peak_reserved_mb,peak_vram_mb,preflight_error,preflight_status,profile_error,profile_status,throughput_img_per_sec,train_elapsed_sec,train_status
-0.081163533333347,0.081163533333347,,1,cuda,,2.43490600000041,0.17704755497326582,,5,28.241,ok,34.129,0,,stytr2,,440.0,408.654296875,,ok,,ok,12.320804170672275,5.449,ok
-,,,,,,,,,,,,3.946,1,,cast,,,,,ok,FileNotFoundError: [Errno 2] No such file or directory: 'models/vgg_normalised.pth',blocked,,3.648,failed
-,,,,,,,,,,,blocked,10.285,1,,aesfa,,,,,ok,FileNotFoundError: [Errno 2] No such file or directory: 'G:\\GitHub\\Latent_Style\\Related_Works\\run_511\\outputs\\review_baseline_suite_smoke3\\aesfa\\checkpoints\\aesfa\\main.pth',blocked,,10.052,ok
-,,,,,,,,,,,,7.507,1,,aespa,,,,,ok,FileNotFoundError: [Errno 2] No such file or directory: './baseline_checkpoints/vgg_normalised_conv5_1.t7',blocked,,7.199,failed

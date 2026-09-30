@@ -1,0 +1,29 @@
+CMD: /home/xy/miniconda3/envs/cu128/bin/python /mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py --config /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/A1_tv0.5_l2_0.01/config.json
+
+2026-02-16 10:00:01,865 - INFO - Active losses: w_struct, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2, w_output_tv
+2026-02-16 10:00:02,109 - INFO - Set PYTORCH_ALLOC_CONF=expandable_segments:True
+2026-02-16 10:00:02,132 - INFO - Device: cuda
+2026-02-16 10:00:02,133 - INFO - Seed: 42
+2026-02-16 10:00:02,133 - INFO - Loading latent dataset from ../../latent-256
+Traceback (most recent call last):
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 340, in <module>
+    main()
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py", line 241, in main
+    dataset = AdaCUTLatentDataset(
+              ^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/dataset.py", line 80, in __init__
+    latents = [_load_latent_file(p) for p in files]
+               ^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/i/Github/Latent_Style/Cycle-NCE/src/dataset.py", line 16, in _load_latent_file
+    obj = torch.load(path, map_location="cpu", weights_only=False)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/serialization.py", line 1484, in load
+    with _open_file_like(f, "rb") as opened_file:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/serialization.py", line 759, in _open_file_like
+    return _open_file(name_or_buffer, mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xy/miniconda3/envs/cu128/lib/python3.12/site-packages/torch/serialization.py", line 740, in __init__
+    super().__init__(open(name, mode))
+                     ^^^^^^^^^^^^^^^^
+KeyboardInterrupt

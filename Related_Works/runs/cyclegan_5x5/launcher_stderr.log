@@ -1,5 +1,0 @@
-Fatal Python error: init_sys_streams: can't initialize sys standard streams
-Python runtime state: core initialized
-Traceback (most recent call last):
-  File "C:\Users\xy\AppData\Local\Programs\Python\Python312\lib\io.py", line 54, in <module>
-ImportError: cannot import name 'text_encoding' from 'io' (unknown location)

@@ -1,0 +1,19 @@
+{
+  "checkpoint": "/mnt/g/GitHub/Latent_Style/Thermal/swd_matrix/experiments/E1_p2/checkpoints/epoch_0050.pt",
+  "manifest": "/mnt/g/GitHub/Latent_Style/Thermal/swd_matrix/evalset/manifest.json",
+  "timestamp": "2026-02-07 23:59:58",
+  "counts": {
+    "control_subset": 100,
+    "identity_subset": 50,
+    "rows": 450
+  },
+  "margin_mean": -0.18924833908677102,
+  "margin_pos_rate": 0.3325,
+  "diversity_lpips_across_styles_mean": 0.3355276214579741,
+  "identity_mse_latent_mean": 0.3160991010069847,
+  "content_lpips_mean": 0.6356216648966074,
+  "identity_content_lpips_mean": 0.4374099922180176,
+  "edge_sobel_l1_mean": 0.17832129081090292,
+  "hf_ratio_mean": 0.0004055433178695643,
+  "patch_consistency_var_mean": 1.4416932268659366e-05
+}

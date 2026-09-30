@@ -1,6 +1,0 @@
-{
-  "bridge": {
-    "zero_step_wct_enabled": true,
-    "zero_step_wct_alpha": 0.8
-  }
-}

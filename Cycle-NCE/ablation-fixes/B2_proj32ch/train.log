@@ -1,0 +1,88 @@
+CMD: /home/xy/miniconda3/envs/cu128/bin/python /mnt/i/Github/Latent_Style/Cycle-NCE/src/run.py --config /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/B2_proj32ch/config.json
+
+2026-02-16 02:17:46,851 - INFO - Active losses: w_struct, w_stroke_gram, w_color_moment, w_delta_tv, w_delta_l2, w_output_tv
+2026-02-16 02:17:47,116 - INFO - Set PYTORCH_ALLOC_CONF=expandable_segments:True
+2026-02-16 02:17:47,125 - INFO - Device: cuda
+2026-02-16 02:17:47,125 - INFO - Seed: 42
+2026-02-16 02:17:47,126 - INFO - Loading latent dataset from ../../latent-256
+2026-02-16 02:18:10,130 - INFO -   style=photo id=0 count=6187
+2026-02-16 02:18:16,309 - INFO -   style=Hayao id=1 count=1752
+2026-02-16 02:18:16,608 - INFO - Dataset preloaded to cuda: 0.12GB across 2 style pools.
+2026-02-16 02:18:16,617 - INFO - DataLoader | batch=320 workers=0 pin_memory=False persistent_workers=False preload_to_gpu=True
+2026-02-16 02:18:16,712 - INFO - Model params: 8,389,732
+2026-02-16 02:18:16,712 - INFO - Infra | channels_last=True tf32=True grad_ckpt=False compile=False backend=off mode=off fullgraph=False cudagraphs=off gc_collect_interval=0 loss_timing_interval=0 strict_batch_sanity=True strict_batch_sanity_interval=1 cuda_sync_debug=False profiler=False alloc_conf=expandable_segments:True
+2026-02-16 02:18:16,712 - INFO - Nsight | nvtx=False cuda_profile=False capture_start_step=10 capture_steps=50
+2026-02-16 02:18:17,412 - INFO - Precision | amp=True amp_dtype=fp16 grad_scaler=True fused_adamw=True prefer_fp16_on_rtx30=True
+2026-02-16 02:18:17,413 - INFO - GPU | name=NVIDIA Graphics Device capability=8.6 vram_gb=12.00 rtx30=False
+2026-02-16 02:18:17,420 - INFO - No checkpoint found, start from scratch.
+2026-02-16 02:19:13,555 - INFO - Epoch 1/60 | loss=4.9857 struct=0.0090 sgram=0.0492 cmoment=0.1735 dtv=0.0457 dl2=0.0625 steps=1.0 h=1.00 s=0.77 lr=2.00e-04 data=0.7s comp=32.5s
+2026-02-16 02:19:56,090 - INFO - Epoch 2/60 | loss=4.1219 struct=0.0242 sgram=0.0399 cmoment=0.1513 dtv=0.0980 dl2=0.1888 steps=1.0 h=1.00 s=0.78 lr=2.00e-04 data=0.7s comp=18.6s
+2026-02-16 02:20:38,636 - INFO - Epoch 3/60 | loss=3.9492 struct=0.0310 sgram=0.0381 cmoment=0.1460 dtv=0.1367 dl2=0.2658 steps=1.0 h=1.00 s=0.78 lr=1.99e-04 data=0.7s comp=18.5s
+2026-02-16 02:21:21,171 - INFO - Epoch 4/60 | loss=3.8049 struct=0.0333 sgram=0.0366 cmoment=0.1420 dtv=0.1631 dl2=0.3112 steps=1.0 h=1.00 s=0.78 lr=1.99e-04 data=0.7s comp=18.5s
+2026-02-16 02:22:03,710 - INFO - Epoch 5/60 | loss=3.7658 struct=0.0353 sgram=0.0360 cmoment=0.1422 dtv=0.1824 dl2=0.3445 steps=1.0 h=1.00 s=0.79 lr=1.98e-04 data=0.7s comp=18.6s
+2026-02-16 02:22:46,347 - INFO - Epoch 6/60 | loss=3.7299 struct=0.0371 sgram=0.0357 cmoment=0.1401 dtv=0.2018 dl2=0.3669 steps=1.0 h=1.00 s=0.77 lr=1.97e-04 data=0.8s comp=18.7s
+2026-02-16 02:23:28,890 - INFO - Epoch 7/60 | loss=3.7097 struct=0.0379 sgram=0.0354 cmoment=0.1404 dtv=0.2157 dl2=0.3820 steps=1.0 h=1.00 s=0.77 lr=1.95e-04 data=0.7s comp=18.5s
+2026-02-16 02:24:11,433 - INFO - Epoch 8/60 | loss=3.7048 struct=0.0377 sgram=0.0354 cmoment=0.1403 dtv=0.2317 dl2=0.4090 steps=1.0 h=1.00 s=0.78 lr=1.94e-04 data=0.7s comp=18.5s
+2026-02-16 02:24:53,976 - INFO - Epoch 9/60 | loss=3.6590 struct=0.0379 sgram=0.0349 cmoment=0.1389 dtv=0.2427 dl2=0.4268 steps=1.0 h=1.00 s=0.77 lr=1.92e-04 data=0.7s comp=18.5s
+2026-02-16 02:25:36,721 - INFO - Epoch 10/60 | loss=3.6623 struct=0.0383 sgram=0.0349 cmoment=0.1390 dtv=0.2517 dl2=0.4431 steps=1.0 h=1.00 s=0.78 lr=1.90e-04 data=1.3s comp=18.5s
+2026-02-16 02:25:37,114 - INFO - Saved checkpoint: /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/B2_proj32ch/checkpoints/epoch_0010.pt
+2026-02-16 02:26:19,626 - INFO - Epoch 11/60 | loss=3.5814 struct=0.0389 sgram=0.0341 cmoment=0.1367 dtv=0.2613 dl2=0.4475 steps=1.0 h=1.00 s=0.79 lr=1.87e-04 data=0.7s comp=18.5s
+2026-02-16 02:27:02,151 - INFO - Epoch 12/60 | loss=3.6069 struct=0.0388 sgram=0.0343 cmoment=0.1377 dtv=0.2654 dl2=0.4556 steps=1.0 h=1.00 s=0.79 lr=1.85e-04 data=0.7s comp=18.6s
+2026-02-16 02:27:44,673 - INFO - Epoch 13/60 | loss=3.5795 struct=0.0394 sgram=0.0341 cmoment=0.1368 dtv=0.2716 dl2=0.4677 steps=1.0 h=1.00 s=0.79 lr=1.82e-04 data=0.7s comp=18.6s
+2026-02-16 02:28:27,187 - INFO - Epoch 14/60 | loss=3.6494 struct=0.0386 sgram=0.0348 cmoment=0.1390 dtv=0.2669 dl2=0.4507 steps=1.0 h=1.00 s=0.77 lr=1.79e-04 data=0.7s comp=18.5s
+2026-02-16 02:29:09,695 - INFO - Epoch 15/60 | loss=3.6238 struct=0.0393 sgram=0.0345 cmoment=0.1387 dtv=0.2797 dl2=0.4766 steps=1.0 h=1.00 s=0.77 lr=1.76e-04 data=0.7s comp=18.5s
+2026-02-16 02:29:52,210 - INFO - Epoch 16/60 | loss=3.5958 struct=0.0385 sgram=0.0342 cmoment=0.1377 dtv=0.2816 dl2=0.4674 steps=1.0 h=1.00 s=0.76 lr=1.72e-04 data=0.7s comp=18.5s
+2026-02-16 02:30:34,720 - INFO - Epoch 17/60 | loss=3.5657 struct=0.0392 sgram=0.0339 cmoment=0.1367 dtv=0.2922 dl2=0.4898 steps=1.0 h=1.00 s=0.78 lr=1.69e-04 data=0.7s comp=18.5s
+2026-02-16 02:31:17,230 - INFO - Epoch 18/60 | loss=3.5922 struct=0.0390 sgram=0.0342 cmoment=0.1372 dtv=0.2945 dl2=0.4808 steps=1.0 h=1.00 s=0.77 lr=1.65e-04 data=0.7s comp=18.5s
+2026-02-16 02:31:59,741 - INFO - Epoch 19/60 | loss=3.5563 struct=0.0393 sgram=0.0338 cmoment=0.1366 dtv=0.2975 dl2=0.4820 steps=1.0 h=1.00 s=0.77 lr=1.61e-04 data=0.7s comp=18.5s
+2026-02-16 02:32:42,335 - INFO - Epoch 20/60 | loss=3.5681 struct=0.0395 sgram=0.0339 cmoment=0.1367 dtv=0.3048 dl2=0.5007 steps=1.0 h=1.00 s=0.78 lr=1.57e-04 data=0.7s comp=18.6s
+2026-02-16 02:32:42,679 - INFO - Saved checkpoint: /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/B2_proj32ch/checkpoints/epoch_0020.pt
+2026-02-16 02:33:25,180 - INFO - Epoch 21/60 | loss=3.5456 struct=0.0399 sgram=0.0337 cmoment=0.1364 dtv=0.3061 dl2=0.5017 steps=1.0 h=1.00 s=0.78 lr=1.53e-04 data=0.7s comp=18.5s
+2026-02-16 02:34:07,693 - INFO - Epoch 22/60 | loss=3.5380 struct=0.0402 sgram=0.0336 cmoment=0.1359 dtv=0.3117 dl2=0.5050 steps=1.0 h=1.00 s=0.78 lr=1.48e-04 data=0.8s comp=18.5s
+2026-02-16 02:34:50,228 - INFO - Epoch 23/60 | loss=3.5622 struct=0.0401 sgram=0.0338 cmoment=0.1366 dtv=0.3176 dl2=0.5154 steps=1.0 h=1.00 s=0.77 lr=1.44e-04 data=0.7s comp=18.5s
+2026-02-16 02:35:32,741 - INFO - Epoch 24/60 | loss=3.4925 struct=0.0402 sgram=0.0331 cmoment=0.1344 dtv=0.3164 dl2=0.5140 steps=1.0 h=1.00 s=0.78 lr=1.39e-04 data=0.7s comp=18.5s
+2026-02-16 02:36:15,249 - INFO - Epoch 25/60 | loss=3.4892 struct=0.0394 sgram=0.0331 cmoment=0.1340 dtv=0.3181 dl2=0.5067 steps=1.0 h=1.00 s=0.79 lr=1.34e-04 data=0.7s comp=18.5s
+2026-02-16 02:36:57,758 - INFO - Epoch 26/60 | loss=3.5065 struct=0.0401 sgram=0.0333 cmoment=0.1348 dtv=0.3222 dl2=0.5170 steps=1.0 h=1.00 s=0.76 lr=1.30e-04 data=0.7s comp=18.5s
+2026-02-16 02:37:40,272 - INFO - Epoch 27/60 | loss=3.4701 struct=0.0403 sgram=0.0329 cmoment=0.1335 dtv=0.3268 dl2=0.5172 steps=1.0 h=1.00 s=0.78 lr=1.25e-04 data=0.7s comp=18.5s
+2026-02-16 02:38:22,780 - INFO - Epoch 28/60 | loss=3.4402 struct=0.0411 sgram=0.0326 cmoment=0.1327 dtv=0.3364 dl2=0.5390 steps=1.0 h=1.00 s=0.79 lr=1.20e-04 data=0.7s comp=18.5s
+2026-02-16 02:39:05,281 - INFO - Epoch 29/60 | loss=3.4544 struct=0.0400 sgram=0.0328 cmoment=0.1331 dtv=0.3367 dl2=0.5341 steps=1.0 h=1.00 s=0.78 lr=1.15e-04 data=0.7s comp=18.5s
+2026-02-16 02:39:47,785 - INFO - Epoch 30/60 | loss=3.4527 struct=0.0400 sgram=0.0328 cmoment=0.1326 dtv=0.3384 dl2=0.5346 steps=1.0 h=1.00 s=0.78 lr=1.10e-04 data=0.7s comp=18.5s
+2026-02-16 02:39:48,130 - INFO - Saved checkpoint: /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/B2_proj32ch/checkpoints/epoch_0030.pt
+2026-02-16 02:39:48,134 - INFO - Running full eval for epoch 30 -> /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/B2_proj32ch/checkpoints/full_eval/epoch_0030
+2026-02-16 02:43:18,524 - INFO - Full eval completed for epoch 30. Log: /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/B2_proj32ch/checkpoints/logs/full_eval_epoch_0030.log
+2026-02-16 02:44:01,153 - INFO - Epoch 31/60 | loss=3.4355 struct=0.0405 sgram=0.0326 cmoment=0.1324 dtv=0.3505 dl2=0.5512 steps=1.0 h=1.00 s=0.76 lr=1.05e-04 data=0.7s comp=18.5s
+2026-02-16 02:44:43,653 - INFO - Epoch 32/60 | loss=3.4376 struct=0.0403 sgram=0.0326 cmoment=0.1321 dtv=0.3548 dl2=0.5581 steps=1.0 h=1.00 s=0.78 lr=1.00e-04 data=0.7s comp=18.5s
+2026-02-16 02:45:26,162 - INFO - Epoch 33/60 | loss=3.4398 struct=0.0401 sgram=0.0326 cmoment=0.1327 dtv=0.3570 dl2=0.5590 steps=1.0 h=1.00 s=0.76 lr=9.51e-05 data=0.7s comp=18.5s
+2026-02-16 02:46:08,664 - INFO - Epoch 34/60 | loss=3.4324 struct=0.0403 sgram=0.0325 cmoment=0.1323 dtv=0.3598 dl2=0.5756 steps=1.0 h=1.00 s=0.79 lr=9.01e-05 data=0.7s comp=18.5s
+2026-02-16 02:46:51,172 - INFO - Epoch 35/60 | loss=3.4269 struct=0.0398 sgram=0.0325 cmoment=0.1324 dtv=0.3581 dl2=0.5649 steps=1.0 h=1.00 s=0.76 lr=8.52e-05 data=0.8s comp=18.5s
+2026-02-16 02:47:33,679 - INFO - Epoch 36/60 | loss=3.4155 struct=0.0401 sgram=0.0323 cmoment=0.1323 dtv=0.3636 dl2=0.5756 steps=1.0 h=1.00 s=0.78 lr=8.04e-05 data=0.7s comp=18.5s
+2026-02-16 02:48:16,190 - INFO - Epoch 37/60 | loss=3.4127 struct=0.0395 sgram=0.0323 cmoment=0.1321 dtv=0.3643 dl2=0.5737 steps=1.0 h=1.00 s=0.77 lr=7.56e-05 data=0.7s comp=18.5s
+2026-02-16 02:48:58,689 - INFO - Epoch 38/60 | loss=3.4084 struct=0.0397 sgram=0.0323 cmoment=0.1317 dtv=0.3630 dl2=0.5762 steps=1.0 h=1.00 s=0.77 lr=7.10e-05 data=0.7s comp=18.5s
+2026-02-16 02:49:41,186 - INFO - Epoch 39/60 | loss=3.4500 struct=0.0395 sgram=0.0327 cmoment=0.1329 dtv=0.3639 dl2=0.5755 steps=1.0 h=1.00 s=0.77 lr=6.64e-05 data=0.7s comp=18.5s
+2026-02-16 02:50:23,690 - INFO - Epoch 40/60 | loss=3.4298 struct=0.0394 sgram=0.0324 cmoment=0.1333 dtv=0.3737 dl2=0.5971 steps=1.0 h=1.00 s=0.79 lr=6.19e-05 data=0.7s comp=18.5s
+2026-02-16 02:50:24,122 - INFO - Saved checkpoint: /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/B2_proj32ch/checkpoints/epoch_0040.pt
+2026-02-16 02:51:06,623 - INFO - Epoch 41/60 | loss=3.4369 struct=0.0400 sgram=0.0326 cmoment=0.1326 dtv=0.3773 dl2=0.5998 steps=1.0 h=1.00 s=0.77 lr=5.75e-05 data=0.7s comp=18.5s
+2026-02-16 02:51:49,121 - INFO - Epoch 42/60 | loss=3.4109 struct=0.0393 sgram=0.0323 cmoment=0.1319 dtv=0.3768 dl2=0.6002 steps=1.0 h=1.00 s=0.78 lr=5.33e-05 data=0.7s comp=18.5s
+2026-02-16 02:52:31,712 - INFO - Epoch 43/60 | loss=3.3995 struct=0.0393 sgram=0.0322 cmoment=0.1318 dtv=0.3759 dl2=0.5966 steps=1.0 h=1.00 s=0.78 lr=4.92e-05 data=0.8s comp=18.6s
+2026-02-16 02:53:14,225 - INFO - Epoch 44/60 | loss=3.4069 struct=0.0390 sgram=0.0323 cmoment=0.1319 dtv=0.3798 dl2=0.6002 steps=1.0 h=1.00 s=0.78 lr=4.52e-05 data=0.7s comp=18.5s
+2026-02-16 02:53:56,723 - INFO - Epoch 45/60 | loss=3.4127 struct=0.0398 sgram=0.0324 cmoment=0.1312 dtv=0.3833 dl2=0.6079 steps=1.0 h=1.00 s=0.77 lr=4.14e-05 data=0.7s comp=18.5s
+2026-02-16 02:54:39,222 - INFO - Epoch 46/60 | loss=3.3889 struct=0.0395 sgram=0.0321 cmoment=0.1316 dtv=0.3782 dl2=0.6006 steps=1.0 h=1.00 s=0.76 lr=3.78e-05 data=0.7s comp=18.5s
+2026-02-16 02:55:21,948 - INFO - Epoch 47/60 | loss=3.4106 struct=0.0393 sgram=0.0323 cmoment=0.1324 dtv=0.3783 dl2=0.6005 steps=1.0 h=1.00 s=0.77 lr=3.44e-05 data=1.3s comp=18.5s
+2026-02-16 02:56:04,447 - INFO - Epoch 48/60 | loss=3.4022 struct=0.0392 sgram=0.0322 cmoment=0.1320 dtv=0.3812 dl2=0.6064 steps=1.0 h=1.00 s=0.77 lr=3.12e-05 data=0.7s comp=18.5s
+2026-02-16 02:56:46,937 - INFO - Epoch 49/60 | loss=3.4060 struct=0.0393 sgram=0.0323 cmoment=0.1317 dtv=0.3825 dl2=0.6130 steps=1.0 h=1.00 s=0.79 lr=2.81e-05 data=0.7s comp=18.5s
+2026-02-16 02:57:29,431 - INFO - Epoch 50/60 | loss=3.4056 struct=0.0392 sgram=0.0322 cmoment=0.1328 dtv=0.3803 dl2=0.6043 steps=1.0 h=1.00 s=0.78 lr=2.53e-05 data=0.7s comp=18.5s
+2026-02-16 02:57:29,909 - INFO - Saved checkpoint: /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/B2_proj32ch/checkpoints/epoch_0050.pt
+2026-02-16 02:58:12,409 - INFO - Epoch 51/60 | loss=3.4087 struct=0.0390 sgram=0.0323 cmoment=0.1320 dtv=0.3816 dl2=0.6051 steps=1.0 h=1.00 s=0.78 lr=2.27e-05 data=0.7s comp=18.5s
+2026-02-16 02:58:54,904 - INFO - Epoch 52/60 | loss=3.4222 struct=0.0392 sgram=0.0324 cmoment=0.1321 dtv=0.3844 dl2=0.6104 steps=1.0 h=1.00 s=0.77 lr=2.04e-05 data=0.7s comp=18.5s
+2026-02-16 02:59:37,400 - INFO - Epoch 53/60 | loss=3.4033 struct=0.0390 sgram=0.0322 cmoment=0.1321 dtv=0.3834 dl2=0.6139 steps=1.0 h=1.00 s=0.77 lr=1.82e-05 data=0.7s comp=18.5s
+2026-02-16 03:00:19,899 - INFO - Epoch 54/60 | loss=3.4117 struct=0.0390 sgram=0.0323 cmoment=0.1320 dtv=0.3834 dl2=0.6132 steps=1.0 h=1.00 s=0.76 lr=1.63e-05 data=0.7s comp=18.5s
+2026-02-16 03:01:02,397 - INFO - Epoch 55/60 | loss=3.4107 struct=0.0394 sgram=0.0322 cmoment=0.1326 dtv=0.3840 dl2=0.6113 steps=1.0 h=1.00 s=0.77 lr=1.46e-05 data=0.7s comp=18.5s
+2026-02-16 03:01:44,896 - INFO - Epoch 56/60 | loss=3.4058 struct=0.0391 sgram=0.0322 cmoment=0.1324 dtv=0.3832 dl2=0.6093 steps=1.0 h=1.00 s=0.77 lr=1.32e-05 data=0.7s comp=18.5s
+2026-02-16 03:02:27,387 - INFO - Epoch 57/60 | loss=3.3614 struct=0.0390 sgram=0.0318 cmoment=0.1310 dtv=0.3830 dl2=0.6136 steps=1.0 h=1.00 s=0.78 lr=1.21e-05 data=0.7s comp=18.5s
+2026-02-16 03:03:09,892 - INFO - Epoch 58/60 | loss=3.3796 struct=0.0391 sgram=0.0320 cmoment=0.1309 dtv=0.3830 dl2=0.6116 steps=1.0 h=1.00 s=0.77 lr=1.12e-05 data=0.7s comp=18.5s
+2026-02-16 03:03:52,394 - INFO - Epoch 59/60 | loss=3.3956 struct=0.0393 sgram=0.0321 cmoment=0.1319 dtv=0.3845 dl2=0.6135 steps=1.0 h=1.00 s=0.77 lr=1.05e-05 data=0.8s comp=18.5s
+2026-02-16 03:04:34,897 - INFO - Epoch 60/60 | loss=3.4124 struct=0.0391 sgram=0.0323 cmoment=0.1318 dtv=0.3862 dl2=0.6167 steps=1.0 h=1.00 s=0.77 lr=1.01e-05 data=0.7s comp=18.5s
+2026-02-16 03:04:35,327 - INFO - Saved checkpoint: /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/B2_proj32ch/checkpoints/epoch_0060.pt
+2026-02-16 03:04:35,332 - INFO - Running full eval for epoch 60 -> /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/B2_proj32ch/checkpoints/full_eval/epoch_0060
+2026-02-16 03:08:06,322 - INFO - Full eval completed for epoch 60. Log: /mnt/i/Github/Latent_Style/Cycle-NCE/ablation-fixes/B2_proj32ch/checkpoints/logs/full_eval_epoch_0060.log
+2026-02-16 03:08:06,322 - INFO - Training completed.

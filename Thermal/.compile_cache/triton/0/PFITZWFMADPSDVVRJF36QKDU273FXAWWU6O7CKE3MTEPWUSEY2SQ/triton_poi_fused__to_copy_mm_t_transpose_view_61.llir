@@ -1,0 +1,87 @@
+; ModuleID = 'LLVMDialectModule'
+source_filename = "LLVMDialectModule"
+target datalayout = "e-p3:32:32-p4:32:32-p5:32:32-p6:32:32-p7:32:32-i64:64-i128:128-v16:16-v32:32-n16:32:64"
+
+; Function Attrs: nounwind
+define ptx_kernel void @triton_poi_fused__to_copy_mm_t_transpose_view_61(ptr addrspace(1) %0, ptr addrspace(1) %1, i64 %2, i32 %3, ptr addrspace(1) readnone captures(none) %4, ptr addrspace(1) readnone captures(none) %5) local_unnamed_addr #0 !dbg !4 {
+  %7 = tail call i32 @llvm.nvvm.read.ptx.sreg.ctaid.x(), !dbg !7
+  %8 = shl i32 %7, 9, !dbg !8
+  %9 = tail call i32 @llvm.nvvm.read.ptx.sreg.tid.x(), !dbg !9
+  %10 = shl nuw nsw i32 %9, 1, !dbg !9
+  %11 = and i32 %10, 510, !dbg !9
+  %12 = or disjoint i32 %11, %8, !dbg !10
+  %13 = or disjoint i32 %12, 1, !dbg !10
+  %14 = sext i32 %12 to i64, !dbg !11
+  %15 = sext i32 %13 to i64, !dbg !11
+  %.frozen = freeze i64 %2, !dbg !12
+  %16 = sdiv i64 %14, %.frozen, !dbg !12
+  %17 = mul i64 %16, %.frozen, !dbg !11
+  %.decomposed = sub i64 %14, %17, !dbg !11
+  %18 = srem i64 %15, %2, !dbg !11
+  %.lhs.trunc = trunc nsw i64 %.decomposed to i32, !dbg !13
+  %.lhs.trunc.frozen = freeze i32 %.lhs.trunc, !dbg !13
+  %19 = sdiv i32 %.lhs.trunc.frozen, 256, !dbg !13
+  %.sext = sext i32 %19 to i64, !dbg !13
+  %.lhs.trunc2 = trunc nsw i64 %18 to i32, !dbg !13
+  %.lhs.trunc2.frozen = freeze i32 %.lhs.trunc2, !dbg !13
+  %20 = sdiv i32 %.lhs.trunc2.frozen, 256, !dbg !13
+  %.sext3 = sext i32 %20 to i64, !dbg !13
+  %21 = mul i32 %19, 256, !dbg !14
+  %.decomposed9 = sub i32 %.lhs.trunc.frozen, %21, !dbg !14
+  %.sext5 = sext i32 %.decomposed9 to i64, !dbg !14
+  %22 = mul i32 %20, 256, !dbg !14
+  %.decomposed10 = sub i32 %.lhs.trunc2.frozen, %22, !dbg !14
+  %.sext7 = sext i32 %.decomposed10 to i64, !dbg !14
+  %.idx8 = shl nsw i64 %16, 9, !dbg !15
+  %23 = getelementptr i8, ptr addrspace(1) %0, i64 %.idx8, !dbg !15
+  %.idx = shl nsw i64 %.sext, 17, !dbg !15
+  %24 = getelementptr i8, ptr addrspace(1) %23, i64 %.idx, !dbg !15
+  %25 = getelementptr bfloat, ptr addrspace(1) %24, i64 %.sext5, !dbg !15
+  %.idx1 = shl nsw i64 %.sext3, 17, !dbg !15
+  %26 = getelementptr i8, ptr addrspace(1) %23, i64 %.idx1, !dbg !15
+  %27 = getelementptr bfloat, ptr addrspace(1) %26, i64 %.sext7, !dbg !15
+  %28 = tail call i64 asm sideeffect "mov.u64 $0, 0x0;\0A\09createpolicy.fractional.L2::evict_last.b64 $0, 1.0;", "=l"() #2, !dbg !16
+  %29 = tail call i16 asm sideeffect "mov.u16 $0, 0x0;\0A\09ld.global.L1::evict_last.L2::cache_hint.b16 { $0 }, [ $1 + 0 ], $2;", "=c,l,l"(ptr addrspace(1) %25, i64 %28) #2, !dbg !16
+  %30 = tail call i64 asm sideeffect "mov.u64 $0, 0x0;\0A\09createpolicy.fractional.L2::evict_last.b64 $0, 1.0;", "=l"() #2, !dbg !16
+  %31 = tail call i16 asm sideeffect "mov.u16 $0, 0x0;\0A\09ld.global.L1::evict_last.L2::cache_hint.b16 { $0 }, [ $1 + 0 ], $2;", "=c,l,l"(ptr addrspace(1) %27, i64 %30) #2, !dbg !16
+  %32 = getelementptr bfloat, ptr addrspace(1) %1, i64 %14, !dbg !17
+  %33 = insertelement <2 x i16> poison, i16 %29, i64 0, !dbg !18
+  %34 = insertelement <2 x i16> %33, i16 %31, i64 1, !dbg !18
+  %35 = bitcast <2 x i16> %34 to i32, !dbg !18
+  tail call void asm sideeffect "st.global.b32 [ $1 + 0 ], { $0 };", "r,l"(i32 %35, ptr addrspace(1) %32) #2, !dbg !18
+  ret void, !dbg !19
+}
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare noundef range(i32 0, 2147483647) i32 @llvm.nvvm.read.ptx.sreg.ctaid.x() #1
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare noundef range(i32 0, 1024) i32 @llvm.nvvm.read.ptx.sreg.tid.x() #1
+
+attributes #0 = { nounwind "nvvm.reqntid"="256" }
+attributes #1 = { mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none) }
+attributes #2 = { nounwind }
+
+!llvm.dbg.cu = !{!0}
+!llvm.module.flags = !{!2, !3}
+
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "triton", isOptimized: true, runtimeVersion: 0, emissionKind: LineTablesOnly)
+!1 = !DIFile(filename: "c2aitba73pr4ujzexd656k5zijo62ovvkcxypb5pqsakxldb3nmt.py", directory: "/mnt/g/GitHub/VAE_ca_proj/Thermal/.compile_cache/2a")
+!2 = !{i32 2, !"Debug Info Version", i32 3}
+!3 = !{i32 4, !"nvvm-reflect-ftz", i32 1}
+!4 = distinct !DISubprogram(name: "triton_poi_fused__to_copy_mm_t_transpose_view_61", linkageName: "triton_poi_fused__to_copy_mm_t_transpose_view_61", scope: !1, file: !1, line: 18, type: !5, scopeLine: 18, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !0)
+!5 = !DISubroutineType(cc: DW_CC_normal, types: !6)
+!6 = !{}
+!7 = !DILocation(line: 19, column: 28, scope: !4)
+!8 = !DILocation(line: 19, column: 33, scope: !4)
+!9 = !DILocation(line: 20, column: 36, scope: !4)
+!10 = !DILocation(line: 20, column: 23, scope: !4)
+!11 = !DILocation(line: 22, column: 19, scope: !4)
+!12 = !DILocation(line: 23, column: 19, scope: !4)
+!13 = !DILocation(line: 25, column: 52, scope: !4)
+!14 = !DILocation(line: 25, column: 66, scope: !4)
+!15 = !DILocation(line: 25, column: 30, scope: !4)
+!16 = !DILocation(line: 25, column: 74, scope: !4)
+!17 = !DILocation(line: 26, column: 25, scope: !4)
+!18 = !DILocation(line: 26, column: 36, scope: !4)
+!19 = !DILocation(line: 26, column: 4, scope: !4)

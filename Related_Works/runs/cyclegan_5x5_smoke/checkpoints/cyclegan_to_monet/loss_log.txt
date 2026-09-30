@@ -1,5 +1,0 @@
-================ Training Loss (Mon May 11 22:05:32 2026) ================
-[Rank 0] (epoch: 1, iters: 4, time: 0.068, data: 0.010) , D_A: 0.870, G_A: 0.818, cycle_A: 5.013, idt_A: 2.350, D_B: 0.859, G_B: 0.835, cycle_B: 4.785, idt_B: 2.495
-
-[Rank 0] (epoch: 1, iters: 8, time: 0.064, data: 0.003) , D_A: 0.697, G_A: 0.764, cycle_A: 3.530, idt_A: 2.029, D_B: 0.697, G_B: 0.945, cycle_B: 4.274, idt_B: 1.744
-

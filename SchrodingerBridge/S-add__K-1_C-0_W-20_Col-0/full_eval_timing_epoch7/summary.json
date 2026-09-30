@@ -1,8 +1,0 @@
-{
-  "checkpoint": "SchrodingerBridge\\S-add__K-1_C-0_W-20_Col-0\\epoch_0007.pt",
-  "timestamp": "2026-05-12 14:52:36",
-  "mode": "generation_only",
-  "generated_count": 750,
-  "output_dir": "G:\\GitHub\\Latent_Style\\SchrodingerBridge\\S-add__K-1_C-0_W-20_Col-0\\full_eval_timing_epoch7",
-  "note": "Metrics are intentionally skipped. Run evaluation later with --reuse_generated."
-}

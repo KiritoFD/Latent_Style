@@ -1,0 +1,56 @@
+{
+  "checkpoint": "../2-6-photo-vangogh/epoch_0100.pt",
+  "timestamp": "2026-02-07 00:22:16",
+  "matrix_breakdown": {
+    "photo": {
+      "photo": {
+        "count": 30,
+        "clip_style": 0.6081828812758128,
+        "style_lpips": 0.7333476324876149,
+        "content_lpips": 0.4076446876666668,
+        "clip_content": 0.7892672806666667,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.5648255268732707,
+        "style_lpips": 0.8610232055187226,
+        "content_lpips": 0.7494777553333335,
+        "clip_content": 0.6807343023333332,
+        "classifier_acc": null
+      }
+    },
+    "vangogh": {
+      "photo": {
+        "count": 30,
+        "clip_style": 0.5784435153007508,
+        "style_lpips": 0.7821186125278473,
+        "content_lpips": 0.6478852630000002,
+        "clip_content": 0.6623453490000001,
+        "classifier_acc": null
+      },
+      "vangogh": {
+        "count": 30,
+        "clip_style": 0.6614558537801106,
+        "style_lpips": 0.775827145576477,
+        "content_lpips": 0.4671673926666667,
+        "clip_content": 0.7854393990000001,
+        "classifier_acc": null
+      }
+    }
+  },
+  "analysis": {
+    "style_transfer_ability": {
+      "clip_style": 0.5716345210870107,
+      "content_lpips": 0.6986815091666668,
+      "classifier_acc": 0.0
+    },
+    "photo_to_art_performance": {
+      "clip_style": 0.5648255268732707,
+      "valid": true,
+      "classifier_acc": 0.0
+    }
+  },
+  "classification_report": null,
+  "detailed_style_metrics": {}
+}
