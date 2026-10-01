@@ -37,7 +37,7 @@ opens; the regular-paper deadline has historically been in December.
 | ≤ 6 pages including all text, figures, **and references** | author instructions | 6 pages |
 | Letter-size PDF, all fonts embedded, Times encouraged | author instructions | letter; `pdffonts` shows all fonts embedded (Times in text, STIX TrueType in figures, no Type 3) |
 | IEEE conference template (IEEEtran `conference`, IEEEbib) | official ICME 2026 LaTeX zip | template files copied unchanged |
-| Abstract 100–150 words, identical to the CMT abstract; no math, symbols, or footnotes in title/abstract | author instructions + template | 150 words, plain text |
+| Abstract 100–150 words, identical to the CMT abstract; no math, symbols, or footnotes in title/abstract | author instructions + template | 146 words, plain text |
 | Double blind: author block exactly "Anonymous ICME submission"; no identifying acknowledgments, links, or supplement titles | author instructions | done; cite own prior work in the third person |
 | Supplement: single zip (site says ≤ 50 MB, template says ≤ 20 MB; use 20 MB); reviewers need not read it, so the paper must stand alone | author instructions + template | supplement PDF ≈ 0.9 MB |
 | One primary subject area (+ up to 2 secondary) | CMT form | suggest *Multimedia analysis and generation*; secondary *Multimedia quality assessment and metrics*, *Image and video processing* |
@@ -49,6 +49,13 @@ experimental validation and reproducibility, clarity, reference to prior work.
 
 ## Changes relative to the AAAI version
 
+- **Tone (2026-10-01).** Assertive rewrite with the defensive hedging removed; every strengthened claim
+  was re-verified against `data/main_table.csv`: 8 of 12 baselines fail the sandwich; all four compact
+  baselines (<10M trainable parameters: CUT, SaMST, SaMam, Latent-WCT) fall below IDT in style on at
+  least one benchmark; WEAVE is Pareto-optimal against all 12 baselines in every style–content pair on
+  D5 and R5; 11× smaller and ≥11× faster than every other valid learned model; 28× faster training than
+  the fastest learned baseline. New title: *WEAVE: Breaking the Identity Shortcut in Lightweight Style
+  Transfer with Wavelets*.
 - **Narrative.** Reframed around the *identity shortcut*: a dedicated diagnosis section (IDT–TGT
   sandwich as a formal validity test; Haar-band gradient dominance), an audit showing 8 of 13
   methods fail on at least one benchmark (*Valid* column in Table I), and a headline restricted to

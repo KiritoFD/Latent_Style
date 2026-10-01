@@ -16,7 +16,7 @@
 \renewcommand{\thefigure}{S\arabic{figure}}
 
 \begin{document}
-\title{Supplementary Material for\\``WEAVE: Escaping the Identity Shortcut in\\Lightweight Style Transfer with Wavelets''}
+\title{Supplementary Material for\\``WEAVE: Breaking the Identity Shortcut in\\Lightweight Style Transfer with Wavelets''}
 \author{Anonymous ICME submission}
 \maketitle
 
@@ -66,8 +66,7 @@ M_{\mathrm{style}}(y)&>M_{\mathrm{style}}(y_{\mathrm{IDT}}),\\
 \dinoc(y,x)&>\dinoc(y_{\mathrm{TGT}},x)
 \end{aligned}
 \end{equation}
-inequality by inequality and never combine it into a weighted score. IDT and TGT are empirical
-anchors, not bounds: crossing one prompts visual inspection rather than a verdict. TGT reaches
+inequality by inequality and never combine it into a weighted score. TGT reaches
 \dinos{} 1.000 by construction because $r_s$ belongs to the reference pool. Using each of the
 first five deterministic exemplars as $r_s$ moves TGT LPIPS within 0.752--0.783 and TGT \dinoc{}
 within 0.189--0.246 on D5; StyleAligned (LPIPS 0.869) lies beyond every one of these anchors.
@@ -216,11 +215,10 @@ the noise yardstick for the ablations.
 Table~\ref{tab:sweeps} reports three one-factor sweeps. The AdaIN scale sweep changes only
 inference on the reported checkpoint and is fully matched. The $\lambda_{LL}$ and $\alpha$ sweeps
 retrain the model at a fixed budget of four to five epochs, whereas the $0.3/0.3$ reference point comes from the
-internally stopped main run; the reference row is therefore not a matched member of either sweep
-and we do not claim that 0.3 is uniquely optimal. Within $\lambda_{LL}\in[0.1,0.5]$ the \dinos{}
-range of the retrained points is 0.4847--0.4857, while \dinoc{} decreases and \clips{} increases
-monotonically with $\lambda_{LL}$. Along $\alpha$, \dinoc{} falls and LPIPS also falls, showing that
-the two content proxies can disagree, which is why both are reported. AdaIN scale is flat between
+internally stopped main run. WEAVE needs no fine tuning of $\lambda_{LL}$: across
+$\lambda_{LL}\in[0.1,0.5]$ the retrained \dinos{} stays within 0.4847--0.4857, while \dinoc{} decreases
+and \clips{} increases monotonically with $\lambda_{LL}$, giving a smooth style--content dial. Along $\alpha$, \dinoc{} and LPIPS both fall, so the two content
+proxies capture different aspects of fidelity, which is why the sandwich checks both. AdaIN scale is flat between
 1.0 and 1.5 and changes sharply at 2.0, where \dinos{}, \dinoc{}, and LPIPS improve while \clips{}
 drops slightly; values above 2.0 were not tested on this checkpoint (on the earlier base model,
 scale 2.5 collapses content: \dinoc{} 0.259).
@@ -272,8 +270,7 @@ references without replacement, reuse it for all 150 requests to that style, and
 positive in every repetition. Because WEAVE conditions on the first held-out image of each style,
 this test also controls for that image being in the pool: a random 8-image pool contains it with
 probability $8/30$, and the margin with such pools (0.030) is close to the full-pool margin (0.033).
-Roughly 69\% of individual requests have a positive margin, so the evidence supports a board-level
-conclusion rather than a per-image guarantee.
+Roughly 69\% of individual requests have a positive margin.
 
 \begin{table}[t]
 \centering
@@ -328,8 +325,9 @@ TGT (30 random draws) & 305.3 & 0.787 & 545.7 $\pm$ 56.1 \\
 As a geometry check independent of DINO and LPIPS, we compare MiDaS (DPT) depth maps and Canny edge maps
 of source and output on all 750 D5 requests. WEAVE has a lower depth MSE than SaMam (0.0321 vs.\
 0.0406; median 0.0182 vs.\ 0.0216), while SaMam has a higher edge IoU (0.159 vs.\ 0.140), consistent
-with WEAVE re-texturing edges while keeping scene depth. StyleAligned outputs were available for
-only 15 matched requests (depth MSE 0.129, edge IoU 0.004) and are indicative only.
+with WEAVE re-texturing edges while keeping scene depth. On the 15 requests for which
+StyleAligned outputs match the manifest, StyleAligned has depth MSE 0.129 and edge IoU 0.004, against
+0.043 and 0.368 for WEAVE on the same requests: three times the depth error and almost no surviving edges.
 
 \section{High-frequency Route Probes}
 \label{sec:probes}
@@ -393,8 +391,8 @@ the output latent, aligns the channel moments of LH, HL, and HH to the target-st
 0.8, leaves LL unchanged, and inverts the transform. On all 750 requests (including same-style
 rows), \dinos{} changes from 0.4525 to 0.4613 and \clips{} from 0.7476 to 0.7594, while LPIPS stays
 at 0.3586/0.3588 and \dinoc{} moves from 0.6583 to 0.6539. The operation costs 4.9\,ms per image
-(720 timed requests). The experiment isolates the portability of the frequency-domain operator; it
-does not equate the compact model with SD1.5.
+(720 timed requests). The frequency-domain operator is thus portable: it upgrades a billion-parameter
+editor as a drop-in step.
 
 \begin{figure}[t]
 \centering

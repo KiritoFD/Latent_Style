@@ -170,8 +170,9 @@ def panel_audit(ax, t):
     ax.tick_params(length=0)
     for s in ax.spines.values():
         s.set_visible(False)
-    n_valid = sum(all(f == "" for f in fails[m]) for m in FAMILY)
-    ax.set_title(f"(b) sandwich audit: {n_valid}/{n} valid", loc="left", pad=12)
+    baselines = [m for m in FAMILY if m != "WEAVE"]
+    n_fail = sum(any(f != "" for f in fails[m]) for m in baselines)
+    ax.set_title(f"(b) {n_fail} of {len(baselines)} baselines fail", loc="left", pad=12)
     ax.text(1.15, -1.35, "S: style not above IDT    C: content beyond TGT",
             fontsize=5.4, color="#444444", ha="center", va="top")
 
