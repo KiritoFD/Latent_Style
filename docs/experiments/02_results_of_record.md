@@ -76,3 +76,20 @@
 | 频率探针（Fig. 2） | `WEAVE/aaai2027_v4/fig_data/method_probe_*.csv`、`method_probes.json`、`swd_loss_separability.json` | verified |
 | ArtFID（supplement） | `canonical_artfid.json` | verified |
 | 深度/边缘（supplement） | `SchrodingerBridge/rebuttal_exps/experiments/rebuttal_20260716/task3_topological/task3_summary.json` | verified |
+
+## ICME 版正文中的派生数字（2026-10-01）
+
+| 数字 | 计算方式 | 来源 |
+|---|---|---|
+| LL 占梯度能量 69.5%（LH 10.3 / HL 11.3 / HH 8.9） | 5,000 对跨风格 D5 latent 的直接位移 Haar 频带能量均值之比；正交 Haar 下等于初始化时的梯度能量占比 | `WEAVE/icme2027/data/probe_frequency.csv`（= `aaai2027_v4/fig_data/method_probe_frequency.csv`） |
+| 风格可分性 LL 0.12 / LH 0.19 / HL 0.17 / HH 0.56 | between/within 方差比 | `WEAVE/icme2027/data/probe_separability.csv` |
+| 源锚定端点下 LL 占比 ≤ 17.0% | 命题 1：每对样本 ‖u_ℓ‖² ≤ α²‖ℓ_s−ℓ_c‖²（α=0.3），高频位移不变；0.09·4.241/(0.09·4.241+0.628+0.687+0.546) | `WEAVE/icme2027/tools/make_figures.py` 打印 |
+| 三个种子 DINO-S 0.4897 ± 0.0030，CLIP-S 0.7137 ± 0.0008，LPIPS 0.2605 ± 0.0059，DINO-C 0.8073 ± 0.0031 | seed 42 用 expD 主结果，seed 7/123 用 `internal_dynamics_robustness.csv` 中的选中 epoch | 见上文"其它正文数字" |
+| 全参考池 margin 0.033 | `b1_reference_pool_corrected.json` 中 m30 的 margin.mean = 0.0334 | 同左 |
+| "复制输入的 CLIP-S 0.693 高于 SaMam 0.582、SaMST 0.618" | D5 Table I | `main_table.csv` |
+| D5、R5 上 WEAVE 在四组风格×内容指标上均帕累托最优；P2A 上 SaMam 四项全优、Seedream 风格与 LPIPS 优 | 对 12 个对比方法逐组检查支配关系 | `main_table.csv` |
+| 256 px 时每个 Haar 子带 16×16 系数/通道 | 256/8（VAE 下采样）/2（一级 Haar） | 架构事实 |
+| SaMam 参数 8.5×、训练 >300× | 8.8/1.04；436 min / 1.38 min | Table I |
+
+**评测协议补充**：`WEAVE/utils/run_evaluation.py`（约 3440–3480 行）推理时对每个目标风格取该风格测试目录的第一张图编码为参考 latent，
+因此 WEAVE 的风格参考就是 TGT 那张图，且该图在 DINO-S 参考池内。参考池重采样（m=8 时包含该图的概率 8/30）显示 margin 不依赖它。

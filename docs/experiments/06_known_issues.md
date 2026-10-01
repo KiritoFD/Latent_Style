@@ -19,6 +19,9 @@
 | A13 | Task1+（VAE × Haar 层数）"DINO-S 0.912" 实为 DINO-C 口径、仅 5 对 | 不可引用，已在 03 标注 |
 | A14 | ArtFID 中 WEAVE LPIPS 0.283 vs 主表 0.2595 | 不同 LPIPS 设置，分开报告 |
 | A15 | `docs/reproduction/*` 的 checkpoint_sha256 列是英文单词而非哈希 | **未解决**，无法校验 |
+| A16 | AAAI 首页图（`aaai2027_v4/plot_page1_summary.py`）画的 WEAVE 点是旧 base 模型（0.4843/0.7180/0.2925，2.07 min），StyleAligned CLIP-S、SaMST、SaMam 点也与主表不符，ArtFID 面板混入了源 manifest 不同的 Z-STAR/StyleAligned | ICME 版 Fig. 1 改由 `icme2027/tools/make_figures.py` 从 `main_table.csv` 与 `artfid_d5.csv` 生成；AAAI 版保持冻结 |
+| A17 | 参考文献错误：Z-STAR 条目作者与标题错误（实为 Deng, He, Tang, Dong, "Z*", CVPR 2024），AesPA-Net、StyTr² 作者列表错误，WCT 误标 CVPR（实为 NeurIPS 2017），StyleAligned 误标 ICLR（实为 CVPR 2024），多篇已发表论文仍标 arXiv | ICME 版 `refs.bib` 已逐条核实重建；AAAI 版 `refs.bib` 未改 |
+| A18 | AAAI 补充材料称 TGT "is never an input to any method"，但 WEAVE 推理时的风格参考正是 TGT 图 | ICME 正文与补充材料已如实说明，并用参考池重采样证明结论不依赖该图 |
 
 ## B. 缺失的原始文件（paper-only）
 

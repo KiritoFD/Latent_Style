@@ -1,0 +1,6 @@
+method,artfid,fid,lpips,ci_low,ci_high,note
+IDT,216.5097,215.5097,0.0,209.9281,223.0913,10000 target-style bootstrap replicates; interval = 2.5-97.5 percentile
+WEAVE,295.2679,230.5231,0.283129,,,epoch-4 checkpoint
+SaMam,297.3159,231.8669,0.282842,,,
+Seedream 4.5,310.973,217.3736,0.421549,,,API; 720 of 750 requests (reference only)
+TGT,545.699,305.2613,0.787034,472.0733,671.1305,30 random reference sets; interval = 2.5-97.5 percentile

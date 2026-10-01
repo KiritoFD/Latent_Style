@@ -56,7 +56,9 @@ center-cropped for DINO; metric post-processing is disabled.
 \noindent\textbf{IDT and TGT.} For source $x$ and target style $s$, $y_{\mathrm{IDT}}=x$ and
 $y_{\mathrm{TGT}}=r_s$, where $r_s$ is the first image in the deterministic held-out reference
 order of style $s$, reused for every source sent to $s$. TGT depends on the requested style but
-not on the source, and is never an input to any method. We read the bracket
+not on the source. At test time WEAVE uses the same $r_s$ as its style reference, so TGT is exactly
+the output of copying the reference; Section~\ref{sec:refpool} verifies that the \dinos{} margin of
+WEAVE does not rely on $r_s$ being in the evaluation pool. We read the bracket
 \begin{equation}
 \begin{aligned}
 M_{\mathrm{style}}(y)&>M_{\mathrm{style}}(y_{\mathrm{IDT}}),\\
@@ -144,6 +146,26 @@ Training stops at epoch 4.}
 \label{fig:training}
 \end{figure}
 
+\section{Spectral Diagnosis and Proposition 1}
+\label{sec:spectral}
+
+\noindent\textbf{Measurement.} For 5{,}000 cross-style D5 latent pairs $(z_c,z_s)$ we compute the
+one-level orthonormal Haar transform of the direct displacement $u=z_s-z_c$ and average the band
+energies $\|u_b\|^2$. Because the transform is orthonormal, $\|v-u\|^2=\sum_b\|v_b-u_b\|^2$, so
+at initialization ($v\approx0$) the gradient of the flow-matching loss with respect to the band-$b$
+output is $-2u_b$ and its energy share equals the displacement share. The mean energies are
+4.241 (LL), 0.628 (LH), 0.687 (HL), and 0.546 (HH), i.e., shares of 69.5, 10.3, 11.3, and 8.9\%.
+Style separability is the ratio of between-style to within-style variance of per-image band
+statistics: 0.117 (LL), 0.186 (LH), 0.171 (HL), and 0.560 (HH).
+
+\noindent\textbf{Consequence of Proposition 1.} The source-anchored endpoint leaves the
+high-frequency displacement unchanged and, by the bound of Proposition~1 in the main paper, scales the
+LL energy by at most $\alpha^2=0.09$ for every pair, hence also on average. The LL share therefore
+becomes at most $0.09\cdot4.241/(0.09\cdot4.241+0.628+0.687+0.546)=0.170$. The bound is attained only when
+the reference LL is a positive affine copy of the source LL, so the actual share is lower. In the implementation, AdaIN uses per-sample,
+per-channel spatial statistics with a $10^{-6}$ floor on the standard deviation, which does not
+affect the bound in practice. The derivation is reproduced by \texttt{tools/make\_figures.py}.
+
 \section{Per-epoch Curves and Stopping Regret}
 \label{sec:curves}
 
@@ -183,7 +205,10 @@ For seed 42, (\dinos, \clips, LPIPS, \dinoc) is (0.4857, 0.7119, 0.2409, 0.8230)
 (0.4917, 0.7127, 0.2595, 0.8104) after epoch 4. The main table reports a
 re-evaluation of the same epoch-4 checkpoint (0.4918/0.7128/0.2595/0.8102); the difference is
 below $2\times10^{-4}$ on every metric. After epoch 4, \dinos{} declines while the regression
-loss keeps improving, so the transition is not ordinary loss-plateau stopping.
+loss keeps improving, so the transition is not ordinary loss-plateau stopping. Across the three
+seeds at their selected epochs, (\dinos, \clips, LPIPS, \dinoc) is ($0.4897\pm0.0030$,
+$0.7137\pm0.0008$, $0.2605\pm0.0059$, $0.8073\pm0.0031$), mean $\pm$ s.d.; we use these spreads as
+the noise yardstick for the ablations.
 
 \section{Sensitivity Sweeps}
 \label{sec:sweeps}
@@ -244,8 +269,11 @@ Without regenerating images, we draw for each target style one size-$m$ subset o
 references without replacement, reuse it for all 150 requests to that style, and recompute
 \dinos{} for WEAVE and IDT; this is repeated 1{,}000 times (Table~\ref{tab:refpool}). Absolute
 \dinos{} grows with $m$ because it is a maximum over the pool, but the board-mean margin over IDT is
-positive in every repetition. Roughly 69\% of individual requests have a positive margin, so the
-evidence supports a board-level conclusion rather than a per-image guarantee.
+positive in every repetition. Because WEAVE conditions on the first held-out image of each style,
+this test also controls for that image being in the pool: a random 8-image pool contains it with
+probability $8/30$, and the margin with such pools (0.030) is close to the full-pool margin (0.033).
+Roughly 69\% of individual requests have a positive margin, so the evidence supports a board-level
+conclusion rather than a per-image guarantee.
 
 \begin{table}[t]
 \centering
