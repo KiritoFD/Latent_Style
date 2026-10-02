@@ -39,6 +39,8 @@ def mark(text, rank):
 
 def main():
     rows = list(csv.DictReader(open(ROOT / "data" / "main_table.csv", encoding="utf-8")))
+    # Rows flagged in_paper=0 stay in the CSV for provenance but are not reported (see their note).
+    rows = [r for r in rows if r.get("in_paper", "1") != "0"]
     methods = list(dict.fromkeys(r["method"] for r in rows))
     val = {(r["method"], r["board"]): r for r in rows}
     cost = {r["method"]: r for r in rows if r["board"] == "D5-512"}
@@ -96,7 +98,7 @@ def main():
         else:
             valid = "%d/3" % passed
             cells.append(r"\textbf{%s}" % valid if passed == 3 else valid)
-        sep = "\\midrule\n" if m in ("SD-Turbo", "WEAVE") else ""
+        sep = "\\midrule\n" if m in (methods[2], "WEAVE") else ""
         lines.append(sep + " & ".join(cells) + r" \\")
 
     head = r"""\begin{tabular}{@{}l*{12}{c}cccc@{}}

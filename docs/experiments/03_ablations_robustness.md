@@ -50,7 +50,7 @@ Z-STAR、StyleAligned 输出来自另一份源列表（15/750 匹配），**排�
 ## 6. 结构保持（MiDaS 深度 + Canny 边缘）
 
 `RX/experiments/rebuttal_20260716/task3_topological/task3_summary.json`（脚本 `RX/scripts/task3_topological.py`）：
-depth MSE WEAVE 0.0321 vs SaMam 0.0406；edge IoU WEAVE 0.140 vs SaMam 0.159；StyleAligned 仅 15 对可匹配，仅供参考。
+depth MSE WEAVE 0.0321 vs SaMam 0.0406；edge IoU WEAVE 0.140 vs SaMam 0.159；StyleAligned 仅 15 对可匹配：在这 15 个相同请求上 StyleAligned depth MSE 0.129 / edge IoU 0.004，WEAVE 为 0.043 / 0.368（由 `task3_*_per_pair.csv` 逐对匹配计算）。
 
 ## 7. HF 路由探针（supplement Table S7）
 

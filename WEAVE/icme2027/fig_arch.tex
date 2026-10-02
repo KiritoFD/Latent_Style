@@ -7,7 +7,7 @@
   learn/.style={box, fill=green!12, draw=green!45!black},
   analytic/.style={box, fill=orange!15, draw=orange!70!black},
   data/.style={align=center, inner sep=1pt},
-  band/.style={draw, minimum width=6mm, minimum height=4mm, inner sep=0pt, font=\tiny},
+  band/.style={draw, minimum width=6.6mm, minimum height=4.3mm, inner sep=0pt, font=\scriptsize},
   flow/.style={->, thick},
   cond/.style={->, densely dashed, orange!70!black, thick},
   lcond/.style={->, densely dashed, green!45!black, thick},
@@ -20,6 +20,7 @@
 \node[band, fill=green!12, below=0.6mm of ll] (lh) {LH};
 \node[band, fill=green!12, below=0.6mm of lh] (hl) {HL};
 \node[band, fill=gray!10, below=0.6mm of hl] (hh) {HH};
+\node[font=\scriptsize, text=gray, anchor=north, inner sep=0.8pt] (nohead) at (hh.south) {no head};
 \node[learn, right=9mm of lh, yshift=-2.3mm, minimum height=17mm, text width=20mm] (net)
   {velocity network\\4 res.\ blocks, width 64\\[2pt]\textbf{1.04M trainable}};
 \node[band, fill=blue!12, right=6mm of net, yshift=6.6mm] (vll) {$v_\ell$};
@@ -37,7 +38,6 @@
 \draw[flow] (enc) -- node[above, pos=0.3]{$z^0$} (dwt);
 \foreach \b in {ll,lh,hl,hh} \draw[->] (dwt.east) -- (\b.west);
 \foreach \b in {ll,lh,hl} \draw[->] (\b.east) -- (\b.east -| net.west);
-\node[font=\tiny, text=gray, anchor=west, inner sep=0.5pt] at ([xshift=0.5mm]hh.east) {(no head)};
 \foreach \b in {vll,vlh,vhl} \draw[->] (\b.west -| net.east) -- (\b.west);
 \foreach \b in {vll,vlh,vhl,vhh} \draw[->] (\b.east) -- (euler.west);
 \draw[flow] (euler) -- node[above]{$\bar z$} (adain);
@@ -46,9 +46,9 @@
 
 \begin{scope}[on background layer]
 \node[draw=black!50, densely dashed, rounded corners=4pt, inner sep=2.5mm,
-      fit=(dwt)(ll)(hh)(net)(vll)(vhh)(euler)(adain)] (loop) {};
+      fit=(dwt)(ll)(nohead)(net)(vll)(vhh)(euler)(adain)] (loop) {};
 \end{scope}
-\node[anchor=south east, font=\tiny, text=black!70, inner sep=1.2pt] at (loop.south east) {repeated for $k=0,\dots,K{-}1$ ($K{=}8$)};
+\node[anchor=south east, font=\scriptsize, text=black!70, inner sep=1.4pt] at (loop.south east) {repeated $K{=}8$ times};
 
 \coordinate (mid) at ($(net.east)!0.5!(vlh.west)$);
 % ---------------- style conditioning (top) ----------------
@@ -59,26 +59,26 @@
 \node[learn, text width=12mm] (mem) at ([xshift=-6mm]xs -| net) {style\\memory};
 \draw[flow] (xs) -- (enc2);
 \draw[flow] (enc2) -- node[above]{$z_s$} (dwt2);
-\draw[flow, rounded corners=2pt] (dwt2.east) -- ++(2mm,0) |- ([yshift=2.5mm]mem.north) node[pos=0.75, above, font=\tiny]{$h_{1,s},h_{2,s}$} -| (pool.north);
+\draw[flow, rounded corners=2pt] (dwt2.east) -- ++(2mm,0) |- ([yshift=2.5mm]mem.north) node[pos=0.75, above, font=\scriptsize]{$h_{1,s},h_{2,s}$} -| (pool.north);
 \draw[lcond] (pool.south) -- (mid |- vhl.west);
 \fill[green!45!black] (mid |- vlh.west) circle (0.6pt) (mid |- vhl.west) circle (0.6pt);
-\node[font=\tiny, text=green!35!black, anchor=north west, inner sep=0.5pt] at ([xshift=0.5mm,yshift=-0.4mm]mid |- loop.north) {to LH/HL heads};
+\node[font=\scriptsize, text=green!35!black, anchor=north west, inner sep=0.5pt] at ([xshift=0.5mm,yshift=-0.4mm]mid |- loop.north) {to LH/HL heads};
 \draw[lcond] (mem.south) -- (mem.south |- net.north);
-\node[font=\tiny, anchor=east, inner sep=0.5pt] (sid) at ([xshift=-3mm]mem.west) {style id $s$};
+\node[font=\scriptsize, anchor=east, inner sep=0.5pt] (sid) at ([xshift=-3mm]mem.west) {style id $s$};
 \draw[->] (sid) -- (mem);
-\draw[cond, rounded corners=3pt] (dwt2.north) -- ++(0,6mm) -| node[pos=0.3, above, font=\tiny]{target high-frequency residual $q_s=P_H z_s$} (adain.north);
+\draw[cond, rounded corners=3pt] (dwt2.north) -- ++(0,6mm) -| node[pos=0.3, above, font=\scriptsize]{reference high-frequency residual $q_s=P_H z_s$} (adain.north);
 
 % ---------------- training objective (bottom) ----------------
-\node[box, draw=blue!60!black, fill=blue!4, anchor=north west, text width=128mm, align=left]
+\node[box, draw=blue!60!black, fill=blue!4, anchor=north west, align=left, inner sep=3pt]
   (loss) at ([yshift=-3mm]loop.south west -| xc.west)
-  {\textbf{Training} (cached latents, no decoding, no inversion):\;
-  source-aligned endpoint $z_1^\star=\mathcal W^{-1}\!\big((1{-}\alpha)\ell_c+\alpha\,\mathrm{AdaIN}(\ell_c,\ell_s),\,h_{1,s},h_{2,s},h_{3,s}\big)$,\;
-  path $z_t=(1{-}t)z_c+t z_1^\star-\sigma\sqrt{t(1{-}t)}\,\epsilon$;\\
-  band-weighted loss $\lambda_{LL}\|v_\ell-u_\ell\|^2+\|v_{h_1}-u_{h_1}\|^2+\|v_{h_2}-u_{h_2}\|^2$ with $u=\mathcal W(z_1^\star-z_c)$;\;
-  stop at the first internal gradient transition.};
+  {\textbf{Training} on cached latents (no decoding, no inversion, no discriminator)\\[1pt]
+  source-anchored endpoint\ \ $z_1^\star=\mathcal W^{-1}\!\big((1{-}\alpha)\ell_c+\alpha\,\mathrm{AdaIN}(\ell_c,\ell_s),\,h_{1,s},h_{2,s},h_{3,s}\big)$,
+  \quad path\ \ $z_t=(1{-}t)z_c+t z_1^\star-\sigma\sqrt{t(1{-}t)}\,\epsilon$\\[1pt]
+  band-weighted loss\ \ $\lambda_{LL}\|v_\ell-u_\ell\|^2+\|v_{h_1}-u_{h_1}\|^2+\|v_{h_2}-u_{h_2}\|^2$,\ \ $u=\mathcal W(z_1^\star-z_c)$;
+  \quad stop at the first internal gradient transition};
 \draw[->, densely dotted, blue!60!black, thick] (loss.north -| vhh.south) -- (vhh.south);
 
-\node[anchor=north east, font=\tiny, align=right] at (loss.north east -| out.east) {%
+\node[anchor=north east, font=\scriptsize, align=right] at (loss.north east -| out.east) {%
   \tikz\node[frozen, minimum height=2mm, minimum width=3mm]{};\ frozen\\[1pt]
   \tikz\node[learn, minimum height=2mm, minimum width=3mm]{};\ learned\\[1pt]
   \tikz\node[analytic, minimum height=2mm, minimum width=3mm]{};\ analytic};

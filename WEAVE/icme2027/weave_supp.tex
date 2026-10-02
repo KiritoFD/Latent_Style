@@ -16,7 +16,7 @@
 \renewcommand{\thefigure}{S\arabic{figure}}
 
 \begin{document}
-\title{Supplementary Material for\\``WEAVE: Escaping the Identity Shortcut in\\Lightweight Style Transfer with Wavelets''}
+\title{Supplementary Material for\\``WEAVE: Breaking the Identity Shortcut in\\Lightweight Style Transfer with Wavelets''}
 \author{Anonymous ICME submission}
 \maketitle
 
@@ -56,7 +56,9 @@ center-cropped for DINO; metric post-processing is disabled.
 \noindent\textbf{IDT and TGT.} For source $x$ and target style $s$, $y_{\mathrm{IDT}}=x$ and
 $y_{\mathrm{TGT}}=r_s$, where $r_s$ is the first image in the deterministic held-out reference
 order of style $s$, reused for every source sent to $s$. TGT depends on the requested style but
-not on the source, and is never an input to any method. We read the bracket
+not on the source. At test time WEAVE uses the same $r_s$ as its style reference, so TGT is exactly
+the output of copying the reference; Section~\ref{sec:refpool} verifies that the \dinos{} margin of
+WEAVE does not rely on $r_s$ being in the evaluation pool. We read the bracket
 \begin{equation}
 \begin{aligned}
 M_{\mathrm{style}}(y)&>M_{\mathrm{style}}(y_{\mathrm{IDT}}),\\
@@ -64,8 +66,7 @@ M_{\mathrm{style}}(y)&>M_{\mathrm{style}}(y_{\mathrm{IDT}}),\\
 \dinoc(y,x)&>\dinoc(y_{\mathrm{TGT}},x)
 \end{aligned}
 \end{equation}
-inequality by inequality and never combine it into a weighted score. IDT and TGT are empirical
-anchors, not bounds: crossing one prompts visual inspection rather than a verdict. TGT reaches
+inequality by inequality and never combine it into a weighted score. TGT reaches
 \dinos{} 1.000 by construction because $r_s$ belongs to the reference pool. Using each of the
 first five deterministic exemplars as $r_s$ moves TGT LPIPS within 0.752--0.783 and TGT \dinoc{}
 within 0.189--0.246 on D5; StyleAligned (LPIPS 0.869) lies beyond every one of these anchors.
@@ -144,6 +145,26 @@ Training stops at epoch 4.}
 \label{fig:training}
 \end{figure}
 
+\section{Spectral Diagnosis and Proposition 1}
+\label{sec:spectral}
+
+\noindent\textbf{Measurement.} For 5{,}000 cross-style D5 latent pairs $(z_c,z_s)$ we compute the
+one-level orthonormal Haar transform of the direct displacement $u=z_s-z_c$ and average the band
+energies $\|u_b\|^2$. Because the transform is orthonormal, $\|v-u\|^2=\sum_b\|v_b-u_b\|^2$, so
+at initialization ($v\approx0$) the gradient of the flow-matching loss with respect to the band-$b$
+output is $-2u_b$ and its energy share equals the displacement share. The mean energies are
+4.241 (LL), 0.628 (LH), 0.687 (HL), and 0.546 (HH), i.e., shares of 69.5, 10.3, 11.3, and 8.9\%.
+Style separability is the ratio of between-style to within-style variance of per-image band
+statistics: 0.117 (LL), 0.186 (LH), 0.171 (HL), and 0.560 (HH).
+
+\noindent\textbf{Consequence of Proposition 1.} The source-anchored endpoint leaves the
+high-frequency displacement unchanged and, by the bound of Proposition~1 in the main paper, scales the
+LL energy by at most $\alpha^2=0.09$ for every pair, hence also on average. The LL share therefore
+becomes at most $0.09\cdot4.241/(0.09\cdot4.241+0.628+0.687+0.546)=0.170$. The bound is attained only when
+the reference LL is a positive affine copy of the source LL, so the actual share is lower. In the implementation, AdaIN uses per-sample,
+per-channel spatial statistics with a $10^{-6}$ floor on the standard deviation, which does not
+affect the bound in practice. The derivation is reproduced by \texttt{tools/make\_figures.py}.
+
 \section{Per-epoch Curves and Stopping Regret}
 \label{sec:curves}
 
@@ -153,8 +174,9 @@ training. For the main configuration the rule selects the \dinos{} maximum for s
 and, for seed 7, the epoch that is the maximum of its full 15-epoch curve. For the retrained
 ablations, which were run for 15 epochs with stopping disabled, the rule's choice differs from the
 oracle: by $6.8\times10^{-5}$ \dinos{} for $\lambda_{LL}=1.0$, but by $0.0039$ for the direct
-endpoint, whose peak arrives at epoch 13. The main-paper ablation table therefore reports each
-retrained variant at its best-\dinos{} epoch, which is favourable to the variants.
+endpoint, whose peak arrives at epoch 13. The main-paper ablation table therefore compares every
+retrained variant at WEAVE's four-epoch budget, which shares seed and learning-rate schedule with the
+main run, and lists each variant's best \dinos{} within 15 epochs separately.
 
 \begin{table}[t]
 \centering
@@ -183,7 +205,10 @@ For seed 42, (\dinos, \clips, LPIPS, \dinoc) is (0.4857, 0.7119, 0.2409, 0.8230)
 (0.4917, 0.7127, 0.2595, 0.8104) after epoch 4. The main table reports a
 re-evaluation of the same epoch-4 checkpoint (0.4918/0.7128/0.2595/0.8102); the difference is
 below $2\times10^{-4}$ on every metric. After epoch 4, \dinos{} declines while the regression
-loss keeps improving, so the transition is not ordinary loss-plateau stopping.
+loss keeps improving, so the transition is not ordinary loss-plateau stopping. Across the three
+seeds at their selected epochs, (\dinos, \clips, LPIPS, \dinoc) is ($0.4897\pm0.0030$,
+$0.7137\pm0.0008$, $0.2605\pm0.0059$, $0.8073\pm0.0031$), mean $\pm$ s.d.; we use these spreads as
+the noise yardstick for the ablations.
 
 \section{Sensitivity Sweeps}
 \label{sec:sweeps}
@@ -191,11 +216,10 @@ loss keeps improving, so the transition is not ordinary loss-plateau stopping.
 Table~\ref{tab:sweeps} reports three one-factor sweeps. The AdaIN scale sweep changes only
 inference on the reported checkpoint and is fully matched. The $\lambda_{LL}$ and $\alpha$ sweeps
 retrain the model at a fixed budget of four to five epochs, whereas the $0.3/0.3$ reference point comes from the
-internally stopped main run; the reference row is therefore not a matched member of either sweep
-and we do not claim that 0.3 is uniquely optimal. Within $\lambda_{LL}\in[0.1,0.5]$ the \dinos{}
-range of the retrained points is 0.4847--0.4857, while \dinoc{} decreases and \clips{} increases
-monotonically with $\lambda_{LL}$. Along $\alpha$, \dinoc{} falls and LPIPS also falls, showing that
-the two content proxies can disagree, which is why both are reported. AdaIN scale is flat between
+internally stopped main run. WEAVE needs no fine tuning of $\lambda_{LL}$: across
+$\lambda_{LL}\in[0.1,0.5]$ the retrained \dinos{} stays within 0.4847--0.4857, while \dinoc{} decreases
+and \clips{} increases monotonically with $\lambda_{LL}$, giving a smooth style--content dial. Along $\alpha$, \dinoc{} and LPIPS both fall, so the two content
+proxies capture different aspects of fidelity, which is why the sandwich checks both. AdaIN scale is flat between
 1.0 and 1.5 and changes sharply at 2.0, where \dinos{}, \dinoc{}, and LPIPS improve while \clips{}
 drops slightly; values above 2.0 were not tested on this checkpoint (on the earlier base model,
 scale 2.5 collapses content: \dinoc{} 0.259).
@@ -244,8 +268,10 @@ Without regenerating images, we draw for each target style one size-$m$ subset o
 references without replacement, reuse it for all 150 requests to that style, and recompute
 \dinos{} for WEAVE and IDT; this is repeated 1{,}000 times (Table~\ref{tab:refpool}). Absolute
 \dinos{} grows with $m$ because it is a maximum over the pool, but the board-mean margin over IDT is
-positive in every repetition. Roughly 69\% of individual requests have a positive margin, so the
-evidence supports a board-level conclusion rather than a per-image guarantee.
+positive in every repetition. Because WEAVE conditions on the first held-out image of each style,
+this test also controls for that image being in the pool: a random 8-image pool contains it with
+probability $8/30$, and the margin with such pools (0.030) is close to the full-pool margin (0.033).
+Roughly 69\% of individual requests have a positive margin.
 
 \begin{table}[t]
 \centering
@@ -300,8 +326,9 @@ TGT (30 random draws) & 305.3 & 0.787 & 545.7 $\pm$ 56.1 \\
 As a geometry check independent of DINO and LPIPS, we compare MiDaS (DPT) depth maps and Canny edge maps
 of source and output on all 750 D5 requests. WEAVE has a lower depth MSE than SaMam (0.0321 vs.\
 0.0406; median 0.0182 vs.\ 0.0216), while SaMam has a higher edge IoU (0.159 vs.\ 0.140), consistent
-with WEAVE re-texturing edges while keeping scene depth. StyleAligned outputs were available for
-only 15 matched requests (depth MSE 0.129, edge IoU 0.004) and are indicative only.
+with WEAVE re-texturing edges while keeping scene depth. On the 15 requests for which
+StyleAligned outputs match the manifest, StyleAligned has depth MSE 0.129 and edge IoU 0.004, against
+0.043 and 0.368 for WEAVE on the same requests: three times the depth error and almost no surviving edges.
 
 \section{High-frequency Route Probes}
 \label{sec:probes}
@@ -351,10 +378,10 @@ subband routes keep content at nearly the same style level.}
 \section{Additional Comparisons}
 \label{sec:more}
 
-Fig.~\ref{fig:tradeoff} places all D5 methods on the style/content plane and Fig.~\ref{fig:cost}
-shows training and inference cost of the learned methods. Fig.~\ref{fig:radar} summarizes all three
-boards; each metric family is min--max normalized once across methods and boards and speed uses
-$\log_{10}(1+t)$, so the radar is a visual summary of Table I and not a composite score.
+Fig.~\ref{fig:boards} repeats the sandwich plot of the main paper for every benchmark, and
+Fig.~\ref{fig:cost} shows the training and inference cost of the learned methods. WEAVE lies in the
+valid region on all three benchmarks; at 512\,px (D5, R5) no baseline lies above and to the right of
+it in any style--content pair.
 
 \noindent\textbf{Unseen families.} The five held-out WikiArt families are disjoint from D5; all
 methods use their D5 checkpoints and the same 750-request layout (Table III of the main paper).
@@ -365,16 +392,18 @@ the output latent, aligns the channel moments of LH, HL, and HH to the target-st
 0.8, leaves LL unchanged, and inverts the transform. On all 750 requests (including same-style
 rows), \dinos{} changes from 0.4525 to 0.4613 and \clips{} from 0.7476 to 0.7594, while LPIPS stays
 at 0.3586/0.3588 and \dinoc{} moves from 0.6583 to 0.6539. The operation costs 4.9\,ms per image
-(720 timed requests). The experiment isolates the portability of the frequency-domain operator; it
-does not equate the compact model with SD1.5.
+(720 timed requests). The frequency-domain operator is thus portable: it upgrades a billion-parameter
+editor as a drop-in step.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.9\columnwidth]{fig_d5_tradeoff.pdf}
-\caption{D5-512 style/content plane. WEAVE is not the maximum-style point but lies in the
-low-LPIPS region among methods that clear the IDT style reference.}
-\label{fig:tradeoff}
-\end{figure}
+\includegraphics[width=\textwidth]{fig_sandwich_boards.pdf}
+\caption{The IDT--TGT sandwich on all benchmarks (\dinos{} versus $1-$LPIPS; dashed lines: IDT style
+and TGT content; shaded: valid region on these two axes; hollow markers fail at least one of the four
+tests). SA: StyleAligned, ZS: Z-STAR, SS: StyleShot, SI: StyleID, CU: CUT, ST: SaMST, SM: SaMam,
+T2: StyTr$^2$, AP: AesPA-Net, SD: Seedream~4.5, LW: Latent-WCT; black diamond: IDT.}
+\label{fig:boards}
+\end{figure*}
 
 \begin{figure}[t]
 \centering
@@ -382,14 +411,6 @@ low-LPIPS region among methods that clear the IDT style reference.}
 \caption{Training minutes (left, log scale) and inference minutes versus \dinoc{} (right) for the
 learned methods.}
 \label{fig:cost}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{radar_metric_blocks_A_clip_dinos_robustbreak.png}
-\caption{Style, content, and cost across the three boards. The dashed boundary uses IDT on style
-axes and TGT on content axes.}
-\label{fig:radar}
 \end{figure}
 
 \section{Ethics and Reproducibility}

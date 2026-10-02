@@ -54,7 +54,20 @@
 | R5 描述 | "20-family R5 benchmark" | `WEAVE/docs/79/README.md` | 5 个随机 WikiArt 家族 |
 | 消融表 caption | "retrained variants use the same fixed-latent selection rule" | `SchrodingerBridge/experiments/rebuttal_20260716/expA_D*/oracle_regret.json`：表中数字是 oracle（最佳 DINO-S）epoch，内部规则选的是 ep5/ep5/ep4 | 改为"reported at their best-DINO-S epoch"，regret 放入 supplement |
 
-## 消融表（Table II）
+## 消融表（Table II，ICME 版 2026-10-02 起：同预算对比）
+
+ICME 正文 Table II 把重训变体放在与 WEAVE 相同的 4-epoch 预算下比较（同 seed 42、同学习率调度；主 run 的探针用 `fork_rng` 不影响训练），最后一列另给 15 epoch 内最佳 DINO-S：
+
+| 行 | epoch 4（同预算）D-S / C-S / LP / D-C | 最佳 D-S（epoch） | 来源 |
+|---|---|---|---|
+| direct endpoint | 0.4796 / 0.7140 / 0.2872 / 0.8084 | 0.4894（13） | `SchrodingerBridge/experiments/rebuttal_20260716/expA_D4_seed42/per_epoch_metrics.csv` |
+| λ_LL=1.0 | 0.4908 / 0.7183 / 0.2651 / 0.7852 | 0.4910（3） | `.../expA_D3_seed42/per_epoch_metrics.csv` |
+| learned HH head | 0.4930 / 0.7164 / 0.2670 / 0.8061 | 0.4930（4） | `.../expA_D5_seed42/per_epoch_metrics.csv` |
+
+正文中的派生说法："去掉 stepwise AdaIN 后 CLIP-S 只比复制高 0.0072（WEAVE 为 0.0195），即 AdaIN 贡献约 63% 的 CLIP-S 余量"。
+
+## 消融表（Table II，AAAI/早期 ICME 版：各自最佳 epoch）
+
 
 | 行 | 数值 | 来源 | 状态 |
 |---|---|---|---|
@@ -76,3 +89,30 @@
 | 频率探针（Fig. 2） | `WEAVE/aaai2027_v4/fig_data/method_probe_*.csv`、`method_probes.json`、`swd_loss_separability.json` | verified |
 | ArtFID（supplement） | `canonical_artfid.json` | verified |
 | 深度/边缘（supplement） | `SchrodingerBridge/rebuttal_exps/experiments/rebuttal_20260716/task3_topological/task3_summary.json` | verified |
+
+## ICME 版正文中的派生数字（2026-10-01）
+
+| 数字 | 计算方式 | 来源 |
+|---|---|---|
+| LL 占梯度能量 69.5%（LH 10.3 / HL 11.3 / HH 8.9） | 5,000 对跨风格 D5 latent 的直接位移 Haar 频带能量均值之比；正交 Haar 下等于初始化时的梯度能量占比 | `WEAVE/icme2027/data/probe_frequency.csv`（= `aaai2027_v4/fig_data/method_probe_frequency.csv`） |
+| 风格可分性 LL 0.12 / LH 0.19 / HL 0.17 / HH 0.56 | between/within 方差比 | `WEAVE/icme2027/data/probe_separability.csv` |
+| 源锚定端点下 LL 占比 ≤ 17.0% | 命题 1：每对样本 ‖u_ℓ‖² ≤ α²‖ℓ_s−ℓ_c‖²（α=0.3），高频位移不变；0.09·4.241/(0.09·4.241+0.628+0.687+0.546) | `WEAVE/icme2027/tools/make_figures.py` 打印 |
+| 三个种子 DINO-S 0.4897 ± 0.0030，CLIP-S 0.7137 ± 0.0008，LPIPS 0.2605 ± 0.0059，DINO-C 0.8073 ± 0.0031 | seed 42 用 expD 主结果，seed 7/123 用 `internal_dynamics_robustness.csv` 中的选中 epoch | 见上文"其它正文数字" |
+| 全参考池 margin 0.033 | `b1_reference_pool_corrected.json` 中 m30 的 margin.mean = 0.0334 | 同左 |
+| "复制输入的 CLIP-S 0.693 高于 SaMam 0.582、SaMST 0.618" | D5 Table I | `main_table.csv` |
+| D5、R5 上 WEAVE 在四组风格×内容指标上均帕累托最优；P2A 上 SaMam 四项全优、Seedream 风格与 LPIPS 优 | 对 12 个对比方法逐组检查支配关系 | `main_table.csv` |
+| 256 px 时每个 Haar 子带 16×16 系数/通道 | 256/8（VAE 下采样）/2（一级 Haar） | 架构事实 |
+| SaMam 参数 8.5×、训练 >300× | 8.8/1.04；436 min / 1.38 min | Table I |
+
+**评测协议补充**：`WEAVE/utils/run_evaluation.py`（约 3440–3480 行）推理时对每个目标风格取该风格测试目录的第一张图编码为参考 latent，
+因此 WEAVE 的风格参考就是 TGT 那张图，且该图在 DINO-S 参考池内。参考池重采样（m=8 时包含该图的概率 8/30）显示 margin 不依赖它。
+
+## SD-Turbo 已从论文中移除（2026-10-02）
+
+`main_table.csv` 中 SD-Turbo 三行标记 `in_paper=0`，两个生成脚本据此跳过。原因：
+- D5：`WEAVE/tools/remote_sdturbo_fixed.py` 用 `strength=0.8, num_inference_steps=1`。diffusers 0.38 img2img 的 `get_timesteps` 计算 `int(1×0.8)=0`，即 0 步去噪，输出就是输入（CLIP-S 与 IDT 同为 0.6933，LPIPS 0.003）。
+- P2A：来自 `Related_Works/scripts/sdturbo_generate_5x5.py`（SDXL-Turbo 256px，默认 strength 1.0 会完全忽略输入图）。
+- R5：图像数 1123（应为 750）。
+
+去掉后的计数：11 个 baseline 中 7 个越出夹逼区间；有效方法仍为 Z-STAR、StyTR-2、AesPA-Net、Seedream 4.5、WEAVE。
+重跑方法：三个板都用 `num_inference_steps×strength ≥ 1`（例如 2 步、strength 0.5），评测后把 `in_paper` 改回 1，再运行 `tools/make_main_table.py` 和 `tools/make_figures.py`。
