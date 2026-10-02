@@ -54,7 +54,20 @@
 | R5 描述 | "20-family R5 benchmark" | `WEAVE/docs/79/README.md` | 5 个随机 WikiArt 家族 |
 | 消融表 caption | "retrained variants use the same fixed-latent selection rule" | `SchrodingerBridge/experiments/rebuttal_20260716/expA_D*/oracle_regret.json`：表中数字是 oracle（最佳 DINO-S）epoch，内部规则选的是 ep5/ep5/ep4 | 改为"reported at their best-DINO-S epoch"，regret 放入 supplement |
 
-## 消融表（Table II）
+## 消融表（Table II，ICME 版 2026-10-02 起：同预算对比）
+
+ICME 正文 Table II 把重训变体放在与 WEAVE 相同的 4-epoch 预算下比较（同 seed 42、同学习率调度；主 run 的探针用 `fork_rng` 不影响训练），最后一列另给 15 epoch 内最佳 DINO-S：
+
+| 行 | epoch 4（同预算）D-S / C-S / LP / D-C | 最佳 D-S（epoch） | 来源 |
+|---|---|---|---|
+| direct endpoint | 0.4796 / 0.7140 / 0.2872 / 0.8084 | 0.4894（13） | `SchrodingerBridge/experiments/rebuttal_20260716/expA_D4_seed42/per_epoch_metrics.csv` |
+| λ_LL=1.0 | 0.4908 / 0.7183 / 0.2651 / 0.7852 | 0.4910（3） | `.../expA_D3_seed42/per_epoch_metrics.csv` |
+| learned HH head | 0.4930 / 0.7164 / 0.2670 / 0.8061 | 0.4930（4） | `.../expA_D5_seed42/per_epoch_metrics.csv` |
+
+正文中的派生说法："去掉 stepwise AdaIN 后 CLIP-S 只比复制高 0.0072（WEAVE 为 0.0195），即 AdaIN 贡献约 63% 的 CLIP-S 余量"。
+
+## 消融表（Table II，AAAI/早期 ICME 版：各自最佳 epoch）
+
 
 | 行 | 数值 | 来源 | 状态 |
 |---|---|---|---|
@@ -93,3 +106,13 @@
 
 **评测协议补充**：`WEAVE/utils/run_evaluation.py`（约 3440–3480 行）推理时对每个目标风格取该风格测试目录的第一张图编码为参考 latent，
 因此 WEAVE 的风格参考就是 TGT 那张图，且该图在 DINO-S 参考池内。参考池重采样（m=8 时包含该图的概率 8/30）显示 margin 不依赖它。
+
+## SD-Turbo 已从论文中移除（2026-10-02）
+
+`main_table.csv` 中 SD-Turbo 三行标记 `in_paper=0`，两个生成脚本据此跳过。原因：
+- D5：`WEAVE/tools/remote_sdturbo_fixed.py` 用 `strength=0.8, num_inference_steps=1`。diffusers 0.38 img2img 的 `get_timesteps` 计算 `int(1×0.8)=0`，即 0 步去噪，输出就是输入（CLIP-S 与 IDT 同为 0.6933，LPIPS 0.003）。
+- P2A：来自 `Related_Works/scripts/sdturbo_generate_5x5.py`（SDXL-Turbo 256px，默认 strength 1.0 会完全忽略输入图）。
+- R5：图像数 1123（应为 750）。
+
+去掉后的计数：11 个 baseline 中 7 个越出夹逼区间；有效方法仍为 Z-STAR、StyTR-2、AesPA-Net、Seedream 4.5、WEAVE。
+重跑方法：三个板都用 `num_inference_steps×strength ≥ 1`（例如 2 步、strength 0.5），评测后把 `in_paper` 改回 1，再运行 `tools/make_main_table.py` 和 `tools/make_figures.py`。

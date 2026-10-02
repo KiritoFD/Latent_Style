@@ -7,7 +7,7 @@ Table I 的 DINO 数字来自 `WEAVE/state/dino/`；CLIP/LPIPS 只有部分有�
 
 | 方法 | 来源 | 运行方式 | CLIP/LPIPS 出处 | 时间出处 |
 |---|---|---|---|---|
-| SD-Turbo | stabilityai/sd-turbo | D5：`Related_Works/runs/sdturbo_5x5`；三板：`WEAVE/tools/bench_all_3060.py` / `_run_sdturbo_remote.py`（后者**未入库**） | D5：`WEAVE/docs/baseline/README.md`（0.6933/0.0033） | 0.404 s/张 × 750 ≈ 5 min（`make_radar*.py` 注释） |
+| SD-Turbo（**ICME 版已移除**，见 06 A19） | stabilityai/sd-turbo | D5：`Related_Works/runs/sdturbo_5x5`；三板：`WEAVE/tools/bench_all_3060.py` / `_run_sdturbo_remote.py`（后者**未入库**） | D5：`WEAVE/docs/baseline/README.md`（0.6933/0.0033） | 0.404 s/张 × 750 ≈ 5 min（`make_radar*.py` 注释） |
 | StyleAligned | google/style-aligned 的 SD1.5 移植 `WEAVE/tools/style_aligned/` | D5：`WEAVE/tools/run_stylealigned_distinct5.py`（20 步，cfg 7.5，inversion cfg 3.5，seed 42，512） | paper-only；**冲突**：`WEAVE/BASELINE_PROGRESS.md` 记 D5 CLIP 0.8739 / LPIPS 0.7825，论文 0.780 / 0.869 | 6.18 s/张 → 77 min |
 | Z-STAR | HolmesShuan/Zero-shot-Style-Transfer-via-Attention-Rearrangement | `WEAVE/tools/_zstar_launch.bat` → `_run_zstar_remote.py`（未入库） | paper-only | **估计** ~3 h（512² 在 12 GB OOM，按步数外推） |
 | StyleShot | open-mmlab/StyleShot | `_styleshot_launch.bat` → `_run_styleshot_remote.py`（未入库），`--preprocessor Contour --prompt "a painting"` | paper-only | 24.63 s/张 → 5.1 h |

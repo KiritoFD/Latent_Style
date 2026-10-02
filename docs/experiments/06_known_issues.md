@@ -22,6 +22,8 @@
 | A16 | AAAI 首页图（`aaai2027_v4/plot_page1_summary.py`）画的 WEAVE 点是旧 base 模型（0.4843/0.7180/0.2925，2.07 min），StyleAligned CLIP-S、SaMST、SaMam 点也与主表不符，ArtFID 面板混入了源 manifest 不同的 Z-STAR/StyleAligned | ICME 版 Fig. 1 改由 `icme2027/tools/make_figures.py` 从 `main_table.csv` 与 `artfid_d5.csv` 生成；AAAI 版保持冻结 |
 | A17 | 参考文献错误：Z-STAR 条目作者与标题错误（实为 Deng, He, Tang, Dong, "Z*", CVPR 2024），AesPA-Net、StyTr² 作者列表错误，WCT 误标 CVPR（实为 NeurIPS 2017），StyleAligned 误标 ICLR（实为 CVPR 2024），多篇已发表论文仍标 arXiv | ICME 版 `refs.bib` 已逐条核实重建；AAAI 版 `refs.bib` 未改 |
 | A18 | AAAI 补充材料称 TGT "is never an input to any method"，但 WEAVE 推理时的风格参考正是 TGT 图 | ICME 正文与补充材料已如实说明，并用参考池重采样证明结论不依赖该图 |
+| A19 | SD-Turbo 基线配置错误：D5 为 0 步去噪（strength 0.8 × 1 step），输出等于输入；P2A 用 SDXL-Turbo strength 1.0（忽略输入）；R5 有 1123 张图 | ICME 版已从 Table I、Fig. 1、Fig. 4 和正文中移除（CSV 标记 `in_paper=0`）；需要按 02 末尾的方法重跑后才能放回 |
+| A20 | ICME 定性图曾写 WEAVE "palette 更暖"，实测 R/B 从 1.48 降到 1.24（更冷、饱和度更低） | 已改为 "softer, less saturated palette" |
 
 ## B. 缺失的原始文件（paper-only）
 

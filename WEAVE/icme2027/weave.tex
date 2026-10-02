@@ -30,10 +30,11 @@
 \includegraphics[width=\textwidth]{fig_sandwich.pdf}
 \captionof{figure}{The identity shortcut, exposed. IDT returns the source; TGT returns a
 reference image of the target style. (a)~On D5-512, valid transfer lies above IDT in style and right
-of TGT in content; hollow markers fail at least one test, e.g., SD-Turbo and SaMam score no higher than
-a copy in \clips{}. (b)~Eight of twelve baselines fail on at least one benchmark; WEAVE passes all
-three. (c)~ArtFID ranks the unchanged input first ($^{*}$Seedream: 720 of 750 requests; intervals:
-bootstrap for IDT, 30 reference draws for TGT).}
+of TGT in content (squares: training-free diffusion; circles: learned; diamond: commercial API;
+triangle: analytic; hollow: fails a D5 test); SaMST and SaMam score no higher than a copy in \clips{}.
+(b)~Seven of eleven baselines fail on at least one benchmark; WEAVE passes all three. (c)~ArtFID ranks
+the unchanged input first ($^{*}$Seedream: 720 of 750 requests; intervals: bootstrap for IDT, 30
+reference draws for TGT).}
 \label{fig:page1}
 \end{center}
 \vspace{1mm}
@@ -43,12 +44,12 @@ bootstrap for IDT, 30 reference draws for TGT).}
 Lightweight style transfer is built for consumer devices, yet compact models routinely return
 images no more stylized than an unchanged copy of the input, and standard content metrics reward this
 identity shortcut. Two zero-cost references, the source and a reference image of the target style,
-bracket valid transfer and expose it: eight of twelve baselines leave the bracket on at least one of
+bracket valid transfer and expose it: seven of eleven baselines leave the bracket on at least one of
 three benchmarks. The cause is spectral. In latent velocity matching, coarse structure carries most of
 the gradient energy yet is the least style-discriminative band. WEAVE removes this imbalance in the
 Haar subbands of a frozen autoencoder latent: a source-anchored target provably suppresses structural
 motion, a compact network learns band-weighted texture transport, and stepwise statistical alignment
-injects high-frequency style. Trained in 1.4 minutes on one consumer GPU with 1.04M parameters, WEAVE
+injects high-frequency style. Trained in 1.4 minutes on one consumer GPU with 1.04M trainable parameters, WEAVE
 is valid on every benchmark and Pareto-optimal against all baselines at 512 pixels.
 \end{abstract}
 
@@ -71,37 +72,40 @@ main benchmark, beating two recent compact models (SaMam 0.582, SaMST 0.618). Ar
 ranks the copy first (Fig.~\ref{fig:page1}c), and LPIPS~\cite{zhang2018unreasonable} declares it perfect.
 We therefore report two zero-cost outputs with every metric: IDT returns the source, and TGT returns a
 reference image of the target style. A valid transfer must beat IDT on style and stay closer to the
-source than TGT on content. Under this IDT--TGT sandwich, eight of twelve baselines fail on at least one
-benchmark, and every compact baseline (under 10M trainable parameters) is, somewhere, no more stylized
-than a copy (Fig.~\ref{fig:page1}b).
+source than TGT on content. Under this IDT--TGT sandwich, seven of eleven baselines fail on at least one
+benchmark, and each of the three lightweight learned baselines (CUT, SaMST, SaMam) is, somewhere, no more
+stylized than a copy (Fig.~\ref{fig:page1}b).
 
-\noindent\textbf{Why compact models take the shortcut.} The cause is the training signal, not capacity.
-Style transfer must keep structure while changing texture, yet a velocity field regressed on the whole
-latent scores both with one loss. In Haar coordinates, the coarse LL band carries 69.5\% of the gradient
-energy across 5{,}000 cross-style pairs while being the least style-discriminative band: its
-between-/within-style variance ratio is 0.12, against 0.56 for the finest band HH (Fig.~\ref{fig:spectral}).
-This imbalance is a property of the regression target, so widening the network leaves it intact.
-Networks that fit low frequencies first~\cite{rahaman2019spectral,xu2022frequency} then settle near the
-source, while large editors escape only by overwriting the image.
+\noindent\textbf{Why compact models take the shortcut.} Capacity is not what they lack: WEAVE
+escapes the shortcut with 6.7--8.5$\times$ fewer trainable parameters than these baselines. The
+bottleneck is the training signal. Style transfer must keep structure while changing texture, yet a
+single objective scores both. We measure this in latent velocity matching: in Haar coordinates, the coarse
+LL band carries
+69.5\% of the gradient energy across 5{,}000 cross-style pairs while being the least style-discriminative
+band: its between-/within-style variance ratio is 0.12, against 0.56 for the finest band HH
+(Fig.~\ref{fig:spectral}). This imbalance is a property of the regression target, so widening the network
+leaves it intact. Networks that fit low frequencies first~\cite{rahaman2019spectral,xu2022frequency} settle
+near the source; large editors avoid this with billion-parameter priors, and the most stylized of them
+does so by redrawing the content.
 
 \noindent\textbf{WEAVE} resolves the conflict by giving structure and style their own subbands of a frozen
 SD1.5 VAE latent~\cite{rombach2022high}. A source-anchored endpoint restricts the requested LL motion to a
-channel-wise affine change of the source, which provably removes at least 91\% of its energy and cuts
-LL's share from 69.5\% to at most 17\%. A 1.04M-parameter velocity network learns band-weighted transport,
+channel-wise affine change of the source, provably removing at least 91\% of the LL energy of the direct
+target and cutting LL's share of the gradient from 69.5\% to at most 17\%. A 1.04M-parameter velocity network learns band-weighted transport,
 steered by pooled, coordinate-free codes of the reference, and an AdaIN update aligns high-frequency
 statistics after every Euler step. Training takes 82.8\,s on one RTX~3060 and stops itself at an internal
-gradient transition. WEAVE is the only compact model valid on all three benchmarks, is Pareto-optimal
-against all twelve baselines at 512\,px, and is 11$\times$ smaller and at least 11$\times$ faster than
-every other valid learned model.
+gradient transition. WEAVE is the only learned model under 10M trainable parameters that is valid on all
+three benchmarks, is Pareto-optimal against all eleven baselines at 512\,px, and needs 11--34$\times$ fewer
+trainable parameters and 11--18$\times$ less inference time than every other valid learned model.
 
 \noindent\textbf{Contributions.}
 (1)~\emph{Evaluation:} the IDT--TGT sandwich, a zero-cost, metric-agnostic validity test that exposes the
-identity shortcut and content collapse, and an audit of twelve methods on three benchmarks.
+identity shortcut and content collapse, and an audit of eleven baselines on three benchmarks.
 (2)~\emph{Analysis:} a subband measurement and a bound that tie the shortcut to low-frequency gradient
 dominance and dictate the transport target.
 (3)~\emph{Method:} wavelet-decoupled velocity matching with orientation-specific texture conditioning,
 stepwise high-frequency alignment, and metric-free stopping.
-(4)~\emph{Results:} the only compact model valid everywhere, Pareto-optimal at 512\,px, with 1.04M
+(4)~\emph{Results:} the only lightweight learned model valid everywhere, Pareto-optimal at 512\,px, with 1.04M
 parameters and 1.4 training minutes, plus a training-free plug-in that improves a frozen SD1.5 editor.
 
 \section{Related Work}
@@ -134,8 +138,8 @@ frequencies for class-conditional generation~\cite{ren2026freqflow}, and wavelet
 sampling~\cite{phung2023wavelet}. WEAVE changes the endpoint, basis, and band weights of the regression itself.
 
 \noindent\textbf{Evaluation.} LPIPS~\cite{zhang2018unreasonable} and ArtFID~\cite{wright2022artfid} are
-standard, yet neither penalizes a copy, and a recent review finds no consensus on style-transfer
-evaluation~\cite{ioannou2024evaluation}. The sandwich gives every metric a direction at zero cost.
+standard, yet an unchanged copy scores best on both, and a recent review finds no consensus on
+style-transfer evaluation~\cite{ioannou2024evaluation}. The sandwich gives every metric a direction at zero cost.
 
 \section{Diagnosing the Identity Shortcut}
 \label{sec:diagnosis}
@@ -180,8 +184,8 @@ Let $\mathcal W(z)=(\ell,h_1,h_2,h_3)$ be the one-level orthonormal Haar transfo
 $z\in\mathbb R^{4\times H\times W}$, with LL band $\ell$ and the oriented bands LH, HL, and HH. Flow
 matching~\cite{lipman2022flow,liu2022rectified} regresses a velocity $v$ onto the displacement $u=z_1-z_0$
 between endpoints. By Parseval, $\|v-u\|^2=\sum_b\|v_b-u_b\|^2$: the loss splits into independent band terms,
-and at initialization the share of band $b$ in the gradient energy equals its share of the displacement
-energy, $\|u_b\|^2/\|u\|^2$. Fig.~\ref{fig:spectral} measures both on 5{,}000 cross-style D5 pairs with the
+and at initialization the share of band $b$ in the energy of the output gradient equals its share of the
+displacement energy, $\|u_b\|^2/\|u\|^2$. Fig.~\ref{fig:spectral} measures both on 5{,}000 cross-style D5 pairs with the
 direct target $z_1=z_s$. LL holds 69.5\% of the gradient energy, yet its style separability, the
 between-/within-style variance ratio of per-image band statistics, is the lowest (0.12 versus 0.56 for HH).
 The objective is driven by the band that matters least for style, and moving $\ell_c$ toward $\ell_s$ asks
@@ -270,10 +274,10 @@ dataset-specific checkpoints on P2A/R5; cost refers to the D5 model. Times on on
 report on four GPUs~\cite{deng2022stytr2}; $\sim$3\,h: Z-STAR estimated from step-scaled runs (full 512\,px
 runs exceed 12\,GB).}
 \label{tab:main}
-\scriptsize
-\setlength{\tabcolsep}{2.1pt}
+\footnotesize
+\setlength{\tabcolsep}{2.9pt}
 \renewcommand{\arraystretch}{0.95}
-\resizebox{\textwidth}{!}{\input{table_main}}
+\input{table_main}
 \end{table*}
 
 \subsection{Metric-Free Stopping}
@@ -289,9 +293,10 @@ the rule fires at epoch~4 ($\rho$ drops from 1.09 to 0.16) after 82.8\,s, withou
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig_qualitative.pdf}
-\caption{Extreme request (Minimalism $\to$ Rococo). SD-Turbo returns the input (identity shortcut);
-Seedream redraws the scene with new ornaments. WEAVE keeps the lattice and, in the close-ups (dashed boxes,
-$3{\times}$), turns the flat Minimalist fill into varied, painterly strokes in a warmer palette.}
+\caption{Extreme request (Minimalism $\to$ Rococo). StyleID stays close to the input, CUT and SaMam mostly
+darken or wash out the colors, and Seedream replaces the lattice with Rococo ornaments. WEAVE keeps the
+lattice and, in the close-ups (dashed boxes, $3{\times}$), turns the flat Minimalist fill into painterly
+strokes with a softer, less saturated palette.}
 \label{fig:qual}
 \end{figure*}
 
@@ -309,65 +314,67 @@ ViT-B/32~\cite{radford2021clip} similarity to the target-style prototype, \dinoc
 the source, and LPIPS uses AlexNet.
 
 \noindent\textbf{Baselines and implementation.} We compare training-free diffusion editors
-(SD-Turbo~\cite{sauer2023adversarial}, StyleAligned, Z-STAR, StyleShot, StyleID), learned models (CUT, SaMST,
-SaMam, StyTr$^2$, AesPA-Net), the Seedream~4.5 API~\cite{seedream2025}, and an analytic Latent-WCT, each at its
-released or recommended operating point. WEAVE uses AdamW (learning rate $2\times10^{-4}$, cosine decay),
+(StyleAligned, Z-STAR, StyleShot, StyleID), learned models (CUT, SaMST, SaMam, StyTr$^2$, AesPA-Net), the
+Seedream~4.5 API~\cite{seedream2025}, and an analytic Latent-WCT, each at its released or recommended
+operating point; CUT, SaMST, and SaMam are trained on our collections, the others use released weights. WEAVE uses AdamW (learning rate $2\times10^{-4}$, cosine decay),
 bf16, and one RTX~3060 (12\,GB). Training time excludes one-off latent caching; inference time includes
 eight ODE steps and VAE decoding.
 
 
 \subsection{Main Results}
-\noindent\textbf{The audit.} Eight of twelve baselines fail the sandwich on at least one benchmark
-(Table~\ref{tab:main}, Fig.~\ref{fig:page1}b). SD-Turbo's best-in-class D5 LPIPS (0.003) is a near-perfect
-copy: its \clips{} equals that of IDT. SaMam, the strongest compact baseline on content, falls below IDT in
-\clips{} on two benchmarks, so its low LPIPS comes at the price of style. StyleAligned tops \dinos{}
-everywhere but drifts farther from the source than the reference image itself on D5 and R5. Latent-WCT
-never clears IDT: wavelet statistics alone do not transfer style; the learned transport does.
+\noindent\textbf{The audit.} Seven of eleven baselines fail the sandwich on at least one benchmark
+(Table~\ref{tab:main}, Fig.~\ref{fig:page1}b). SaMam, the strongest lightweight baseline on content, falls
+below IDT in \clips{} on two benchmarks: its low LPIPS is bought with style. SaMST fails both tests on D5,
+and StyleID fails both on P2A. StyleAligned tops \dinos{} everywhere but drifts farther from the source
+than the reference image itself on D5 and R5. Latent-WCT fails the style test on every benchmark: wavelet
+statistics alone do not transfer style; the learned transport does.
 
 \noindent\textbf{Valid methods.} Among the five methods valid everywhere (Z-STAR, StyTr$^2$, AesPA-Net,
 Seedream~4.5, and WEAVE), WEAVE has the highest \dinoc{} on all three benchmarks (0.810/0.861/0.772) and the
 lowest LPIPS on D5 and R5. It surpasses the commercial Seedream~4.5 in \dinos{} on D5 (0.492 vs.\ 0.486) at
 about half its LPIPS (0.260 vs.\ 0.477). At 512\,px, no method, valid or not, beats WEAVE on a style and a
-content metric at once: WEAVE is Pareto-optimal against all twelve baselines in every style--content pair
+content metric at once: WEAVE is Pareto-optimal against all eleven baselines in every style--content pair
 on both D5 and R5.
 
-\noindent\textbf{Cost.} WEAVE trains 28$\times$ faster than the fastest learned baseline and over
-300$\times$ faster than SaMam (1.4 vs.\ 39.5 and 436\,min), runs at 168\,ms per 512\,px image including VAE
-decoding, and is 11$\times$ smaller and at least 11$\times$ faster at inference than every other valid
-learned model.
+\noindent\textbf{Cost.} WEAVE trains 28--1000$\times$ faster than every learned baseline with known
+training cost (1.4 vs.\ 39.5--1440\,min), runs at 168\,ms per 512\,px image including VAE decoding, and
+needs 11--34$\times$ fewer trainable parameters and 11--18$\times$ less inference time than every other
+valid learned model.
 
 \noindent\textbf{Qualitative comparison.} Fig.~\ref{fig:qual} shows both failure modes on an extreme request,
 and the close-ups show what the metrics measure: WEAVE keeps the geometry of the source and rewrites its
 texture and palette.
 
 \subsection{Ablations}
-Table~\ref{tab:ablation} removes one component at a time on the same 750 requests; inference-time
-controls reuse the selected checkpoint, and retrained variants (seed 42) are reported at their best-\dinos{}
-epoch, which favors them. Every component we keep pays for itself (seed s.d.\ of \dinos{}: 0.003). Without
-stepwise AdaIN the output slides back toward the source (\dinos{} $-$0.010, \clips{} $-$0.012). Without
-texture conditioning \dinos{} drops by 0.009 and LPIPS rises by 0.024. Replacing the anchored endpoint by
-the direct target costs the most content (LPIPS $+$0.054, \dinoc{} $-$0.014), exactly as
-Proposition~\ref{prop:anchor} predicts, and delays the style peak by nine epochs: the anchor is what makes
-82-second training possible. Raising $\lambda_{LL}$ to 1.0 leaves \dinos{} unchanged but costs 0.023
-\dinoc{}, and a learned HH head adds content cost (LPIPS $+$0.008) for a marginal style gain, so WEAVE
+Table~\ref{tab:ablation} removes one component at a time on the same 750 requests. Inference-time
+controls reuse the selected checkpoint; retrained variants share its seed and schedule and are compared
+at the same four-epoch budget, with their best epoch alongside. Every component pays for itself (seed
+s.d.\ of \dinos{}: 0.003). Without stepwise AdaIN, \clips{} falls to within 0.008 of the copy: the
+alignment supplies most of WEAVE's \clips{} margin over IDT. Without texture conditioning, \dinos{} drops
+by 0.009 and LPIPS rises by 0.024. The direct endpoint is the most damaging change, as
+Proposition~\ref{prop:anchor} predicts: at the same budget it loses 0.012 \dinos{} and 0.028 LPIPS, and
+even with three times the training it peaks below WEAVE in style (0.4894) at an LPIPS of 0.314. The anchor
+is what makes 82-second training possible. Raising $\lambda_{LL}$ to 1.0 costs 0.025 \dinoc{} at unchanged
+\dinos{}, and a learned HH head buys a within-noise style gain at a measurable content cost, so WEAVE
 omits it.
 
 \begin{table}[t]
 \centering
-\caption{Component ablation on D5-512 (750 requests).}
+\caption{Component ablation on D5-512 (750 requests). Retrained variants are shown at WEAVE's
+four-epoch budget; the last column is their best \dinos{} within 15 epochs (epoch).}
 \label{tab:ablation}
 \footnotesize
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lcccc@{}}
+\setlength{\tabcolsep}{2.6pt}
+\begin{tabular}{@{}lccccc@{}}
 \toprule
-Variant & \dinos$\uparrow$ & \clips$\uparrow$ & LPIPS$\downarrow$ & \dinoc$\uparrow$ \\
+Variant & D-S$\uparrow$ & C-S$\uparrow$ & LP$\downarrow$ & D-C$\uparrow$ & best D-S \\
 \midrule
-\textbf{WEAVE} (epoch 4) & 0.4918 & 0.7128 & 0.2595 & 0.8102 \\
-w/o stepwise AdaIN ($\beta{=}0$) & 0.4821 & 0.7005 & 0.2258 & 0.8455 \\
-w/o texture conditioning & 0.4825 & 0.7157 & 0.2837 & 0.8125 \\
-direct endpoint ($z_1^\star{=}z_s$) & 0.4894 & 0.7172 & 0.3138 & 0.7966 \\
-$\lambda_{LL}{=}1.0$ & 0.4910 & 0.7180 & 0.2626 & 0.7874 \\
-learned HH head & 0.4930 & 0.7164 & 0.2670 & 0.8061 \\
+\textbf{WEAVE} & 0.4918 & 0.7128 & 0.2595 & 0.8102 & 0.4918 (4) \\
+w/o stepwise AdaIN ($\beta{=}0$) & 0.4821 & 0.7005 & 0.2258 & 0.8455 & -- \\
+w/o texture conditioning & 0.4825 & 0.7157 & 0.2837 & 0.8125 & -- \\
+direct endpoint ($z_1^\star{=}z_s$) & 0.4796 & 0.7140 & 0.2872 & 0.8084 & 0.4894 (13) \\
+$\lambda_{LL}{=}1.0$ & 0.4908 & 0.7183 & 0.2651 & 0.7852 & 0.4910 (3) \\
+learned HH head & 0.4930 & 0.7164 & 0.2670 & 0.8061 & 0.4930 (4) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -415,11 +422,11 @@ SD1.5 img2img & 0.3974 & 0.7221 & \textbf{0.3591} & \textbf{0.6589} \\
 \section{Conclusion}
 \label{sec:conclusion}
 
-Standard metrics reward copying, and two zero-cost references are enough to catch it: under them, eight
-of twelve baselines fail, and every compact one falls below the identity in style on some benchmark. The
-cause is spectral, and WEAVE removes it at the source: it anchors structure, learns texture transport in
+Standard metrics reward copying, and two zero-cost references are enough to catch it: under them, seven
+of eleven baselines fail, and every lightweight learned baseline is no more stylized than a copy on some
+benchmark. The cause is spectral, and WEAVE removes it at the source: it anchors structure, learns texture transport in
 explicit subbands, and injects high-frequency statistics along the trajectory. The result is the only
-compact model that is valid everywhere and Pareto-optimal at 512\,px, trained in 1.4 minutes with 1.04M
+lightweight learned model that is valid everywhere and Pareto-optimal at 512\,px, trained in 1.4 minutes with 1.04M
 parameters. Multi-scale decompositions and other autoencoders are natural next steps. Code, checkpoints,
 and the 750-request protocol will be released.
 

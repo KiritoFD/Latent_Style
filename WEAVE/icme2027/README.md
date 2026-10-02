@@ -11,10 +11,10 @@ Self-contained: copy this folder alone to compile.
 | `table_main.tex` | Table I, **generated** — do not edit |
 | `data/main_table.csv` | Source of record for Table I, with provenance for every cell |
 | `tools/make_main_table.py` | CSV → `table_main.tex` (rankings, †/‡ marks and *Valid* column computed from IDT/TGT) |
-| `tools/make_figures.py` | Regenerates Fig. 1 (`fig_sandwich.pdf`), Fig. 2 (`fig_spectral.pdf`) and Fig. 4 (`fig_qualitative.pdf`) from `data/` |
+| `tools/make_figures.py` | Regenerates Fig. 1 (`fig_sandwich.pdf`), Fig. 2 (`fig_spectral.pdf`), Fig. 4 (`fig_qualitative.pdf`) and supplement Fig. S (`fig_sandwich_boards.pdf`) from `data/`; rows with `in_paper=0` are skipped |
 | `data/artfid_d5.csv`, `data/probe_*.csv` | ArtFID audit (canonical manifest only) and Haar-band probe data behind Figs. 1–2 |
 | `refs.bib`, `IEEEtran.cls`, `IEEEbib.bst` | Bibliography and official ICME 2026 template files |
-| `figures/` | Generated figures (above) plus supplement figures copied from `../aaai2027_v4/` |
+| `figures/` | Generated figures (above), the teaser source PNG, and three supplement figures (`fig_training_audit`, `fig_probe_mechanisms`, `fig_cost_quality`) regenerated from `../aaai2027_v4/make_supplement_figures.py` with `pdf.fonttype=42` and STIX fonts (no Type 3) |
 
 ## Build
 
@@ -37,7 +37,7 @@ opens; the regular-paper deadline has historically been in December.
 | ≤ 6 pages including all text, figures, **and references** | author instructions | 6 pages |
 | Letter-size PDF, all fonts embedded, Times encouraged | author instructions | letter; `pdffonts` shows all fonts embedded (Times in text, STIX TrueType in figures, no Type 3) |
 | IEEE conference template (IEEEtran `conference`, IEEEbib) | official ICME 2026 LaTeX zip | template files copied unchanged |
-| Abstract 100–150 words, identical to the CMT abstract; no math, symbols, or footnotes in title/abstract | author instructions + template | 146 words, plain text |
+| Abstract 100–150 words, identical to the CMT abstract; no math, symbols, or footnotes in title/abstract | author instructions + template | 147 words, plain text |
 | Double blind: author block exactly "Anonymous ICME submission"; no identifying acknowledgments, links, or supplement titles | author instructions | done; cite own prior work in the third person |
 | Supplement: single zip (site says ≤ 50 MB, template says ≤ 20 MB; use 20 MB); reviewers need not read it, so the paper must stand alone | author instructions + template | supplement PDF ≈ 0.9 MB |
 | One primary subject area (+ up to 2 secondary) | CMT form | suggest *Multimedia analysis and generation*; secondary *Multimedia quality assessment and metrics*, *Image and video processing* |
@@ -49,6 +49,14 @@ experimental validation and reproducibility, clarity, reference to prior work.
 
 ## Changes relative to the AAAI version
 
+- **Polish (2026-10-02).** SD-Turbo removed (misconfigured runs, see `data/main_table.csv` note and
+  `docs/experiments/06_known_issues.md` A19); counts are now 7 of 11 baselines failing. Table II compares
+  retrained variants at WEAVE's 4-epoch budget (direct endpoint: −0.012 DINO-S, +0.028 LPIPS) with best
+  epochs alongside. Fig. 1 gains labelled failure regions and a marker key in the caption; the qualitative
+  figure drops SD-Turbo and its caption was corrected (WEAVE's palette is softer, not warmer); the
+  architecture figure uses ≥7 pt labels and a line-broken training box; Table I is set at true 8 pt
+  without scaling. The supplement replaces the stale trade-off and radar figures with
+  `fig_sandwich_boards.pdf` (all three benchmarks, generated from the CSV).
 - **Tone (2026-10-01).** Assertive rewrite with the defensive hedging removed; every strengthened claim
   was re-verified against `data/main_table.csv`: 8 of 12 baselines fail the sandwich; all four compact
   baselines (<10M trainable parameters: CUT, SaMST, SaMam, Latent-WCT) fall below IDT in style on at
